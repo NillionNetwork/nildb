@@ -1,0 +1,23 @@
+name: Test AWS role assumption via GitHub OIDC
+
+on:
+  push:
+
+env:
+  AWS_REGION : eu-west-1
+
+permissions:
+      id-token: write   # required for requesting the JWT
+      contents: read    # required for actions/checkout
+jobs:
+  AssumeRoleAndCallIdentity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "arn:aws:iam::767397865113:role/sandbox-nil-db-github"
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: nildb_GitHub_Federated_OIDC
+      - run: |
+          aws sts get-caller-identity
