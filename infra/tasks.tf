@@ -1,6 +1,8 @@
 locals {
+  nildb_port = 8080
+
   tasks = [{
-    name          = "nildb-test"
+    name          = "nil-db"
     desired_count = var.nildb_desired_count
     cpu           = var.nildb_cpu
     memory        = var.nildb_mem
@@ -12,10 +14,16 @@ locals {
         cpu    = var.nildb_cpu
         memory = var.nildb_mem
         environment = [
-          { name = "APP_PORT", value = "8080" },
+          { name = "APP_ENV", value = "prod" },
+          { name = "APP_PORT", value = local.nildb_port },
+          { name = "APP_LOG_LEVEL", value = "debug" },
         ]
+	secrets = [
+	  { name = "APP_DB_URI", value = data.secrets_var_file_decrypt.secrets.values["nildb_db_uri"]},
+	  { name = "APP_JWT_SECRET", value = data.secrets_var_file_decrypt.secrets.values["nildb_jwt_secret"]},
+	]
 	port_mappings = [{
-	  container_port = 8080
+	  container_port = local.nildb_port
 	}]
       }
     ]
@@ -24,7 +32,7 @@ locals {
       {
         allow_cidrs           = var.nildb_allow_cidrs
         container_name        = "nil-db"
-        container_port        = 8080
+        container_port        = local.nildb_port
         health_check_interval = 30
         health_check_path     = "/health"
         health_check_timeout  = 5
