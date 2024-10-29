@@ -19,3 +19,13 @@ module "services" {
 
   ecs_cluster_compute_security_group_id = data.terraform_remote_state.cluster.outputs.compute_security_group_id
 }
+
+module "github_oidc" {
+  # TODO: drop `ref` once merged
+  source = "git::git@github.com:NillionNetwork/devops.git//terraform_modules/aws_github_oidc_access?ref=feat/1018-github_aws_oidc"
+
+  prefix = var.name_prefix
+  iam_role_name = "nil-db"
+  iam_assumable_role_arns = [data.aws_iam_role.terraform.arn]
+  repositories = ["NillionNetwork/nil-db"]
+}

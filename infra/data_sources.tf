@@ -1,5 +1,9 @@
 data "aws_caller_identity" "current" {}
 
+data "aws_iam_role" "terraform" {
+  name = "Terraform"
+}
+
 data "secrets_var_file_decrypt" "secrets" {
   password = var.secrets_master_password
   var_file = file("${var.repo_root}/secrets/${var.env_name}.tfvars")
