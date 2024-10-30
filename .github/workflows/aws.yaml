@@ -1,0 +1,55 @@
+name: Infra
+
+on:
+  push:
+
+permissions:
+      id-token: write   # required for AWS JWT
+      contents: read    # required for actions/checkout
+
+env:
+  AWS_REGION : eu-west-1
+  tg_version: '0.50.14'
+  tf_version: '1.5.7'
+  tf_secrets_version: '0.2.0'
+  tg_dir: infra
+  ENV_NAME: sandbox
+  TF_VAR_secrets_master_password: ${{ secrets.SECRETS_MASTER_PASSWORD }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate with AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "arn:aws:iam::767397865113:role/sandbox-nil-db-github"
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: nildb-${{github.run_number}}
+
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          owner: NillionNetwork
+          app-id: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_ID }}
+          private-key: ${{ secrets.NILLION_GITHUB_ACTIONS_APP_PRIVATE_KEY }}
+
+      - name: Plan
+        uses: gruntwork-io/terragrunt-action@v2
+        env:
+            INPUT_PRE_EXEC_0: |
+              git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com".insteadOf "https://github.com"
+            # TODO[@cmacrae]: maybe wrap this up into an action?
+            INPUT_PRE_EXEC_1: |
+              mkdir -p ~/.terraform.d/plugins/terraform.local/Sedicii/secrets/${{ env.tf_secrets_version }}/linux_amd64
+              curl -L -s \
+                https://github.com/Sedicii/terraform-provider-secrets/releases/download/v${{ env.tf_secrets_version }}/terraform-provider-secrets_linux-amd64_v${{ env.tf_secrets_version }} \
+                -o ~/.terraform.d/plugins/terraform.local/Sedicii/secrets/${{ env.tf_secrets_version }}/linux_amd64/terraform-provider-secrets_v${{ env.tf_secrets_version }}
+              chmod +x ~/.terraform.d/plugins/terraform.local/Sedicii/secrets/${{ env.tf_secrets_version }}/linux_amd64/terraform-provider-secrets_v${{ env.tf_secrets_version }}
+        with:
+          tg_version: ${{ env.tg_version }}
+          tf_version: ${{ env.tf_version }}
+          tg_dir: ${{ env.tg_dir }}
+          tg_command: 'plan'

@@ -1,6 +1,5 @@
 module "services" {
-  # TODO: drop `ref` once merged
-  source = "git::git@github.com:NillionNetwork/devops.git//terraform_modules/ecs_service?ref=feat/990-ecs_service_module"
+  source = "git::https://github.com/NillionNetwork/devops.git//terraform_modules/ecs_service"
 
   deployment_name                 = var.deployment_name
   env_name                        = var.env_name
@@ -21,8 +20,7 @@ module "services" {
 }
 
 module "github_oidc" {
-  # TODO: drop `ref` once merged
-  source = "git::git@github.com:NillionNetwork/devops.git//terraform_modules/aws_github_oidc_access?ref=feat/1018-github_aws_oidc"
+  source = "git::https://github.com/NillionNetwork/devops.git//terraform_modules/aws_github_oidc_access"
 
   prefix = var.name_prefix
   iam_role_name = "nil-db"
