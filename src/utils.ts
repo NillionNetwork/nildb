@@ -1,5 +1,6 @@
 import { UnknownException } from "effect/Cause";
 import type { StatusCode } from "hono/dist/types/utils/http-status";
+import type { MongoClient } from "mongodb";
 import { customAlphabet } from "nanoid";
 import type { BaseLogger } from "pino";
 import { ZodError } from "zod";
@@ -26,4 +27,14 @@ export function findRootError(
   }
 
   return 500;
+}
+
+export async function getUniqueIndexes(
+  client: MongoClient,
+  collection: string,
+): Promise<string[]> {
+  const indexes = await client.db().collection(collection).indexes();
+  return indexes
+    .filter((index) => index.unique)
+    .map((index) => Object.keys(index.key)[0]);
 }
