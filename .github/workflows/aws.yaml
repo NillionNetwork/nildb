@@ -11,6 +11,12 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: NillionNetwork/devops/actions/terraform/frameworks/ecs_service@feat/frameworks
+        with:
+          dir: infra
+
       - uses: NillionNetwork/devops/actions/terraform/frameworks@feat/frameworks
         with:
           framework: ecs_service
