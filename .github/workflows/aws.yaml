@@ -17,7 +17,13 @@ jobs:
         with:
           dir: infra
 
+      - name: Get Version
+        id: version
+        run: echo "value=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+
       - uses: NillionNetwork/devops/actions/terraform/frameworks@feat/frameworks
+        env:
+          TF_VAR_deployment_image_tag: ${{ steps.version.outputs.value }}
         with:
           framework: ecs_service
           deploy_env: sandbox
