@@ -6,5 +6,9 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     testTimeout: 0,
+    coverage: {
+      reporter: ["text", "json-summary", "json"],
+      reportOnFailure: true,
+    },
   },
 });

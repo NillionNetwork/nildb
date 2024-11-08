@@ -36,39 +36,8 @@ jobs:
         with:
           mongodb-version: "8.0"
       - run: pnpm install
-      - run: pnpm test
-
-  publish-image-to-ecr:
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: aws-actions/configure-aws-credentials@v4
+      - run: pnpm vitest --coverage
+      - uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          role-to-assume: "arn:aws:iam::592920173613:role/DevOps"
-          aws-region: "eu-west-1"
-          role-skip-session-tagging: true
-
-      - uses: aws-actions/amazon-ecr-login@v2
-        id: login-ecr
-
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Build and push images
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: datablocks-api
-          IMAGE_TAG_SHA: ${{ github.sha }}
-        run: |
-          IMAGE_TAG_VERSION=$(cat package.json | jq -r .version)
-          docker build \
-            --push \
-            -f Dockerfile \
-            -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG_SHA} \
-            -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG_VERSION} \
-            .
-          echo "IMAGE_TAG_VERSION=${IMAGE_TAG_VERSION}" >> $GITHUB_OUTPUT
-          echo "IMAGE_TAG_SHA=${IMAGE_TAG_SHA}" >> $GITHUB_OUTPUT
+          comment-on: "pr"

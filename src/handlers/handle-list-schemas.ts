@@ -16,7 +16,7 @@ export function handleListSchemas(
       E.flatMap(({ orgId }) => listOrgSchemas(orgId)),
       E.match({
         onFailure: (e) => {
-          const status = findRootError(e, "list schema", c.var.log);
+          const status = findRootError(e, "list schemas", c.var.log);
           return c.text("", status);
         },
         onSuccess: (data) => {

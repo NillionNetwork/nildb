@@ -39,7 +39,7 @@ This section provides a high level flow to help orientate yourself as a Nillion 
 2. Get an auth JWT: `POST http://localhost:8080/api/v1/auth/login`.
 3. Attach the JWT to future _root/admin user_ requests as: `Authorization: Bearer {JWT}`.
 
-### Setting an an organization 
+### Setting an organization 
 
 1. Create the org: `POST http://localhost:8080/api/v1/orgs`
 2. Add a data schema to the org: `POST http://localhost:8080/api/v1/data/orgs/schemas`

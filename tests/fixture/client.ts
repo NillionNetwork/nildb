@@ -18,6 +18,7 @@ import type { DeleteUserPath } from "#/handlers/handle-delete-user";
 import type { GenerateOrgApiKeyPath } from "#/handlers/handle-generate-api-key";
 import type { HealthCheckPath } from "#/handlers/handle-health-check";
 import type { ListOrgsPath } from "#/handlers/handle-list-orgs";
+import type { ListQueriesPath } from "#/handlers/handle-list-queries";
 import type { ListSchemasPath } from "#/handlers/handle-list-schemas";
 import type {
   RunQueryPath,
@@ -25,7 +26,7 @@ import type {
 } from "#/handlers/handle-run-query";
 import type { UploadDataPath } from "#/handlers/handle-upload-data";
 import type { UserLoginPath } from "#/handlers/handle-user-login";
-import type { OrgDocument } from "#/models/orgs";
+import type { OrgDocument, OrgQuery } from "#/models/orgs";
 import type { UserDocument } from "#/models/users";
 
 export type TestClientOptions = {
@@ -225,6 +226,18 @@ export class TestClient {
     });
 
     return await response.text();
+  }
+
+  async listQueries(): Promise<{ data: (OrgQuery & { name: string })[] }> {
+    const path: ListQueriesPath = `${apiV1}/orgs/queries`;
+    const response = await this.app.request(path, {
+      headers: {
+        authorization: `Bearer ${this.jwt}`,
+      },
+    });
+
+    const body = await response.json();
+    return body as { data: (OrgQuery & { name: string })[] };
   }
 
   async runQuery<T>(queryName: string): Promise<RunQueryResBody<T>> {

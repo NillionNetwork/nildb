@@ -186,10 +186,21 @@ describe("Orgs", () => {
     expect(records).toHaveLength(3);
   });
 
+  it("can list queries", async () => {
+    const { data } = await fixture.users.backend.listQueries();
+    expect(data).toHaveLength(0);
+  });
+
   it("can upload a query", async () => {
     const id = await fixture.users.backend.addQuery(org.schemaName, org.query);
     expect(id).toHaveLength(17);
     org.queryName = id;
+  });
+
+  it("can list queries", async () => {
+    const { data } = await fixture.users.backend.listQueries();
+    expect(data).toHaveLength(1);
+    expect(data[0].name).toMatch(org.queryName);
   });
 
   it("can run a query", async () => {

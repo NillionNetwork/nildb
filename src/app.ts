@@ -21,6 +21,7 @@ import { handleOpenApi } from "#/handlers/handle-openapi";
 import { handleRunQuery } from "#/handlers/handle-run-query";
 import { handleUploadData } from "#/handlers/handle-upload-data";
 import { handleUserLogin } from "#/handlers/handle-user-login";
+import { handleListQueries } from "./handlers/handle-list-queries";
 import { logging } from "./logging";
 
 export type Bindings = {
@@ -79,6 +80,7 @@ export function buildApp(
   handleDeleteSchema(app, "/api/v1/orgs/schemas");
   handleGenerateApiKey(app, "/api/v1/orgs/keys/generate");
   handleListSchemas(app, "/api/v1/orgs/schemas");
+  handleListQueries(app, "/api/v1/orgs/queries");
   handleListOrgs(app, "/api/v1/orgs");
 
   app.onError((err, c) => {
