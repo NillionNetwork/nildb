@@ -1,8 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type { MongoClient } from "mongodb";
-import { ObjectId } from "mongodb";
 import { type OrgDocument, OrgDocumentModel } from "#/models/orgs";
-import { getUniqueIndexes } from "#/utils";
+import { handleInsertErrors } from "#/utils";
 
 export function addOrgSchemaRecord(
   orgId: string,
@@ -140,27 +139,14 @@ export function insertSchemaData(
 ): E.Effect<string, Error> {
   return pipe(
     E.tryPromise(async () => {
-      const uniqueIndexes = await getUniqueIndexes(client, collection);
-      const bulkOps = data.map((doc: Record<string, any>) => {
-        const filter: Record<string, any> = {};
-        for (const pkField of uniqueIndexes) {
-          if (doc[pkField] !== undefined) {
-            filter[pkField] = doc[pkField];
-          }
-        }
-        // If no unique field is found default to _id, as if the filter is empty it will match anything
-        if (Object.keys(filter).length === 0) {
-          filter._id = new ObjectId();
-        }
-        return {
-          updateOne: {
-            filter,
-            update: { $set: doc },
-            upsert: true,
-          },
-        };
-      });
-      await client.db().collection(collection).bulkWrite(bulkOps);
+      try {
+        await client
+          .db()
+          .collection(collection)
+          .insertMany(data, { ordered: false });
+      } catch (insert_errors) {
+        await handleInsertErrors(client, collection, insert_errors);
+      }
     }),
     E.map(() => collection),
   );

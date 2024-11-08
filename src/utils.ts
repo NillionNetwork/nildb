@@ -1,6 +1,6 @@
 import { UnknownException } from "effect/Cause";
 import type { StatusCode } from "hono/dist/types/utils/http-status";
-import type { MongoClient } from "mongodb";
+import type { Document, MongoClient, WriteError } from "mongodb";
 import { customAlphabet } from "nanoid";
 import type { BaseLogger } from "pino";
 import { ZodError } from "zod";
@@ -29,7 +29,7 @@ export function findRootError(
   return 500;
 }
 
-export async function getUniqueIndexes(
+async function getUniqueIndexes(
   client: MongoClient,
   collection: string,
 ): Promise<string[]> {
@@ -37,4 +37,55 @@ export async function getUniqueIndexes(
   return indexes
     .filter((index) => index.unique)
     .map((index) => Object.keys(index.key)[0]);
+}
+
+async function updateDuplicateKeys(
+  client: MongoClient,
+  collection: string,
+  duplicateKeyErrors: WriteError[],
+): Promise<void> {
+  const uniqueIndexes = await getUniqueIndexes(client, collection);
+  const bulkOps: {
+    updateOne: {
+      filter: Record<string, any>;
+      update: { $set: Record<string, any> };
+    };
+  }[] = [];
+  for (const insert_err of duplicateKeyErrors) {
+    const doc = insert_err.err?.op;
+    if (doc && typeof doc === "object" && "_id" in doc) {
+      const { _id, ...update } = doc as Document;
+      const filter: Record<string, any> = {};
+      for (const pkField of uniqueIndexes) {
+        if (doc[pkField] !== undefined) {
+          filter[pkField] = doc[pkField];
+        }
+      }
+      bulkOps.push({
+        updateOne: {
+          filter,
+          update: { $set: update },
+        },
+      });
+    }
+  }
+  if (bulkOps.length > 0) {
+    await client.db().collection(collection).bulkWrite(bulkOps);
+  }
+}
+
+export async function handleInsertErrors(
+  client: MongoClient,
+  collection: string,
+  insertErrors: any,
+): Promise<void> {
+  const writeErrors = insertErrors?.writeErrors || [];
+  if (writeErrors.length > 0) {
+    const duplicateKeyErrors = writeErrors.filter(
+      (insert_err: WriteError) => insert_err.code === 11000,
+    );
+    if (duplicateKeyErrors.length > 0) {
+      await updateDuplicateKeys(client, collection, duplicateKeyErrors);
+    }
+  }
 }
