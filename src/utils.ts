@@ -1,6 +1,11 @@
 import { UnknownException } from "effect/Cause";
 import type { StatusCode } from "hono/dist/types/utils/http-status";
-import type { Document, MongoClient, WriteError } from "mongodb";
+import type {
+  Document,
+  MongoBulkWriteError,
+  MongoClient,
+  WriteError,
+} from "mongodb";
 import { customAlphabet } from "nanoid";
 import type { BaseLogger } from "pino";
 import { ZodError } from "zod";
@@ -47,15 +52,15 @@ async function updateDuplicateKeys(
   const uniqueIndexes = await getUniqueIndexes(client, collection);
   const bulkOps: {
     updateOne: {
-      filter: Record<string, any>;
-      update: { $set: Record<string, any> };
+      filter: Document;
+      update: { $set: Document };
     };
   }[] = [];
   for (const insert_err of duplicateKeyErrors) {
-    const doc = insert_err.err?.op;
+    const doc = insert_err.err?.op as Document;
     if (doc && typeof doc === "object" && "_id" in doc) {
       const { _id, ...update } = doc as Document;
-      const filter: Record<string, any> = {};
+      const filter: Document = {};
       for (const pkField of uniqueIndexes) {
         if (doc[pkField] !== undefined) {
           filter[pkField] = doc[pkField];
@@ -77,15 +82,25 @@ async function updateDuplicateKeys(
 export async function handleInsertErrors(
   client: MongoClient,
   collection: string,
-  insertErrors: any,
+  err: MongoBulkWriteError,
+  log: BaseLogger,
 ): Promise<void> {
-  const writeErrors = insertErrors?.writeErrors || [];
-  if (writeErrors.length > 0) {
-    const duplicateKeyErrors = writeErrors.filter(
+  const writeErrors = err?.writeErrors || [];
+  const errorsArray: WriteError[] = Array.isArray(writeErrors)
+    ? writeErrors
+    : [writeErrors];
+  if (errorsArray.length > 0) {
+    const duplicateKeyErrors = errorsArray.filter(
       (insert_err: WriteError) => insert_err.code === 11000,
     );
     if (duplicateKeyErrors.length > 0) {
       await updateDuplicateKeys(client, collection, duplicateKeyErrors);
+    }
+    const firstNonDuplicateError = errorsArray.find(
+      (insert_err: WriteError) => insert_err.code !== 11000,
+    );
+    if (firstNonDuplicateError) {
+      log.error(`MongoDB Insert Error: ${firstNonDuplicateError.errmsg}`);
     }
   }
 }

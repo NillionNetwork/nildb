@@ -1,5 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type { MongoClient } from "mongodb";
+import { MongoBulkWriteError, MongoError } from "mongodb";
+import type { BaseLogger } from "pino";
 import { type OrgDocument, OrgDocumentModel } from "#/models/orgs";
 import { handleInsertErrors } from "#/utils";
 
@@ -136,6 +138,7 @@ export function insertSchemaData(
   client: MongoClient,
   collection: string,
   data: object[],
+  log: BaseLogger,
 ): E.Effect<string, Error> {
   return pipe(
     E.tryPromise(async () => {
@@ -144,8 +147,14 @@ export function insertSchemaData(
           .db()
           .collection(collection)
           .insertMany(data, { ordered: false });
-      } catch (insert_errors) {
-        await handleInsertErrors(client, collection, insert_errors);
+      } catch (err) {
+        if (err instanceof MongoBulkWriteError) {
+          await handleInsertErrors(client, collection, err, log);
+        } else if (err instanceof MongoError) {
+          log.error(`MongoDB Error during data/upload: ${err}`);
+        } else {
+          log.error(`Unexpected error during data/upload: ${err}`);
+        }
       }
     }),
     E.map(() => collection),

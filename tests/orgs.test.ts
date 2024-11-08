@@ -145,24 +145,6 @@ describe("Orgs", () => {
     expect(records).toHaveLength(3);
   });
 
-  it("rejects primary key collisions", async () => {
-    const name = org.schemaName;
-    const data = [
-      {
-        wallet: "0x1",
-        country_code: "GBR",
-        age: 30,
-      },
-    ];
-
-    const success = await fixture.users.backend.uploadData(name, data);
-    expect(success).toBeFalsy;
-
-    const results = fixture.clients.db.db().collection(name).find({});
-    const records = await results.toArray();
-    expect(records).toHaveLength(3);
-  });
-
   it("rejects duplicates in data payload", async () => {
     const name = org.schemaName;
     const data = [
@@ -184,6 +166,47 @@ describe("Orgs", () => {
     const results = fixture.clients.db.db().collection(name).find({});
     const records = await results.toArray();
     expect(records).toHaveLength(3);
+  });
+
+  it("updates on primary key collisions", async () => {
+    const name = org.schemaName;
+    const data = [
+      {
+        wallet: "0x1",
+        country_code: "GER",
+        age: 30,
+      },
+    ];
+
+    const success = await fixture.users.backend.uploadData(name, data);
+    expect(success).toBeTruthy;
+
+    const results = fixture.clients.db.db().collection(name).find({});
+    const records = await results.toArray();
+    expect(records).toHaveLength(3);
+  });
+
+  it("inserts new and updates existing on data upload", async () => {
+    const name = org.schemaName;
+    const data = [
+      {
+        wallet: "0x1",
+        country_code: "ESP",
+        age: 30,
+      },
+      {
+        wallet: "0x4",
+        country_code: "GBR",
+        age: 30,
+      },
+    ];
+
+    const success = await fixture.users.backend.uploadData(name, data);
+    expect(success).toBeTruthy;
+
+    const results = fixture.clients.db.db().collection(name).find({});
+    const records = await results.toArray();
+    expect(records).toHaveLength(4);
   });
 
   it("can list queries", async () => {

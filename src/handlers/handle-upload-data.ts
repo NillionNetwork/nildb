@@ -48,6 +48,7 @@ export function handleUploadData(
             c.var.db.mongo,
             reqBody.schemaName,
             reqBody.data as unknown as object[],
+            c.var.log,
           ).pipe(E.runPromise);
         }),
       ),
