@@ -122,9 +122,10 @@ export function listOrgSchemas(
     E.mapError((cause) => new Error(`Failed to find orgs/${orgId}`, { cause })),
     E.map((schemas) =>
       Array.from(schemas.entries()).map(([id, schema]) => {
+        const parsedSchema = JSON.parse(schema);
         return {
           id,
-          schema,
+          schema: parsedSchema,
         };
       }),
     ),
