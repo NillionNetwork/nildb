@@ -1,4 +1,5 @@
 import Ajv from "ajv";
+import type AnySchema from "ajv";
 import { Effect as E } from "effect";
 import type { Hono } from "hono";
 import { z } from "zod";
@@ -31,7 +32,7 @@ export function handleUploadData(
         E.tryPromise(async () => {
           const schemas = await listOrgSchemas(orgId).pipe(E.runPromise);
           const record = schemas.find((s) => s.id === reqBody.schemaName)!;
-          const schema =
+          const schema: AnySchema =
             typeof record.schema === "string"
               ? JSON.parse(record.schema)
               : record.schema;
