@@ -31,7 +31,10 @@ export function handleUploadData(
         E.tryPromise(async () => {
           const schemas = await listOrgSchemas(orgId).pipe(E.runPromise);
           const record = schemas.find((s) => s.id === reqBody.schemaName)!;
-          const schema = JSON.parse(record.schema);
+          const schema =
+            typeof record.schema === "string"
+              ? JSON.parse(record.schema)
+              : record.schema;
           const ajv = new Ajv({ strict: "log" });
           const validator = ajv.compile(schema);
 
