@@ -179,6 +179,22 @@ components:
           items:
             type: object
 
+    DeleteDataRequest:
+      type: object
+      required:
+        - schemaName
+        - keyName
+        - entriesToDelete
+      properties:
+        schemaName:
+          type: string
+        keyName:
+          type: string
+        entriesToDelete:
+          type: array
+          items:
+            type: string
+
     AddQueryRequest:
       type: object
       required:
@@ -399,6 +415,21 @@ paths:
       responses:
         '200':
           description: Data uploaded successfully
+
+  /api/v1/data/delete:
+    delete:
+      summary: Delete data
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteDataRequest'
+      responses:
+        '200':
+          description: Data deleted successfully
 
   /api/v1/orgs/queries:
     post:

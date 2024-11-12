@@ -9,6 +9,7 @@ import { handleAddQuery } from "#/handlers/handle-add-query";
 import { handleAddSchema } from "#/handlers/handle-add-schema";
 import { handleCreateOrg } from "#/handlers/handle-create-org";
 import { handleCreateUser } from "#/handlers/handle-create-user";
+import { handleDeleteData } from "#/handlers/handle-delete-data";
 import { handleDeleteOrg } from "#/handlers/handle-delete-org";
 import { handleDeleteQuery } from "#/handlers/handle-delete-query";
 import { handleDeleteSchema } from "#/handlers/handle-delete-schema";
@@ -72,6 +73,7 @@ export function buildApp(
   handleDeleteUser(app, "/api/v1/users");
   handleRunQuery(app, "/api/v1/data/query");
   handleUploadData(app, "/api/v1/data/upload");
+  handleDeleteData(app, "/api/v1/data/delete");
   handleAddQuery(app, "/api/v1/orgs/queries");
   handleAddSchema(app, "/api/v1/orgs/schemas");
   handleCreateOrg(app, "/api/v1/orgs");

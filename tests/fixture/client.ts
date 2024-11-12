@@ -11,6 +11,7 @@ import type {
   CreateUserPath,
   CreateUserReqBody,
 } from "#/handlers/handle-create-user";
+import type { DeleteDataPath } from "#/handlers/handle-delete-data";
 import type { DeleteOrgPath } from "#/handlers/handle-delete-org";
 import type { DeleteQueryPath } from "#/handlers/handle-delete-query";
 import type { DeleteSchemaPath } from "#/handlers/handle-delete-schema";
@@ -208,6 +209,28 @@ export class TestClient {
       body: JSON.stringify({
         schemaName,
         data,
+      }),
+    });
+
+    return response.ok;
+  }
+
+  async deleteData(
+    schemaName: string,
+    keyName: string,
+    entriesToDelete: (string | number)[],
+  ): Promise<boolean> {
+    const path: DeleteDataPath = `${apiV1}/data/delete`;
+    const response = await this.app.request(path, {
+      method: "DELETE",
+      headers: {
+        authorization: `Bearer ${this.jwt}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        schemaName,
+        keyName,
+        entriesToDelete,
       }),
     });
 

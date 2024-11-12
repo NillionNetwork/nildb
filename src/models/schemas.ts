@@ -141,3 +141,14 @@ export function insertSchemaData(
     E.map(() => collection),
   );
 }
+
+export function deleteSchemaData(
+  client: MongoClient,
+  collection: string,
+  filter: { [x: string]: { $in: (string | number)[] } },
+): E.Effect<string, Error> {
+  return pipe(
+    E.tryPromise(() => client.db().collection(collection).deleteMany(filter)),
+    E.map(() => collection),
+  );
+}

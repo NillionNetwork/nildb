@@ -186,6 +186,23 @@ describe("Orgs", () => {
     expect(records).toHaveLength(3);
   });
 
+  it("can delete data", async () => {
+    const name = org.schemaName;
+    const keyName = "country_code";
+    const entriesToDelete = ["CAN"];
+
+    const success = await fixture.users.backend.deleteData(
+      name,
+      keyName,
+      entriesToDelete,
+    );
+    expect(success).toBeTruthy;
+
+    const results = fixture.clients.db.db().collection(name).find({});
+    const records = await results.toArray();
+    expect(records).toHaveLength(2);
+  });
+
   it("can list queries", async () => {
     const { data } = await fixture.users.backend.listQueries();
     expect(data).toHaveLength(0);
