@@ -42,12 +42,14 @@ export function createOrgSchemaCollection(
     E.tryPromise(async () => {
       await client.db().createCollection(name);
 
-      const indexes = primaryKeys.map((key) => ({
-        key: { [key]: 1 },
-        unique: true,
-      }));
-
-      return client.db().collection(name).createIndexes(indexes);
+      if (primaryKeys.length > 0) {
+        const indexes = primaryKeys.map((key) => ({
+          key: { [key]: 1 },
+          unique: true,
+        }));
+        await client.db().collection(name).createIndexes(indexes);
+      }
+      return name;
     }),
     E.map(() => name),
   );
