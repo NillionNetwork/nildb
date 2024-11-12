@@ -183,9 +183,12 @@ components:
       type: object
       required:
         - schemaName
+        - description
         - pipeline
       properties:
         schemaName:
+          type: string
+        description:
           type: string
         pipeline:
           type: array

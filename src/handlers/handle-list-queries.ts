@@ -22,7 +22,8 @@ export function handleListQueries(
         onSuccess: (queries) => {
           const data = Array.from(queries.entries()).map(([name, value]) => ({
             name,
-            pipeline: value.pipeline,
+            description: value.description,
+            pipeline: JSON.parse(value.pipeline),
             schema: value.schema,
           }));
           return c.json({ data });

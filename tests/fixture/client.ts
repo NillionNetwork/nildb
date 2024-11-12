@@ -214,7 +214,11 @@ export class TestClient {
     return response.ok;
   }
 
-  async addQuery(schemaName: string, pipeline: object[]): Promise<string> {
+  async addQuery(
+    schemaName: string,
+    description: string,
+    pipeline: object[],
+  ): Promise<string> {
     const path: AddQueryPath = `${apiV1}/orgs/queries`;
     const response = await this.app.request(path, {
       method: "POST",
@@ -222,7 +226,7 @@ export class TestClient {
         authorization: `Bearer ${this.jwt}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ schemaName, pipeline }),
+      body: JSON.stringify({ schemaName, description, pipeline }),
     });
 
     return await response.text();

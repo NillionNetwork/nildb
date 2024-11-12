@@ -35,6 +35,7 @@ export function removeOrgQueryRecord(
 export function addOrgQueryRecord(
   orgId: string,
   queryName: string,
+  description: string,
   pipeline: string,
   schema: string,
 ): E.Effect<OrgDocument, Error> {
@@ -45,6 +46,7 @@ export function addOrgQueryRecord(
         {
           $set: {
             [`queries.${queryName}`]: {
+              description,
               pipeline,
               schema,
             },

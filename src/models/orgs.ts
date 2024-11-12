@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import type { CreateOrgReqBody } from "#/handlers/handle-create-org";
 
 export interface OrgQuery {
+  description: string;
   pipeline: string;
   schema: string;
 }
@@ -27,6 +28,7 @@ export const OrgDocumentSchema = new mongoose.Schema(
     queries: {
       type: Map,
       of: {
+        description: String,
         pipeline: String,
         schema: String,
       },

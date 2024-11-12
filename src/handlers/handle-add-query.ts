@@ -10,6 +10,7 @@ import { createShortId, findRootError } from "#/utils";
 
 export const AddQueryReqBody = z.object({
   schemaName: z.string(),
+  description: z.string(),
   pipeline: z.array(z.unknown()),
 });
 export type AddQueryReqBody = z.infer<typeof AddQueryReqBody>;
@@ -45,6 +46,7 @@ export function handleAddQuery(app: Hono<AppEnv>, path: AddQueryPath): void {
           const id = createShortId(5);
           return {
             queryName: `${prefix}_query_${id}`,
+            queryDescription: reqBody.description,
             pipeline: JSON.stringify(reqBody.pipeline),
             startingSchema: reqBody.schemaName,
           };
@@ -54,6 +56,7 @@ export function handleAddQuery(app: Hono<AppEnv>, path: AddQueryPath): void {
         addOrgQueryRecord(
           orgId,
           body.queryName,
+          body.queryDescription,
           body.pipeline,
           body.startingSchema,
         ),

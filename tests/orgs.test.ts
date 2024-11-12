@@ -38,6 +38,7 @@ describe("Orgs", () => {
       },
     },
     queryName: "",
+    queryDescription: "New Query",
     query: [
       {
         $match: {
@@ -192,7 +193,11 @@ describe("Orgs", () => {
   });
 
   it("can upload a query", async () => {
-    const id = await fixture.users.backend.addQuery(org.schemaName, org.query);
+    const id = await fixture.users.backend.addQuery(
+      org.schemaName,
+      org.queryDescription,
+      org.query,
+    );
     expect(id).toHaveLength(17);
     org.queryName = id;
   });
