@@ -1,6 +1,6 @@
 import type { UUID } from "mongodb";
 import { z } from "zod";
-import type { DocumentBase } from "#/common/mongo";
+import { type DocumentBase, completeDocumentBaseFilter } from "#/common/mongo";
 import type { NilDid } from "#/common/nil-did";
 import { Uuid } from "#/common/types";
 
@@ -66,3 +66,9 @@ export type QueryDocument = DocumentBase & {
   variables: Record<string, QueryVariable | QueryArrayVariable>;
   pipeline: Record<string, unknown>[];
 };
+
+export function completeQueryDocumentFilter(
+  filter: Record<string, unknown>,
+): Record<string, unknown> {
+  return completeDocumentBaseFilter(filter);
+}

@@ -20,7 +20,9 @@ import {
 import {
   type DocumentBase,
   MongoErrorCode,
+  applyCoercions,
   checkDataCollectionExists,
+  completeDocumentBaseFilter,
   isMongoError,
 } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
@@ -229,15 +231,17 @@ export function updateMany(
   filter: Filter<DocumentBase>,
   update: UpdateFilter<DocumentBase>,
 ): E.Effect<UpdateResult, DataCollectionNotFoundError | DatabaseError> {
+  const documentFilter = applyCoercions<Filter<DocumentBase>>(
+    completeDocumentBaseFilter(filter),
+  );
+  const documentUpdate = applyCoercions<UpdateFilter<DocumentBase>>(
+    completeDocumentBaseFilter(update),
+  );
   return pipe(
     checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () =>
-          collection.updateMany(
-            coerceIdToUuid<Filter<DocumentBase>>(filter),
-            update,
-          ),
+        try: () => collection.updateMany(documentFilter, documentUpdate),
         catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
       }),
     ),
@@ -249,12 +253,14 @@ export function deleteMany(
   schema: UUID,
   filter: StrictFilter<DocumentBase>,
 ): E.Effect<DeleteResult, DataCollectionNotFoundError | DatabaseError> {
+  const documentFilter = applyCoercions<Filter<DocumentBase>>(
+    completeDocumentBaseFilter(filter),
+  );
   return pipe(
     checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () =>
-          collection.deleteMany(coerceIdToUuid<Filter<DocumentBase>>(filter)),
+        try: () => collection.deleteMany(documentFilter),
         catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
       }),
     ),
@@ -283,25 +289,17 @@ export function findMany(
   schema: UUID,
   filter: Filter<DocumentBase>,
 ): E.Effect<DataDocument[], DataCollectionNotFoundError | DatabaseError> {
+  const documentFilter = applyCoercions<Filter<DocumentBase>>(
+    completeDocumentBaseFilter(filter),
+  );
   return pipe(
     checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.find(filter).sort({ _created: -1 }).toArray(),
+        try: () =>
+          collection.find(documentFilter).sort({ _created: -1 }).toArray(),
         catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
       }),
     ),
   );
-}
-
-function coerceIdToUuid<T>(value: Record<string, unknown>): T {
-  const next = {
-    ...value,
-  };
-
-  if ("_id" in value && value._id && typeof value._id === "string") {
-    next._id = new UUID(value._id);
-  }
-
-  return next as unknown as T;
 }

@@ -96,11 +96,15 @@ export function findByIdWithCache(
 
 export function findOneOrganization(
   ctx: AppBindings,
-  filter: StrictFilter<OrganizationAccountDocument>,
+  _id: NilDid,
 ): E.Effect<
   OrganizationAccountDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
+  const filter: StrictFilter<OrganizationAccountDocument> = {
+    _id,
+    _type: "organization",
+  };
   return pipe(
     checkPrimaryCollectionExists<OrganizationAccountDocument>(
       ctx,

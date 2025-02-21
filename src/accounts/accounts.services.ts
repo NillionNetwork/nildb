@@ -24,12 +24,7 @@ export function find(
   OrganizationAccountDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  return pipe(
-    AccountRepository.findOneOrganization(ctx, {
-      _id: did,
-      _type: "organization",
-    }),
-  );
+  return pipe(AccountRepository.findOneOrganization(ctx, did));
 }
 
 export function createAccount(

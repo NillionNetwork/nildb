@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import { type DeleteResult, UUID, type UpdateResult } from "mongodb";
+import type { DeleteResult, UUID, UpdateResult } from "mongodb";
 import type {
   DataCollectionNotFoundError,
   DataValidationError,
@@ -67,35 +67,10 @@ export function readRecords(
   return pipe(
     E.succeed(request),
     E.map(({ schema, filter }) => {
-      if ("_id" in filter) {
-        const id = filter._id;
-        if (typeof id === "string") {
-          return {
-            schema,
-            filter: {
-              ...filter,
-              _id: new UUID(id),
-            },
-          };
-        }
-
-        if (
-          id &&
-          typeof id === "object" &&
-          "$in" in id &&
-          Array.isArray(id.$in)
-        ) {
-          return {
-            schema,
-            filter: {
-              ...filter,
-              _id: { $in: id.$in.map((value) => new UUID(value)) },
-            },
-          };
-        }
-      }
-
-      return { schema, filter };
+      return {
+        schema,
+        filter,
+      };
     }),
     E.flatMap(({ schema, filter }) =>
       DataRepository.findMany(ctx, schema, filter),

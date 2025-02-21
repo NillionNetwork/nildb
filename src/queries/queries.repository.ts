@@ -1,13 +1,21 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter } from "mongodb";
+import type { Filter } from "mongodb/lib/beta";
 import {
   DatabaseError,
   DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
+import {
+  CollectionName,
+  applyCoercions,
+  checkPrimaryCollectionExists,
+} from "#/common/mongo";
 import type { AppBindings } from "#/env";
-import type { QueryDocument } from "./queries.types";
+import {
+  type QueryDocument,
+  completeQueryDocumentFilter,
+} from "./queries.types";
 
 export function insert(
   ctx: AppBindings,
@@ -32,11 +40,14 @@ export function findMany(
   QueryDocument[],
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
+  const documentFilter = applyCoercions<Filter<QueryDocument>>(
+    completeQueryDocumentFilter(filter),
+  );
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.find(filter).toArray(),
+        try: () => collection.find(documentFilter).toArray(),
         catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
       }),
     ),
@@ -60,11 +71,14 @@ export function findOne(
   QueryDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
+  const documentFilter = applyCoercions<Filter<QueryDocument>>(
+    completeQueryDocumentFilter(filter),
+  );
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.findOne(filter),
+        try: () => collection.findOne(documentFilter),
         catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
       }),
     ),
@@ -88,11 +102,14 @@ export function findOneAndDelete(
   QueryDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
+  const documentFilter = applyCoercions<Filter<QueryDocument>>(
+    completeQueryDocumentFilter(filter),
+  );
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
     E.flatMap((collection) =>
       E.tryPromise({
-        try: () => collection.findOneAndDelete(filter),
+        try: () => collection.findOneAndDelete(documentFilter),
         catch: (cause) =>
           new DatabaseError({ cause, message: "findOneAndDelete" }),
       }),
