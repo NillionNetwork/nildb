@@ -39,9 +39,13 @@ export async function buildFixture(
   dotenv.config({ path: ".env.test" });
   const id = faker.string.alphanumeric(4);
 
+  // Update db names, so that migrations performed during tests use the updated db names
+  process.env.APP_DB_NAME_PRIMARY = `${process.env.APP_DB_NAME_PRIMARY}_${id}`;
+  process.env.APP_DB_NAME_DATA = `${process.env.APP_DB_NAME_DATA}_${id}`;
+
   const config = EnvVarsSchema.parse({
-    dbNamePrimary: `${process.env.APP_DB_NAME_PRIMARY}_${id}`,
-    dbNameData: `${process.env.APP_DB_NAME_DATA}_${id}`,
+    dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
+    dbNameData: process.env.APP_DB_NAME_DATA,
     dbUri: process.env.APP_DB_URI,
     env: process.env.APP_ENV,
     logLevel: process.env.APP_LOG_LEVEL,

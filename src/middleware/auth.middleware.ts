@@ -1,7 +1,7 @@
 import * as didJwt from "did-jwt";
 import { Resolver } from "did-resolver";
 import type { MiddlewareHandler, Next } from "hono";
-import { StatusCodes } from "http-status-codes";
+import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import type { AccountType } from "#/admin/admin.types";
 import { NilDid, buildNilMethodResolver } from "#/common/nil-did";
 import { PathsV1 } from "#/common/paths";
@@ -42,7 +42,10 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       const authHeader = c.req.header("Authorization") ?? "";
       const [scheme, token] = authHeader.split(" ");
       if (scheme.toLowerCase() !== "bearer") {
-        return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
+        return c.text(
+          getReasonPhrase(StatusCodes.UNAUTHORIZED),
+          StatusCodes.UNAUTHORIZED,
+        );
       }
 
       const { payload } = await didJwt.verifyJWT(token, {
@@ -51,7 +54,10 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       });
 
       if (!payload) {
-        return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
+        return c.text(
+          getReasonPhrase(StatusCodes.UNAUTHORIZED),
+          StatusCodes.UNAUTHORIZED,
+        );
       }
 
       // should be a cache hit because the resolver primes the cache else it fails
@@ -59,7 +65,7 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       if (!account) {
         c.env.log.debug("Expected account not in cache: %s", payload.iss);
         return c.text(
-          "Internal Server Error",
+          getReasonPhrase(StatusCodes.INTERNAL_SERVER_ERROR),
           StatusCodes.INTERNAL_SERVER_ERROR,
         );
       }
@@ -70,7 +76,10 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       return next();
     } catch (error) {
       bindings.log.error("Auth error:", error);
-      return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
+      return c.text(
+        getReasonPhrase(StatusCodes.UNAUTHORIZED),
+        StatusCodes.UNAUTHORIZED,
+      );
     }
   };
 }

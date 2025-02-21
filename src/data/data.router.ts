@@ -1,4 +1,4 @@
-import { StatusCodes } from "http-status-codes";
+import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import type { App } from "#/app";
 import { PathsV1 } from "#/common/paths";
 import type { AppBindings } from "#/env";
@@ -12,7 +12,10 @@ export function buildDataRouter(app: App, _bindings: AppBindings): void {
     async (c, next): Promise<void | Response> => {
       return isRoleAllowed(c, ["organization"])
         ? next()
-        : c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
+        : c.text(
+            getReasonPhrase(StatusCodes.UNAUTHORIZED),
+            StatusCodes.UNAUTHORIZED,
+          );
     },
   );
 

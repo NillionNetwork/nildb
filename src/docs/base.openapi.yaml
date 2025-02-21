@@ -165,6 +165,10 @@ paths:
     $ref: '../system/system.openapi.yaml#/paths/~1health'
   /about:
     $ref: '../system/system.openapi.yaml#/paths/~1about'
+  /api/v1/admin/maintenance:
+    $ref: '../system/system.openapi.yaml#/paths/~1api~1v1~1admin~1maintenance'
+  /api/v1/admin/maintenance/{did}:
+    $ref: '../system/system.openapi.yaml#/paths/~1api~1v1~1admin~1maintenance~1{did}'
 
   # Beta endpoints
   /api/beta/schemas/{id}/meta:

@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import { StatusCodes } from "http-status-codes";
+import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import type { App } from "#/app";
 import { handleTaggedErrors } from "#/common/handler";
 import { PathsV1 } from "#/common/paths";
@@ -15,7 +15,10 @@ import {
 export function get(app: App): void {
   app.get(PathsV1.accounts.root, async (c) => {
     if (!isRoleAllowed(c, ["admin", "organization"])) {
-      return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
+      return c.text(
+        getReasonPhrase(StatusCodes.UNAUTHORIZED),
+        StatusCodes.UNAUTHORIZED,
+      );
     }
 
     const account = c.var.account;
@@ -51,7 +54,10 @@ export function remove(app: App): void {
     payloadValidator(RemoveAccountRequestSchema),
     async (c) => {
       if (!isRoleAllowed(c, ["root", "admin"])) {
-        return c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
+        return c.text(
+          getReasonPhrase(StatusCodes.UNAUTHORIZED),
+          StatusCodes.UNAUTHORIZED,
+        );
       }
 
       const payload = c.req.valid("json");

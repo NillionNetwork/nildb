@@ -41,6 +41,7 @@ export enum CollectionName {
   Accounts = "accounts",
   Schemas = "schemas",
   Queries = "queries",
+  Maintenance = "maintenance",
 }
 
 export async function mongoMigrateUp(

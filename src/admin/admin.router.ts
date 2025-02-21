@@ -1,4 +1,4 @@
-import { StatusCodes } from "http-status-codes";
+import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import type { App } from "#/app";
 import { PathsV1 } from "#/common/paths";
 import type { AppBindings } from "#/env";
@@ -7,6 +7,7 @@ import * as AdminAccountsControllers from "./admin.controllers.accounts";
 import * as AdminDataControllers from "./admin.controllers.data";
 import * as AdminQueriesControllers from "./admin.controllers.queries";
 import * as AdminSchemasControllers from "./admin.controllers.schemas";
+import * as AdminSystemControllers from "./admin.controllers.system";
 
 export function buildAdminRouter(app: App, _bindings: AppBindings): void {
   app.use(
@@ -15,7 +16,10 @@ export function buildAdminRouter(app: App, _bindings: AppBindings): void {
     async (c, next): Promise<void | Response> => {
       return isRoleAllowed(c, ["admin", "root"])
         ? next()
-        : c.text("Unauthorized", StatusCodes.UNAUTHORIZED);
+        : c.text(
+            getReasonPhrase(StatusCodes.UNAUTHORIZED),
+            StatusCodes.UNAUTHORIZED,
+          );
     },
   );
 
@@ -40,4 +44,7 @@ export function buildAdminRouter(app: App, _bindings: AppBindings): void {
   AdminSchemasControllers.metadata(app);
   AdminSchemasControllers.createIndex(app);
   AdminSchemasControllers.dropIndex(app);
+
+  AdminSystemControllers.setMaintenanceWindow(app);
+  AdminSystemControllers.deleteMaintenanceWindow(app);
 }

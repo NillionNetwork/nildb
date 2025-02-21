@@ -22,10 +22,10 @@ async function main() {
 
   if (options.envFile) {
     console.info(`! Using env file: ${options.envFile}`);
-    dotenv.config({ path: options.envFile });
+    dotenv.config({ path: options.envFile, override: true });
   } else {
     console.info("! Using env file: .env");
-    dotenv.config();
+    dotenv.config({ override: true });
   }
 
   const bindings = await loadBindings();

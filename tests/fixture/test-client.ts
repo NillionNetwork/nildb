@@ -7,6 +7,8 @@ import type {
   AdminAddSchemaRequest,
   AdminCreateAccountRequest,
   AdminDeleteAccountRequest,
+  AdminDeleteMaintenanceWindowRequest,
+  AdminSetMaintenanceWindowRequest,
   AdminSetSubscriptionStateRequest,
 } from "#/admin/admin.types";
 import type { App } from "#/app";
@@ -64,7 +66,7 @@ abstract class TestClient {
   async request<T>(
     path: string,
     options: {
-      method?: "GET" | "POST" | "DELETE";
+      method?: "GET" | "PUT" | "POST" | "DELETE";
       body?: T;
     } = {},
   ): Promise<Response> {
@@ -120,6 +122,26 @@ export class TestAdminUserClient extends TestRootUserClient {
       method: "POST",
       body,
     });
+  }
+
+  async setMaintenanceWindow(
+    body: AdminSetMaintenanceWindowRequest,
+  ): Promise<Response> {
+    return this.request(PathsV1.admin.system.maintenance, {
+      method: "PUT",
+      body,
+    });
+  }
+
+  async deleteMaintenanceWindow(
+    req: AdminDeleteMaintenanceWindowRequest,
+  ): Promise<Response> {
+    return this.request(
+      PathsV1.admin.system.byDidMaintenance.replace(":did", req.did),
+      {
+        method: "DELETE",
+      },
+    );
   }
 
   async addSchema(body: AdminAddSchemaRequest): Promise<Response> {

@@ -24,6 +24,10 @@ export const PathsV1 = {
     schemas: {
       root: "/api/v1/admin/schemas",
     },
+    system: {
+      maintenance: "/api/v1/admin/maintenance",
+      byDidMaintenance: "/api/v1/admin/maintenance/:did",
+    },
   },
   data: {
     root: "/api/v1/data",
@@ -45,6 +49,7 @@ export const PathsV1 = {
   system: {
     about: "/about",
     health: "/health",
+    metrics: "/metrics",
   },
 } as const;
 

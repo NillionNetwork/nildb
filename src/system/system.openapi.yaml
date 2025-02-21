@@ -1,5 +1,9 @@
 components:
   schemas:
+    DID:
+      type: string
+      description: Decentralized Identifier (DID) of the node
+      example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
     AboutNode:
       type: object
       required:
@@ -35,9 +39,7 @@ components:
               description: Node's api version
               example: 0.4.0
         did:
-          type: string
-          description: Decentralized Identifier (DID) of the node
-          example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
+          $ref: '#/components/schemas/DID'
         publicKey:
           type: string
           description: Public key of the node
@@ -47,6 +49,22 @@ components:
           format: uri
           description: URL where the node can be reached
           example: 'https://nildb-demo.nillion.network'
+        maintenance:
+          type: object
+          required:
+            - start
+            - end
+          properties:
+            start:
+              type: string
+              format: date-time
+              description: Maintenance window starts at
+              example: '2025-02-14T00:00:00.000Z'
+            end:
+              type: string
+              format: date-time
+              description: Maintenance window ends at
+              example: '2025-02-14T00:30:00.000Z'
 
 paths:
   /health:
@@ -73,3 +91,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AboutNode'
+  /api/v1/admin/maintenance:
+    put:
+      summary: Set node maintenance window
+      description: Set node maintenance window for a single node by it's DID
+      operationId: setMaintenanceWindow
+      security:
+        - jwt: [ ]
+      tags:
+        - Node
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - did
+                - start
+                - end
+              properties:
+                did:
+                  $ref: '#/components/schemas/DID'
+                start:
+                  type: string
+                  format: date-time
+                  description: Maintenance window starts at
+                  example: '2025-02-14T00:00:00.000Z'
+                end:
+                  type: string
+                  format: date-time
+                  description: Maintenance window ends at
+                  example: '2025-02-14T00:30:00.000Z'
+      responses:
+        '200':
+          description: Maintenance window successfully set
+        '400':
+          $ref: '../docs/base.openapi.yaml#/components/responses/400'
+        '401':
+          $ref: '../docs/base.openapi.yaml#/components/responses/401'
+        '500':
+          $ref: '../docs/base.openapi.yaml#/components/responses/500'
+  /api/v1/admin/maintenance/{did}:
+    delete:
+      summary: Delete node maintenance window
+      description: End node maintenance instantly by deleting it's maintenance window
+      operationId: deleteMaintenanceWindow
+      security:
+        - jwt: [ ]
+      tags:
+        - Node
+      parameters:
+        - in: path
+          name: did
+          required: true
+          description: "Node DID"
+          schema:
+            $ref: '#/components/schemas/DID'
+      responses:
+        '204':
+          $ref: '../docs/base.openapi.yaml#/components/responses/204'
+        '400':
+          $ref: '../docs/base.openapi.yaml#/components/responses/400'
+        '401':
+          $ref: '../docs/base.openapi.yaml#/components/responses/401'
+        '500':
+          $ref: '../docs/base.openapi.yaml#/components/responses/500'

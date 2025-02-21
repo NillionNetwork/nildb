@@ -14,6 +14,7 @@ import { buildSchemasRouter } from "#/schemas/schemas.router";
 import { createOpenApiRouter } from "./docs/docs.router";
 import type { AppBindings, AppEnv } from "./env";
 import { useAuthMiddleware } from "./middleware/auth.middleware";
+import { useMaintenanceMiddleware } from "./middleware/maintenance.middleware";
 import { buildSystemRouter } from "./system/system.router";
 
 export type App = Hono<AppEnv>;
@@ -37,6 +38,7 @@ export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
   createOpenApiRouter(app, bindings);
 
   app.use(useLoggerMiddleware(bindings.log));
+  app.use(useMaintenanceMiddleware(bindings));
   app.use(useAuthMiddleware(bindings));
   app.use(useSubscriptionCheckMiddleware(bindings));
 
