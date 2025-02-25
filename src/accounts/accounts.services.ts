@@ -59,10 +59,7 @@ export function createAccount(
     return AdminAccountRepository.insert(ctx, document);
   }
 
-  const document = AccountRepository.toOrganizationAccountDocument(
-    request,
-    ctx.config.env,
-  );
+  const document = AccountRepository.toOrganizationAccountDocument(request);
   return AccountRepository.insert(ctx, document);
 }
 

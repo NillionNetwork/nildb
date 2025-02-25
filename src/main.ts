@@ -1,10 +1,15 @@
 import { serve } from "@hono/node-server";
 import { Command } from "commander";
 import dotenv from "dotenv";
+import { Option as O } from "effect";
 import { mongoMigrateUp } from "#/common/mongo";
 import packageJson from "../package.json";
 import { buildApp } from "./app";
-import { loadBindings } from "./env";
+import { FeatureFlag, hasFeatureFlag, loadBindings } from "./env";
+
+export type NilDbCliOptions = {
+  envFile: string;
+};
 
 async function main() {
   const program = new Command();
@@ -13,25 +18,19 @@ async function main() {
     .name("@nillion/nildb-api")
     .description("nilDB API server cli")
     .version(packageJson.version)
-    .option("--env-file <path>", "Path to custom .env file")
-    .option("--disable-migrations", "Disable MongoDB migrations")
+    .option("--env-file [path]", "Path to the env file (default .env)", ".env")
     .parse(process.argv);
 
-  const options = program.opts();
+  const options = program.opts<NilDbCliOptions>();
   console.info("! Starting api ...");
 
-  if (options.envFile) {
-    console.info(`! Using env file: ${options.envFile}`);
-    dotenv.config({ path: options.envFile });
-  } else {
-    console.info("! Using env file: .env");
-    dotenv.config();
-  }
-
+  dotenv.config({ path: options.envFile });
   const bindings = await loadBindings();
 
-  console.info(`! Migrations enabled: ${!options.disableMigrations}`);
-  if (!options.disableMigrations) {
+  console.info("! Cli options: %O", options);
+  console.info("! Enabled features: %O", bindings.config.enabledFeatures);
+
+  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
     await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
   }
 
@@ -61,17 +60,24 @@ async function main() {
     },
   );
 
-  async function shutdown() {
+  const shutdown = async (): Promise<void> => {
     bindings.log.info(
       "Received shutdown signal. Starting graceful shutdown...",
     );
 
     try {
-      await Promise.all([
+      const promises = [
         new Promise((resolve) => appServer.close(resolve)),
         new Promise((resolve) => metricsServer.close(resolve)),
         bindings.db.client.close(),
-      ]);
+      ];
+
+      if (O.isSome(bindings.mq)) {
+        promises.push(bindings.mq.value.channel.close());
+        promises.push(bindings.mq.value.connection.close());
+      }
+
+      await Promise.all(promises);
 
       bindings.log.info("Graceful shutdown completed. Goodbye.");
       process.exit(0);
@@ -79,7 +85,7 @@ async function main() {
       console.error("Error during shutdown:", error);
       process.exit(1);
     }
-  }
+  };
 
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);

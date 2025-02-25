@@ -16,7 +16,6 @@ import type {
 
 export function toOrganizationAccountDocument(
   data: RegisterAccountRequest,
-  env: "mainnet" | "testnet",
 ): OrganizationAccountDocument {
   const { did, publicKey, name } = data;
   const now = new Date();
@@ -29,8 +28,7 @@ export function toOrganizationAccountDocument(
     publicKey,
     name,
     subscription: {
-      // testnet subscriptions default to active
-      active: env === "testnet",
+      active: true,
     },
     schemas: [],
     queries: [],

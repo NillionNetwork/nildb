@@ -19,7 +19,7 @@ export function createOpenApiRouter(app: App, bindings: AppBindings): void {
     })
     .then((spec) => {
       app.use(`${PathsV1.docs}/*`, swaggerUI({ url: "", spec }));
-      bindings.log.info("Openapi spec and endpoint ready");
+      bindings.log.info(`Openapi docs on :${bindings.config.webPort}`);
     })
     .catch((error) => {
       bindings.log.info("Failed to load openapi spec: %O", error);

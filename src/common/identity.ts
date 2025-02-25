@@ -3,7 +3,11 @@ import { sha256 } from "@noble/hashes/sha256";
 import * as secp256k1 from "@noble/secp256k1";
 import { bech32 } from "bech32";
 import * as didJwt from "did-jwt";
-import { type NilChainAddress, NilDid } from "#/common/nil-did";
+import {
+  type NilChainAddress,
+  type NilDid,
+  NilDidSchema,
+} from "#/common/nil-did";
 
 // 10 minutes
 const DEFAULT_JWT_TTL = 1000 * 60 * 10;
@@ -31,9 +35,7 @@ export class Identity {
   }
 
   get did(): NilDid {
-    return process.env.APP_ENV === "mainnet"
-      ? NilDid.parse(`did:nil:mainnet:${this.address}`)
-      : NilDid.parse(`did:nil:testnet:${this.address}`);
+    return NilDidSchema.parse(`did:nil:${this.address}`);
   }
 
   createJwt(payload: { aud: NilDid }): Promise<string> {
@@ -59,7 +61,7 @@ export class Identity {
   }
 
   static isDidFromPublicKey(did: NilDid, publicKeyAsHex: string): boolean {
-    const address = did.split(":")[3];
+    const address = did.split(":")[2];
     const pubKeyBytes = Buffer.from(publicKeyAsHex, "hex");
 
     const sha256Hash = sha256(pubKeyBytes);
@@ -79,8 +81,6 @@ export class Identity {
     const prefix = "nillion";
     const address = bech32.encode(prefix, bech32.toWords(ripemd160Hash));
 
-    return process.env.APP_ENV === "mainnet"
-      ? NilDid.parse(`did:nil:mainnet:${address}`)
-      : NilDid.parse(`did:nil:testnet:${address}`);
+    return NilDidSchema.parse(`did:nil:${address}`);
   }
 }
