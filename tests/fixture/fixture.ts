@@ -12,6 +12,8 @@ import {
   type AppBindings,
   type AppEnv,
   EnvVarsSchema,
+  FeatureFlag,
+  hasFeatureFlag,
   loadBindings,
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
@@ -43,7 +45,9 @@ export async function buildFixture(
     dbNamePrimary: `${process.env.APP_DB_NAME_PRIMARY}_${id}`,
     dbNameData: `${process.env.APP_DB_NAME_DATA}_${id}`,
     dbUri: process.env.APP_DB_URI,
-    env: process.env.APP_ENV,
+    enabledFeatures: process.env.APP_ENABLED_FEATURES
+      ? process.env.APP_ENABLED_FEATURES.split(",")
+      : [],
     logLevel: process.env.APP_LOG_LEVEL,
     nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
@@ -52,7 +56,10 @@ export async function buildFixture(
   });
 
   const bindings = await loadBindings(config);
-  await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
+
+  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
+    await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
+  }
 
   const { app } = buildApp(bindings);
 
