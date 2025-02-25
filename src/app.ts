@@ -9,6 +9,7 @@ import { buildDataRouter } from "#/data/data.router";
 import { corsMiddleware } from "#/middleware/cors.middleware";
 import { useLoggerMiddleware } from "#/middleware/logger.middleware";
 import { useSubscriptionCheckMiddleware } from "#/middleware/subscription.middleware";
+import { buildNilCommRouter } from "#/nilcomm/nilcomm.router";
 import { buildQueriesRouter } from "#/queries/queries.router";
 import { buildSchemasRouter } from "#/schemas/schemas.router";
 import { createOpenApiRouter } from "./docs/docs.router";
@@ -62,6 +63,10 @@ export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
 
   buildQueriesRouter(app, bindings);
   buildDataRouter(app, bindings);
+
+  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.NILCOMM)) {
+    buildNilCommRouter(app, bindings);
+  }
 
   return { app, metrics: metricsApp };
 }

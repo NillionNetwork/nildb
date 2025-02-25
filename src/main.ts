@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Command } from "commander";
 import dotenv from "dotenv";
+import { Option as O } from "effect";
 import { mongoMigrateUp } from "#/common/mongo";
 import packageJson from "../package.json";
 import { buildApp } from "./app";
@@ -70,6 +71,11 @@ async function main() {
         new Promise((resolve) => metricsServer.close(resolve)),
         bindings.db.client.close(),
       ];
+
+      if (O.isSome(bindings.mq)) {
+        promises.push(bindings.mq.value.channel.close());
+        promises.push(bindings.mq.value.connection.close());
+      }
 
       await Promise.all(promises);
 

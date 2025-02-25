@@ -1,4 +1,6 @@
+import * as amqp from "amqplib";
 import type { JWTPayload } from "did-jwt";
+import { Option as O } from "effect";
 import type { Context } from "hono";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
@@ -17,6 +19,7 @@ export const FeatureFlag = {
   OPENAPI_DOCS: "openapi-docs",
   PROMETHEUS_METRICS: "prometheus-metrics",
   MIGRATIONS: "migrations",
+  NILCOMM: "nilcomm",
 } as const;
 
 export type FeatureFlag = (typeof FeatureFlag)[keyof typeof FeatureFlag];
@@ -54,6 +57,10 @@ export type AppBindings = {
     accounts: Cache<NilDid, AccountDocument>;
   };
   log: Logger;
+  mq: O.Option<{
+    connection: amqp.Connection;
+    channel: amqp.Channel;
+  }>;
   node: {
     endpoint: string;
     identity: Identity;
@@ -106,6 +113,21 @@ export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
         webPort: Number(process.env.APP_PORT),
       });
 
+  let mq: AppBindings["mq"] = O.none();
+  if (hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILCOMM)) {
+    if (!config.mqUri) {
+      throw new TypeError(
+        `The env var "APP_MQ_URI" is required when "${FeatureFlag.NILCOMM}" feature is enabled`,
+      );
+    }
+    const connection = await amqp.connect(config.mqUri);
+    const channel = await connection.createChannel();
+    mq = O.some({
+      connection,
+      channel,
+    });
+  }
+
   const node = {
     identity: Identity.fromSk(config.nodeSecretKey),
     endpoint: config.nodePublicEndpoint,
@@ -127,6 +149,7 @@ export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
     },
     db: await initAndCreateDbClients(config),
     log: createLogger(config.logLevel),
+    mq,
     node,
   };
 }
