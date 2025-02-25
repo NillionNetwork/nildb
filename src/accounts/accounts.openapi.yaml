@@ -15,7 +15,7 @@ components:
         _id:
           description: The accounts decentralised identifier (DID)
           type: string
-          example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
+          example: 'did:nil:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
         _type:
           type: string
           enum: [ 'admin', 'organization' ]

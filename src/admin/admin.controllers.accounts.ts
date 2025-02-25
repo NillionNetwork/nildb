@@ -19,8 +19,6 @@ export function create(app: App): void {
     async (c) => {
       const payload = c.req.valid("json");
 
-      console.error("after create org request");
-
       return pipe(
         AccountService.createAccount(c.env, payload),
         E.map(() => new Response(null, { status: StatusCodes.CREATED })),

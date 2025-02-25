@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
-import { NilDid } from "#/common/nil-did";
+import { type NilDid, NilDidSchema } from "#/common/nil-did";
 import { PUBLIC_KEY_LENGTH } from "#/env";
 import { AddQueryRequestSchema } from "#/queries/queries.types";
 import { AddSchemaRequestSchema } from "#/schemas/schemas.types";
@@ -9,7 +9,7 @@ import { AddSchemaRequestSchema } from "#/schemas/schemas.types";
  * Controllers types
  */
 export const AdminCreateAccountRequestSchema = z.object({
-  did: NilDid,
+  did: NilDidSchema,
   publicKey: z.string().length(PUBLIC_KEY_LENGTH),
   name: z.string(),
   type: z.enum(["admin", "organization"]),
@@ -19,14 +19,14 @@ export type AdminCreateAccountRequest = z.infer<
 >;
 
 export const AdminDeleteAccountRequestSchema = z.object({
-  id: NilDid,
+  id: NilDidSchema,
 });
 export type AdminDeleteAccountRequest = z.infer<
   typeof AdminDeleteAccountRequestSchema
 >;
 
 export const AdminSetSubscriptionStateRequestSchema = z.object({
-  ids: z.array(NilDid).nonempty(),
+  ids: z.array(NilDidSchema).nonempty(),
   active: z.boolean(),
 });
 export type AdminSetSubscriptionStateRequest = z.infer<
@@ -34,12 +34,12 @@ export type AdminSetSubscriptionStateRequest = z.infer<
 >;
 
 export const AdminAddQueryRequestSchema = AddQueryRequestSchema.extend({
-  owner: NilDid,
+  owner: NilDidSchema,
 });
 export type AdminAddQueryRequest = z.infer<typeof AdminAddQueryRequestSchema>;
 
 export const AdminAddSchemaRequestSchema = AddSchemaRequestSchema.extend({
-  owner: NilDid,
+  owner: NilDidSchema,
 });
 export type AdminAddSchemaRequest = z.infer<typeof AdminAddSchemaRequestSchema>;
 

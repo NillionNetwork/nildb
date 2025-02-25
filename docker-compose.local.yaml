@@ -9,7 +9,6 @@ services:
       - APP_DB_NAME_DATA=datablocks_data
       - APP_DB_NAME_PRIMARY=datablocks
       - APP_DB_URI=mongodb://node-ucct-db:27017
-      - APP_ENV=testnet
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
@@ -31,7 +30,6 @@ services:
       - APP_DB_NAME_DATA=datablocks_data
       - APP_DB_NAME_PRIMARY=datablocks
       - APP_DB_URI=mongodb://node-cr35-db:27017
-      - APP_ENV=testnet
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NODE_SECRET_KEY=05cee0065bdd080a26310bd201e90075b7739aa97253cb35c351e1df1e3ebeec
@@ -53,7 +51,6 @@ services:
       - APP_DB_NAME_DATA=datablocks_data
       - APP_DB_NAME_PRIMARY=datablocks
       - APP_DB_URI=mongodb://node-dglk-db:27017
-      - APP_ENV=testnet
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NODE_SECRET_KEY=1fa6a7620d08b5249f59f13219bd045b2440f512fb80c306d81d78a106a2eb8d
