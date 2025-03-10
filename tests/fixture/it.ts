@@ -1,6 +1,6 @@
 import * as vitest from "vitest";
 import type { App } from "#/app";
-import type { AppBindings } from "#/env";
+import type { AppBindingsWithNilcomm } from "#/env";
 import {
   type QueryFixture,
   type SchemaFixture,
@@ -16,7 +16,7 @@ import type {
 type FixtureContext = {
   id: string;
   app: App;
-  bindings: AppBindings;
+  bindings: AppBindingsWithNilcomm;
   root: TestRootUserClient;
   admin: TestAdminUserClient;
   organization: TestOrganizationUserClient;
