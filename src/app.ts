@@ -24,7 +24,9 @@ import { buildSystemRouter } from "./system/system.router";
 
 export type App = Hono<AppEnv>;
 
-export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
+export async function buildApp(
+  bindings: AppBindings,
+): Promise<{ app: App; metrics: Hono }> {
   const app = new Hono<AppEnv>();
   const metricsApp = new Hono();
 
@@ -65,7 +67,7 @@ export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
   buildDataRouter(app, bindings);
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.NILCOMM)) {
-    buildNilCommRouter(app, bindings);
+    await buildNilCommRouter(app, bindings);
   }
 
   return { app, metrics: metricsApp };

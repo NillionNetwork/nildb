@@ -73,9 +73,19 @@ export class Identity {
     return expected === address;
   }
 
-  static didFromPk(pkAsHex: string): NilDid {
-    const pubKeyBytes = Buffer.from(pkAsHex, "hex");
+  static didFromPkHex(pk: string): NilDid {
+    const pubKeyBytes = Buffer.from(pk, "hex");
     const sha256Hash = sha256(pubKeyBytes);
+    const ripemd160Hash = ripemd160(sha256Hash);
+
+    const prefix = "nillion";
+    const address = bech32.encode(prefix, bech32.toWords(ripemd160Hash));
+
+    return NilDidSchema.parse(`did:nil:${address}`);
+  }
+
+  static didFromPkBytes(pk: Uint8Array): NilDid {
+    const sha256Hash = sha256(pk);
     const ripemd160Hash = ripemd160(sha256Hash);
 
     const prefix = "nillion";

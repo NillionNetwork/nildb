@@ -1,7 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Command } from "commander";
 import dotenv from "dotenv";
-import { Option as O } from "effect";
 import { mongoMigrateUp } from "#/common/mongo";
 import packageJson from "../package.json";
 import { buildApp } from "./app";
@@ -34,7 +33,7 @@ async function main() {
     await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
   }
 
-  const { app, metrics } = buildApp(bindings);
+  const { app, metrics } = await buildApp(bindings);
 
   const appServer = serve(
     {
@@ -72,9 +71,9 @@ async function main() {
         bindings.db.client.close(),
       ];
 
-      if (O.isSome(bindings.mq)) {
-        promises.push(bindings.mq.value.channel.close());
-        promises.push(bindings.mq.value.connection.close());
+      if (bindings.mq) {
+        promises.push(bindings.mq.channel.close());
+        promises.push(bindings.mq.connection.close());
       }
 
       await Promise.all(promises);

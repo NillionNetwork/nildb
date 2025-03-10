@@ -1,6 +1,5 @@
 import * as amqp from "amqplib";
 import type { JWTPayload } from "did-jwt";
-import { Option as O } from "effect";
 import type { Context } from "hono";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
@@ -37,7 +36,8 @@ export const EnvVarsSchema = z.object({
   dbUri: z.string().startsWith("mongodb"),
   enabledFeatures: z.array(z.string()).default([]),
   logLevel: z.enum(["debug", "info", "warn", "error"]),
-  nodeSecretKey: z.string().min(PRIVATE_KEY_LENGTH),
+  nilcommPublicKey: z.string().length(PUBLIC_KEY_LENGTH).optional(),
+  nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.string().url(),
   metricsPort: z.number().int().positive(),
   mqUri: z.string().optional(),
@@ -56,13 +56,24 @@ export type AppBindings = {
     accounts: Cache<NilDid, AccountDocument>;
   };
   log: Logger;
-  mq: O.Option<{
+  mq?: {
     connection: amqp.Connection;
     channel: amqp.Channel;
-  }>;
+  };
   node: {
     endpoint: string;
     identity: Identity;
+  };
+};
+
+/**
+ * Use this variant when the nilcomm feature is enabled
+ */
+export type AppBindingsWithNilcomm = Omit<AppBindings, "mq" | "config"> & {
+  config: Required<AppBindings["config"]>;
+  mq: {
+    connection: amqp.Connection;
+    channel: amqp.Channel;
   };
 };
 
@@ -77,6 +88,7 @@ declare global {
       APP_LOG_LEVEL: string;
       APP_METRICS_PORT: number;
       APP_MQ_URI: string;
+      APP_NILCOMM_PUBLIC_KEY?: string;
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;
       APP_PORT: number;
@@ -103,6 +115,7 @@ export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
           ? process.env.APP_ENABLED_FEATURES.split(",")
           : [],
         logLevel: process.env.APP_LOG_LEVEL,
+        nilcommPublicKey: process.env.APP_NILCOMM_PUBLIC_KEY,
         nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
         nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
         metricsPort: Number(process.env.APP_METRICS_PORT),
@@ -110,7 +123,7 @@ export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
         webPort: Number(process.env.APP_PORT),
       });
 
-  let mq: AppBindings["mq"] = O.none();
+  let mq: AppBindingsWithNilcomm["mq"] | undefined = undefined;
   if (hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILCOMM)) {
     if (!config.mqUri) {
       throw new TypeError(
@@ -119,10 +132,10 @@ export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
     }
     const connection = await amqp.connect(config.mqUri);
     const channel = await connection.createChannel();
-    mq = O.some({
+    mq = {
       connection,
       channel,
-    });
+    };
   }
 
   const node = {

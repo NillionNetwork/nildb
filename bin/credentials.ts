@@ -51,7 +51,7 @@ async function main(): Promise<void> {
 
   if (options.nodePublicKey) {
     const nodePk = options.nodePublicKey;
-    const nodeDid = Identity.didFromPk(nodePk);
+    const nodeDid = Identity.didFromPkHex(nodePk);
     const jwt = await identity.createJwt({ aud: nodeDid });
 
     result.client.jwt = jwt;
