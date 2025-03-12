@@ -4,7 +4,11 @@ import { describe } from "vitest";
 import { ExchangeName, QueueName, RoutingKey } from "#/common/amqp";
 import { uuidFromBytes, uuidToBytes } from "#/common/shares";
 import type { DataDocument } from "#/data/data.repository";
-import { teardownMqObjects } from "./fixture/amqp-teardown";
+import {
+  NILCOMM_COMMIT_REVEAL_QUERY_ID,
+  NILCOMM_COMMIT_REVEAL_SCHEMA_ID,
+} from "#/nilcomm/nilcomm.types";
+import { bindQueues, purgeQueues } from "./fixture/amqp";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("nilcomm.test.ts", () => {
@@ -20,18 +24,7 @@ describe("nilcomm.test.ts", () => {
   beforeAll(async (ctx) => {
     const connection = await amqp.connect(ctx.bindings.config.mqUri);
     channel = await connection.createChannel();
-
-    await channel.bindQueue(
-      QueueName.nilCommEventSecretStored,
-      ExchangeName.Events,
-      RoutingKey.eventDappSecretStored,
-    );
-
-    await channel.bindQueue(
-      QueueName.nilCommEventQueryExecutionCompleted,
-      ExchangeName.Events,
-      RoutingKey.eventDappQueryExecutionCompleted,
-    );
+    await bindQueues(channel);
 
     pubKey = Array.from(
       Buffer.from(ctx.bindings.config.nilcommPublicKey!, "hex"),
@@ -39,14 +32,8 @@ describe("nilcomm.test.ts", () => {
   });
 
   afterAll(async (_ctx) => {
-    await teardownMqObjects(channel);
+    await purgeQueues(channel);
   });
-
-  // nilcomm schema and query ids are fixed
-  const nilCommSchemaId = new UUID("a6c3680d-dd3e-4060-9793-c3cd6d5f683b");
-  const nilCommCommitRevealQueryId = new UUID(
-    "2cd3f20f-05e5-40df-96f4-e1b0a8800081",
-  );
 
   it("handles store secret command", async ({ expect }) => {
     const payload = {
@@ -91,7 +78,7 @@ describe("nilcomm.test.ts", () => {
     const promise = new Promise<void>((resolve, reject) => {
       setTimeout(() => reject(), 5000);
       bindings.db.data
-        .collection<DataDocument>(nilCommSchemaId.toString())
+        .collection<DataDocument>(NILCOMM_COMMIT_REVEAL_SCHEMA_ID.toString())
         .findOne({
           _id: storeId,
         })
@@ -109,7 +96,7 @@ describe("nilcomm.test.ts", () => {
     const payload = {
       owner_pubkey: pubKey,
       mapping_id: uuidToBytes(queryMappingId),
-      query_id: uuidToBytes(nilCommCommitRevealQueryId),
+      query_id: uuidToBytes(NILCOMM_COMMIT_REVEAL_QUERY_ID),
       variables: [Array.from(storeId.buffer)],
     };
 

@@ -3,6 +3,14 @@ import { z } from "zod";
 import { Identity } from "#/common/identity";
 import { EncryptedShare, uuidFromBytes, uuidToBytes } from "#/common/shares";
 
+// nilcomm schema and query ids are fixed
+export const NILCOMM_COMMIT_REVEAL_SCHEMA_ID = new UUID(
+  "a6c3680d-dd3e-4060-9793-c3cd6d5f683b",
+);
+export const NILCOMM_COMMIT_REVEAL_QUERY_ID = new UUID(
+  "2cd3f20f-05e5-40df-96f4-e1b0a8800081",
+);
+
 /**
  * Schema for validating and transforming arrays of numbers (0-255) into Uint8Array
  */
