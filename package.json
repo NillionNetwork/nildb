@@ -32,6 +32,7 @@
     "did-jwt": "^8.0.8",
     "did-resolver": "^4.1.0",
     "dotenv": "^16.4.7",
+    "eciesjs": "^0.4.14",
     "effect": "^3.12.9",
     "hono": "^4.6.20",
     "http-status-codes": "^2.3.0",

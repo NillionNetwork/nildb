@@ -1,11 +1,12 @@
+import { decrypt } from "eciesjs";
 import { UUID } from "mongodb";
 
 export class EncryptedShare {
   constructor(public inner: Uint8Array) {}
 
-  decrypt(_secretKey: string): Share {
-    console.warn("EncryptedShare.decrypt is currently a no op");
-    return new Share(this.inner);
+  decrypt(secretKey: string): Share {
+    const pt = decrypt(secretKey, this.inner);
+    return new Share(pt);
   }
 
   static from(value: Uint8Array): EncryptedShare {
