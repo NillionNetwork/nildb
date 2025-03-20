@@ -16,7 +16,7 @@ components:
             owner:
               description: The decentralised identifier (DID) of the owning organization
               type: string
-              example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
+              example: 'did:nil:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
             schema:
               description: The starting schema collection for this query's aggregation pipeline
               type: string

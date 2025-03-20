@@ -1,0 +1,22 @@
+{
+  "_id": "2cd3f20f-05e5-40df-96f4-e1b0a8800081",
+  "name": "commit-reveal.query.json",
+  "schema": "a6c3680d-dd3e-4060-9793-c3cd6d5f683b",
+  "variables": {
+    "ids": {
+      "type": "array",
+      "description": "The list of share ids to return",
+      "items": {
+        "type": "string",
+        "format": "uuid",
+        "description": "A unique identifier for a share"
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    }
+  },
+  "pipeline": [
+    { "$match": { "_id": { "$in": [] } } },
+    { "$project": { "share": 1 } }
+  ]
+}

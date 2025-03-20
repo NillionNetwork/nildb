@@ -6,7 +6,6 @@ import { PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH } from "#/env";
 const Args = z.object({
   secretKey: z.string().length(PRIVATE_KEY_LENGTH).optional(),
   nodePublicKey: z.string().length(PUBLIC_KEY_LENGTH).optional(),
-  mainnet: z.boolean(),
 });
 type Args = z.infer<typeof Args>;
 
@@ -34,16 +33,10 @@ async function main(): Promise<void> {
       "-n, --node-public-key <key>",
       "The node's hex-encoded public key. Required for JWT generation.",
     )
-    .option(
-      "-m --mainnet",
-      "Generate mainnet DIDs (defaults to testnet if not specified)",
-      false,
-    )
     .version("0.0.1");
 
   program.parse(process.argv);
   const options = Args.parse(program.opts<Args>());
-  process.env.APP_ENV = options.mainnet ? "mainnet" : "testnet";
 
   const result: Partial<Output> = {};
 
@@ -58,7 +51,7 @@ async function main(): Promise<void> {
 
   if (options.nodePublicKey) {
     const nodePk = options.nodePublicKey;
-    const nodeDid = Identity.didFromPk(nodePk);
+    const nodeDid = Identity.didFromPkHex(nodePk);
     const jwt = await identity.createJwt({ aud: nodeDid });
 
     result.client.jwt = jwt;

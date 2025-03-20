@@ -3,7 +3,7 @@ import { Resolver } from "did-resolver";
 import type { MiddlewareHandler, Next } from "hono";
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import type { AccountType } from "#/admin/admin.types";
-import { NilDid, buildNilMethodResolver } from "#/common/nil-did";
+import { NilDidSchema, buildNilMethodResolver } from "#/common/nil-did";
 import { PathsV1 } from "#/common/paths";
 import type { AppBindings, AppContext } from "#/env";
 
@@ -61,7 +61,7 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       }
 
       // should be a cache hit because the resolver primes the cache else it fails
-      const account = c.env.cache.accounts.get(NilDid.parse(payload.iss));
+      const account = c.env.cache.accounts.get(NilDidSchema.parse(payload.iss));
       if (!account) {
         c.env.log.debug("Expected account not in cache: %s", payload.iss);
         return c.text(

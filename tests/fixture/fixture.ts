@@ -9,9 +9,11 @@ import { buildApp } from "#/app";
 import { Identity } from "#/common/identity";
 import { mongoMigrateUp } from "#/common/mongo";
 import {
-  type AppBindings,
+  type AppBindingsWithNilcomm,
   type AppEnv,
   EnvVarsSchema,
+  FeatureFlag,
+  hasFeatureFlag,
   loadBindings,
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
@@ -24,7 +26,7 @@ import {
 export type TestFixture = {
   id: string;
   app: Hono<AppEnv>;
-  bindings: AppBindings;
+  bindings: AppBindingsWithNilcomm;
   root: TestRootUserClient;
   admin: TestAdminUserClient;
   organization: TestOrganizationUserClient;
@@ -34,6 +36,8 @@ export async function buildFixture(
   opts: {
     schema?: SchemaFixture;
     query?: QueryFixture;
+    keepDbs?: boolean;
+    enableNilcomm?: boolean;
   } = {},
 ): Promise<TestFixture> {
   dotenv.config({ path: ".env.test" });
@@ -47,18 +51,29 @@ export async function buildFixture(
     dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
     dbNameData: process.env.APP_DB_NAME_DATA,
     dbUri: process.env.APP_DB_URI,
-    env: process.env.APP_ENV,
+    enabledFeatures: process.env.APP_ENABLED_FEATURES
+      ? process.env.APP_ENABLED_FEATURES.split(",")
+      : [],
     logLevel: process.env.APP_LOG_LEVEL,
+    mqUri: process.env.APP_MQ_URI,
+    nilcommPublicKey: process.env.APP_NILCOMM_PUBLIC_KEY,
     nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
     metricsPort: Number(process.env.APP_METRICS_PORT),
     webPort: Number(process.env.APP_PORT),
   });
 
-  const bindings = await loadBindings(config);
-  await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
+  if (opts.enableNilcomm) {
+    config.enabledFeatures.push("nilcomm");
+  }
 
-  const { app } = buildApp(bindings);
+  const bindings = (await loadBindings(config)) as AppBindingsWithNilcomm;
+
+  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
+    await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
+  }
+
+  const { app } = await buildApp(bindings);
 
   const node = {
     identity: Identity.fromSk(bindings.config.nodeSecretKey),
@@ -83,23 +98,53 @@ export async function buildFixture(
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  const createAdminResponse = await root.createAccount({
-    did: admin._options.identity.did,
-    publicKey: admin._options.identity.pk,
-    name: faker.person.fullName(),
-    type: "admin",
-  });
-  expect(createAdminResponse.ok).toBeTruthy();
+  bindings.log.info("Creating admin account...");
+  try {
+    const createAdminResponse = await root.createAccount({
+      did: admin._options.identity.did,
+      publicKey: admin._options.identity.pk,
+      name: faker.person.fullName(),
+      type: "admin",
+    });
 
-  console.error("before create org request");
-  const createOrgResponse = await admin.createAccount({
-    did: organization._options.identity.did,
-    publicKey: organization._options.identity.pk,
-    name: faker.person.fullName(),
-    type: "organization",
-  });
-  console.error("after create org request: ", createOrgResponse);
-  expect(createOrgResponse.ok).toBeTruthy();
+    if (!createAdminResponse.ok) {
+      const responseBody = await createAdminResponse.text();
+      console.error("Admin creation failed:", {
+        status: createAdminResponse.status,
+        body: responseBody,
+      });
+    }
+
+    expect(createAdminResponse.ok).toBeTruthy();
+    bindings.log.info("Admin account created successfully");
+  } catch (error) {
+    bindings.log.error("Error creating admin account:", error);
+    throw error;
+  }
+
+  bindings.log.info("Creating organization account...");
+  try {
+    const createOrgResponse = await admin.createAccount({
+      did: organization._options.identity.did,
+      publicKey: organization._options.identity.pk,
+      name: faker.person.fullName(),
+      type: "organization",
+    });
+
+    if (!createOrgResponse.ok) {
+      const responseBody = await createOrgResponse.text();
+      console.error("Organization creation failed:", {
+        status: createOrgResponse.status,
+        body: responseBody,
+      });
+    }
+
+    expect(createOrgResponse.ok).toBeTruthy();
+    console.log("Organization account created successfully");
+  } catch (error) {
+    console.error("Error creating organization account:", error);
+    throw error;
+  }
 
   if (opts.schema) {
     await registerSchemaAndQuery({
@@ -134,26 +179,57 @@ export async function registerSchemaAndQuery(opts: {
 }): Promise<void> {
   const { organization, schema, query } = opts;
 
-  schema.id = new UUID();
-  const response = await organization.addSchema({
-    _id: schema.id,
-    name: schema.name,
-    schema: schema.schema,
-  });
-
-  expect(response.status).toBe(StatusCodes.CREATED);
-
-  if (query) {
-    query.id = new UUID();
-    query.schema = schema.id;
-    const response = await organization.addQuery({
-      _id: query.id,
-      name: query.name,
-      schema: query.schema,
-      variables: query.variables,
-      pipeline: query.pipeline,
+  try {
+    console.log("Registering schema...");
+    schema.id = new UUID();
+    const response = await organization.addSchema({
+      _id: schema.id,
+      name: schema.name,
+      schema: schema.schema,
     });
 
+    if (response.status !== StatusCodes.CREATED) {
+      const responseBody = await response.text();
+      console.error("Schema registration failed:", {
+        status: response.status,
+        body: responseBody,
+      });
+    }
+
     expect(response.status).toBe(StatusCodes.CREATED);
+    console.log(
+      "Schema registered successfully with ID:",
+      schema.id.toString(),
+    );
+
+    if (query) {
+      console.log("Registering query...");
+      query.id = new UUID();
+      query.schema = schema.id;
+      const queryResponse = await organization.addQuery({
+        _id: query.id,
+        name: query.name,
+        schema: query.schema,
+        variables: query.variables,
+        pipeline: query.pipeline,
+      });
+
+      if (queryResponse.status !== StatusCodes.CREATED) {
+        const responseBody = await queryResponse.text();
+        console.error("Query registration failed:", {
+          status: queryResponse.status,
+          body: responseBody,
+        });
+      }
+
+      expect(queryResponse.status).toBe(StatusCodes.CREATED);
+      console.log(
+        "Query registered successfully with ID:",
+        query.id.toString(),
+      );
+    }
+  } catch (error) {
+    console.error("Error registering schema or query:", error);
+    throw error;
   }
 }

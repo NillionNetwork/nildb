@@ -9,17 +9,25 @@ import { buildDataRouter } from "#/data/data.router";
 import { corsMiddleware } from "#/middleware/cors.middleware";
 import { useLoggerMiddleware } from "#/middleware/logger.middleware";
 import { useSubscriptionCheckMiddleware } from "#/middleware/subscription.middleware";
+import { buildNilCommRouter } from "#/nilcomm/nilcomm.router";
 import { buildQueriesRouter } from "#/queries/queries.router";
 import { buildSchemasRouter } from "#/schemas/schemas.router";
 import { createOpenApiRouter } from "./docs/docs.router";
-import type { AppBindings, AppEnv } from "./env";
+import {
+  type AppBindings,
+  type AppEnv,
+  FeatureFlag,
+  hasFeatureFlag,
+} from "./env";
 import { useAuthMiddleware } from "./middleware/auth.middleware";
 import { useMaintenanceMiddleware } from "./middleware/maintenance.middleware";
 import { buildSystemRouter } from "./system/system.router";
 
 export type App = Hono<AppEnv>;
 
-export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
+export async function buildApp(
+  bindings: AppBindings,
+): Promise<{ app: App; metrics: Hono }> {
   const app = new Hono<AppEnv>();
   const metricsApp = new Hono();
 
@@ -35,7 +43,12 @@ export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
   });
 
   buildSystemRouter(app, bindings);
-  createOpenApiRouter(app, bindings);
+
+  if (
+    hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.OPENAPI_DOCS)
+  ) {
+    createOpenApiRouter(app, bindings);
+  }
 
   app.use(useLoggerMiddleware(bindings.log));
   app.use(useMaintenanceMiddleware(bindings));
@@ -54,6 +67,10 @@ export function buildApp(bindings: AppBindings): { app: App; metrics: Hono } {
 
   buildQueriesRouter(app, bindings);
   buildDataRouter(app, bindings);
+
+  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.NILCOMM)) {
+    await buildNilCommRouter(app, bindings);
+  }
 
   return { app, metrics: metricsApp };
 }

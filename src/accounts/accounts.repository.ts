@@ -18,7 +18,6 @@ import type {
 
 export function toOrganizationAccountDocument(
   data: RegisterAccountRequest,
-  env: "mainnet" | "testnet",
 ): OrganizationAccountDocument {
   const { did, publicKey, name } = data;
   const now = new Date();
@@ -32,8 +31,7 @@ export function toOrganizationAccountDocument(
     name,
     subscription: {
       start: now,
-      // testnet subscriptions default to active for 365 days
-      end: env === "testnet" ? advance(now, 365) : now,
+      end: advance(now, 365),
       txHash: "",
     },
     schemas: [],

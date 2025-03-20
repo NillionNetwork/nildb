@@ -1,6 +1,6 @@
 import * as vitest from "vitest";
 import type { App } from "#/app";
-import type { AppBindings } from "#/env";
+import type { AppBindingsWithNilcomm } from "#/env";
 import {
   type QueryFixture,
   type SchemaFixture,
@@ -16,7 +16,7 @@ import type {
 type FixtureContext = {
   id: string;
   app: App;
-  bindings: AppBindings;
+  bindings: AppBindingsWithNilcomm;
   root: TestRootUserClient;
   admin: TestAdminUserClient;
   organization: TestOrganizationUserClient;
@@ -33,6 +33,7 @@ export function createTestFixtureExtension(
     schema?: SchemaFixture;
     query?: QueryFixture;
     keepDbs?: boolean;
+    enableNilcomm?: boolean;
   } = {},
 ): TestFixtureExtension {
   let fixture: TestFixture | null = null;
@@ -79,18 +80,22 @@ export function createTestFixtureExtension(
   const afterAll = (fn: (ctx: FixtureContext) => Promise<void>) =>
     vitest.afterAll(async () => {
       if (!fixture) throw new Error("Fixture not initialized");
+      const { bindings } = fixture;
+      const { config, db } = bindings;
 
       if (!opts.keepDbs) {
-        const { bindings } = fixture;
-        const { config, db } = bindings;
-
         await db.client.db(config.dbNamePrimary).dropDatabase();
         await db.client.db(config.dbNameData).dropDatabase();
-        await db.client.close(true);
+      }
+      await db.client.close(true);
+
+      if (bindings.mq) {
+        await bindings.mq.channel.close();
+        await bindings.mq.connection.close();
       }
 
       await fn(fixture);
     });
 
-  return { it, beforeAll, afterAll };
+  return { beforeAll, afterAll, it };
 }

@@ -47,7 +47,6 @@ services:
       - APP_DB_NAME_DATA=datablocks_data
       - APP_DB_NAME_PRIMARY=datablocks
       - APP_DB_URI=mongodb://node-xxxx-db:27017
-      - APP_ENV=testnet
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e

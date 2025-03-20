@@ -9,15 +9,12 @@ import { z } from "zod";
 import * as AccountsRepository from "#/accounts/accounts.repository";
 import type { AppBindings } from "#/env";
 
-export const NilDidRegex = /^did:nil:(mainnet|testnet):nillion1[a-z0-9]{38}$/;
-export const NilDid = z.custom<NilDid>((data) => NilDidRegex.test(data), {
-  message:
-    "Invalid NilDid format. Must match did:nil:(mainnet|testnet):nillion1[38 chars]",
+export const NilDidRegex = /^did:nil:nillion1[a-z0-9]{38}$/;
+export const NilDidSchema = z.custom<NilDid>((data) => NilDidRegex.test(data), {
+  message: "Invalid NilDid format. Must match did:nil:nillion1[38 chars]",
 });
-export type NilDid = MainnetNilDid | TestnetNilDid;
 export type NilChainAddress = `nillion1${string}`;
-type MainnetNilDid = `did:nil:mainnet:${NilChainAddress}`;
-type TestnetNilDid = `did:nil:testnet:${NilChainAddress}`;
+export type NilDid = `did:nil:${NilChainAddress}`;
 
 export function buildNilMethodResolver(bindings: AppBindings): Resolvable {
   const resolve = async (

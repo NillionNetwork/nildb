@@ -3,7 +3,7 @@ components:
     DID:
       type: string
       description: Decentralized Identifier (DID) of the node
-      example: 'did:nil:testnet:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
+      example: 'did:nil:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
     AboutNode:
       type: object
       required:

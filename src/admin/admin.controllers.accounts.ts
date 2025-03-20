@@ -4,7 +4,7 @@ import { z } from "zod";
 import * as AccountService from "#/accounts/accounts.services";
 import type { App } from "#/app";
 import { handleTaggedErrors } from "#/common/handler";
-import { NilDid } from "#/common/nil-did";
+import { NilDidSchema } from "#/common/nil-did";
 import { PathsV1 } from "#/common/paths";
 import { paramsValidator, payloadValidator } from "#/common/zod-utils";
 import * as AdminService from "./admin.services";
@@ -20,8 +20,6 @@ export function create(app: App): void {
     payloadValidator(AdminCreateAccountRequestSchema),
     async (c) => {
       const payload = c.req.valid("json");
-
-      console.error("after create org request");
 
       return pipe(
         AccountService.createAccount(c.env, payload),
@@ -83,7 +81,7 @@ export function getSubscriptionState(app: App): void {
     PathsV1.admin.accounts.subscriptionByDid,
     paramsValidator(
       z.object({
-        did: NilDid,
+        did: NilDidSchema,
       }),
     ),
     async (c) => {
