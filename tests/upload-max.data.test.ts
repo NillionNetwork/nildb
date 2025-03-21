@@ -46,7 +46,7 @@ describe("upload.max.data.test", () => {
 
     const result = await expectErrorResponse(response);
     expect(result.errors).toContain(
-      "key=data, reason=Length must be non zero and lte 10000",
+      'Length must be non zero and lte 10000 at "data"',
     );
   });
 

@@ -53,9 +53,7 @@ describe("schema data deletion", () => {
     });
 
     const result = await expectErrorResponse(response);
-    expect(result.errors).toContain(
-      "key=filter, reason=Filter cannot be empty",
-    );
+    expect(result.errors).toContain('Filter cannot be empty at "filter"');
   });
 
   it("can remove a single match", async ({

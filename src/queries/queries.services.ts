@@ -12,7 +12,6 @@ import {
 } from "#/common/errors";
 import type { NilDid } from "#/common/nil-did";
 import { validateData } from "#/common/validator";
-import { flattenZodError } from "#/common/zod-utils";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import * as OrganizationRepository from "#/organizations/organizations.repository";
@@ -217,8 +216,10 @@ function parsePrimitiveVariable(
     return E.succeed(result.data);
   }
 
-  const issues = flattenZodError(result.error);
-  const error = new DataValidationError({ issues, cause: null });
+  const error = new DataValidationError({
+    issues: [result.error],
+    cause: null,
+  });
   return E.fail(error);
 }
 
