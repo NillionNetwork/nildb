@@ -1,10 +1,9 @@
-import { DidSchema } from "@nillion/nuc";
-import * as didJwt from "did-jwt";
-import { Resolver } from "did-resolver";
+import { Command, NucTokenEnvelopeSchema } from "@nillion/nuc";
+import { Effect as E, pipe } from "effect";
 import type { MiddlewareHandler, Next } from "hono";
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
+import * as AccountsRepository from "#/accounts/accounts.repository";
 import type { AccountType } from "#/admin/admin.types";
-import { buildNilMethodResolver } from "#/common/did-resolver";
 import { PathsV1 } from "#/common/paths";
 import type { AppBindings, AppContext } from "#/env";
 
@@ -30,9 +29,7 @@ export function isPublicPath(reqPath: string, reqMethod: string): boolean {
 }
 
 export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
-  const resolver = new Resolver({
-    nil: buildNilMethodResolver(bindings).resolve,
-  });
+  const { log } = bindings;
 
   return async (c: AppContext, next: Next) => {
     try {
@@ -41,7 +38,7 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       }
 
       const authHeader = c.req.header("Authorization") ?? "";
-      const [scheme, token] = authHeader.split(" ");
+      const [scheme, tokenString] = authHeader.split(" ");
       if (scheme.toLowerCase() !== "bearer") {
         return c.text(
           getReasonPhrase(StatusCodes.UNAUTHORIZED),
@@ -49,31 +46,48 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
         );
       }
 
-      const { payload } = await didJwt.verifyJWT(token, {
-        audience: bindings.node.keypair.toDidString(),
-        resolver,
-      });
+      const nucEnvelopeParseResult =
+        NucTokenEnvelopeSchema.safeParse(tokenString);
+      if (!nucEnvelopeParseResult.success) {
+        log.debug("Failed to parse nuc envelope: %s", tokenString);
+        return c.text(
+          getReasonPhrase(StatusCodes.UNAUTHORIZED),
+          StatusCodes.UNAUTHORIZED,
+        );
+      }
+      const envelope = nucEnvelopeParseResult.data;
+      // throws on invalid signature
+      envelope.validateSignatures();
 
-      if (!payload) {
+      const { token } = envelope.token;
+      // TODO: attenuation enforcement to follow
+      const isNilDbCommand = token.command.isAttenuationOf(
+        new Command(["nil", "db"]),
+      );
+
+      if (!token || !isNilDbCommand) {
         return c.text(
           getReasonPhrase(StatusCodes.UNAUTHORIZED),
           StatusCodes.UNAUTHORIZED,
         );
       }
 
-      // should be a cache hit because the resolver primes the cache else it fails
-      const issuerDid = DidSchema.parse(payload.iss);
-      const account = c.env.cache.accounts.get(issuerDid.toString());
+      const subject = token.subject.toString();
+      const account = await pipe(
+        AccountsRepository.findByIdWithCache(bindings, subject),
+        E.catchAll((_e) => E.succeed(null)),
+        E.runPromise,
+      );
 
       if (!account) {
-        c.env.log.debug("Expected account not in cache: %s", payload.iss);
+        c.env.log.debug("Unknown account: %s", subject);
         return c.text(
-          getReasonPhrase(StatusCodes.INTERNAL_SERVER_ERROR),
-          StatusCodes.INTERNAL_SERVER_ERROR,
+          getReasonPhrase(StatusCodes.UNAUTHORIZED),
+          StatusCodes.UNAUTHORIZED,
         );
       }
 
-      c.set("jwt", payload);
+      c.set("envelope", envelope);
       c.set("account", account);
 
       return next();
