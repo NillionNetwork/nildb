@@ -1,6 +1,5 @@
 import { UUID } from "mongodb";
 import { z } from "zod";
-import { Identity } from "#/common/identity";
 import { EncryptedShare, uuidFromBytes, uuidToBytes } from "#/common/shares";
 
 // nilcomm schema and query ids are fixed
@@ -25,7 +24,8 @@ export const DappCommandStoreSecretSchema = z
     share: BytesArraySchema,
   })
   .transform((d) => {
-    const ownerPk = Identity.didFromPkBytes(d.owner_pubkey);
+    // nilcomm supports multiple chains, and so we don't use a did:nil which is nilchain specific
+    const ownerPk = Buffer.from(d.owner_pubkey).toString("hex");
     const mappingId = uuidFromBytes(d.mapping_id);
     const share = EncryptedShare.from(d.share);
 
@@ -72,7 +72,8 @@ export const DappCommandStartQueryExecutionSchema = z
     variables: z.array(BytesArraySchema),
   })
   .transform((d) => {
-    const ownerPk = Identity.didFromPkBytes(d.owner_pubkey);
+    // nilcomm supports multiple chains, and so we don't use a did:nil which is nilchain specific
+    const ownerPk = Buffer.from(d.owner_pubkey).toString("hex");
     const mappingId = uuidFromBytes(d.mapping_id);
     const queryId = uuidFromBytes(d.query_id);
     const variables = d.variables.map(uuidFromBytes);

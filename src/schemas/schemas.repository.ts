@@ -25,13 +25,12 @@ import {
   checkPrimaryCollectionExists,
   isMongoError,
 } from "#/common/mongo";
-import type { NilDid } from "#/common/nil-did";
-import type { CoercibleMap } from "#/common/types";
+import type { CoercibleMap, Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { SchemaMetadata } from "#/schemas/schemas.types";
 
 export type SchemaDocument = DocumentBase & {
-  owner: NilDid;
+  owner: Did;
   name: string;
   schema: Record<string, unknown>;
 };

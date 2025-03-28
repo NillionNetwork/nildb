@@ -10,7 +10,7 @@ import {
   type DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import type { NilDid } from "#/common/nil-did";
+import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import * as SystemRepository from "./system.repository";
 import type { MaintenanceWindow } from "./system.types";
@@ -18,7 +18,7 @@ import type { MaintenanceWindow } from "./system.types";
 export type AboutNode = {
   started: Date;
   build: BuildInfo;
-  did: NilDid;
+  did: Did;
   publicKey: string;
   url: string;
   maintenance?: MaintenanceWindow;
@@ -39,8 +39,8 @@ export function getNodeInfo(
   const nodeInfo: AboutNode = {
     started,
     build: getBuildInfo(bindings),
-    did: bindings.node.identity.did,
-    publicKey: bindings.node.identity.pk,
+    did: bindings.node.keypair.toDidString(),
+    publicKey: bindings.node.keypair.publicKey("hex"),
     url: bindings.node.endpoint,
   };
 

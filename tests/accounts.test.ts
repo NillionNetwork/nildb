@@ -1,8 +1,9 @@
 import { faker } from "@faker-js/faker";
+import { Keypair } from "@nillion/nuc-ts";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
-import { Identity } from "#/common/identity";
+import type { AccountDocument } from "#/admin/admin.types";
 import { CollectionName } from "#/common/mongo";
 import { expectSuccessResponse } from "./fixture/assertions";
 import { createTestFixtureExtension } from "./fixture/it";
@@ -14,10 +15,11 @@ describe("account management", () => {
   afterAll(async (_ctx) => {});
 
   it("root can create an admin account", async ({ expect, bindings, root }) => {
-    const admin = Identity.new();
+    const keypair = Keypair.generate();
+    const did = keypair.toDidString();
+
     const response = await root.createAccount({
-      did: admin.did,
-      publicKey: admin.pk,
+      did,
       name: faker.person.fullName(),
       type: "admin",
     });
@@ -25,8 +27,8 @@ describe("account management", () => {
     expect(response.status).toBe(StatusCodes.CREATED);
 
     const document = await bindings.db.primary
-      .collection(CollectionName.Accounts)
-      .findOne({ did: admin.did });
+      .collection<AccountDocument>(CollectionName.Accounts)
+      .findOne({ _id: did });
     expect(document).toBeDefined;
   });
 
@@ -35,10 +37,11 @@ describe("account management", () => {
     bindings,
     admin,
   }) => {
-    const organization = Identity.new();
+    const keypair = Keypair.generate();
+    const did = keypair.toDidString();
+
     const response = await admin.createAccount({
-      did: organization.did,
-      publicKey: organization.pk,
+      did,
       name: faker.company.name(),
       type: "organization",
     });
@@ -46,8 +49,8 @@ describe("account management", () => {
     expect(response.status).toBe(StatusCodes.CREATED);
 
     const document = await bindings.db.primary
-      .collection(CollectionName.Accounts)
-      .findOne({ did: organization.did });
+      .collection<AccountDocument>(CollectionName.Accounts)
+      .findOne({ _id: did });
     expect(document).toBeDefined;
   });
 
@@ -65,22 +68,24 @@ describe("account management", () => {
   });
 
   it("an organization can self register", async ({ app, bindings, expect }) => {
+    const keypair = Keypair.generate();
+    const did = keypair.toDidString();
+
     const newOrganization = new TestOrganizationUserClient({
       app,
-      identity: Identity.new(),
+      keypair,
       node: bindings.node,
     });
 
     const response = await newOrganization.register({
-      did: newOrganization.did,
-      publicKey: newOrganization.publicKey,
+      did,
       name: faker.company.name(),
     });
 
     expect(response.status).toBe(StatusCodes.CREATED);
 
     const document = await bindings.db.primary
-      .collection(CollectionName.Accounts)
+      .collection<AccountDocument>(CollectionName.Accounts)
       .findOne({ did: newOrganization.did });
     expect(document).toBeDefined;
   });
@@ -89,10 +94,11 @@ describe("account management", () => {
     expect,
     organization,
   }) => {
-    const newPublicKey = Identity.new().pk;
+    const keypair = Keypair.generate();
+    const updatedPublicKey = keypair.publicKey("hex");
     const response = await organization.updateAccount({
       did: organization.did,
-      publicKey: newPublicKey,
+      publicKey: updatedPublicKey,
     });
     expect(response.status).toBe(StatusCodes.OK);
 
@@ -102,7 +108,7 @@ describe("account management", () => {
     expect(data.data).toMatchObject({
       _id: organization.did,
       _type: "organization",
-      publicKey: newPublicKey,
+      publicKey: updatedPublicKey,
     });
   });
 

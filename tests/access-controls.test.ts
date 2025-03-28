@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
+import { Keypair } from "@nillion/nuc-ts";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
-import { Identity } from "#/common/identity";
 import { PathsV1 } from "#/common/paths";
 import { createUuidDto } from "#/common/types";
 import queryJson from "./data/simple.query.json";
@@ -30,11 +30,12 @@ describe("account access controls", () => {
     organization,
     expect,
   }) => {
+    const keypair = Keypair.generate();
     const response = await organization.request(PathsV1.admin.accounts.root, {
       method: "POST",
       body: {
         did: organization.did,
-        publicKey: organization.publicKey,
+        publicKey: keypair.publicKey("hex"),
         name: faker.person.fullName(),
         type: "admin",
       },
@@ -73,13 +74,12 @@ describe("restrict cross organization operations", () => {
 
     organizationB = new TestOrganizationUserClient({
       app: app,
-      identity: Identity.new(),
+      keypair: Keypair.generate(),
       node: bindings.node,
     });
 
     await organizationB.register({
       did: organizationB.did,
-      publicKey: organizationB.publicKey,
       name: faker.company.name(),
     });
   });

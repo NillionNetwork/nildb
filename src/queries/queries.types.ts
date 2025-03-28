@@ -1,7 +1,7 @@
+import type { DidString } from "@nillion/nuc-ts";
 import type { UUID } from "mongodb";
 import { z } from "zod";
 import type { DocumentBase } from "#/common/mongo";
-import type { NilDid } from "#/common/nil-did";
 import { Uuid } from "#/common/types";
 
 /**
@@ -59,7 +59,7 @@ export type QueryArrayVariable = {
 };
 
 export type QueryDocument = DocumentBase & {
-  owner: NilDid;
+  owner: DidString;
   name: string;
   // the query's starting collection
   schema: UUID;

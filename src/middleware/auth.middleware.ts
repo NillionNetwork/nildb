@@ -1,9 +1,10 @@
+import { DidSchema } from "@nillion/nuc-ts";
 import * as didJwt from "did-jwt";
 import { Resolver } from "did-resolver";
 import type { MiddlewareHandler, Next } from "hono";
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import type { AccountType } from "#/admin/admin.types";
-import { NilDidSchema, buildNilMethodResolver } from "#/common/nil-did";
+import { buildNilMethodResolver } from "#/common/did-resolver";
 import { PathsV1 } from "#/common/paths";
 import type { AppBindings, AppContext } from "#/env";
 
@@ -49,7 +50,7 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       }
 
       const { payload } = await didJwt.verifyJWT(token, {
-        audience: bindings.node.identity.did,
+        audience: bindings.node.keypair.toDidString(),
         resolver,
       });
 
@@ -61,7 +62,9 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
       }
 
       // should be a cache hit because the resolver primes the cache else it fails
-      const account = c.env.cache.accounts.get(NilDidSchema.parse(payload.iss));
+      const issuerDid = DidSchema.parse(payload.iss);
+      const account = c.env.cache.accounts.get(issuerDid.toString());
+
       if (!account) {
         c.env.log.debug("Expected account not in cache: %s", payload.iss);
         return c.text(

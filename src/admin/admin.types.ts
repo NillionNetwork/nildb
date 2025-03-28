@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
-import { type NilDid, NilDidSchema } from "#/common/nil-did";
-import { LOG_LEVELS, PUBLIC_KEY_LENGTH } from "#/env";
+import { type Did, DidSchema } from "#/common/types";
+import { LOG_LEVELS } from "#/env";
 import { AddQueryRequestSchema } from "#/queries/queries.types";
 import { AddSchemaRequestSchema } from "#/schemas/schemas.types";
 
@@ -9,8 +9,7 @@ import { AddSchemaRequestSchema } from "#/schemas/schemas.types";
  * Controllers types
  */
 export const AdminCreateAccountRequestSchema = z.object({
-  did: NilDidSchema,
-  publicKey: z.string().length(PUBLIC_KEY_LENGTH),
+  did: DidSchema,
   name: z.string(),
   type: z.enum(["admin", "organization"]),
 });
@@ -19,14 +18,14 @@ export type AdminCreateAccountRequest = z.infer<
 >;
 
 export const AdminDeleteAccountRequestSchema = z.object({
-  id: NilDidSchema,
+  id: DidSchema,
 });
 export type AdminDeleteAccountRequest = z.infer<
   typeof AdminDeleteAccountRequestSchema
 >;
 
 export const AdminSetSubscriptionStateRequestSchema = z.object({
-  did: NilDidSchema,
+  did: DidSchema,
   start: z.coerce.date().optional(),
   end: z.coerce.date().optional(),
   txHash: z.string().optional(),
@@ -36,12 +35,12 @@ export type AdminSetSubscriptionStateRequest = z.infer<
 >;
 
 export const AdminAddQueryRequestSchema = AddQueryRequestSchema.extend({
-  owner: NilDidSchema,
+  owner: DidSchema,
 });
 export type AdminAddQueryRequest = z.infer<typeof AdminAddQueryRequestSchema>;
 
 export const AdminAddSchemaRequestSchema = AddSchemaRequestSchema.extend({
-  owner: NilDidSchema,
+  owner: DidSchema,
 });
 export type AdminAddSchemaRequest = z.infer<typeof AdminAddSchemaRequestSchema>;
 
@@ -94,16 +93,14 @@ export type AccountDocument =
 export type AccountType = "root" | "admin" | "organization";
 
 export type RootAccountDocument = {
-  _id: NilDid;
+  _id: Did;
   _type: "root";
-  publicKey: string;
 };
 
 export type AdminAccountDocument = {
-  _id: NilDid;
+  _id: Did;
   _type: "admin";
   _created: Date;
   _updated: Date;
-  publicKey: string;
   name: string;
 };

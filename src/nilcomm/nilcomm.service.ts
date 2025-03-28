@@ -9,8 +9,8 @@ import {
   DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import { Identity } from "#/common/identity";
 import { CollectionName } from "#/common/mongo";
+import { DidSchema } from "#/common/types";
 import * as DataService from "#/data/data.services";
 import type { AppBindingsWithNilcomm } from "#/env";
 import type {
@@ -89,8 +89,10 @@ export function processDappStartQueryExecution(
   const { log } = ctx;
   const queryId = payload.queryId;
 
+  // TODO: Helper method / class?
+  const nilcommPk = DidSchema.parse(`did:nil:${payload.ownerPk}`);
   return pipe(
-    AccountService.find(ctx, payload.ownerPk),
+    AccountService.find(ctx, nilcommPk),
     E.flatMap((account) => QueryService.findQueries(ctx, account._id)),
     E.flatMap((queries) => {
       const query = queries.find((q) => q._id.equals(queryId));
@@ -135,8 +137,8 @@ export async function ensureNilcommAccount(
 ): Promise<void> {
   const { log } = ctx;
 
-  const publicKey = ctx.config.nilcommPublicKey;
-  const did = Identity.didFromPkHex(publicKey);
+  // TODO: Helper method / class?
+  const did = DidSchema.parse(`did:nil:${ctx.config.nilcommPublicKey}`);
 
   return pipe(
     AccountService.find(ctx, did),
@@ -147,7 +149,6 @@ export async function ensureNilcommAccount(
       log.info("Nilcomm account not found");
       const registerRequest = RegisterAccountRequestSchema.parse({
         did,
-        publicKey,
         name: "nilcomm",
       });
 
@@ -157,10 +158,16 @@ export async function ensureNilcommAccount(
       return pipe(
         AccountService.createAccount(ctx, registerRequest),
         E.flatMap(() =>
-          SchemaService.addSchema(ctx, { ...schemaRequest, owner: did }),
+          SchemaService.addSchema(ctx, {
+            ...schemaRequest,
+            owner: did,
+          }),
         ),
         E.flatMap(() =>
-          QueryService.addQuery(ctx, { ...queryRequest, owner: did }),
+          QueryService.addQuery(ctx, {
+            ...queryRequest,
+            owner: did,
+          }),
         ),
         E.tap(() => {
           log.info(

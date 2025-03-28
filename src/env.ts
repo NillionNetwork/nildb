@@ -1,3 +1,4 @@
+import { Keypair } from "@nillion/nuc-ts";
 import * as amqp from "amqplib";
 import type { JWTPayload } from "did-jwt";
 import type { Context } from "hono";
@@ -6,9 +7,8 @@ import type { Logger } from "pino";
 import { z } from "zod";
 import type { AccountDocument, RootAccountDocument } from "#/admin/admin.types";
 import { CACHE_FOREVER, Cache } from "#/common/cache";
-import { Identity } from "#/common/identity";
 import { createLogger } from "#/common/logger";
-import type { NilDid } from "#/common/nil-did";
+import type { Did } from "#/common/types";
 import { initAndCreateDbClients } from "./common/mongo";
 
 export const PRIVATE_KEY_LENGTH = 64;
@@ -54,7 +54,7 @@ export type AppBindings = {
     data: Db;
   };
   cache: {
-    accounts: Cache<NilDid, AccountDocument>;
+    accounts: Cache<Did, AccountDocument>;
   };
   log: Logger;
   mq?: {
@@ -63,7 +63,7 @@ export type AppBindings = {
   };
   node: {
     endpoint: string;
-    identity: Identity;
+    keypair: Keypair;
   };
 };
 
@@ -139,19 +139,20 @@ export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
     };
   }
 
+  const keypair = Keypair.from(config.nodeSecretKey);
+
   const node = {
-    identity: Identity.fromSk(config.nodeSecretKey),
+    keypair,
     endpoint: config.nodePublicEndpoint,
   };
 
   // Hydrate with non-expiring root account
-  const accounts = new Cache<NilDid, AccountDocument>();
+  const accounts = new Cache<Did, AccountDocument>();
   const rootDocument: RootAccountDocument = {
-    _id: node.identity.did,
+    _id: keypair.toDidString(),
     _type: "root",
-    publicKey: node.identity.pk,
   };
-  accounts.set(node.identity.did, rootDocument, CACHE_FOREVER);
+  accounts.set(rootDocument._id, rootDocument, CACHE_FOREVER);
 
   return {
     config,

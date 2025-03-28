@@ -5,24 +5,20 @@ import type {
   Resolvable,
 } from "did-resolver";
 import { Effect as E, pipe } from "effect";
-import { z } from "zod";
 import * as AccountsRepository from "#/accounts/accounts.repository";
+import { type Did, DidSchema } from "#/common/types";
 import type { AppBindings } from "#/env";
-
-export const NilDidRegex = /^did:nil:nillion1[a-z0-9]{38}$/;
-export const NilDidSchema = z.custom<NilDid>((data) => NilDidRegex.test(data), {
-  message: "Invalid NilDid format. Must match did:nil:nillion1[38 chars]",
-});
-export type NilChainAddress = `nillion1${string}`;
-export type NilDid = `did:nil:${NilChainAddress}`;
 
 export function buildNilMethodResolver(bindings: AppBindings): Resolvable {
   const resolve = async (
     did: string,
     _options?: DIDResolutionOptions,
   ): Promise<DIDResolutionResult> => {
-    // only supports application/did+json
-    return pipe(findDocument(bindings, did as NilDid), E.runPromise);
+    return pipe(
+      E.try(() => DidSchema.parse(did)),
+      E.flatMap((did) => findDocument(bindings, did)),
+      E.runPromise,
+    );
   };
 
   return { resolve };
@@ -30,15 +26,15 @@ export function buildNilMethodResolver(bindings: AppBindings): Resolvable {
 
 function findDocument(
   ctx: AppBindings,
-  did: NilDid,
+  did: Did,
 ): E.Effect<DIDResolutionResult> {
   return pipe(
     AccountsRepository.findByIdWithCache(ctx, did),
-    E.map((account) => ({
+    E.map((_account) => ({
       didResolutionMetadata: {
         contentType: "application/did+json",
       },
-      didDocument: createDocument(did, account.publicKey),
+      didDocument: createDocument(did),
       didDocumentMetadata: {},
     })),
     E.catchAll((_e) =>
@@ -53,14 +49,15 @@ function findDocument(
   );
 }
 
-function createDocument(did: string, publicKeyHex: string): DIDDocument {
+function createDocument(did: Did): DIDDocument {
+  const publicKeyHex = did.split(":")[2];
   return {
-    id: did,
+    id: did.toString(),
     verificationMethod: [
       {
         id: "#secp256k1",
         type: "EcdsaSecp256k1VerificationKey2019",
-        controller: did,
+        controller: did.toString(),
         publicKeyHex,
       },
     ],

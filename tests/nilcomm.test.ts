@@ -101,7 +101,7 @@ describe.skip("nilcomm.test.ts > blind auction", () => {
     // 2. Publish messages
     for (const share of shares) {
       const encryptedShare = encryptWithNodePk(
-        bindings.node.identity.pk,
+        bindings.node.keypair.publicKey("hex"),
         share.pt.toString(),
       );
 

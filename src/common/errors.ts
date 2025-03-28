@@ -2,7 +2,7 @@ import { Data } from "effect";
 import type { JsonObject } from "type-fest";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
-import type { NilDid } from "#/common/nil-did";
+import type { Did } from "#/common/types";
 
 export class DuplicateEntryError extends Data.TaggedError(
   "DuplicateEntryError",
@@ -19,7 +19,7 @@ export class ResourceAccessDeniedError extends Data.TaggedError(
 )<{
   type: string;
   id: string;
-  user: NilDid;
+  user: Did;
 }> {
   humanize(): string[] {
     return [

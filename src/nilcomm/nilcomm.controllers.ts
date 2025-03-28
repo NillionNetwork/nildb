@@ -8,7 +8,6 @@ import {
   runMessageConsume,
 } from "#/common/amqp";
 import type { AppBindingsWithNilcomm } from "#/env";
-import {} from "#/nilcomm/nilcomm.mq";
 import {
   type DappCommandStartQueryExecution,
   DappCommandStartQueryExecutionSchema,

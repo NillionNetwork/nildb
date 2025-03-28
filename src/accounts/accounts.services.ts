@@ -6,14 +6,13 @@ import type {
 } from "#/admin/admin.types";
 import { advance } from "#/common/date";
 import {
-  DataValidationError,
+  type DataValidationError,
   type DatabaseError,
   type DocumentNotFoundError,
   DuplicateEntryError,
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import { Identity } from "#/common/identity";
-import type { NilDid } from "#/common/nil-did";
+import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import * as AccountRepository from "./accounts.repository";
 import type {
@@ -24,7 +23,7 @@ import type {
 
 export function find(
   ctx: AppBindings,
-  did: NilDid,
+  did: Did,
 ): E.Effect<
   OrganizationAccountDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
@@ -43,15 +42,9 @@ export function createAccount(
   | PrimaryCollectionNotFoundError
   | DatabaseError
 > {
-  if (request.did === ctx.node.identity.did) {
-    const e = new DuplicateEntryError({ document: request });
-    return E.fail(e);
-  }
-
-  if (!Identity.isDidFromPublicKey(request.did, request.publicKey)) {
-    const e = new DataValidationError({
-      issues: ["DID not derived from public key"],
-      cause: request,
+  if (request.did === ctx.node.keypair.toDidString()) {
+    const e = new DuplicateEntryError({
+      document: { name: request.name, did: request.did },
     });
     return E.fail(e);
   }
@@ -70,7 +63,7 @@ export function createAccount(
 
 export function remove(
   ctx: AppBindings,
-  id: NilDid,
+  id: Did,
 ): E.Effect<
   void,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
@@ -98,7 +91,7 @@ export function setSubscriptionState(
 
 export function getSubscriptionState(
   ctx: AppBindings,
-  did: NilDid,
+  did: Did,
 ): E.Effect<
   AccountSubscriptionDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
@@ -108,7 +101,7 @@ export function getSubscriptionState(
 
 export function setPublicKey(
   ctx: AppBindings,
-  id: NilDid,
+  id: Did,
   publicKey: string,
 ): E.Effect<
   void,
