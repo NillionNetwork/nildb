@@ -1,0 +1,23 @@
+server:
+  bind_endpoint: 0.0.0.0:30921
+
+private_key:
+  hex: 7c5c8d3114ac2410249ca2baae7dec86ac2950a389ac44a5fdca8941b92b6c86
+
+metrics:
+  bind_endpoint: 0.0.0.0:30022
+
+payments:
+  nilchain_url: http://nilchain:30648
+
+  subscriptions:
+    renewal_threshold_seconds: 60
+    length_seconds: 120
+    dollar_cost: 1
+
+  token_price:
+    api_key: abc
+    base_url: http://172.17.0.1:59123
+
+postgres:
+  url: postgres://postgres:postgres@db:30432/postgres
