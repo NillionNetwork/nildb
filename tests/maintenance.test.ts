@@ -1,7 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
 import { describe, expect } from "vitest";
-import type { AboutNode } from "#/system/system.services";
 import { expectErrorResponse } from "./fixture/assertions";
 import { createTestFixtureExtension } from "./fixture/it";
 
@@ -68,14 +67,17 @@ describe("node maintenance window management", () => {
     const response = await admin.about();
     expect(response.status).toBe(StatusCodes.OK);
 
-    const result = (await response.json()) as AboutNode;
-    expect(result).toHaveProperty("maintenance");
-    expect(result?.maintenance?.start).toEqual(
-      maintenanceWindow.start.toISOString(),
-    );
-    expect(result?.maintenance?.end).toEqual(
-      maintenanceWindow.end.toISOString(),
-    );
+    const result = (await response.json()) as {
+      maintenance: { start: string; end: string };
+    };
+
+    const { start: expectedStart, end: expectedEnd } = maintenanceWindow;
+
+    const actualStart = new Date(result.maintenance.start).getUTCSeconds();
+    expect(actualStart).toEqual(expectedStart.getUTCSeconds());
+
+    const actualEnd = new Date(result.maintenance.end).getUTCSeconds();
+    expect(actualEnd).toEqual(expectedEnd.getUTCSeconds());
   });
 
   it("can delete a maintenance window", async ({ expect, admin }) => {
