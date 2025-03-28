@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { Keypair } from "@nillion/nuc-ts";
 import dotenv from "dotenv";
 import type { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
@@ -6,7 +7,6 @@ import { UUID } from "mongodb";
 import type { JsonObject } from "type-fest";
 import { expect } from "vitest";
 import { buildApp } from "#/app";
-import { Identity } from "#/common/identity";
 import { mongoMigrateUp } from "#/common/mongo";
 import {
   type AppBindingsWithNilcomm,
@@ -76,33 +76,30 @@ export async function buildFixture(
   const { app } = await buildApp(bindings);
 
   const node = {
-    identity: Identity.fromSk(bindings.config.nodeSecretKey),
+    keypair: Keypair.from(bindings.config.nodeSecretKey),
     endpoint: bindings.config.nodePublicEndpoint,
   };
 
   const root = new TestRootUserClient({
     app,
-    identity: Identity.fromSk(bindings.config.nodeSecretKey),
+    keypair: node.keypair,
     node,
   });
   const admin = new TestAdminUserClient({
     app,
-    identity: Identity.new(),
+    keypair: Keypair.generate(),
     node,
   });
   const organization = new TestOrganizationUserClient({
     app,
-    identity: Identity.new(),
+    keypair: Keypair.generate(),
     node,
   });
-
-  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   bindings.log.info("Creating admin account...");
   try {
     const createAdminResponse = await root.createAccount({
-      did: admin._options.identity.did,
-      publicKey: admin._options.identity.pk,
+      did: admin.keypair.toDidString(),
       name: faker.person.fullName(),
       type: "admin",
     });
@@ -125,8 +122,7 @@ export async function buildFixture(
   bindings.log.info("Creating organization account...");
   try {
     const createOrgResponse = await admin.createAccount({
-      did: organization._options.identity.did,
-      publicKey: organization._options.identity.pk,
+      did: organization.keypair.toDidString(),
       name: faker.person.fullName(),
       type: "organization",
     });

@@ -1,3 +1,4 @@
+import type { DidString, Keypair } from "@nillion/nuc-ts";
 import type {
   RegisterAccountRequest,
   SetPublicKeyRequest,
@@ -12,8 +13,7 @@ import type {
   AdminSetSubscriptionStateRequest,
 } from "#/admin/admin.types";
 import type { App } from "#/app";
-import type { Identity } from "#/common/identity";
-import type { NilDid } from "#/common/nil-did";
+import { createJwt } from "#/common/jwt";
 import { PathsBeta, PathsV1 } from "#/common/paths";
 import type { UuidDto } from "#/common/types";
 import type {
@@ -37,10 +37,10 @@ import { SystemEndpoint } from "#/system/system.router";
 
 export type TestClientOptions = {
   app: App;
-  identity: Identity;
+  keypair: Keypair;
   node: {
+    keypair: Keypair;
     endpoint: string;
-    identity: Identity;
   };
 };
 
@@ -51,17 +51,19 @@ abstract class TestClient {
     return this._options.app;
   }
 
-  get did() {
-    return this._options.identity.did;
+  get did(): DidString {
+    return this._options.keypair.toDidString();
   }
 
-  get publicKey() {
-    return this._options.identity.pk;
+  get keypair() {
+    return this._options.keypair;
   }
 
   jwt(): Promise<string> {
-    const aud = this._options.node.identity.did;
-    return this._options.identity.createJwt({ aud });
+    return createJwt(
+      { aud: this._options.node.keypair.toDidString() },
+      this.keypair,
+    );
   }
 
   async request<T>(
@@ -125,7 +127,7 @@ export class TestAdminUserClient extends TestRootUserClient {
     });
   }
 
-  async getSubscriptionState(did: NilDid): Promise<Response> {
+  async getSubscriptionState(did: DidString): Promise<Response> {
     return this.request(
       PathsV1.admin.accounts.subscriptionByDid.replace(":did", did),
     );

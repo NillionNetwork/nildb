@@ -18,7 +18,7 @@ describe("system.test.ts", () => {
 
     const result = (await response.json()) as unknown as AboutNode;
     expect(result.build.version).toBe("0.0.0");
-    expect(result.did).toBe(bindings.node.identity.did);
-    expect(result.publicKey).toBe(bindings.node.identity.pk);
+    expect(result.did).toBe(bindings.node.keypair.toDidString());
+    expect(result.publicKey).toBe(bindings.node.keypair.publicKey("hex"));
   });
 });
