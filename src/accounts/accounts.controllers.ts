@@ -77,6 +77,8 @@ export function setPublicKey(app: App): void {
     PathsV1.accounts.publicKey,
     payloadValidator(SetPublicKeyRequestSchema),
     async (c) => {
+      // TODO: this is really replace owner so (a) it might need a better name
+      //  and (b) should we to enforce a cooldown period or add additional protections?
       const payload = c.req.valid("json");
 
       return pipe(

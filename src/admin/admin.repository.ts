@@ -6,7 +6,7 @@ import {
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
-import type { NilDid } from "#/common/nil-did";
+import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type {
   AccountDocument,
@@ -17,7 +17,7 @@ import type {
 export function toAdminAccountDocument(
   data: AdminCreateAccountRequest,
 ): AdminAccountDocument {
-  const { did, publicKey, name } = data;
+  const { did, name } = data;
   const now = new Date();
 
   return {
@@ -25,14 +25,13 @@ export function toAdminAccountDocument(
     _type: "admin",
     _created: now,
     _updated: now,
-    publicKey,
     name,
   };
 }
 
 export function deleteOneById(
   ctx: AppBindings,
-  _id: NilDid,
+  _id: Did,
 ): E.Effect<
   void,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError

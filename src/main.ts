@@ -42,10 +42,10 @@ async function main() {
       port: bindings.config.webPort,
     },
     () => {
-      bindings.log.info(
-        `Node public address ${bindings.node.identity.address}`,
-      );
       bindings.log.info(`Node public endpoint ${bindings.node.endpoint}`);
+      bindings.log.info(
+        `Node identifier ${bindings.node.keypair.toDidString()}`,
+      );
       bindings.log.info(`App on :${bindings.config.webPort}`);
     },
   );

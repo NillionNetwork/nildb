@@ -7,12 +7,12 @@ import {
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
-import type { NilDid } from "#/common/nil-did";
+import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 
 export function addSchema(
   ctx: AppBindings,
-  owner: NilDid,
+  owner: Did,
   schemaId: UUID,
 ): E.Effect<
   void,
@@ -49,13 +49,13 @@ export function addSchema(
 
 export function removeSchema(
   ctx: AppBindings,
-  orgId: NilDid,
+  orgDid: Did,
   schemaId: UUID,
 ): E.Effect<
   void,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgId };
+  const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgDid };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
     $pull: { schemas: schemaId },
   };
@@ -86,7 +86,7 @@ export function removeSchema(
 
 export function addQuery(
   ctx: AppBindings,
-  orgId: NilDid,
+  orgId: Did,
   queryId: UUID,
 ): E.Effect<
   void,
@@ -123,7 +123,7 @@ export function addQuery(
 
 export function removeQuery(
   ctx: AppBindings,
-  orgId: NilDid,
+  orgId: Did,
   queryId: UUID,
 ): E.Effect<
   void,

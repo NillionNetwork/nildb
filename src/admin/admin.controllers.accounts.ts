@@ -4,8 +4,8 @@ import { z } from "zod";
 import * as AccountService from "#/accounts/accounts.services";
 import type { App } from "#/app";
 import { handleTaggedErrors } from "#/common/handler";
-import { NilDidSchema } from "#/common/nil-did";
 import { PathsV1 } from "#/common/paths";
+import { DidSchema } from "#/common/types";
 import { paramsValidator, payloadValidator } from "#/common/zod-utils";
 import * as AdminService from "./admin.services";
 import {
@@ -81,7 +81,7 @@ export function getSubscriptionState(app: App): void {
     PathsV1.admin.accounts.subscriptionByDid,
     paramsValidator(
       z.object({
-        did: NilDidSchema,
+        did: DidSchema,
       }),
     ),
     async (c) => {

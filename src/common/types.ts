@@ -26,3 +26,11 @@ export const CoercibleMapSchema = z.intersection(
   }),
 );
 export type CoercibleMap = z.infer<typeof CoercibleMapSchema>;
+
+const DID_EXPRESSION = /^did:nil:([a-zA-Z0-9]{66})$/;
+
+export type Did = `did:nil:${string}`;
+export const DidSchema = z
+  .string()
+  .regex(DID_EXPRESSION)
+  .transform((d) => d as Did);

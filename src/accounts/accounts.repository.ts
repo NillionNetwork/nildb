@@ -8,7 +8,7 @@ import {
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
-import type { NilDid } from "#/common/nil-did";
+import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type {
   AccountSubscriptionDocument,
@@ -19,7 +19,7 @@ import type {
 export function toOrganizationAccountDocument(
   data: RegisterAccountRequest,
 ): OrganizationAccountDocument {
-  const { did, publicKey, name } = data;
+  const { did, name } = data;
   const now = new Date();
 
   return {
@@ -27,7 +27,6 @@ export function toOrganizationAccountDocument(
     _type: "organization",
     _created: now,
     _updated: now,
-    publicKey,
     name,
     subscription: {
       start: now,
@@ -60,7 +59,7 @@ export function insert(
 
 export function findByIdWithCache(
   ctx: AppBindings,
-  _id: NilDid,
+  _id: Did,
 ): E.Effect<
   AccountDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
@@ -98,7 +97,7 @@ export function findByIdWithCache(
 
 export function findOneOrganization(
   ctx: AppBindings,
-  _id: NilDid,
+  _id: Did,
 ): E.Effect<
   OrganizationAccountDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
@@ -134,7 +133,7 @@ export function findOneOrganization(
 
 export function deleteOneById(
   ctx: AppBindings,
-  _id: NilDid,
+  _id: Did,
 ): E.Effect<
   void,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
@@ -172,7 +171,7 @@ export function deleteOneById(
 
 export function setSubscriptionState(
   ctx: AppBindings,
-  did: NilDid,
+  did: Did,
   start: Date,
   end: Date,
   txHash: string,
@@ -220,7 +219,7 @@ export function setSubscriptionState(
 
 export function getSubscriptionState(
   ctx: AppBindings,
-  _id: NilDid,
+  _id: Did,
 ): E.Effect<
   AccountSubscriptionDocument,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
@@ -242,7 +241,7 @@ export function getSubscriptionState(
 
 export function setPublicKey(
   ctx: AppBindings,
-  _id: NilDid,
+  _id: Did,
   publicKey: string,
 ): E.Effect<
   UpdateResult,

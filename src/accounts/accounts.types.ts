@@ -1,7 +1,7 @@
 import type { UUID } from "mongodb";
 import { z } from "zod";
 import type { ApiResponse } from "#/common/handler";
-import { type NilDid, NilDidSchema } from "#/common/nil-did";
+import { type Did, DidSchema } from "#/common/types";
 import { PUBLIC_KEY_LENGTH } from "#/env";
 
 /**
@@ -10,24 +10,23 @@ import { PUBLIC_KEY_LENGTH } from "#/env";
 export type GetAccountResponse = ApiResponse<OrganizationAccountDocument>;
 
 export const SetPublicKeyRequestSchema = z.object({
-  did: NilDidSchema,
+  did: DidSchema,
   publicKey: z.string().length(PUBLIC_KEY_LENGTH),
 });
 export type SetPublicKeyRequest = z.infer<typeof SetPublicKeyRequestSchema>;
-export type SetPublicKeyResponse = ApiResponse<NilDid>;
+export type SetPublicKeyResponse = ApiResponse<Did>;
 
 export const RegisterAccountRequestSchema = z.object({
-  did: NilDidSchema,
-  publicKey: z.string().length(PUBLIC_KEY_LENGTH),
+  did: DidSchema,
   name: z.string(),
 });
 export type RegisterAccountRequest = z.infer<
   typeof RegisterAccountRequestSchema
 >;
-export type RegisterAccountResponse = ApiResponse<NilDid>;
+export type RegisterAccountResponse = ApiResponse<Did>;
 
 export const RemoveAccountRequestSchema = z.object({
-  id: NilDidSchema,
+  id: DidSchema,
 });
 export type RemoveAccountRequest = z.infer<typeof RemoveAccountRequestSchema>;
 export type RemoveAccountResponse = ApiResponse<string>;
@@ -43,11 +42,10 @@ export type AccountSubscriptionDocument = {
  * Repository types
  */
 export type OrganizationAccountDocument = {
-  _id: NilDid;
+  _id: Did;
   _type: "organization";
   _created: Date;
   _updated: Date;
-  publicKey: string;
   name: string;
   subscription: {
     start: Date;

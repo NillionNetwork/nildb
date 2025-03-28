@@ -10,7 +10,7 @@ import type {
   InvalidIndexOptionsError,
   PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import type { NilDid } from "#/common/nil-did";
+import type { Did } from "#/common/types";
 import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
@@ -31,7 +31,7 @@ export function getOrganizationSchemas(
 
 export function addSchema(
   ctx: AppBindings,
-  request: AddSchemaRequest & { owner: NilDid },
+  request: AddSchemaRequest & { owner: Did },
 ): E.Effect<
   void,
   | DocumentNotFoundError
