@@ -1,0 +1,40 @@
+services:
+  mongo:
+    image: mongo:8
+    ports:
+      - "30017:27017"
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "30672:5672"  # main server
+      - "30673:15672" # management ui
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "30432:5432"
+
+  nilchain:
+    image: ghcr.io/nillionnetwork/nilchaind:v0.2.5
+    volumes:
+      - ./nilchaind:/opt/nilchaind-configs
+    entrypoint: ["/bin/sh", "-c", "cp -r /opt/nilchaind-configs /opt/nilchaind && nilchaind start --home /opt/nilchaind"]
+    ports:
+      - "30648:26648" # JSON RPC
+      - "30649:26649" # gRPC
+      - "30650:26650" # REST
+
+  nilauth:
+    image: public.ecr.aws/k5d9x2g2/nilauth:380c888dfaf7caac6ba4beb9de89f1c42d587c08
+    depends_on:
+      - postgres
+      - nilchain
+    volumes:
+      - ./nilauth/config.test.yaml:/opt/config.yaml
+    command: ["--config-file", "/opt/config.yaml"]
+    ports:
+      - "30921:30921" # main server
+      - "30022:39022" # metrics server

@@ -30,6 +30,7 @@
     "commander": "^13.1.0",
     "compression": "^1.7.5",
     "cors": "^2.8.5",
+    "docker-compose": "^1.2.0",
     "dotenv": "^16.4.7",
     "eciesjs": "^0.4.14",
     "effect": "^3.12.9",
