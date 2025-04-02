@@ -1,4 +1,10 @@
-import type { DidString, Keypair } from "@nillion/nuc";
+import {
+  Command,
+  Did,
+  type DidString,
+  type Keypair,
+  NucTokenBuilder,
+} from "@nillion/nuc";
 import type {
   RegisterAccountRequest,
   SetPublicKeyRequest,
@@ -13,7 +19,6 @@ import type {
   AdminSetSubscriptionStateRequest,
 } from "#/admin/admin.types";
 import type { App } from "#/app";
-import { createJwt } from "#/common/jwt";
 import { PathsBeta, PathsV1 } from "#/common/paths";
 import type { UuidDto } from "#/common/types";
 import type {
@@ -59,11 +64,18 @@ abstract class TestClient {
     return this._options.keypair;
   }
 
-  jwt(): Promise<string> {
-    return createJwt(
-      { aud: this._options.node.keypair.toDidString() },
-      this.keypair,
-    );
+  nuc(): string {
+    // TODO: skip payments this iteration for simplicity
+    const audience = Did.fromHex(this._options.node.keypair.publicKey("hex"));
+    const subject = Did.fromHex(this.keypair.publicKey("hex"));
+
+    const token = NucTokenBuilder.invocation({})
+      .command(new Command(["nil", "db"]))
+      .audience(audience)
+      .subject(subject)
+      .build(this.keypair.privateKey());
+
+    return token;
   }
 
   async request<T>(
@@ -74,7 +86,7 @@ abstract class TestClient {
     } = {},
   ): Promise<Response> {
     const { method = "GET", body } = options;
-    const token = await this.jwt();
+    const token = this.nuc();
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,

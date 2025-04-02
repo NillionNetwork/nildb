@@ -1,6 +1,5 @@
-import { Keypair } from "@nillion/nuc";
+import { Keypair, type NucTokenEnvelope } from "@nillion/nuc";
 import * as amqp from "amqplib";
-import type { JWTPayload } from "did-jwt";
 import type { Context } from "hono";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
@@ -101,7 +100,7 @@ declare global {
 // health, about). However, narrowing the type here to avoid use in those edge cases would cascade to
 // the majority of routes, which require auth. So the risk is accepted here to avoid the type complexity cascade.
 export type AppVariables = {
-  jwt: JWTPayload;
+  envelope: NucTokenEnvelope;
   account: AccountDocument;
 };
 
