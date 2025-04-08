@@ -5,11 +5,11 @@ import {
 } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { MiddlewareHandler, Next } from "hono";
-import { getReasonPhrase, StatusCodes } from "http-status-codes";
-import * as AccountsRepository from "#/accounts/accounts.repository";
-import type { AppBindings, AppContext } from "#/env";
+import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import { z } from "zod";
+import * as AccountsRepository from "#/accounts/accounts.repository";
 import type { Path } from "#/common/paths";
+import type { AppBindings, AppContext } from "#/env";
 
 export function verifyNucAndLoadSubject(
   bindings: AppBindings,

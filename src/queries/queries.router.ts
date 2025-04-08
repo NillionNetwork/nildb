@@ -1,5 +1,5 @@
-import * as QueriesController from "#/queries/queries.controllers";
 import type { ControllerOptions } from "#/common/types";
+import * as QueriesController from "#/queries/queries.controllers";
 
 export function buildQueriesRouter(options: ControllerOptions): void {
   QueriesController.add(options);

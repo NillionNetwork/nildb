@@ -1,9 +1,9 @@
+import type { ControllerOptions } from "#/common/types";
 import * as AdminAccountsControllers from "./admin.controllers.accounts";
 import * as AdminDataControllers from "./admin.controllers.data";
 import * as AdminQueriesControllers from "./admin.controllers.queries";
 import * as AdminSchemasControllers from "./admin.controllers.schemas";
 import * as AdminSystemControllers from "./admin.controllers.system";
-import type { ControllerOptions } from "#/common/types";
 
 export function buildAdminRouter(options: ControllerOptions): void {
   AdminAccountsControllers.create(options);

@@ -1,6 +1,6 @@
 import {} from "http-status-codes";
-import * as SchemasController from "#/schemas/schemas.controllers";
 import type { ControllerOptions } from "#/common/types";
+import * as SchemasController from "#/schemas/schemas.controllers";
 
 export function buildSchemasRouter(options: ControllerOptions): void {
   SchemasController.list(options);

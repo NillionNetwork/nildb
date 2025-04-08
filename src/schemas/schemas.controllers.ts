@@ -1,27 +1,27 @@
+import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { CreateSchemaIndexRequestSchema } from "#/admin/admin.types";
 import { handleTaggedErrors } from "#/common/handler";
+import { NucCmd } from "#/common/nuc-cmd-tree";
 import { enforceSchemaOwnership } from "#/common/ownership";
 import { PathsBeta, PathsV1 } from "#/common/paths";
 import { type ControllerOptions, Uuid } from "#/common/types";
 import { paramsValidator, payloadValidator } from "#/common/zod-utils";
+import type { AppContext } from "#/env";
+import {
+  type EnforceCapabilityOptions,
+  RoleSchema,
+  enforceCapability,
+  verifyNucAndLoadSubject,
+} from "#/middleware/capability.middleware";
 import * as SchemasService from "./schemas.services";
 import {
   AddSchemaRequestSchema,
   DeleteSchemaRequestSchema,
 } from "./schemas.types";
-import {
-  enforceCapability,
-  type EnforceCapabilityOptions,
-  RoleSchema,
-  verifyNucAndLoadSubject,
-} from "#/middleware/capability.middleware";
-import type { AppContext } from "#/env";
-import type { NucToken } from "@nillion/nuc";
-import { NucCmd } from "#/common/nuc-cmd-tree";
 
 export function list(options: ControllerOptions): void {
   const { app, bindings } = options;

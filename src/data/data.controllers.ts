@@ -1,9 +1,18 @@
+import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { handleTaggedErrors } from "#/common/handler";
+import { NucCmd } from "#/common/nuc-cmd-tree";
 import { enforceSchemaOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
+import type { ControllerOptions } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
+import type { AppContext } from "#/env";
+import {
+  RoleSchema,
+  enforceCapability,
+  verifyNucAndLoadSubject,
+} from "#/middleware/capability.middleware";
 import * as DataService from "./data.services";
 import {
   DeleteDataRequestSchema,
@@ -13,15 +22,6 @@ import {
   UpdateDataRequestSchema,
   UploadDataRequestSchema,
 } from "./data.types";
-import type { ControllerOptions } from "#/common/types";
-import {
-  enforceCapability,
-  RoleSchema,
-  verifyNucAndLoadSubject,
-} from "#/middleware/capability.middleware";
-import type { NucToken } from "@nillion/nuc";
-import type { AppContext } from "#/env";
-import { NucCmd } from "#/common/nuc-cmd-tree";
 
 export function remove(options: ControllerOptions): void {
   const { app, bindings } = options;

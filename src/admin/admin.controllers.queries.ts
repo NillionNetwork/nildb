@@ -1,23 +1,23 @@
+import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { handleTaggedErrors } from "#/common/handler";
+import { NucCmd } from "#/common/nuc-cmd-tree";
 import { PathsV1 } from "#/common/paths";
+import type { ControllerOptions } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
+import type { AppContext } from "#/env";
+import {
+  RoleSchema,
+  enforceCapability,
+  verifyNucAndLoadSubject,
+} from "#/middleware/capability.middleware";
 import * as QueriesService from "#/queries/queries.services";
 import {
   DeleteQueryRequestSchema,
   ExecuteQueryRequestSchema,
 } from "#/queries/queries.types";
 import { AdminAddQueryRequestSchema } from "./admin.types";
-import type { ControllerOptions } from "#/common/types";
-import { NucCmd } from "#/common/nuc-cmd-tree";
-import {
-  enforceCapability,
-  RoleSchema,
-  verifyNucAndLoadSubject,
-} from "#/middleware/capability.middleware";
-import type { AppContext } from "#/env";
-import type { NucToken } from "@nillion/nuc";
 
 export function add(options: ControllerOptions): void {
   const { app, bindings } = options;

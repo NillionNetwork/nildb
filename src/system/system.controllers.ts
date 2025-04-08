@@ -1,8 +1,8 @@
 import { Effect as E, pipe } from "effect";
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
+import type { ControllerOptions } from "#/common/types";
 import { SystemEndpoint } from "#/system/system.router";
 import * as SystemService from "./system.services";
-import type { ControllerOptions } from "#/common/types";
 
 export function aboutNode(options: ControllerOptions): void {
   const { app } = options;

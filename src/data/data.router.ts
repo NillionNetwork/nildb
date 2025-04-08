@@ -1,6 +1,6 @@
 import {} from "http-status-codes";
-import * as DataController from "./data.controllers";
 import type { ControllerOptions } from "#/common/types";
+import * as DataController from "./data.controllers";
 
 export function buildDataRouter(options: ControllerOptions): void {
   DataController.remove(options);

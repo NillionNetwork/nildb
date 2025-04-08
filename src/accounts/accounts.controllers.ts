@@ -1,23 +1,23 @@
+import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { handleTaggedErrors } from "#/common/handler";
+import { NucCmd } from "#/common/nuc-cmd-tree";
 import { PathsV1 } from "#/common/paths";
+import type { ControllerOptions } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
+import type { AppContext } from "#/env";
+import {
+  RoleSchema,
+  enforceCapability,
+  verifyNucAndLoadSubject,
+} from "#/middleware/capability.middleware";
 import * as AccountService from "./accounts.services";
 import {
   RegisterAccountRequestSchema,
   RemoveAccountRequestSchema,
   SetPublicKeyRequestSchema,
 } from "./accounts.types";
-import type { ControllerOptions } from "#/common/types";
-import {
-  enforceCapability,
-  RoleSchema,
-  verifyNucAndLoadSubject,
-} from "#/middleware/capability.middleware";
-import type { AppContext } from "#/env";
-import type { NucToken } from "@nillion/nuc";
-import { NucCmd } from "#/common/nuc-cmd-tree";
 
 export function get(options: ControllerOptions): void {
   const { app, bindings } = options;

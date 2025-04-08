@@ -1,5 +1,5 @@
-import * as SystemController from "./system.controllers";
 import type { ControllerOptions } from "#/common/types";
+import * as SystemController from "./system.controllers";
 
 export const SystemEndpoint = {
   About: "/about",

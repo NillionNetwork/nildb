@@ -1,8 +1,8 @@
 import { assertMqObjects } from "#/common/amqp";
+import type { ControllerOptions } from "#/common/types";
 import type { AppBindingsWithNilcomm } from "#/env";
 import * as NilCommControllers from "#/nilcomm/nilcomm.controllers";
 import * as NilcommServices from "./nilcomm.service";
-import type { ControllerOptions } from "#/common/types";
 
 export async function buildNilCommRouter(
   options: ControllerOptions,
