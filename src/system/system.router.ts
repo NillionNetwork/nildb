@@ -1,6 +1,5 @@
-import type { App } from "#/app";
-import type { AppBindings } from "#/env";
 import * as SystemController from "./system.controllers";
+import type { ControllerOptions } from "#/common/types";
 
 export const SystemEndpoint = {
   About: "/about",
@@ -8,7 +7,7 @@ export const SystemEndpoint = {
   Metrics: "/metrics",
 } as const;
 
-export function buildSystemRouter(app: App, _bindings: AppBindings): void {
-  SystemController.aboutNode(app);
-  SystemController.healthCheck(app);
+export function buildSystemRouter(options: ControllerOptions): void {
+  SystemController.aboutNode(options);
+  SystemController.healthCheck(options);
 }

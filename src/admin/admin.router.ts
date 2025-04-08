@@ -1,53 +1,36 @@
-import { StatusCodes, getReasonPhrase } from "http-status-codes";
-import type { App } from "#/app";
-import { PathsV1 } from "#/common/paths";
-import type { AppBindings } from "#/env";
-import { isRoleAllowed } from "#/middleware/auth.middleware";
 import * as AdminAccountsControllers from "./admin.controllers.accounts";
 import * as AdminDataControllers from "./admin.controllers.data";
 import * as AdminQueriesControllers from "./admin.controllers.queries";
 import * as AdminSchemasControllers from "./admin.controllers.schemas";
 import * as AdminSystemControllers from "./admin.controllers.system";
+import type { ControllerOptions } from "#/common/types";
 
-export function buildAdminRouter(app: App, _bindings: AppBindings): void {
-  app.use(
-    `${PathsV1.admin.root}/*`,
-    // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
-    async (c, next): Promise<void | Response> => {
-      return isRoleAllowed(c, ["admin", "root"])
-        ? next()
-        : c.text(
-            getReasonPhrase(StatusCodes.UNAUTHORIZED),
-            StatusCodes.UNAUTHORIZED,
-          );
-    },
-  );
+export function buildAdminRouter(options: ControllerOptions): void {
+  AdminAccountsControllers.create(options);
+  AdminAccountsControllers.remove(options);
+  AdminAccountsControllers.list(options);
+  AdminAccountsControllers.setSubscriptionState(options);
+  AdminAccountsControllers.getSubscriptionState(options);
 
-  AdminAccountsControllers.create(app);
-  AdminAccountsControllers.remove(app);
-  AdminAccountsControllers.list(app);
-  AdminAccountsControllers.setSubscriptionState(app);
-  AdminAccountsControllers.getSubscriptionState(app);
+  AdminDataControllers.remove(options);
+  AdminDataControllers.flush(options);
+  AdminDataControllers.read(options);
+  AdminDataControllers.tail(options);
+  AdminDataControllers.update(options);
+  AdminDataControllers.upload(options);
 
-  AdminDataControllers.remove(app);
-  AdminDataControllers.flush(app);
-  AdminDataControllers.read(app);
-  AdminDataControllers.tail(app);
-  AdminDataControllers.update(app);
-  AdminDataControllers.upload(app);
+  AdminQueriesControllers.add(options);
+  AdminQueriesControllers.remove(options);
+  AdminQueriesControllers.execute(options);
 
-  AdminQueriesControllers.add(app);
-  AdminQueriesControllers.remove(app);
-  AdminQueriesControllers.execute(app);
+  AdminSchemasControllers.add(options);
+  AdminSchemasControllers.remove(options);
+  AdminSchemasControllers.metadata(options);
+  AdminSchemasControllers.createIndex(options);
+  AdminSchemasControllers.dropIndex(options);
 
-  AdminSchemasControllers.add(app);
-  AdminSchemasControllers.remove(app);
-  AdminSchemasControllers.metadata(app);
-  AdminSchemasControllers.createIndex(app);
-  AdminSchemasControllers.dropIndex(app);
-
-  AdminSystemControllers.setMaintenanceWindow(app);
-  AdminSystemControllers.deleteMaintenanceWindow(app);
-  AdminSystemControllers.setLogLevel(app);
-  AdminSystemControllers.getLogLevel(app);
+  AdminSystemControllers.setMaintenanceWindow(options);
+  AdminSystemControllers.deleteMaintenanceWindow(options);
+  AdminSystemControllers.setLogLevel(options);
+  AdminSystemControllers.getLogLevel(options);
 }

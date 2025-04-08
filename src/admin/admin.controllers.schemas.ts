@@ -1,10 +1,9 @@
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import type { App } from "#/app";
 import { handleTaggedErrors } from "#/common/handler";
 import { PathsBeta, PathsV1 } from "#/common/paths";
-import { Uuid } from "#/common/types";
+import { type ControllerOptions, Uuid } from "#/common/types";
 import { paramsValidator, payloadValidator } from "#/common/zod-utils";
 import * as SchemasService from "#/schemas/schemas.services";
 import { DeleteSchemaRequestSchema } from "#/schemas/schemas.types";
@@ -12,11 +11,31 @@ import {
   AdminAddSchemaRequestSchema,
   CreateSchemaIndexRequestSchema,
 } from "./admin.types";
+import {
+  enforceCapability,
+  RoleSchema,
+  verifyNucAndLoadSubject,
+} from "#/middleware/capability.middleware";
+import { NucCmd } from "#/common/nuc-cmd-tree";
+import type { AppContext } from "#/env";
+import type { NucToken } from "@nillion/nuc";
 
-export function add(app: App): void {
+export function add(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.schemas.root;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.admin.schemas.root,
+    path,
     payloadValidator(AdminAddSchemaRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("json");
 
@@ -30,10 +49,22 @@ export function add(app: App): void {
   );
 }
 
-export function remove(app: App): void {
+export function remove(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.schemas.root;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.delete(
-    PathsV1.admin.schemas.root,
+    path,
     payloadValidator(DeleteSchemaRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("json");
 
@@ -47,14 +78,26 @@ export function remove(app: App): void {
   );
 }
 
-export function metadata(app: App): void {
+export function metadata(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsBeta.admin.schemas.byIdMeta;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.get(
-    PathsBeta.admin.schemas.byIdMeta,
+    path,
     paramsValidator(
       z.object({
         id: Uuid,
       }),
     ),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("param");
 
@@ -72,15 +115,27 @@ export function metadata(app: App): void {
   );
 }
 
-export function createIndex(app: App): void {
+export function createIndex(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsBeta.admin.schemas.byIdIndexes;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsBeta.admin.schemas.byIdIndexes,
+    path,
     payloadValidator(CreateSchemaIndexRequestSchema),
     paramsValidator(
       z.object({
         id: Uuid,
       }),
     ),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("json");
       const { id } = c.req.valid("param");
@@ -95,15 +150,27 @@ export function createIndex(app: App): void {
   );
 }
 
-export function dropIndex(app: App): void {
+export function dropIndex(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsBeta.admin.schemas.byIdIndexesByName;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.delete(
-    PathsBeta.admin.schemas.byIdIndexesByName,
+    path,
     paramsValidator(
       z.object({
         id: Uuid,
         name: z.string().min(4),
       }),
     ),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const { id, name } = c.req.valid("param");
 

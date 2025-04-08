@@ -1,6 +1,5 @@
 import { Effect as E, pipe } from "effect";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
-import type { App } from "#/app";
 import { handleTaggedErrors } from "#/common/handler";
 import { enforceSchemaOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
@@ -14,13 +13,34 @@ import {
   UpdateDataRequestSchema,
   UploadDataRequestSchema,
 } from "./data.types";
+import type { ControllerOptions } from "#/common/types";
+import {
+  enforceCapability,
+  RoleSchema,
+  verifyNucAndLoadSubject,
+} from "#/middleware/capability.middleware";
+import type { NucToken } from "@nillion/nuc";
+import type { AppContext } from "#/env";
+import { NucCmd } from "#/common/nuc-cmd-tree";
 
-export function remove(app: App): void {
+export function remove(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.data.delete;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.data,
+    roles: [RoleSchema.enum.organization],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.data.delete,
+    path,
     payloadValidator(DeleteDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
-      const account = c.var.account as OrganizationAccountDocument;
+      const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
       return pipe(
@@ -34,12 +54,24 @@ export function remove(app: App): void {
   );
 }
 
-export function flush(app: App): void {
+export function flush(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.data.flush;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.data,
+    roles: [RoleSchema.enum.organization],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.data.flush,
+    path,
     payloadValidator(FlushDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
-      const account = c.var.account as OrganizationAccountDocument;
+      const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
       return pipe(
@@ -57,12 +89,24 @@ export function flush(app: App): void {
   );
 }
 
-export function read(app: App): void {
+export function read(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.data.read;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.data,
+    roles: [RoleSchema.enum.organization],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.data.read,
+    path,
     payloadValidator(ReadDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
-      const account = c.var.account as OrganizationAccountDocument;
+      const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
       return pipe(
@@ -76,12 +120,24 @@ export function read(app: App): void {
   );
 }
 
-export function tail(app: App): void {
+export function tail(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.data.tail;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.data,
+    roles: [RoleSchema.enum.organization],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.data.tail,
+    path,
     payloadValidator(TailDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
-      const account = c.var.account as OrganizationAccountDocument;
+      const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
       return pipe(
@@ -95,12 +151,24 @@ export function tail(app: App): void {
   );
 }
 
-export function update(app: App): void {
+export function update(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.data.update;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.data,
+    roles: [RoleSchema.enum.organization],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.data.update,
+    path,
     payloadValidator(UpdateDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
-      const account = c.var.account as OrganizationAccountDocument;
+      const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
       return pipe(
@@ -118,12 +186,24 @@ export function update(app: App): void {
   );
 }
 
-export function upload(app: App): void {
+export function upload(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.data.upload;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.data,
+    roles: [RoleSchema.enum.organization],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.data.upload,
+    path,
     payloadValidator(UploadDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
-      const account = c.var.account as OrganizationAccountDocument;
+      const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
       return pipe(
