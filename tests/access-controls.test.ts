@@ -41,12 +41,12 @@ describe("account access controls", () => {
       },
     });
 
-    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+    expect(response.status).toBe(StatusCodes.FORBIDDEN);
   });
 
   it("organizations cannot list accounts", async ({ organization, expect }) => {
-    const response = await organization.app.request(PathsV1, {});
-    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+    const response = await organization.request(PathsV1.admin.accounts.root);
+    expect(response.status).toBe(StatusCodes.FORBIDDEN);
   });
 });
 

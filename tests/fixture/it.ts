@@ -13,7 +13,7 @@ import type {
   TestRootUserClient,
 } from "./test-client";
 
-type FixtureContext = {
+export type FixtureContext = {
   id: string;
   app: App;
   bindings: AppBindingsWithNilcomm;
