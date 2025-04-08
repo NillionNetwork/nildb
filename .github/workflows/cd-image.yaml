@@ -1,4 +1,4 @@
-name: CD - Publish Docker Image to ECR
+name: CD
 
 on:
   push:
@@ -64,10 +64,6 @@ jobs:
             IMAGE_TAG_VERSION=$(cat package.json | jq -r .version)
             TAGS="$TAGS -t ${ECR_REGISTRY_URL}:${IMAGE_TAG_VERSION}"
             DEPLOY_TAG="${IMAGE_TAG_VERSION}"
-          else
-            # If triggered by push to main, use latest tag
-            TAGS="$TAGS -t ${ECR_REGISTRY_URL}:latest"
-            DEPLOY_TAG="latest"
           fi
 
           docker build \
