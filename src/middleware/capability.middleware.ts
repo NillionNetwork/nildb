@@ -1,42 +1,23 @@
-import { Command, NucTokenEnvelopeSchema } from "@nillion/nuc";
+import {
+  type Command,
+  type NucToken,
+  NucTokenEnvelopeSchema,
+} from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { MiddlewareHandler, Next } from "hono";
-import { StatusCodes, getReasonPhrase } from "http-status-codes";
+import { getReasonPhrase, StatusCodes } from "http-status-codes";
 import * as AccountsRepository from "#/accounts/accounts.repository";
-import type { AccountType } from "#/admin/admin.types";
-import { PathsV1 } from "#/common/paths";
 import type { AppBindings, AppContext } from "#/env";
+import { z } from "zod";
+import type { Path } from "#/common/paths";
 
-type Routes = {
-  path: string;
-  method: "GET" | "POST" | "DELETE";
-}[];
-
-export function isPublicPath(reqPath: string, reqMethod: string): boolean {
-  // this is in the function because otherwise there are import resolution
-  // order issues and some values end up as undefined
-  const publicPaths: Routes = [
-    { path: PathsV1.system.health, method: "GET" },
-    { path: PathsV1.system.about, method: "GET" },
-    { path: PathsV1.docs, method: "GET" },
-    { path: PathsV1.accounts.root, method: "POST" },
-    { path: PathsV1.accounts.publicKey, method: "POST" },
-  ];
-
-  return publicPaths.some(({ path, method }) => {
-    return method === reqMethod && reqPath.startsWith(path);
-  });
-}
-
-export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
+export function verifyNucAndLoadSubject(
+  bindings: AppBindings,
+): MiddlewareHandler {
   const { log } = bindings;
 
   return async (c: AppContext, next: Next) => {
     try {
-      if (isPublicPath(c.req.path, c.req.method)) {
-        return next();
-      }
-
       const authHeader = c.req.header("Authorization") ?? "";
       const [scheme, tokenString] = authHeader.split(" ");
       if (scheme.toLowerCase() !== "bearer") {
@@ -56,16 +37,12 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
         );
       }
       const envelope = nucEnvelopeParseResult.data;
-      // throws on invalid signature
+      // throw on invalid signature
       envelope.validateSignatures();
 
       const { token } = envelope.token;
-      // TODO: attenuation enforcement to follow
-      const isNilDbCommand = token.command.isAttenuationOf(
-        new Command(["nil", "db"]),
-      );
 
-      if (!token || !isNilDbCommand) {
+      if (!token) {
         return c.text(
           getReasonPhrase(StatusCodes.UNAUTHORIZED),
           StatusCodes.UNAUTHORIZED,
@@ -101,21 +78,63 @@ export function useAuthMiddleware(bindings: AppBindings): MiddlewareHandler {
   };
 }
 
-export function isRoleAllowed(
-  c: AppContext,
-  permitted: AccountType[],
-): boolean {
-  const {
-    var: { account },
-    env: { log },
-  } = c;
+export const RoleSchema = z.enum(["root", "admin", "organization", "user"]);
+export type Role = z.infer<typeof RoleSchema>;
 
-  const allowed = permitted.includes(account._type);
-  if (!allowed) {
-    log.warn(
-      `Unauthorized(account=${account._id},type=${account._type},path=${c.req.path}`,
+export type EnforceCapabilityOptions = {
+  path: Path;
+  cmd: Command;
+  roles: Role[];
+  validate: (c: AppContext, token: NucToken) => boolean;
+};
+
+export function enforceCapability(
+  bindings: AppBindings,
+  options: EnforceCapabilityOptions,
+): MiddlewareHandler {
+  const { log } = bindings;
+
+  return async (c: AppContext, next) => {
+    const { token } = c.get("envelope").token;
+    const account = c.get("account");
+
+    if (c.req.path !== options.path) {
+      log.warn("Path mismatch: %s, expected: %s", c.req.path, options.path);
+    }
+
+    if (!options.roles.includes(account._type)) {
+      log.debug(
+        "Role not allowed at path: role=%s path=%s",
+        account._type,
+        options.path,
+      );
+      return c.text(
+        getReasonPhrase(StatusCodes.FORBIDDEN),
+        StatusCodes.FORBIDDEN,
+      );
+    }
+
+    const isValidCommand = options.cmd.isAttenuationOf(token.command);
+    if (!isValidCommand) {
+      log.debug(
+        "Invalid command: %s, expected: %s",
+        token.command.toString(),
+        options.cmd.toString(),
+      );
+      return c.text(
+        getReasonPhrase(StatusCodes.FORBIDDEN),
+        StatusCodes.FORBIDDEN,
+      );
+    }
+
+    if (options.validate(c, token)) {
+      return next();
+    }
+
+    log.debug("Token failed validation check: %O", options);
+    return c.text(
+      getReasonPhrase(StatusCodes.FORBIDDEN),
+      StatusCodes.FORBIDDEN,
     );
-  }
-
-  return allowed;
+  };
 }
