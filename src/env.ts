@@ -61,7 +61,7 @@ export type AppBindings = {
   };
   log: Logger;
   mq?: {
-    connection: amqp.Connection;
+    channelModel: amqp.ChannelModel;
     channel: amqp.Channel;
   };
   node: {
@@ -76,7 +76,7 @@ export type AppBindings = {
 export type AppBindingsWithNilcomm = Omit<AppBindings, "mq" | "config"> & {
   config: Required<AppBindings["config"]>;
   mq: {
-    connection: amqp.Connection;
+    channelModel: amqp.ChannelModel;
     channel: amqp.Channel;
   };
 };
@@ -122,10 +122,10 @@ export async function loadBindings(
         `The env var "APP_MQ_URI" is required when "${FeatureFlag.NILCOMM}" feature is enabled`,
       );
     }
-    const connection = await amqp.connect(config.mqUri);
-    const channel = await connection.createChannel();
+    const channelModel = await amqp.connect(config.mqUri);
+    const channel = await channelModel.createChannel();
     mq = {
-      connection,
+      channelModel,
       channel,
     };
   }

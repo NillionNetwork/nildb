@@ -91,7 +91,7 @@ export function createTestFixtureExtension(
 
       if (bindings.mq) {
         await bindings.mq.channel.close();
-        await bindings.mq.connection.close();
+        await bindings.mq.channelModel.close();
       }
 
       await fn(fixture);
