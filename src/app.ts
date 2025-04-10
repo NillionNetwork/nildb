@@ -8,7 +8,6 @@ import { buildAdminRouter } from "#/admin/admin.router";
 import { buildDataRouter } from "#/data/data.router";
 import { corsMiddleware } from "#/middleware/cors.middleware";
 import { useLoggerMiddleware } from "#/middleware/logger.middleware";
-import { useSubscriptionCheckMiddleware } from "#/middleware/subscription.middleware";
 import { buildNilCommRouter } from "#/nilcomm/nilcomm.router";
 import { buildQueriesRouter } from "#/queries/queries.router";
 import { buildSchemasRouter } from "#/schemas/schemas.router";
@@ -19,7 +18,6 @@ import {
   FeatureFlag,
   hasFeatureFlag,
 } from "./env";
-import { useAuthMiddleware } from "./middleware/auth.middleware";
 import { useMaintenanceMiddleware } from "./middleware/maintenance.middleware";
 import { buildSystemRouter } from "./system/system.router";
 
@@ -42,18 +40,16 @@ export async function buildApp(
     return next();
   });
 
-  buildSystemRouter(app, bindings);
+  buildSystemRouter({ app, bindings });
 
   if (
     hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.OPENAPI_DOCS)
   ) {
-    createOpenApiRouter(app, bindings);
+    createOpenApiRouter({ app, bindings });
   }
 
   app.use(useLoggerMiddleware(bindings.log));
   app.use(useMaintenanceMiddleware(bindings));
-  app.use(useAuthMiddleware(bindings));
-  app.use(useSubscriptionCheckMiddleware(bindings));
 
   const { printMetrics, registerMetrics } = prometheus();
   app.use("*", registerMetrics);
@@ -61,15 +57,15 @@ export async function buildApp(
 
   const limit = Temporal.Duration.from({ minutes: 5 }).total("milliseconds");
   app.use("*", timeout(limit));
-  buildAdminRouter(app, bindings);
-  buildAccountsRouter(app, bindings);
-  buildSchemasRouter(app, bindings);
+  buildAdminRouter({ app, bindings });
+  buildAccountsRouter({ app, bindings });
+  buildSchemasRouter({ app, bindings });
 
-  buildQueriesRouter(app, bindings);
-  buildDataRouter(app, bindings);
+  buildQueriesRouter({ app, bindings });
+  buildDataRouter({ app, bindings });
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.NILCOMM)) {
-    await buildNilCommRouter(app, bindings);
+    await buildNilCommRouter({ app, bindings });
   }
 
   return { app, metrics: metricsApp };

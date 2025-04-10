@@ -1,13 +1,14 @@
-import type { App } from "#/app";
 import { assertMqObjects } from "#/common/amqp";
-import type { AppBindings, AppBindingsWithNilcomm } from "#/env";
+import type { ControllerOptions } from "#/common/types";
+import type { AppBindingsWithNilcomm } from "#/env";
 import * as NilCommControllers from "#/nilcomm/nilcomm.controllers";
 import * as NilcommServices from "./nilcomm.service";
 
 export async function buildNilCommRouter(
-  _app: App,
-  bindings: AppBindings,
+  options: ControllerOptions,
 ): Promise<void> {
+  const { bindings } = options;
+
   if (!bindings.mq) {
     throw new Error("Message queue is not initialised");
   }

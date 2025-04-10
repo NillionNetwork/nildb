@@ -1,5 +1,7 @@
 import { UUID } from "mongodb";
 import { z } from "zod";
+import type { App } from "#/app";
+import type { AppBindings } from "#/env";
 
 // From node:crypto but re-exported here to avoid collisions with mongodb's UUID class
 export type UuidDto = `${string}-${string}-${string}-${string}-${string}`;
@@ -34,3 +36,8 @@ export const DidSchema = z
   .string()
   .regex(DID_EXPRESSION)
   .transform((d) => d as Did);
+
+export type ControllerOptions = {
+  app: App;
+  bindings: AppBindings;
+};

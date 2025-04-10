@@ -15,7 +15,9 @@ import { createTestFixtureExtension } from "./fixture/it";
 describe("schemas.test.ts", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
-  beforeAll(async (_ctx) => {});
+  beforeAll(async (ctx) => {
+    await ctx.organization.ensureSubscriptionActive();
+  });
   afterAll(async (_ctx) => {});
 
   it("can list schemas (expect 0)", async ({ expect, organization }) => {

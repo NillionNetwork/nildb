@@ -2,11 +2,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import refParser from "@apidevtools/json-schema-ref-parser";
 import { swaggerUI } from "@hono/swagger-ui";
-import type { App } from "#/app";
 import { PathsV1 } from "#/common/paths";
-import type { AppBindings } from "#/env";
+import type { ControllerOptions } from "#/common/types";
 
-export function createOpenApiRouter(app: App, bindings: AppBindings): void {
+export function createOpenApiRouter(options: ControllerOptions): void {
+  const { app, bindings } = options;
+
   const filename = fileURLToPath(import.meta.url);
   const srcDocsDir = path.dirname(filename);
   const openApiPath = path.join(srcDocsDir, "./base.openapi.yaml");

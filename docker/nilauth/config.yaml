@@ -8,16 +8,16 @@ metrics:
   bind_endpoint: 0.0.0.0:30022
 
 payments:
-  nilchain_url: http://nilchain:30648
+  nilchain_url: http://nilchain:26648
 
   subscriptions:
-    renewal_threshold_seconds: 60
+    renewal_threshold_seconds: 1000
     length_seconds: 120
     dollar_cost: 1
 
   token_price:
+    base_url: http://token-price-api/api/v3/simple/price
     api_key: abc
-    base_url: http://172.17.0.1:59123
 
 postgres:
-  url: postgres://postgres:postgres@db:30432/postgres
+  url: postgres://postgres:postgres@postgres:5432/postgres

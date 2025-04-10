@@ -18,19 +18,9 @@ version = "v0"
 
 [consensus]
 create_empty_blocks = true
-create_empty_blocks_interval = "0s"
-double_sign_check_height = 0
-peer_gossip_sleep_duration = "100ms"
-peer_query_maj23_sleep_duration = "2s"
-skip_timeout_commit = true
-timeout_commit = "200ms"
-timeout_precommit = "200ms"
-timeout_precommit_delta = "500ms"
-timeout_prevote = "200ms"
-timeout_prevote_delta = "500ms"
-timeout_propose = "200ms"
-timeout_propose_delta = "500ms"
-wal_file = "data/cs.wal/wal"
+create_empty_blocks_interval = "5s"
+skip_timeout_commit = false
+timeout_commit = "1s"
 
 [instrumentation]
 max_open_connections = 3

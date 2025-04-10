@@ -74,7 +74,7 @@ async function main() {
 
       if (bindings.mq) {
         promises.push(bindings.mq.channel.close());
-        promises.push(bindings.mq.connection.close());
+        promises.push(bindings.mq.channelModel.close());
       }
 
       await Promise.all(promises);

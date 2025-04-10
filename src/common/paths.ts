@@ -1,71 +1,87 @@
+import { z } from "zod";
+
+export const PathSchema = z
+  .string()
+  .startsWith("/")
+  .regex(/^(\/[a-z0-9_:.-]+)+$/i, {
+    message: "Path must follow format: /parent/child/:param/grandchild",
+  })
+  .brand<"path">();
+
+export type Path = z.infer<typeof PathSchema>;
+
 export const PathsV1 = {
   accounts: {
-    root: "/api/v1/accounts",
-    publicKey: "/api/v1/accounts/public_key",
-    subscription: "/api/v1/accounts/subscription",
+    root: PathSchema.parse("/api/v1/accounts"),
+    publicKey: PathSchema.parse("/api/v1/accounts/public_key"),
+    subscription: PathSchema.parse("/api/v1/accounts/subscription"),
   },
   admin: {
-    root: "/api/v1/admin",
+    root: PathSchema.parse("/api/v1/admin"),
     accounts: {
-      root: "/api/v1/admin/accounts",
-      subscription: "/api/v1/admin/accounts/subscription",
-      subscriptionByDid: "/api/v1/admin/accounts/subscription/:did",
+      root: PathSchema.parse("/api/v1/admin/accounts"),
+      subscription: PathSchema.parse("/api/v1/admin/accounts/subscription"),
+      subscriptionByDid: PathSchema.parse(
+        "/api/v1/admin/accounts/subscription/:did",
+      ),
     },
     data: {
-      delete: "/api/v1/admin/data/delete",
-      flush: "/api/v1/admin/data/flush",
-      read: "/api/v1/admin/data/read",
-      tail: "/api/v1/admin/data/tail",
-      update: "/api/v1/admin/data/update",
-      upload: "/api/v1/admin/data/create",
+      delete: PathSchema.parse("/api/v1/admin/data/delete"),
+      flush: PathSchema.parse("/api/v1/admin/data/flush"),
+      read: PathSchema.parse("/api/v1/admin/data/read"),
+      tail: PathSchema.parse("/api/v1/admin/data/tail"),
+      update: PathSchema.parse("/api/v1/admin/data/update"),
+      upload: PathSchema.parse("/api/v1/admin/data/create"),
     },
     queries: {
-      root: "/api/v1/admin/queries",
-      execute: "/api/v1/admin/queries/execute",
+      root: PathSchema.parse("/api/v1/admin/queries"),
+      execute: PathSchema.parse("/api/v1/admin/queries/execute"),
     },
     schemas: {
-      root: "/api/v1/admin/schemas",
+      root: PathSchema.parse("/api/v1/admin/schemas"),
     },
     system: {
-      maintenance: "/api/v1/admin/maintenance",
-      logLevel: "/api/v1/admin/log_level",
+      maintenance: PathSchema.parse("/api/v1/admin/maintenance"),
+      logLevel: PathSchema.parse("/api/v1/admin/log_level"),
     },
   },
   data: {
-    root: "/api/v1/data",
-    delete: "/api/v1/data/delete",
-    flush: "/api/v1/data/flush",
-    read: "/api/v1/data/read",
-    tail: "/api/v1/data/tail",
-    update: "/api/v1/data/update",
-    upload: "/api/v1/data/create",
+    root: PathSchema.parse("/api/v1/data"),
+    delete: PathSchema.parse("/api/v1/data/delete"),
+    flush: PathSchema.parse("/api/v1/data/flush"),
+    read: PathSchema.parse("/api/v1/data/read"),
+    tail: PathSchema.parse("/api/v1/data/tail"),
+    update: PathSchema.parse("/api/v1/data/update"),
+    upload: PathSchema.parse("/api/v1/data/create"),
   },
-  docs: "/api/v1/openapi/docs",
+  docs: PathSchema.parse("/api/v1/openapi/docs"),
   queries: {
-    root: "/api/v1/queries",
-    execute: "/api/v1/queries/execute",
+    root: PathSchema.parse("/api/v1/queries"),
+    execute: PathSchema.parse("/api/v1/queries/execute"),
   },
   schemas: {
-    root: "/api/v1/schemas",
+    root: PathSchema.parse("/api/v1/schemas"),
   },
   system: {
-    about: "/about",
-    health: "/health",
-    metrics: "/metrics",
+    about: PathSchema.parse("/about"),
+    health: PathSchema.parse("/health"),
+    metrics: PathSchema.parse("/metrics"),
   },
 } as const;
 
 export const PathsBeta = {
   admin: {
     schemas: {
-      byIdMeta: "/api/beta/admin/schemas/:id/meta",
-      byIdIndexes: "/api/beta/admin/schemas/:id/indexes",
-      byIdIndexesByName: "/api/beta/admin/schemas/:id/indexes/:name",
+      byIdMeta: PathSchema.parse("/api/beta/admin/schemas/:id/meta"),
+      byIdIndexes: PathSchema.parse("/api/beta/admin/schemas/:id/indexes"),
+      byIdIndexesByName: PathSchema.parse(
+        "/api/beta/admin/schemas/:id/indexes/:name",
+      ),
     },
   },
   schemas: {
-    byIdMeta: "/api/beta/schemas/:id/meta",
-    byIdIndexes: "/api/beta/schemas/:id/indexes",
-    byIdIndexesByName: "/api/beta/schemas/:id/indexes/:name",
+    byIdMeta: PathSchema.parse("/api/beta/schemas/:id/meta"),
+    byIdIndexes: PathSchema.parse("/api/beta/schemas/:id/indexes"),
+    byIdIndexesByName: PathSchema.parse("/api/beta/schemas/:id/indexes/:name"),
   },
 } as const;

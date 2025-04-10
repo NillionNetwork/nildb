@@ -13,7 +13,7 @@ import type {
   TestRootUserClient,
 } from "./test-client";
 
-type FixtureContext = {
+export type FixtureContext = {
   id: string;
   app: App;
   bindings: AppBindingsWithNilcomm;
@@ -91,7 +91,7 @@ export function createTestFixtureExtension(
 
       if (bindings.mq) {
         await bindings.mq.channel.close();
-        await bindings.mq.connection.close();
+        await bindings.mq.channelModel.close();
       }
 
       await fn(fixture);

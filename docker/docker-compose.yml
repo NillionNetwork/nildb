@@ -33,8 +33,15 @@ services:
       - postgres
       - nilchain
     volumes:
-      - ./nilauth/config.test.yaml:/opt/config.yaml
+      - ./nilauth/config.yaml:/opt/config.yaml
     command: ["--config-file", "/opt/config.yaml"]
     ports:
       - "30921:30921" # main server
-      - "30022:39022" # metrics server
+      - "30922:30022" # metrics server
+
+  token-price-api:
+    image: caddy:2
+    ports:
+      - "30923:80"
+    command: |
+      caddy respond --listen :80 --body '{"nillion":{"usd":1}}' --header "Content-Type: application/json" 

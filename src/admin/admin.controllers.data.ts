@@ -1,7 +1,9 @@
+import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
-import type { App } from "#/app";
 import { handleTaggedErrors } from "#/common/handler";
+import { NucCmd } from "#/common/nuc-cmd-tree";
 import { PathsV1 } from "#/common/paths";
+import type { ControllerOptions } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
 import * as DataService from "#/data/data.services";
 import {
@@ -12,11 +14,29 @@ import {
   UpdateDataRequestSchema,
   UploadDataRequestSchema,
 } from "#/data/data.types";
+import type { AppContext } from "#/env";
+import {
+  RoleSchema,
+  enforceCapability,
+  verifyNucAndLoadSubject,
+} from "#/middleware/capability.middleware";
 
-export function remove(app: App): void {
+export function remove(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.data.delete;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.admin.data.delete,
+    path,
     payloadValidator(DeleteDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("json");
 
@@ -30,10 +50,22 @@ export function remove(app: App): void {
   );
 }
 
-export function flush(app: App): void {
+export function flush(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.data.flush;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.admin.data.flush,
+    path,
     payloadValidator(FlushDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("json");
 
@@ -47,10 +79,22 @@ export function flush(app: App): void {
   );
 }
 
-export function read(app: App): void {
+export function read(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.data.read;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.admin.data.read,
+    path,
     payloadValidator(ReadDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("json");
 
@@ -64,10 +108,22 @@ export function read(app: App): void {
   );
 }
 
-export function tail(app: App): void {
+export function tail(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.data.tail;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.admin.data.tail,
+    path,
     payloadValidator(TailDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("json");
 
@@ -81,10 +137,22 @@ export function tail(app: App): void {
   );
 }
 
-export function update(app: App): void {
+export function update(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.data.update;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.admin.data.update,
+    path,
     payloadValidator(UpdateDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("json");
 
@@ -98,10 +166,22 @@ export function update(app: App): void {
   );
 }
 
-export function upload(app: App): void {
+export function upload(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.data.upload;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
   app.post(
-    PathsV1.admin.data.upload,
+    path,
     payloadValidator(UploadDataRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
     async (c) => {
       const payload = c.req.valid("json");
 
