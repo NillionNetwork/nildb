@@ -34,8 +34,12 @@ export const EnvVarsSchema = z.object({
   dbNamePrimary: z.string().min(4),
   dbNameData: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
-  enabledFeatures: z.array(z.string()).default([]),
+  enabledFeatures: z
+    .string()
+    .transform((d) => d.split(",").map((e) => e.trim())),
   logLevel: z.enum(LOG_LEVELS),
+  nilauthBaseUrl: z.string().url(),
+  nilauthPubKey: z.string().length(PUBLIC_KEY_LENGTH),
   nilcommPublicKey: z.string().length(PUBLIC_KEY_LENGTH).optional(),
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.string().url(),
@@ -86,9 +90,11 @@ declare global {
       APP_DB_URI: string;
       APP_ENABLED_FEATURES: string;
       APP_LOG_LEVEL: string;
-      APP_METRICS_PORT: number;
-      APP_MQ_URI: string;
+      APP_NILAUTH_PUBLIC_KEY: string;
+      APP_NILAUTH_BASE_URL: string;
       APP_NILCOMM_PUBLIC_KEY?: string;
+      APP_METRICS_PORT?: number;
+      APP_MQ_URI?: string;
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;
       APP_PORT: number;
@@ -104,24 +110,10 @@ export type AppVariables = {
   account: AccountDocument;
 };
 
-export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
-  const config = override
-    ? override
-    : EnvVarsSchema.parse({
-        dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
-        dbNameData: process.env.APP_DB_NAME_DATA,
-        dbUri: process.env.APP_DB_URI,
-        enabledFeatures: process.env.APP_ENABLED_FEATURES
-          ? process.env.APP_ENABLED_FEATURES.split(",")
-          : [],
-        logLevel: process.env.APP_LOG_LEVEL,
-        nilcommPublicKey: process.env.APP_NILCOMM_PUBLIC_KEY,
-        nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
-        nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
-        metricsPort: Number(process.env.APP_METRICS_PORT),
-        mqUri: process.env.APP_MQ_URI,
-        webPort: Number(process.env.APP_PORT),
-      });
+export async function loadBindings(
+  overrides: Partial<EnvVars> = {},
+): Promise<AppBindings> {
+  const config = parseConfigFromEnv(overrides);
 
   let mq: AppBindingsWithNilcomm["mq"] | undefined = undefined;
   if (hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILCOMM)) {
@@ -162,6 +154,29 @@ export async function loadBindings(override?: EnvVars): Promise<AppBindings> {
     log: createLogger(config.logLevel),
     mq,
     node,
+  };
+}
+
+export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
+  const config = EnvVarsSchema.parse({
+    dbNameData: process.env.APP_DB_NAME_DATA,
+    dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
+    dbUri: process.env.APP_DB_URI,
+    enabledFeatures: process.env.APP_ENABLED_FEATURES,
+    logLevel: process.env.APP_LOG_LEVEL,
+    metricsPort: Number(process.env.APP_METRICS_PORT),
+    mqUri: process.env.APP_MQ_URI,
+    nilauthBaseUrl: process.env.APP_NILAUTH_BASE_URL,
+    nilauthPubKey: process.env.APP_NILAUTH_PUBLIC_KEY,
+    nilcommPublicKey: process.env.APP_NILCOMM_PUBLIC_KEY,
+    nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
+    nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
+    webPort: Number(process.env.APP_PORT),
+  });
+
+  return {
+    ...config,
+    ...overrides,
   };
 }
 

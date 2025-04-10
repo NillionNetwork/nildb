@@ -11,7 +11,6 @@ import { mongoMigrateUp } from "#/common/mongo";
 import {
   type AppBindingsWithNilcomm,
   type AppEnv,
-  EnvVarsSchema,
   FeatureFlag,
   hasFeatureFlag,
   loadBindings,
@@ -40,34 +39,23 @@ export async function buildFixture(
     enableNilcomm?: boolean;
   } = {},
 ): Promise<TestFixture> {
-  dotenv.config({ path: ".env.test" });
+  dotenv.config({ path: [".env.test", ".env.test.nilauthclient"] });
   const id = faker.string.alphanumeric(4);
 
-  // Update db names, so that migrations performed during tests use the updated db names
+  // Use unique db names for each test
   process.env.APP_DB_NAME_PRIMARY = `${process.env.APP_DB_NAME_PRIMARY}_${id}`;
   process.env.APP_DB_NAME_DATA = `${process.env.APP_DB_NAME_DATA}_${id}`;
 
-  const config = EnvVarsSchema.parse({
-    dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
-    dbNameData: process.env.APP_DB_NAME_DATA,
-    dbUri: process.env.APP_DB_URI,
-    enabledFeatures: process.env.APP_ENABLED_FEATURES
-      ? process.env.APP_ENABLED_FEATURES.split(",")
-      : [],
-    logLevel: process.env.APP_LOG_LEVEL,
-    mqUri: process.env.APP_MQ_URI,
-    nilcommPublicKey: process.env.APP_NILCOMM_PUBLIC_KEY,
-    nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
-    nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
-    metricsPort: Number(process.env.APP_METRICS_PORT),
-    webPort: Number(process.env.APP_PORT),
-  });
+  // nilcomm should only be enabled via the test fixture params else consumers and producers conflict
+  const currentFeatures = process.env.APP_ENABLED_FEATURES || "";
+  const featuresArray = currentFeatures.split(",").filter(Boolean);
 
-  if (opts.enableNilcomm) {
-    config.enabledFeatures.push("nilcomm");
+  if (opts.enableNilcomm && !featuresArray.includes("nilcomm")) {
+    featuresArray.push("nilcomm");
   }
+  process.env.APP_ENABLED_FEATURES = featuresArray.join(",");
 
-  const bindings = (await loadBindings(config)) as AppBindingsWithNilcomm;
+  const bindings = (await loadBindings()) as AppBindingsWithNilcomm;
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
     await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
