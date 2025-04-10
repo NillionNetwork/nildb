@@ -24,8 +24,8 @@ importers:
         specifier: ^0.4.2
         version: 0.4.2(hono@4.6.20)(zod@3.24.1)
       '@nillion/nuc':
-        specifier: 0.1.0-rc.0
-        version: 0.1.0-rc.0
+        specifier: file:./vendor/nillion-nuc-0.1.0-rc.0.tgz
+        version: file:vendor/nillion-nuc-0.1.0-rc.0.tgz
       '@noble/hashes':
         specifier: ^1.7.1
         version: 1.7.1
@@ -744,8 +744,9 @@ packages:
   '@mongodb-js/saslprep@1.1.9':
     resolution: {integrity: sha512-tVkljjeEaAhCqTzajSdgbQ6gE6f3oneVwa3iXR6csiEwXXOFsiC6Uh9iAjAhXPtqa/XMDHWjjeNH/77m/Yq2dw==}
 
-  '@nillion/nuc@0.1.0-rc.0':
-    resolution: {integrity: sha512-Cyr0vTQP2fsiF87EO39XDMchjk2mD4pKvjQRHhpVoPmmJ3+FEdYDVrk38Lu7jtWbhYD4DlcnFF6sBdKOJEsgjg==}
+  '@nillion/nuc@file:vendor/nillion-nuc-0.1.0-rc.0.tgz':
+    resolution: {integrity: sha512-J9LgDnytWe80DOQ2s24fPWPSL+xvbK5RaKNzA2LZr+cdTRfQ3YGMnrrYqLeTRr0H06aJ2ROVtKm2vMnWUWtzXg==, tarball: file:vendor/nillion-nuc-0.1.0-rc.0.tgz}
+    version: 0.1.0-rc.0
     engines: {node: '>=23'}
 
   '@noble/ciphers@1.2.1':
@@ -3422,14 +3423,14 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@cosmjs/stargate@0.33.1':
+  '@cosmjs/stargate@0.33.1(debug@4.4.0)':
     dependencies:
       '@cosmjs/amino': 0.33.1
       '@cosmjs/encoding': 0.33.1
       '@cosmjs/math': 0.33.1
       '@cosmjs/proto-signing': 0.33.1
       '@cosmjs/stream': 0.33.1
-      '@cosmjs/tendermint-rpc': 0.33.1
+      '@cosmjs/tendermint-rpc': 0.33.1(debug@4.4.0)
       '@cosmjs/utils': 0.33.1
       cosmjs-types: 0.9.0
     transitivePeerDependencies:
@@ -3441,7 +3442,7 @@ snapshots:
     dependencies:
       xstream: 11.14.0
 
-  '@cosmjs/tendermint-rpc@0.33.1':
+  '@cosmjs/tendermint-rpc@0.33.1(debug@4.4.0)':
     dependencies:
       '@cosmjs/crypto': 0.33.1
       '@cosmjs/encoding': 0.33.1
@@ -3450,7 +3451,7 @@ snapshots:
       '@cosmjs/socket': 0.33.1
       '@cosmjs/stream': 0.33.1
       '@cosmjs/utils': 0.33.1
-      axios: 1.8.4
+      axios: 1.8.4(debug@4.4.0)
       readonly-date: 1.0.0
       xstream: 11.14.0
     transitivePeerDependencies:
@@ -3677,20 +3678,21 @@ snapshots:
     dependencies:
       sparse-bitfield: 3.0.3
 
-  '@nillion/nuc@0.1.0-rc.0':
+  '@nillion/nuc@file:vendor/nillion-nuc-0.1.0-rc.0.tgz':
     dependencies:
       '@bufbuild/protobuf': 2.2.5
       '@cosmjs/proto-signing': 0.33.1
-      '@cosmjs/stargate': 0.33.1
+      '@cosmjs/stargate': 0.33.1(debug@4.4.0)
       '@noble/curves': 1.8.1
       '@noble/hashes': 1.7.1
+      debug: 4.4.0
       effect: 3.12.9
       fast-deep-equal: 3.1.3
       temporal-polyfill: 0.2.5
       zod: 3.24.1
     transitivePeerDependencies:
       - bufferutil
-      - debug
+      - supports-color
       - utf-8-validate
 
   '@noble/ciphers@1.2.1': {}
@@ -4305,9 +4307,9 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.0.0
 
-  axios@1.8.4:
+  axios@1.8.4(debug@4.4.0):
     dependencies:
-      follow-redirects: 1.15.9
+      follow-redirects: 1.15.9(debug@4.4.0)
       form-data: 4.0.2
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -4908,7 +4910,9 @@ snapshots:
       path-exists: 5.0.0
       unicorn-magic: 0.1.0
 
-  follow-redirects@1.15.9: {}
+  follow-redirects@1.15.9(debug@4.4.0):
+    optionalDependencies:
+      debug: 4.4.0
 
   for-each@0.3.4:
     dependencies:
