@@ -11,7 +11,9 @@ import { TestOrganizationUserClient } from "./fixture/test-client";
 
 describe("account management", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
-  beforeAll(async (_ctx) => {});
+  beforeAll(async (ctx) => {
+    await ctx.organization.ensureSubscriptionActive();
+  });
   afterAll(async (_ctx) => {});
 
   it("root can create an admin account", async ({ expect, bindings, root }) => {
@@ -67,15 +69,24 @@ describe("account management", () => {
     });
   });
 
-  it("an organization can self register", async ({ app, bindings, expect }) => {
+  it("an organization can self register", async ({
+    app,
+    bindings,
+    expect,
+    organization,
+  }) => {
     const keypair = Keypair.generate();
     const did = keypair.toDidString();
 
     const newOrganization = new TestOrganizationUserClient({
       app,
       keypair,
+      payer: organization._options.payer,
+      nilauth: organization._options.nilauth,
       node: bindings.node,
     });
+
+    await newOrganization.ensureSubscriptionActive();
 
     const response = await newOrganization.register({
       did,

@@ -1,9 +1,11 @@
 import {
   Command,
   Did,
+  NucTokenBuilder,
   type DidString,
   type Keypair,
-  NucTokenBuilder,
+  type NilauthClient,
+  type Payer,
 } from "@nillion/nuc";
 import type {
   RegisterAccountRequest,
@@ -43,6 +45,8 @@ import { SystemEndpoint } from "#/system/system.router";
 export type TestClientOptions = {
   app: App;
   keypair: Keypair;
+  payer: Payer;
+  nilauth: NilauthClient;
   node: {
     keypair: Keypair;
     endpoint: string;
@@ -65,7 +69,6 @@ abstract class TestClient {
   }
 
   nuc(): string {
-    // TODO: skip payments this iteration for simplicity
     const audience = Did.fromHex(this._options.node.keypair.publicKey("hex"));
     const subject = Did.fromHex(this.keypair.publicKey("hex"));
 
@@ -226,6 +229,60 @@ export class TestAdminUserClient extends TestRootUserClient {
 }
 
 export class TestOrganizationUserClient extends TestClient {
+  async ensureSubscriptionActive(): Promise<void> {
+    const { nilauth } = this._options;
+
+    const response = await nilauth.subscriptionStatus(this.keypair);
+
+    console.log(
+      `Subscription status: did=${this.keypair.toDidString()} subscribed=${response.subscribed}`,
+    );
+
+    if (!response.subscribed) {
+      const _response = await this._options.nilauth.paySubscription(
+        this.keypair,
+        this._options.payer,
+      );
+    }
+
+    // TODO: paySubscription returning ZodVoid which is different from void
+    return undefined;
+  }
+
+  async createInvocationToken(): Promise<string> {
+    const response = await this._options.nilauth.requestToken(this.keypair);
+    const { token: rootToken } = response;
+    return NucTokenBuilder.extending(rootToken)
+      .proof(rootToken)
+      .audience(Did.fromHex(this._options.node.keypair.publicKey("hex")))
+      .build(this.keypair.privateKey());
+  }
+
+  async request<T>(
+    path: string,
+    options: {
+      method?: "GET" | "POST" | "DELETE";
+      body?: T;
+    } = {},
+  ): Promise<Response> {
+    const { method = "GET", body } = options;
+    const token = await this.createInvocationToken();
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    if (body) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    return this.app.request(path, {
+      method,
+      headers,
+      ...(body && { body: JSON.stringify(body) }),
+    });
+  }
+
   async register(body: RegisterAccountRequest): Promise<Response> {
     return this.request(PathsV1.accounts.root, {
       method: "POST",

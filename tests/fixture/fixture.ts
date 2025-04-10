@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Keypair } from "@nillion/nuc";
+import { Keypair, NilauthClient, PayerBuilder } from "@nillion/nuc";
 import dotenv from "dotenv";
 import type { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
@@ -68,19 +68,41 @@ export async function buildFixture(
     endpoint: bindings.config.nodePublicEndpoint,
   };
 
+  const chainUrl = process.env.APP_NILCHAIN_JSON_RPC!;
+  const adminPayerKeypair = Keypair.from(
+    process.env.APP_NILCHAIN_PRIVATE_KEY_0!,
+  );
+  const adminPayer = await new PayerBuilder()
+    .keypair(adminPayerKeypair)
+    .chainUrl(chainUrl)
+    .build();
+  const orgPayerKeypair = Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!);
+  const orgPayer = await new PayerBuilder()
+    .keypair(orgPayerKeypair)
+    .chainUrl(chainUrl)
+    .build();
+
+  const nilauth = new NilauthClient(bindings.config.nilauthBaseUrl);
+
   const root = new TestRootUserClient({
     app,
     keypair: node.keypair,
+    payer: adminPayer,
+    nilauth,
     node,
   });
   const admin = new TestAdminUserClient({
     app,
     keypair: Keypair.generate(),
+    payer: adminPayer,
+    nilauth,
     node,
   });
   const organization = new TestOrganizationUserClient({
     app,
     keypair: Keypair.generate(),
+    payer: orgPayer,
+    nilauth,
     node,
   });
 
@@ -164,6 +186,9 @@ export async function registerSchemaAndQuery(opts: {
   const { organization, schema, query } = opts;
 
   try {
+    console.log("Paying for subscription");
+    await organization.ensureSubscriptionActive();
+
     console.log("Registering schema...");
     schema.id = new UUID();
     const response = await organization.addSchema({

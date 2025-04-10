@@ -75,8 +75,12 @@ describe("restrict cross organization operations", () => {
     organizationB = new TestOrganizationUserClient({
       app: app,
       keypair: Keypair.generate(),
+      payer: organization._options.payer,
+      nilauth: organization._options.nilauth,
       node: bindings.node,
     });
+
+    await organizationB.ensureSubscriptionActive();
 
     await organizationB.register({
       did: organizationB.did,

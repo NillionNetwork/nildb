@@ -1,7 +1,10 @@
 import {
   type Command,
+  Did,
   type NucToken,
   NucTokenEnvelopeSchema,
+  NucTokenValidator,
+  ValidationParameters,
 } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { MiddlewareHandler, Next } from "hono";
@@ -14,7 +17,11 @@ import type { AppBindings, AppContext } from "#/env";
 export function verifyNucAndLoadSubject(
   bindings: AppBindings,
 ): MiddlewareHandler {
-  const { log } = bindings;
+  const { log, config } = bindings;
+
+  const nilauthDid = Did.fromHex(config.nilauthPubKey);
+  const defaultValidationParameters = new ValidationParameters();
+  const validateNucWithSubscription = new NucTokenValidator([nilauthDid]);
 
   return async (c: AppContext, next: Next) => {
     try {
@@ -37,17 +44,7 @@ export function verifyNucAndLoadSubject(
         );
       }
       const envelope = nucEnvelopeParseResult.data;
-      // throw on invalid signature
-      envelope.validateSignatures();
-
       const { token } = envelope.token;
-
-      if (!token) {
-        return c.text(
-          getReasonPhrase(StatusCodes.UNAUTHORIZED),
-          StatusCodes.UNAUTHORIZED,
-        );
-      }
 
       const subject = token.subject.toString();
       const account = await pipe(
@@ -62,6 +59,16 @@ export function verifyNucAndLoadSubject(
           getReasonPhrase(StatusCodes.UNAUTHORIZED),
           StatusCodes.UNAUTHORIZED,
         );
+      }
+
+      // both branches throw on validation failure
+      if (account._type === RoleSchema.enum.organization) {
+        validateNucWithSubscription.validate(
+          envelope,
+          defaultValidationParameters,
+        );
+      } else {
+        envelope.validateSignatures();
       }
 
       c.set("envelope", envelope);
