@@ -24,8 +24,8 @@ importers:
         specifier: ^0.4.3
         version: 0.4.3(hono@4.7.6)(zod@3.24.2)
       '@nillion/nuc':
-        specifier: file:vendor/nillion-nuc-0.1.0-rc.0.tgz
-        version: file:vendor/nillion-nuc-0.1.0-rc.0.tgz
+        specifier: next
+        version: 0.1.0-rc.1
       '@noble/hashes':
         specifier: ^1.7.1
         version: 1.7.1
@@ -143,7 +143,7 @@ importers:
         version: 4.1.8
       '@vitest/coverage-v8':
         specifier: ^3.1.1
-        version: 3.1.1(vitest@3.1.1(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1))
+        version: 3.1.1(vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1))
       lefthook:
         specifier: ^1.11.8
         version: 1.11.8
@@ -161,7 +161,7 @@ importers:
         version: 5.1.4(typescript@5.8.3)(vite@6.2.6(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1))
       vitest:
         specifier: ^3.1.1
-        version: 3.1.1(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1)
+        version: 3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1)
 
 packages:
 
@@ -596,9 +596,8 @@ packages:
   '@mongodb-js/saslprep@1.2.2':
     resolution: {integrity: sha512-EB0O3SCSNRUFk66iRCpI+cXzIjdswfCs7F6nOC3RAGJ7xr5YhaicvsRwJ9eyzYvYRlCSDUO/c7g4yNulxKC1WA==}
 
-  '@nillion/nuc@file:vendor/nillion-nuc-0.1.0-rc.0.tgz':
-    resolution: {integrity: sha512-J9LgDnytWe80DOQ2s24fPWPSL+xvbK5RaKNzA2LZr+cdTRfQ3YGMnrrYqLeTRr0H06aJ2ROVtKm2vMnWUWtzXg==, tarball: file:vendor/nillion-nuc-0.1.0-rc.0.tgz}
-    version: 0.1.0-rc.0
+  '@nillion/nuc@0.1.0-rc.1':
+    resolution: {integrity: sha512-U/E3OJCsC2AKb/s31sAp5nfj2kr9NpgjbbLmrrTp6JKaw587PHQoUojCeFckTRPd0Nu1psr83171OavbZwNUoQ==}
     engines: {node: '>=23'}
 
   '@noble/ciphers@1.2.1':
@@ -865,6 +864,9 @@ packages:
 
   '@types/conventional-commits-parser@5.0.1':
     resolution: {integrity: sha512-7uz5EHdzz2TqoMfV7ee61Egf5y6NkcO4FB/1iCCQnbeiI1F3xzv3vK5dBCXUCLQgGYS+mUeigK1iKQzvED+QnQ==}
+
+  '@types/debug@4.1.12':
+    resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
 
   '@types/elliptic@6.4.18':
     resolution: {integrity: sha512-UseG6H5vjRiNpQvrhy4VF/JXdA3V/Fp5amvveaL+fs28BZ6xIKJBPnUPRlEaZpysD9MbpfaLi8lbl7PGUAkpWw==}
@@ -3425,7 +3427,7 @@ snapshots:
     dependencies:
       sparse-bitfield: 3.0.3
 
-  '@nillion/nuc@file:vendor/nillion-nuc-0.1.0-rc.0.tgz':
+  '@nillion/nuc@0.1.0-rc.1':
     dependencies:
       '@bufbuild/protobuf': 2.2.5
       '@cosmjs/proto-signing': 0.33.1
@@ -3826,6 +3828,11 @@ snapshots:
     dependencies:
       '@types/node': 22.14.0
 
+  '@types/debug@4.1.12':
+    dependencies:
+      '@types/ms': 2.1.0
+    optional: true
+
   '@types/elliptic@6.4.18':
     dependencies:
       '@types/bn.js': 5.1.6
@@ -3902,7 +3909,7 @@ snapshots:
     dependencies:
       '@types/webidl-conversions': 7.0.3
 
-  '@vitest/coverage-v8@3.1.1(vitest@3.1.1(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1))':
+  '@vitest/coverage-v8@3.1.1(vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 1.0.2
@@ -3916,7 +3923,7 @@ snapshots:
       std-env: 3.9.0
       test-exclude: 7.0.1
       tinyrainbow: 2.0.0
-      vitest: 3.1.1(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1)
+      vitest: 3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -5573,7 +5580,7 @@ snapshots:
 
   send@1.2.0:
     dependencies:
-      debug: 4.3.6
+      debug: 4.4.0
       encodeurl: 2.0.0
       escape-html: 1.0.3
       etag: 1.8.1
@@ -5945,7 +5952,7 @@ snapshots:
       tsx: 4.19.3
       yaml: 2.7.1
 
-  vitest@3.1.1(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1):
+  vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1):
     dependencies:
       '@vitest/expect': 3.1.1
       '@vitest/mocker': 3.1.1(vite@6.2.6(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1))
@@ -5968,6 +5975,7 @@ snapshots:
       vite-node: 3.1.1(@types/node@22.14.0)(jiti@2.4.2)(tsx@4.19.3)(yaml@2.7.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
+      '@types/debug': 4.1.12
       '@types/node': 22.14.0
     transitivePeerDependencies:
       - jiti
