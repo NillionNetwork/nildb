@@ -5,6 +5,7 @@ import {
   type Keypair,
   type NilauthClient,
   NucTokenBuilder,
+  type NucTokenEnvelope,
   type Payer,
 } from "@nillion/nuc";
 import type {
@@ -230,23 +231,25 @@ export class TestAdminUserClient extends TestRootUserClient {
 
 export class TestOrganizationUserClient extends TestClient {
   async ensureSubscriptionActive(): Promise<void> {
-    const { nilauth } = this._options;
+    try {
+      const { nilauth } = this._options;
 
-    const response = await nilauth.subscriptionStatus(this.keypair);
+      const response = await nilauth.subscriptionStatus(this.keypair);
 
-    console.log(
-      `Subscription status: did=${this.keypair.toDidString()} subscribed=${response.subscribed}`,
-    );
-
-    if (!response.subscribed) {
-      const _response = await this._options.nilauth.paySubscription(
-        this.keypair,
-        this._options.payer,
+      console.log(
+        `Subscription status: did=${this.keypair.toDidString()} subscribed=${response.subscribed}`,
       );
-    }
 
-    // TODO: paySubscription returning ZodVoid which is different from void
-    return undefined;
+      if (!response.subscribed) {
+        await this._options.nilauth.paySubscription(
+          this.keypair,
+          this._options.payer,
+        );
+      }
+    } catch (cause) {
+      console.error("Ensure active subscription failed");
+      throw new Error("Ensure active subscription failed", { cause });
+    }
   }
 
   async createInvocationToken(): Promise<string> {
@@ -256,6 +259,11 @@ export class TestOrganizationUserClient extends TestClient {
       .proof(rootToken)
       .audience(Did.fromHex(this._options.node.keypair.publicKey("hex")))
       .build(this.keypair.privateKey());
+  }
+
+  async getRootToken(): Promise<NucTokenEnvelope> {
+    const response = await this._options.nilauth.requestToken(this.keypair);
+    return response.token;
   }
 
   async request<T>(
