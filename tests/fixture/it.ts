@@ -73,8 +73,13 @@ export function createTestFixtureExtension(
 
   const beforeAll = (fn: (ctx: FixtureContext) => Promise<void>) =>
     vitest.beforeAll(async () => {
-      fixture = await buildFixture(opts);
-      await fn(fixture);
+      try {
+        fixture = await buildFixture(opts);
+        await fn(fixture);
+      } catch (error) {
+        console.error("Fixture setup failed:", error);
+        throw error;
+      }
     });
 
   const afterAll = (fn: (ctx: FixtureContext) => Promise<void>) =>
