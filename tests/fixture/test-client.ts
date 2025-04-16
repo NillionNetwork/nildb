@@ -231,29 +231,15 @@ export class TestAdminUserClient extends TestRootUserClient {
 
 export class TestOrganizationUserClient extends TestClient {
   async ensureSubscriptionActive(): Promise<void> {
-    try {
-      const { nilauth } = this._options;
-
-      const response = await nilauth.subscriptionStatus(this.keypair);
-
-      console.log(
-        `Subscription status: did=${this.keypair.toDidString()} subscribed=${response.subscribed}`,
-      );
-
-      if (!response.subscribed) {
-        await this._options.nilauth.paySubscription(
-          this.keypair,
-          this._options.payer,
-        );
-      }
-    } catch (cause) {
-      console.error("Ensure active subscription failed");
-      throw new Error("Ensure active subscription failed", { cause });
+    const { nilauth } = this._options;
+    const response = await nilauth.subscriptionStatus();
+    if (!response.subscribed) {
+      await this._options.nilauth.payAndValidate();
     }
   }
 
   async createInvocationToken(): Promise<string> {
-    const response = await this._options.nilauth.requestToken(this.keypair);
+    const response = await this._options.nilauth.requestToken();
     const { token: rootToken } = response;
     return NucTokenBuilder.extending(rootToken)
       .proof(rootToken)
@@ -262,7 +248,7 @@ export class TestOrganizationUserClient extends TestClient {
   }
 
   async getRootToken(): Promise<NucTokenEnvelope> {
-    const response = await this._options.nilauth.requestToken(this.keypair);
+    const response = await this._options.nilauth.requestToken();
     return response.token;
   }
 

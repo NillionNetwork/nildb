@@ -1,7 +1,7 @@
 {
   "name": "@nillion/nildb-api",
   "private": true,
-  "version": "0.7.0-rc.0",
+  "version": "1.0.0-preview.0",
   "repository": "https://github.com/NillionNetwork/nildb",
   "type": "module",
   "scripts": {
@@ -20,7 +20,7 @@
     "@hono/prometheus": "^1.0.1",
     "@hono/swagger-ui": "^0.5.1",
     "@hono/zod-validator": "^0.4.3",
-    "@nillion/nuc": "next",
+    "@nillion/nuc": "^0.1.0-rc.3",
     "@noble/hashes": "^1.7.1",
     "@noble/secp256k1": "^2.2.3",
     "ajv": "^8.17.1",
