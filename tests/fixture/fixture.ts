@@ -69,40 +69,48 @@ export async function buildFixture(
   };
 
   const chainUrl = process.env.APP_NILCHAIN_JSON_RPC!;
-  const adminPayerKeypair = Keypair.from(
-    process.env.APP_NILCHAIN_PRIVATE_KEY_0!,
-  );
+  const adminKeypair = Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_0!);
   const adminPayer = await new PayerBuilder()
-    .keypair(adminPayerKeypair)
-    .chainUrl(chainUrl)
-    .build();
-  const orgPayerKeypair = Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!);
-  const orgPayer = await new PayerBuilder()
-    .keypair(orgPayerKeypair)
+    .keypair(adminKeypair)
     .chainUrl(chainUrl)
     .build();
 
-  const nilauth = new NilauthClient(bindings.config.nilauthBaseUrl);
+  const adminNilauthClient = await NilauthClient.from({
+    keypair: node.keypair,
+    payer: adminPayer,
+    baseUrl: bindings.config.nilauthBaseUrl,
+  });
 
   const root = new TestRootUserClient({
     app,
     keypair: node.keypair,
     payer: adminPayer,
-    nilauth,
+    nilauth: adminNilauthClient,
     node,
   });
   const admin = new TestAdminUserClient({
     app,
-    keypair: Keypair.generate(),
+    keypair: adminKeypair,
     payer: adminPayer,
-    nilauth,
+    nilauth: adminNilauthClient,
     node,
+  });
+
+  const orgKeypair = Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!);
+  const orgPayer = await new PayerBuilder()
+    .keypair(orgKeypair)
+    .chainUrl(chainUrl)
+    .build();
+  const orgNilauthClient = await NilauthClient.from({
+    keypair: orgKeypair,
+    payer: orgPayer,
+    baseUrl: bindings.config.nilauthBaseUrl,
   });
   const organization = new TestOrganizationUserClient({
     app,
-    keypair: Keypair.generate(),
+    keypair: orgKeypair,
     payer: orgPayer,
-    nilauth,
+    nilauth: orgNilauthClient,
     node,
   });
 
