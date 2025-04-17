@@ -24,8 +24,8 @@ importers:
         specifier: ^0.4.3
         version: 0.4.3(hono@4.7.6)(zod@3.24.2)
       '@nillion/nuc':
-        specifier: ^0.1.0-rc.3
-        version: 0.1.0-rc.3
+        specifier: ^0.1.0-rc.4
+        version: 0.1.0-rc.4
       '@noble/hashes':
         specifier: ^1.7.1
         version: 1.7.1
@@ -596,8 +596,8 @@ packages:
   '@mongodb-js/saslprep@1.2.2':
     resolution: {integrity: sha512-EB0O3SCSNRUFk66iRCpI+cXzIjdswfCs7F6nOC3RAGJ7xr5YhaicvsRwJ9eyzYvYRlCSDUO/c7g4yNulxKC1WA==}
 
-  '@nillion/nuc@0.1.0-rc.3':
-    resolution: {integrity: sha512-g5oUIV0zboYevFb4GVFhcAjTxVGJGLtANPkGQCVT3pXOtDvcG7O9HfiyjvPcbKTWvlEHsYgvtk1HJpbimN8WYQ==}
+  '@nillion/nuc@0.1.0-rc.4':
+    resolution: {integrity: sha512-kOJbuHbnnHfzwH8svGH3RV/qaunVTKyVEK2Kftt9WBRo78kuih8GzEOxmgjUgYC1GuHEfauVFZeA+9XPznal2g==}
     engines: {node: '>=23'}
 
   '@noble/ciphers@1.2.1':
@@ -3427,7 +3427,7 @@ snapshots:
     dependencies:
       sparse-bitfield: 3.0.3
 
-  '@nillion/nuc@0.1.0-rc.3':
+  '@nillion/nuc@0.1.0-rc.4':
     dependencies:
       '@bufbuild/protobuf': 2.2.5
       '@cosmjs/proto-signing': 0.33.1
