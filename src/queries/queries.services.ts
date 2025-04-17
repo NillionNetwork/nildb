@@ -18,10 +18,12 @@ import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import * as OrganizationRepository from "#/organizations/organizations.repository";
 import pipelineSchema from "./mongodb_pipeline.json";
+import * as QueriesJobsRepository from "./queries.jobs.repository";
 import * as QueriesRepository from "./queries.repository";
 import type {
   AddQueryRequest,
   ExecuteQueryRequest,
+  QueryJobDocument,
   QueryDocument,
   QueryVariable,
 } from "./queries.types";
@@ -146,6 +148,16 @@ export function validateQuery(
   return E.forEach(Object.entries(variables), ([key, variable]) =>
     validateVariableDefinition(key, variable),
   ).pipe(E.map(() => query));
+}
+
+export function findQueryJob(
+  ctx: AppBindings,
+  _id: UUID,
+): E.Effect<
+  QueryJobDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return pipe(QueriesJobsRepository.findOne(ctx, { _id }));
 }
 
 export type QueryPrimitive = string | number | boolean | Date | UUID;
