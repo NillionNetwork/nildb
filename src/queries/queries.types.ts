@@ -39,6 +39,9 @@ export const ExecuteQueryRequestSchema = z.object({
 });
 export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequestSchema>;
 
+export const QueryJobStatusSchema = z.enum(["pending", "running", "complete"]);
+export type QueryJobStatus = z.infer<typeof QueryJobStatusSchema>;
+
 /**
  * Repository types
  */
@@ -55,4 +58,13 @@ export type QueryDocument = DocumentBase & {
   schema: UUID;
   variables: Record<string, QueryVariable>;
   pipeline: Record<string, unknown>[];
+};
+
+export type QueryJobDocument = DocumentBase & {
+  queryId: UUID;
+  status: QueryJobStatus;
+  startedAt?: Date;
+  endedAt?: Date;
+  result?: JsonValue;
+  errors?: string[];
 };
