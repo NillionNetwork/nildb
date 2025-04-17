@@ -289,4 +289,45 @@ describe("nuc-based access control", () => {
     });
     expect(forbiddenResponse.status).toBe(StatusCodes.FORBIDDEN);
   });
+
+  it("enforces revocations", async ({ expect, app, admin, organization }) => {
+    // 1. The org mints a delegation nuc addressed to the user
+    const root = await organization.getRootToken();
+    const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
+      .audience(Did.fromHex(user.kp.publicKey("hex")))
+      .command(NucCmd.nil.db.queries)
+      .build(organization.keypair.privateKey());
+    const delegationFromBuilderEnvelope = NucTokenEnvelopeSchema.parse(
+      delegationFromBuilderRaw,
+    );
+
+    // 2. The user receives the delegation nuc, mints an invocation addressed to the nildb node
+    const invocationByUser = NucTokenBuilder.extending(
+      delegationFromBuilderEnvelope,
+    )
+      .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .build(user.kp.privateKey());
+
+    // 3. The org revokes the delegation nuc
+    await organization._options.nilauth.revokeToken(root);
+
+    // 4. User creates a query execution request (average age of wallets in GBR)
+    const body: ExecuteQueryRequest = {
+      id: query.id,
+      variables: {},
+    };
+
+    // 5. User sends the request using the derived permissions from the revoked root nuc
+    const response = await app.request(PathsV1.queries.execute, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${invocationByUser}`,
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    // 6. Check that nildb rejected the request
+    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+  });
 });
