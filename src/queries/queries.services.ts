@@ -16,8 +16,14 @@ import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import * as OrganizationRepository from "#/organizations/organizations.repository";
 import pipelineSchema from "./mongodb_pipeline.json";
+import * as QueriesJobsRepository from "./queries.jobs.repository";
 import * as QueriesRepository from "./queries.repository";
-import type { AddQueryRequest, ExecuteQueryRequest } from "./queries.types";
+import type {
+  AddQueryRequest,
+  ExecuteQueryRequest,
+  QueryJobDocument,
+  QueryJobStatus,
+} from "./queries.types";
 import type { QueryArrayVariable, QueryDocument } from "./queries.types";
 
 export function addQuery(
@@ -99,6 +105,16 @@ export function removeQuery(
       ]),
     ),
   );
+}
+
+export function findQueryJob(
+  ctx: AppBindings,
+  _id: UUID,
+): E.Effect<
+  QueryJobDocument,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  return pipe(QueriesJobsRepository.findOne(ctx, { _id }));
 }
 
 export type QueryPrimitive = string | number | boolean | Date;

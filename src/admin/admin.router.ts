@@ -22,6 +22,7 @@ export function buildAdminRouter(options: ControllerOptions): void {
   AdminQueriesControllers.add(options);
   AdminQueriesControllers.remove(options);
   AdminQueriesControllers.execute(options);
+  AdminQueriesControllers.getQueryJob(options);
 
   AdminSchemasControllers.add(options);
   AdminSchemasControllers.remove(options);

@@ -16,6 +16,7 @@ import * as QueriesService from "#/queries/queries.services";
 import {
   DeleteQueryRequestSchema,
   ExecuteQueryRequestSchema,
+  QueryJobRequestSchema,
 } from "#/queries/queries.types";
 import { AdminAddQueryRequestSchema } from "./admin.types";
 
@@ -98,6 +99,35 @@ export function execute(options: ControllerOptions): void {
 
       return pipe(
         QueriesService.executeQuery(c.env, payload),
+        E.map((data) => c.json({ data })),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+export function getQueryJob(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.queries.job;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.admin,
+    roles: [RoleSchema.enum.admin],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
+  app.post(
+    path,
+    payloadValidator(QueryJobRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
+    async (c) => {
+      const payload = c.req.valid("json");
+
+      return pipe(
+        QueriesService.findQueryJob(c.env, payload.id),
         E.map((data) => c.json({ data })),
         handleTaggedErrors(c),
         E.runPromise,
