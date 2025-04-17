@@ -28,7 +28,7 @@ services:
       - "30650:26650" # REST
 
   nilauth:
-    image: public.ecr.aws/k5d9x2g2/nilauth:380c888dfaf7caac6ba4beb9de89f1c42d587c08
+    image: public.ecr.aws/k5d9x2g2/nilauth:latest
     depends_on:
       - postgres
       - nilchain

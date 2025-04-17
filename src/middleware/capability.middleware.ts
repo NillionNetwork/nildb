@@ -1,6 +1,7 @@
 import {
   type Command,
   Did,
+  NilauthClient,
   type NucToken,
   NucTokenEnvelopeSchema,
   NucTokenValidator,
@@ -67,6 +68,23 @@ export function verifyNucAndLoadSubject(
           envelope,
           defaultValidationParameters,
         );
+        // check revocations last because it's costly (in terms of network RTT)
+        const { revoked } = await NilauthClient.findRevocationsInProofChain(
+          config.nilauthBaseUrl,
+          envelope,
+        );
+        if (revoked.length !== 0) {
+          const hashes = revoked.map((r) => r.tokenHash).join(",");
+          log.warn(
+            "Token revoked: revoked_hashes=(%s) auth_token=%O",
+            hashes,
+            envelope.token.token.toJson(),
+          );
+          return c.text(
+            getReasonPhrase(StatusCodes.UNAUTHORIZED),
+            StatusCodes.UNAUTHORIZED,
+          );
+        }
       } else {
         envelope.validateSignatures();
       }
@@ -76,7 +94,7 @@ export function verifyNucAndLoadSubject(
 
       return next();
     } catch (error) {
-      bindings.log.error("Auth error:", error);
+      log.error("Auth error:", error);
       return c.text(
         getReasonPhrase(StatusCodes.UNAUTHORIZED),
         StatusCodes.UNAUTHORIZED,

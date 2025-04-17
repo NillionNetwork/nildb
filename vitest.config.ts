@@ -6,6 +6,9 @@ export default defineConfig({
   test: {
     globalSetup: "./tests/fixture/global-setup.ts",
     testTimeout: 0,
+    env: {
+      DEBUG: "@nillion*",
+    },
     coverage: {
       reporter: ["text", "json-summary", "json"],
       reportOnFailure: true,
