@@ -9,6 +9,7 @@ import {
   type DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
   type QueryValidationError,
+  TimeoutError,
   VariableInjectionError,
 } from "#/common/errors";
 import { applyCoercions } from "#/common/mongo";
@@ -198,7 +199,8 @@ export function updateQueryJob(
       | DatabaseError
       | DataValidationError
       | VariableInjectionError
-      | DataCollectionNotFoundError;
+      | DataCollectionNotFoundError
+      | TimeoutError;
   },
 ): E.Effect<
   void,
@@ -251,10 +253,19 @@ export function processQueryJob(
           jobId,
           status: "running",
         }),
-        executeQuery(ctx, {
-          id: job.queryId,
-          variables,
-        }),
+        pipe(
+          executeQuery(ctx, {
+            id: job.queryId,
+            variables,
+          }),
+          E.timeoutFail({
+            duration: "30 minutes",
+            onTimeout: () =>
+              new TimeoutError({
+                message: "Query job timed out after 30 minutes.",
+              }),
+          }),
+        ),
       ]),
     ),
     E.flatMap(([, result]) =>
@@ -265,6 +276,7 @@ export function processQueryJob(
     ),
   );
 }
+
 export type QueryPrimitive = string | number | boolean | Date | UUID;
 
 export type QueryRuntimeVariables = Record<
