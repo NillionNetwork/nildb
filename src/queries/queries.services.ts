@@ -204,11 +204,22 @@ export function updateQueryJob(
   void,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  const { jobId, error, ...rest } = payload;
+  const now = new Date();
+  const { jobId, error, status, ...rest } = payload;
   const update: Partial<QueryJobDocument> = {
     ...rest,
-    _updated: new Date(),
+    status,
+    _updated: now,
   };
+
+  switch (status) {
+    case "running":
+      update.startedAt = now;
+      break;
+    case "complete":
+      update.endedAt = now;
+      break;
+  }
 
   if (error instanceof Data.TaggedError) {
     update.errors = error.humanize();
