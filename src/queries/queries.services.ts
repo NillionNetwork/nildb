@@ -1,5 +1,5 @@
-import { Effect as E, pipe } from "effect";
-import type { Document, UUID } from "mongodb";
+import { Data, Effect as E, pipe } from "effect";
+import type { Document, InsertOneResult, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { z } from "zod";
 import {
@@ -23,9 +23,10 @@ import * as QueriesRepository from "./queries.repository";
 import type {
   AddQueryRequest,
   ExecuteQueryRequest,
-  QueryJobDocument,
   QueryDocument,
   QueryVariable,
+  QueryJobDocument,
+  QueryJobStatus,
 } from "./queries.types";
 
 export function addQuery(
@@ -68,6 +69,18 @@ export function executeQuery(
   | DataValidationError
   | VariableInjectionError
 > {
+  if (request.background) {
+    return pipe(
+      addQueryJob(ctx, request.id),
+      E.flatMap((job) => {
+        E.runPromise(processQueryJob(ctx, job.insertedId, request.variables));
+        return E.succeed({
+          jobId: job.insertedId.toString(),
+        });
+      }),
+    );
+  }
+
   return E.Do.pipe(
     E.bind("query", () => QueriesRepository.findOne(ctx, { _id: request.id })),
     E.bind("variables", ({ query }) =>
@@ -160,6 +173,87 @@ export function findQueryJob(
   return pipe(QueriesJobsRepository.findOne(ctx, { _id }));
 }
 
+export function addQueryJob(
+  ctx: AppBindings,
+  queryId: UUID,
+): E.Effect<
+  InsertOneResult<QueryJobDocument>,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  const document = QueriesJobsRepository.toQueryJobDocument(queryId);
+  return QueriesJobsRepository.insert(ctx, document);
+}
+
+export function updateQueryJob(
+  ctx: AppBindings,
+  payload: {
+    jobId: UUID;
+    status: QueryJobStatus;
+    startedAt?: Date;
+    endedAt?: Date;
+    result?: JsonValue;
+    error?:
+      | DocumentNotFoundError
+      | PrimaryCollectionNotFoundError
+      | DatabaseError
+      | DataValidationError
+      | VariableInjectionError
+      | DataCollectionNotFoundError;
+  },
+): E.Effect<
+  void,
+  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+> {
+  const { jobId, error, ...rest } = payload;
+  const update: Partial<QueryJobDocument> = {
+    ...rest,
+    _updated: new Date(),
+  };
+
+  if (error instanceof Data.TaggedError) {
+    update.errors = error.humanize();
+  } else if (error instanceof Error) {
+    update.errors = [error.message];
+  }
+
+  return pipe(QueriesJobsRepository.updateOne(ctx, jobId, update));
+}
+
+export function processQueryJob(
+  ctx: AppBindings,
+  jobId: UUID,
+  variables: ExecuteQueryRequest["variables"],
+): E.Effect<
+  void,
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+  | VariableInjectionError
+  | DataCollectionNotFoundError
+> {
+  return pipe(
+    findQueryJob(ctx, jobId),
+    E.flatMap((job) =>
+      E.all([
+        updateQueryJob(ctx, {
+          jobId,
+          status: "running",
+        }),
+        executeQuery(ctx, {
+          id: job.queryId,
+          variables,
+        }),
+      ]),
+    ),
+    E.flatMap(([, result]) =>
+      updateQueryJob(ctx, { jobId, status: "complete", result }),
+    ),
+    E.catchAll((error) =>
+      updateQueryJob(ctx, { jobId, status: "complete", error }),
+    ),
+  );
+}
 export type QueryPrimitive = string | number | boolean | Date | UUID;
 
 export type QueryRuntimeVariables = Record<

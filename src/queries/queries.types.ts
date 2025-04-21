@@ -1,5 +1,6 @@
 import type { DidString } from "@nillion/nuc";
 import type { UUID } from "mongodb";
+import type { JsonValue } from "type-fest";
 import { z } from "zod";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid } from "#/common/types";
@@ -36,8 +37,14 @@ export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequestSchema>;
 export const ExecuteQueryRequestSchema = z.object({
   id: Uuid,
   variables: z.record(z.string(), z.unknown()),
+  background: z.boolean().optional(),
 });
 export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequestSchema>;
+
+export const QueryJobRequestSchema = z.object({
+  id: Uuid,
+});
+export type QueryJobRequest = z.infer<typeof QueryJobRequestSchema>;
 
 export const QueryJobStatusSchema = z.enum(["pending", "running", "complete"]);
 export type QueryJobStatus = z.infer<typeof QueryJobStatusSchema>;
