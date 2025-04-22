@@ -4,6 +4,13 @@ import { z } from "zod";
 import type { DocumentBase } from "#/common/mongo";
 import { Uuid } from "#/common/types";
 
+const PATH_EXPRESSION = /^\$(\.[$a-zA-Z][a-zA-Z0-9-_]+(\[\d+])*)+$/;
+const VariablePathSchema = z
+  .string()
+  .transform((path) => PATH_EXPRESSION.exec(path))
+  .refine((match) => match !== null, "invalid PATH")
+  .transform((match) => match[0]);
+
 /**
  * Controller types
  */
@@ -11,10 +18,12 @@ const VariablePrimitiveSchema = z.enum(["string", "number", "boolean", "date"]);
 export const QueryVariableValidatorSchema = z.union([
   z.object({
     type: VariablePrimitiveSchema,
+    path: VariablePathSchema,
     description: z.string(),
   }),
   z.object({
     type: z.enum(["array"]),
+    path: VariablePathSchema,
     description: z.string(),
     items: z.object({
       type: VariablePrimitiveSchema,
@@ -47,11 +56,13 @@ export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequestSchema>;
  */
 export type QueryVariable = {
   type: "string" | "number" | "boolean" | "date";
+  path: string;
   description: string;
 };
 
 export type QueryArrayVariable = {
   type: "array";
+  path: string;
   description: string;
   items: {
     type: "string" | "number" | "boolean" | "date";

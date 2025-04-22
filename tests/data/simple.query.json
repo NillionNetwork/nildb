@@ -5,7 +5,8 @@
   "variables": {
     "name": {
       "type": "string",
-      "description": "The name value"
+      "description": "The name value",
+      "path": "$.pipeline[0].$match.name"
     }
   },
   "pipeline": [
