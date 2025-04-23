@@ -73,13 +73,11 @@ abstract class TestClient {
     const audience = Did.fromHex(this._options.node.keypair.publicKey("hex"));
     const subject = Did.fromHex(this.keypair.publicKey("hex"));
 
-    const token = NucTokenBuilder.invocation({})
+    return NucTokenBuilder.invocation({})
       .command(new Command(["nil", "db"]))
       .audience(audience)
       .subject(subject)
       .build(this.keypair.privateKey());
-
-    return token;
   }
 
   async request<T>(
@@ -232,9 +230,17 @@ export class TestAdminUserClient extends TestRootUserClient {
 export class TestOrganizationUserClient extends TestClient {
   async ensureSubscriptionActive(): Promise<void> {
     const { nilauth } = this._options;
-    const response = await nilauth.subscriptionStatus();
-    if (!response.subscribed) {
-      await this._options.nilauth.payAndValidate();
+    for (let retry = 0; retry < 5; retry++) {
+      const response = await nilauth.subscriptionStatus();
+      if (!response.subscribed) {
+        try {
+          await this._options.nilauth.payAndValidate();
+          return;
+        } catch (_error) {
+          console.log("Retrying to pay and validate subscription after 200ms");
+          await new Promise((f) => setTimeout(f, 200));
+        }
+      }
     }
   }
 
