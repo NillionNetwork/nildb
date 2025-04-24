@@ -27,7 +27,7 @@ function executePartialQuery(
 describe("pipeline variable injection", () => {
   it("replaces simple variables", async ({ expect }) => {
     const queryVariables = {
-      "match.wallet": {
+      address: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match.wallet",
@@ -35,11 +35,11 @@ describe("pipeline variable injection", () => {
     };
     const pipeline = [
       {
-        $match: { wallet: "match.wallet" },
+        $match: { wallet: "##address" },
       },
     ];
 
-    const requestVariables = { "match.wallet": "abc123" };
+    const requestVariables = { address: "abc123" };
 
     const actual = executePartialQuery(
       queryVariables,
@@ -58,17 +58,17 @@ describe("pipeline variable injection", () => {
 
   it("replaces multiple variable types", async ({ expect }) => {
     const queryVariables = {
-      "match.wallet": {
+      address: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match.wallet",
       },
-      "match.amount": {
+      value: {
         description: "",
         type: "number",
         path: "$.pipeline[0].$match.amount",
       },
-      "match.is.active": {
+      isActive: {
         description: "",
         type: "boolean",
         path: "$.pipeline[0].$match.active",
@@ -77,17 +77,17 @@ describe("pipeline variable injection", () => {
     const pipeline = [
       {
         $match: {
-          wallet: "match.wallet",
-          amount: "match.amount",
-          active: "match.is.active",
+          wallet: "##address",
+          amount: "##value",
+          active: "##isActive",
         },
       },
     ];
 
     const requestVariables = {
-      "match.wallet": "abc123",
-      "match.amount": 1000,
-      "match.is.active": false,
+      address: "abc123",
+      value: 1000,
+      isActive: false,
     };
 
     const actual = executePartialQuery(
@@ -109,9 +109,9 @@ describe("pipeline variable injection", () => {
     expect(actual.pipeline).toEqual(expected);
   });
 
-  it("throws error for missing variables", async ({ expect }) => {
+  it("throws error for unexpected variables", async ({ expect }) => {
     const queryVariables = {
-      "##address": {
+      address: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match.wallet",
@@ -119,7 +119,8 @@ describe("pipeline variable injection", () => {
     };
 
     const variables = {
-      "match.is.active": false,
+      address: "abc123",
+      isActive: false,
     };
 
     const result = pipe(
@@ -132,39 +133,65 @@ describe("pipeline variable injection", () => {
 
     if (Either.isLeft(result)) {
       const error = result.left;
-      expect(error.issues[0]).toContain("Missing pipeline variables");
-      expect(error.issues[1]).toContain("##address");
+      expect(error.issues[0]).toContain("Query execution variables mismatch");
+      expect(error.issues[1]).toContain("unexpected=isActive");
+    }
+  });
+
+  it("throws error for missing variables", async ({ expect }) => {
+    const queryVariables = {
+      address: {
+        description: "",
+        type: "string",
+        path: "$.pipeline[0].$match.wallet",
+      } as QueryVariable,
+    };
+
+    const variables = {};
+
+    const result = pipe(
+      validateVariables(queryVariables, variables),
+      E.either,
+      E.runSync,
+    );
+
+    expect(Either.isLeft(result)).toBeTruthy();
+
+    if (Either.isLeft(result)) {
+      const error = result.left;
+      expect(error.issues[0]).toContain("Query execution variables mismatch");
+      expect(error.issues[1]).toContain("missing=address");
     }
   });
 
   it("handles complex pipeline with multiple stages", async ({ expect }) => {
     const queryVariables = {
-      "##status": {
+      status: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match.status",
       },
-      "##startDate": {
+      startDate: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match._created.$gt",
       },
-      "##collection": {
+      collection: {
         description: "",
         type: "string",
         path: "$.pipeline[1].$lookup.from",
       },
-      "##localField": {
+      localField: {
         description: "",
         type: "string",
         path: "$.pipeline[1].$lookup.localField",
       },
-      "##groupField": {
+      groupField: {
         description: "",
         type: "string",
         path: "$.pipeline[3].$group._id.$concat[1]",
       },
-      "##valueField": {
+      valueField: {
         description: "",
         type: "number",
         path: "$.pipeline[3].$group.total.$sum",
@@ -197,12 +224,12 @@ describe("pipeline variable injection", () => {
     ];
 
     const requestVariables = {
-      "##status": "active",
-      "##startDate": "2024-01-01",
-      "##collection": "users",
-      "##localField": "userId",
-      "##groupField": "category",
-      "##valueField": 1,
+      status: "active",
+      startDate: "2024-01-01",
+      collection: "users",
+      localField: "userId",
+      groupField: "category",
+      valueField: 1,
     };
 
     const actual = executePartialQuery(
@@ -242,27 +269,27 @@ describe("pipeline variable injection", () => {
 
   it("handles deeply nested structures", async ({ expect }) => {
     const queryVariables = {
-      "##type1": {
+      type1: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[0].type",
       },
-      "##category1": {
+      category1: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[1].category.$in[0]",
       },
-      "##category2": {
+      category2: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[1].category.$in[1]",
       },
-      "##status": {
+      status: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[2].$and[0].status",
       },
-      "##deepValue": {
+      deepValue: {
         description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[2].$and[1].nested.deep.value",
@@ -293,11 +320,11 @@ describe("pipeline variable injection", () => {
     ];
 
     const requestVariables = {
-      "##type1": "special",
-      "##category1": "A",
-      "##category2": "B",
-      "##status": "active",
-      "##deepValue": "nested-value",
+      type1: "special",
+      category1: "A",
+      category2: "B",
+      status: "active",
+      deepValue: "nested-value",
     };
 
     const actual = executePartialQuery(

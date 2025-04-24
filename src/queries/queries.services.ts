@@ -120,28 +120,17 @@ export function validateVariables(
   const providedKeys = Object.keys(provided);
   const permittedKeys = Object.keys(template);
 
-  if (providedKeys.length !== permittedKeys.length) {
-    const issues = [
-      "Query execution variables count mismatch",
-      `expected=${permittedKeys.length}, received=${providedKeys.length}`,
-    ];
-    const error = new DataValidationError({
-      issues,
-      cause: {
-        template,
-        provided,
-      },
-    });
-    return E.fail(error);
-  }
-
   const missingVariables = permittedKeys.filter(
     (item) => !providedKeys.includes(item),
   );
-  if (missingVariables.length > 0) {
+  const unexpectedVariables = providedKeys.filter(
+    (item) => !permittedKeys.includes(item),
+  );
+  if (missingVariables.length > 0 || unexpectedVariables.length > 0) {
     const issues = [
-      "Missing pipeline variables",
-      ...missingVariables.map((variable) => `expected=${variable}`),
+      "Query execution variables mismatch: ",
+      ...missingVariables.map((variable) => `missing=${variable}`),
+      ...unexpectedVariables.map((variable) => `unexpected=${variable}`),
     ];
     const error = new DataValidationError({
       issues,
