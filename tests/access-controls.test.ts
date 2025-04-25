@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Keypair } from "@nillion/nuc";
+import { Keypair, NilauthClient } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { PathsV1 } from "#/common/paths";
@@ -72,11 +72,18 @@ describe("restrict cross organization operations", () => {
       data,
     });
 
+    const keypair = Keypair.generate();
+    const nilauth = await NilauthClient.from({
+      keypair,
+      payer: organization._options.payer,
+      baseUrl: bindings.config.nilauthBaseUrl,
+    });
+
     organizationB = new TestOrganizationUserClient({
       app: app,
-      keypair: Keypair.generate(),
+      keypair,
       payer: organization._options.payer,
-      nilauth: organization._options.nilauth,
+      nilauth,
       node: bindings.node,
     });
 
