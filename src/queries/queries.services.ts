@@ -1,4 +1,4 @@
-import { Data, Effect as E, pipe } from "effect";
+import { Effect as E, pipe } from "effect";
 import type { Document, InsertOneResult, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { z } from "zod";
@@ -206,27 +206,14 @@ export function updateQueryJob(
   void,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
 > {
-  const now = new Date();
-  const { jobId, error, status, ...rest } = payload;
+  const { jobId, error, ...rest } = payload;
   const update: Partial<QueryJobDocument> = {
     ...rest,
-    status,
-    _updated: now,
+    _updated: new Date(),
   };
 
-  switch (status) {
-    case "running":
-      update.startedAt = now;
-      break;
-    case "complete":
-      update.endedAt = now;
-      break;
-  }
-
-  if (error instanceof Data.TaggedError) {
+  if (error) {
     update.errors = error.humanize();
-  } else if (error instanceof Error) {
-    update.errors = [error.message];
   }
 
   return pipe(QueriesJobsRepository.updateOne(ctx, jobId, update));
@@ -252,6 +239,7 @@ export function processQueryJob(
         updateQueryJob(ctx, {
           jobId,
           status: "running",
+          startedAt: new Date(),
         }),
         pipe(
           executeQuery(ctx, {
@@ -269,10 +257,20 @@ export function processQueryJob(
       ]),
     ),
     E.flatMap(([, result]) =>
-      updateQueryJob(ctx, { jobId, status: "complete", result }),
+      updateQueryJob(ctx, {
+        jobId,
+        result,
+        status: "complete",
+        endedAt: new Date(),
+      }),
     ),
     E.catchAll((error) =>
-      updateQueryJob(ctx, { jobId, status: "complete", error }),
+      updateQueryJob(ctx, {
+        jobId,
+        error,
+        status: "complete",
+        endedAt: new Date(),
+      }),
     ),
   );
 }
