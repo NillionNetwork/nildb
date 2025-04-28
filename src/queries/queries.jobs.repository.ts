@@ -1,8 +1,8 @@
 import { Effect as E, pipe } from "effect";
 import {
+  type InsertOneResult,
   type StrictFilter,
   type StrictUpdateFilter,
-  type InsertOneResult,
   UUID,
 } from "mongodb";
 import {
