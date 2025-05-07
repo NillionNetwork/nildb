@@ -9,6 +9,7 @@ import { buildDataRouter } from "#/data/data.router";
 import { corsMiddleware } from "#/middleware/cors.middleware";
 import { useLoggerMiddleware } from "#/middleware/logger.middleware";
 import { buildNilCommRouter } from "#/nilcomm/nilcomm.router";
+import { buildOpenAiRouter } from "#/openai/openai.router";
 import { buildQueriesRouter } from "#/queries/queries.router";
 import { buildSchemasRouter } from "#/schemas/schemas.router";
 import { createOpenApiRouter } from "./docs/docs.router";
@@ -66,6 +67,12 @@ export async function buildApp(
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.NILCOMM)) {
     await buildNilCommRouter({ app, bindings });
+  }
+
+  if (
+    hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.OPENAI_TOOL_API)
+  ) {
+    buildOpenAiRouter({ app, bindings });
   }
 
   return { app, metrics: metricsApp };

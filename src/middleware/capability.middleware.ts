@@ -129,7 +129,7 @@ export function enforceCapability(
 
     if (!options.roles.includes(account._type)) {
       log.debug(
-        "Role not allowed at path: role=%s path=%s",
+        "Role is not allowed at this path: role=%s path=%s",
         account._type,
         options.path,
       );
