@@ -18,14 +18,11 @@ services:
       - "30432:5432"
 
   nilchain:
-    image: ghcr.io/nillionnetwork/nilchaind:v0.2.5
+    image: ghcr.io/nillionnetwork/nilchain-devnet:v0.1.0
     volumes:
-      - ./nilchaind:/opt/nilchaind-configs
-    entrypoint: ["/bin/sh", "-c", "cp -r /opt/nilchaind-configs /opt/nilchaind && nilchaind start --home /opt/nilchaind"]
+      - ./nilchaind/config/genesis.json:/opt/nilchain/config/genesis.json
     ports:
       - "30648:26648" # JSON RPC
-      - "30649:26649" # gRPC
-      - "30650:26650" # REST
 
   nilauth:
     image: public.ecr.aws/k5d9x2g2/nilauth:latest
