@@ -19,6 +19,7 @@ import {
   AddQueryRequestSchema,
   DeleteQueryRequestSchema,
   ExecuteQueryRequestSchema,
+  QueryJobRequestSchema,
 } from "./queries.types";
 
 export function add(options: ControllerOptions): void {
@@ -137,6 +138,42 @@ export function list(options: ControllerOptions): void {
       return pipe(
         QueriesService.findQueries(c.env, account._id),
         E.map((data) => c.json({ data })),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+export function getQueryJob(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.queries.job;
+  const guard = {
+    path,
+    cmd: NucCmd.nil.db.queries,
+    roles: [RoleSchema.enum.organization],
+    // TODO: implement policy validation fix json on body type inference
+    validate: (_c: AppContext, _token: NucToken) => true,
+  };
+
+  app.post(
+    path,
+    payloadValidator(QueryJobRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability(bindings, guard),
+    async (c) => {
+      const account = c.get("account") as OrganizationAccountDocument;
+      const payload = c.req.valid("json");
+
+      return pipe(
+        QueriesService.findQueryJob(c.env, payload.id),
+        E.flatMap((data) =>
+          E.all([
+            E.succeed(data),
+            enforceQueryOwnership(account, data.queryId),
+          ]),
+        ),
+        E.map(([data]) => c.json({ data })),
         handleTaggedErrors(c),
         E.runPromise,
       );
