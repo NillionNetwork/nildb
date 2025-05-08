@@ -19,6 +19,7 @@ export const FeatureFlag = {
   NILCOMM: "nilcomm",
   OPENAI_TOOL_API: "openai-tool-api",
   OPENAPI_DOCS: "openapi-docs",
+  MCP_API: "mcp-api",
   PROMETHEUS_METRICS: "prometheus-metrics",
 } as const;
 

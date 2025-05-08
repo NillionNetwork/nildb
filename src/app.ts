@@ -6,6 +6,7 @@ import { Temporal } from "temporal-polyfill";
 import { buildAccountsRouter } from "#/accounts/accounts.router";
 import { buildAdminRouter } from "#/admin/admin.router";
 import { buildDataRouter } from "#/data/data.router";
+import { buildMcpRouter } from "#/mcp/mcp.router";
 import { corsMiddleware } from "#/middleware/cors.middleware";
 import { useLoggerMiddleware } from "#/middleware/logger.middleware";
 import { buildNilCommRouter } from "#/nilcomm/nilcomm.router";
@@ -73,6 +74,10 @@ export async function buildApp(
     hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.OPENAI_TOOL_API)
   ) {
     buildOpenAiRouter({ app, bindings });
+  }
+
+  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MCP_API)) {
+    buildMcpRouter({ app, bindings });
   }
 
   return { app, metrics: metricsApp };
