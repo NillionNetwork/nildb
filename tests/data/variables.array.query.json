@@ -15,7 +15,7 @@
   "pipeline": [
     {
       "$match": {
-        "values": "##values"
+        "values": []
       }
     }
   ]
