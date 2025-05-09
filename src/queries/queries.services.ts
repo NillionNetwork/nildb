@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { Document, UUID } from "mongodb";
-import type { JsonObject, JsonValue } from "type-fest";
+import type { JsonValue } from "type-fest";
 import { z } from "zod";
 import {
   type DataCollectionNotFoundError,
@@ -17,8 +17,12 @@ import type { AppBindings } from "#/env";
 import * as OrganizationRepository from "#/organizations/organizations.repository";
 import pipelineSchema from "./mongodb_pipeline.json";
 import * as QueriesRepository from "./queries.repository";
-import type { AddQueryRequest, ExecuteQueryRequest } from "./queries.types";
-import type { QueryArrayVariable, QueryDocument } from "./queries.types";
+import type {
+  AddQueryRequest,
+  ExecuteQueryRequest,
+  QueryArrayVariable,
+  QueryDocument,
+} from "./queries.types";
 
 export function addQuery(
   ctx: AppBindings,
@@ -108,7 +112,7 @@ export type QueryRuntimeVariables = Record<
   QueryPrimitive | QueryPrimitive[]
 >;
 
-function validateVariables(
+export function validateVariables(
   template: QueryDocument["variables"],
   provided: ExecuteQueryRequest["variables"],
 ): E.Effect<QueryRuntimeVariables, DataValidationError> {
@@ -116,10 +120,17 @@ function validateVariables(
   const providedKeys = Object.keys(provided);
   const permittedKeys = Object.keys(template);
 
-  if (providedKeys.length !== permittedKeys.length) {
+  const missingVariables = permittedKeys.filter(
+    (item) => !providedKeys.includes(item),
+  );
+  const unexpectedVariables = providedKeys.filter(
+    (item) => !permittedKeys.includes(item),
+  );
+  if (missingVariables.length > 0 || unexpectedVariables.length > 0) {
     const issues = [
-      "Query execution variables count mismatch",
-      `expected=${permittedKeys.length}, received=${providedKeys.length}`,
+      "Query execution variables mismatch: ",
+      ...missingVariables.map((variable) => `missing=${variable}`),
+      ...unexpectedVariables.map((variable) => `unexpected=${variable}`),
     ];
     const error = new DataValidationError({
       issues,
@@ -156,13 +167,15 @@ function validateVariables(
           provided[key] as unknown[],
           // biome-ignore lint/complexity/noForEach: biome doesn't recognise Effect.forEach
           E.forEach((item) => parsePrimitiveVariable(key, item, itemType)),
-          E.map((values) => [key, values] as [string, unknown]),
+          E.map(
+            (values) => [variableTemplate.path, values] as [string, unknown],
+          ),
         );
       }
 
       return pipe(
         parsePrimitiveVariable(key, provided[key], type),
-        E.map((value) => [key, value] as [string, unknown]),
+        E.map((value) => [variableTemplate.path, value] as [string, unknown]),
       );
     }),
     E.map((entries) => Object.fromEntries(entries) as QueryRuntimeVariables),
@@ -223,48 +236,109 @@ function parsePrimitiveVariable(
   return E.fail(error);
 }
 
+function getAggregationField(
+  aggregation: unknown,
+  variablePath: string[],
+): E.Effect<unknown, VariableInjectionError> {
+  let field = aggregation;
+  const getField = (
+    segment: string,
+  ): E.Effect<unknown, VariableInjectionError, never> => {
+    if (typeof field === "object") {
+      const obj = field as Record<string, unknown>;
+      field = obj[segment];
+    } else if (Array.isArray(field)) {
+      field = field[Number(segment)];
+    } else {
+      field = undefined;
+    }
+    if (!field) {
+      return E.fail(
+        new VariableInjectionError({
+          message: `Variable path not found: ${variablePath}`,
+        }),
+      );
+    }
+    return E.succeed(field);
+  };
+  return E.forEach(variablePath, getField).pipe(
+    E.map((fields) => fields.pop()),
+  );
+}
+
 export function injectVariablesIntoAggregation(
   aggregation: Record<string, unknown>[],
   variables: QueryRuntimeVariables,
 ): E.Effect<Document[], VariableInjectionError> {
-  const prefixIdentifier = "##";
-
-  const traverse = (
-    current: unknown,
-  ): E.Effect<JsonValue, VariableInjectionError> => {
-    // if item is a string and has prefix identifier then attempt inplace injection
-    if (typeof current === "string" && current.startsWith(prefixIdentifier)) {
-      const key = current.split(prefixIdentifier)[1];
-
-      if (key in variables) {
-        return E.succeed(variables[key] as JsonValue);
-      }
-      const error = new VariableInjectionError({
-        message: `Missing pipeline variable: ${current}`,
-      });
-      return E.fail(error);
-    }
-
-    // if item is an array then traverse each array element
-    if (Array.isArray(current)) {
-      return E.forEach(current, (e) => traverse(e));
-    }
-
-    // if item is an object then recursively traverse it
-    if (typeof current === "object" && current !== null) {
-      return E.forEach(Object.entries(current), ([key, value]) =>
-        pipe(
-          traverse(value),
-          E.map((traversedValue) => [key, traversedValue] as const),
-        ),
-      ).pipe(E.map((entries) => Object.fromEntries(entries) as JsonObject));
-    }
-
-    // remaining types are primitives and therefore do not need traversal
-    return E.succeed(current as JsonValue);
+  const injectVariables = (
+    path: string,
+    value: QueryPrimitive | QueryPrimitive[],
+  ): E.Effect<
+    QueryPrimitive | QueryPrimitive[],
+    VariableInjectionError,
+    never
+  > => {
+    return E.Do.pipe(
+      E.bind("segments", () => pathSegments(path)),
+      E.bind("lastSegment", ({ segments }) => {
+        const lastField = segments.pop();
+        if (!segments || !lastField) {
+          return E.fail(
+            new VariableInjectionError({ message: "Invalid field path" }),
+          );
+        }
+        return E.succeed(lastField);
+      }),
+      E.bind("container", ({ segments }) =>
+        getAggregationField(aggregation, segments),
+      ),
+      E.map(({ container, lastSegment }) => {
+        if (typeof container === "object") {
+          const obj = container as Record<string, unknown>;
+          obj[lastSegment] = value;
+        } else if (Array.isArray(container)) {
+          container[Number(lastSegment)] = value;
+        } else {
+          return E.fail(
+            new VariableInjectionError({
+              message: `Variable path not found: ${path}`,
+            }),
+          );
+        }
+        return E.succeed(value);
+      }),
+      E.runSync,
+    );
   };
 
-  return traverse(aggregation as JsonValue).pipe(
-    E.map((result) => result as Document[]),
-  );
+  return E.forEach(Object.entries(variables), ([key, value]) =>
+    injectVariables(key, value),
+  ).pipe(E.map((_) => aggregation as JsonValue as Document[]));
+}
+
+function pathSegments(
+  path: string,
+): E.Effect<string[], VariableInjectionError> {
+  const segments = path
+    .split(".")
+    .flatMap((segment) => segment.replace("]", "").split("["));
+  const root = segments.shift();
+  if (root && root !== "$") {
+    return E.fail(
+      new VariableInjectionError({
+        message:
+          "Relative path is not supported, the path must start by the root ($)",
+      }),
+    );
+  }
+  const pipeline = segments.shift();
+  if (pipeline && pipeline !== "pipeline") {
+    return E.fail(
+      new VariableInjectionError({
+        message: `Path for pipeline not found ${pipeline}`,
+      }),
+    );
+  }
+
+  return E.succeed(segments.filter(Boolean));
 }

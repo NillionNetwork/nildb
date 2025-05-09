@@ -5,26 +5,29 @@
   "variables": {
     "minAmount": {
       "type": "number",
-      "description": "Minimum amount filter"
+      "description": "Minimum amount filter",
+      "path": "$.pipeline[0].$match.amount.$gte"
     },
     "status": {
       "type": "string",
-      "description": "Status to filter by"
+      "description": "Status to filter by",
+      "path": "$.pipeline[0].$match.status"
     },
     "startDate": {
       "type": "date",
-      "description": "Start date filter"
+      "description": "Start date filter",
+      "path": "$.pipeline[0].$match.timestamp.$gte"
     }
   },
   "pipeline": [
     {
       "$match": {
         "amount": {
-          "$gte": "##minAmount"
+          "$gte": 0
         },
-        "status": "##status",
+        "status": "",
         "timestamp": {
-          "$gte": "##startDate"
+          "$gte": "1970-01-01T00:00:00.000Z"
         }
       }
     },
