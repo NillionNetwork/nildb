@@ -38,12 +38,10 @@ export function insert(
       ctx,
       CollectionName.JobsQueries,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.insertOne(document),
-        catch: (cause) => new DatabaseError({ cause, message: "insert" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.insertOne(document),
+      catch: (cause) => new DatabaseError({ cause, message: "insert" }),
+    }),
   );
 }
 
@@ -59,12 +57,10 @@ export function findOne(
       ctx,
       CollectionName.JobsQueries,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.findOne(filter),
-        catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.findOne(filter),
+      catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
+    }),
     E.flatMap((document) =>
       document
         ? E.succeed(document)
@@ -96,12 +92,10 @@ export function updateOne(
       ctx,
       CollectionName.JobsQueries,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.updateOne(filter, update),
-        catch: (cause) => new DatabaseError({ cause, message: "updateOne" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "updateOne" }),
+    }),
     E.flatMap((document) =>
       document
         ? E.succeed(document)

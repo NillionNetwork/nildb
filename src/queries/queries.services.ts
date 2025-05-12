@@ -185,23 +185,25 @@ export function addQueryJob(
   return QueriesJobsRepository.insert(ctx, document);
 }
 
+type QueryJobUpdatePayload = {
+  jobId: UUID;
+  status: QueryJobStatus;
+  startedAt?: Date;
+  endedAt?: Date;
+  result?: JsonValue;
+  error?:
+    | DocumentNotFoundError
+    | PrimaryCollectionNotFoundError
+    | DatabaseError
+    | DataValidationError
+    | VariableInjectionError
+    | DataCollectionNotFoundError
+    | TimeoutError;
+};
+
 export function updateQueryJob(
   ctx: AppBindings,
-  payload: {
-    jobId: UUID;
-    status: QueryJobStatus;
-    startedAt?: Date;
-    endedAt?: Date;
-    result?: JsonValue;
-    error?:
-      | DocumentNotFoundError
-      | PrimaryCollectionNotFoundError
-      | DatabaseError
-      | DataValidationError
-      | VariableInjectionError
-      | DataCollectionNotFoundError
-      | TimeoutError;
-  },
+  payload: QueryJobUpdatePayload,
 ): E.Effect<
   void,
   DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
