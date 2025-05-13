@@ -78,8 +78,8 @@ describe("pipeline variable injection", () => {
       {
         $match: {
           wallet: "##address",
-          amount: "##value",
-          active: "##isActive",
+          amount: 1,
+          active: false,
         },
       },
     ];
@@ -102,6 +102,58 @@ describe("pipeline variable injection", () => {
           wallet: "abc123",
           amount: 1000,
           active: false,
+        },
+      },
+    ];
+
+    expect(actual.pipeline).toEqual(expected);
+  });
+
+  it("replaces optional variables", async ({ expect }) => {
+    const queryVariables = {
+      address: {
+        description: "",
+        type: "string",
+        path: "$.pipeline[0].$match.wallet",
+        optional: true,
+      },
+      value: {
+        description: "",
+        type: "number",
+        path: "$.pipeline[0].$match.amount",
+        optional: true,
+      },
+      isActive: {
+        description: "",
+        type: "boolean",
+        path: "$.pipeline[0].$match.active",
+        optional: true,
+      },
+    };
+    const pipeline = [
+      {
+        $match: {
+          wallet: "##address",
+          amount: 1,
+          active: true,
+        },
+      },
+    ];
+
+    const requestVariables = {};
+
+    const actual = executePartialQuery(
+      queryVariables,
+      pipeline,
+      requestVariables,
+    );
+
+    const expected = [
+      {
+        $match: {
+          wallet: "##address",
+          amount: 1,
+          active: true,
         },
       },
     ];
@@ -218,7 +270,7 @@ describe("pipeline variable injection", () => {
       {
         $group: {
           _id: { $concat: ["$joined.", "##groupField"] },
-          total: { $sum: "##valueField" },
+          total: { $sum: 0 },
         },
       },
     ];

@@ -58,6 +58,7 @@ export type QueryVariable = {
   type: "string" | "number" | "boolean" | "date";
   path: string;
   description: string;
+  optional?: boolean;
 };
 
 export type QueryArrayVariable = {
@@ -67,6 +68,7 @@ export type QueryArrayVariable = {
   items: {
     type: "string" | "number" | "boolean" | "date";
   };
+  optional?: boolean;
 };
 
 export type QueryDocument = DocumentBase & {

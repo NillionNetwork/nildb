@@ -99,6 +99,8 @@ export class DataCollectionNotFoundError extends Data.TaggedError(
   }
 }
 
+export type QueryValidationError = VariableInjectionError | DataValidationError;
+
 export class DataValidationError extends Data.TaggedError(
   "DataValidationError",
 )<{

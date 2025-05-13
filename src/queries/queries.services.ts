@@ -8,6 +8,7 @@ import {
   type DatabaseError,
   type DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
+  type QueryValidationError,
   VariableInjectionError,
 } from "#/common/errors";
 import type { Did } from "#/common/types";
@@ -22,6 +23,7 @@ import type {
   ExecuteQueryRequest,
   QueryArrayVariable,
   QueryDocument,
+  QueryVariable,
 } from "./queries.types";
 
 export function addQuery(
@@ -39,7 +41,8 @@ export function addQuery(
   };
 
   return pipe(
-    validateData(pipelineSchema, request.pipeline),
+    validateQuery(document),
+    () => validateData(pipelineSchema, document.pipeline),
     () => QueriesRepository.insert(ctx, document),
     E.flatMap(() =>
       E.all([
@@ -105,6 +108,41 @@ export function removeQuery(
   );
 }
 
+export function validateQuery(
+  query: QueryDocument,
+): E.Effect<QueryDocument, QueryValidationError> {
+  const { variables, pipeline } = query;
+
+  const validateVariableDefinition: (
+    key: string,
+    variable: QueryVariable | QueryArrayVariable,
+  ) => E.Effect<QueryVariable | QueryArrayVariable, QueryValidationError> = (
+    key,
+    variable,
+  ) => {
+    return pipe(
+      pathSegments(variable.path),
+      E.andThen((segments) => getAggregationField(pipeline, segments)),
+      E.andThen((value) => {
+        if (variable.type === "array") {
+          const itemType = (variable as QueryArrayVariable).items.type;
+          return E.forEach(value as unknown[], (item) =>
+            parsePrimitiveVariable(key, item, itemType),
+          ).pipe(E.andThen(() => E.succeed(variable)));
+        }
+        return pipe(
+          parsePrimitiveVariable(key, value, variable.type),
+          E.andThen(() => E.succeed(variable)),
+        );
+      }),
+    );
+  };
+
+  return E.forEach(Object.entries(variables), ([key, variable]) =>
+    validateVariableDefinition(key, variable),
+  ).pipe(E.map(() => query));
+}
+
 export type QueryPrimitive = string | number | boolean | Date;
 
 export type QueryRuntimeVariables = Record<
@@ -121,7 +159,8 @@ export function validateVariables(
   const permittedKeys = Object.keys(template);
 
   const missingVariables = permittedKeys.filter(
-    (item) => !providedKeys.includes(item),
+    (item) =>
+      !providedKeys.includes(item) && !(template[item].optional ?? false),
   );
   const unexpectedVariables = providedKeys.filter(
     (item) => !permittedKeys.includes(item),
@@ -252,7 +291,7 @@ function getAggregationField(
     } else {
       field = undefined;
     }
-    if (!field) {
+    if (field === undefined) {
       return E.fail(
         new VariableInjectionError({
           message: `Variable path not found: ${variablePath}`,

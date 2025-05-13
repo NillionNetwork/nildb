@@ -39,12 +39,17 @@ components:
       required:
         - type
         - description
+        - path
       properties:
         type:
           type: string
           enum: [ 'string', 'number', 'boolean', 'date' ]
         description:
           type: string
+        path:
+          type: string
+        optional:
+          type: boolean
 
     QueryArrayVariable:
       type: object
@@ -52,6 +57,7 @@ components:
         - type
         - description
         - items
+        - path
       properties:
         type:
           type: string
@@ -66,6 +72,10 @@ components:
             type:
               type: string
               enum: [ 'string', 'number', 'boolean', 'date' ]
+        path:
+          type: string
+        optional:
+          type: boolean
 
 paths:
   /api/v1/queries:
