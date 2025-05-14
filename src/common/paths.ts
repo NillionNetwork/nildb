@@ -55,6 +55,34 @@ export const PathsV1 = {
     upload: PathSchema.parse("/api/v1/data/create"),
   },
   docs: PathSchema.parse("/api/v1/openapi/docs"),
+  openai: {
+    openApiJson: PathSchema.parse("/api/v1/openai/openapi.json"),
+
+    accounts: {
+      profile: PathSchema.parse("/api/v1/openai/accounts/me"),
+    },
+
+    schemas: {
+      list: PathSchema.parse("/api/v1/openai/schemas/list"),
+      create: PathSchema.parse("/api/v1/openai/schemas/create"),
+      remove: PathSchema.parse("/api/v1/openai/schemas/remove"),
+      metadata: PathSchema.parse("/api/v1/openai/schemas/metadata/:id"),
+    },
+
+    queries: {
+      list: PathSchema.parse("/api/v1/openai/queries/list"),
+      create: PathSchema.parse("/api/v1/openai/queries/create"),
+      remove: PathSchema.parse("/api/v1/openai/queries/remove"),
+      execute: PathSchema.parse("/api/v1/openai/queries/execute"),
+    },
+
+    data: {
+      tail: PathSchema.parse("/api/v1/openai/data/tail"),
+      upload: PathSchema.parse("/api/v1/openai/data/upload"),
+      read: PathSchema.parse("/api/v1/openai/data/read"),
+      remove: PathSchema.parse("/api/v1/openai/data/find"),
+    },
+  },
   queries: {
     root: PathSchema.parse("/api/v1/queries"),
     execute: PathSchema.parse("/api/v1/queries/execute"),

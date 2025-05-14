@@ -1,0 +1,778 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "nilDB API",
+    "description": "A secure data platform for creating schemas, uploading and retrieving data. Underlying storage provided by mongodb.",
+    "version": "1.0.0-hackathon"
+  },
+  "paths": {
+    "/api/v1/openai/accounts/me": {
+      "get": {
+        "summary": "Get user profile",
+        "description": "Returns detailed information about the user's organization profile including subscription status, schemas, and queries.",
+        "operationId": "getProfile",
+        "tags": ["Accounts"],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationProfile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/schemas/list": {
+      "get": {
+        "operationId": "listSchemas",
+        "summary": "List schemas for the authenticated organization",
+        "description": "Retrieves all schemas owned by the currently authenticated organization.",
+        "tags": ["Schemas"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of schemas successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SchemaDocument"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/schemas/create": {
+      "post": {
+        "operationId": "createSchema",
+        "summary": "Create a new schema",
+        "description": "Creates a new schema for the authenticated organization.",
+        "tags": ["Schemas"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["_id", "name", "schema"],
+                "properties": {
+                  "_id": {
+                    "type": "string",
+                    "description": "The schema's unique uuid provided by the client"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the schema"
+                  },
+                  "schema": {
+                    "type": "object",
+                    "description": "JSON schema definition",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/schemas/remove": {
+      "post": {
+        "operationId": "removeSchema",
+        "summary": "Remove a schema",
+        "description": "Removes a schema owned by the authenticated organization.",
+        "tags": ["Schemas"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the schema to remove"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema successfully removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/schemas/metadata/{id}": {
+      "get": {
+        "operationId": "metadataSchema",
+        "summary": "Get schema metadata",
+        "description": "Retrieves metadata for a specific schema.",
+        "tags": ["Schemas"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the schema"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema metadata successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SchemaDocument"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/queries/list": {
+      "get": {
+        "operationId": "listQueries",
+        "summary": "List queries for the authenticated organization",
+        "description": "Retrieves all queries owned by the currently authenticated organization.",
+        "tags": ["Queries"],
+        "responses": {
+          "200": {
+            "description": "Queries successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "Unique identifier for the query"
+                          },
+                          "owner": {
+                            "type": "string",
+                            "description": "DID of the organization that owns this query"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Name of the query"
+                          },
+                          "query": {
+                            "type": "object",
+                            "description": "Query definition",
+                            "additionalProperties": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/queries/create": {
+      "post": {
+        "operationId": "createQuery",
+        "summary": "Create a new query",
+        "description": "Creates a new query for the authenticated organization.",
+        "tags": ["Queries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["_id", "name", "schema"],
+                "properties": {
+                  "_id": {
+                    "type": "string",
+                    "description": "The query's ID"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the query"
+                  },
+                  "schema": {
+                    "type": "string",
+                    "description": "The query's starting schema id"
+                  },
+                  "variables": {
+                    "type": "object",
+                    "description": "A map of variables to use in the query's execution"
+                  },
+                  "pipeline": {
+                    "type": "array",
+                    "description": "The query, defined as a mongodb aggregation",
+                    "items": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/queries/remove": {
+      "post": {
+        "operationId": "removeQuery",
+        "summary": "Remove a query",
+        "description": "Removes a query owned by the authenticated organization.",
+        "tags": ["Queries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the query to remove"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query successfully removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/queries/execute": {
+      "post": {
+        "operationId": "executeQuery",
+        "summary": "Execute a query",
+        "description": "Executes a saved query owned by the authenticated organization.",
+        "tags": ["Queries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id", "variables"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the query to execute"
+                  },
+                  "variables": {
+                    "type": "object",
+                    "description": "Runtime variables expected by the query. Use an empty map for none (eg {})"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query successfully executed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/data/tail": {
+      "post": {
+        "operationId": "tailData",
+        "summary": "Tail data from a schema",
+        "description": "Retrieves the most recent records from a schema.",
+        "tags": ["Data"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["schema"],
+                "properties": {
+                  "schema": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the schema"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Data successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/data/upload": {
+      "post": {
+        "operationId": "uploadData",
+        "summary": "Upload data to a schema",
+        "description": "Uploads new records to a schema.",
+        "tags": ["Data"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["schema", "data"],
+                "properties": {
+                  "schema": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the schema"
+                  },
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["_id"],
+                      "properties": {
+                        "_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "Unique identifier for the record"
+                        }
+                      },
+                      "additionalProperties": true
+                    },
+                    "description": "Records to upload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Data successfully uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "inserted": {
+                          "type": "integer",
+                          "description": "Number of records inserted"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/data/read": {
+      "post": {
+        "operationId": "readData",
+        "summary": "Read data from a schema",
+        "description": "Reads records from a schema based on query criteria.",
+        "tags": ["Data"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["schema"],
+                "properties": {
+                  "schema": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the schema"
+                  },
+                  "query": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Query criteria"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of records to return"
+                  },
+                  "skip": {
+                    "type": "integer",
+                    "description": "Number of records to skip"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Data successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/data/find": {
+      "post": {
+        "operationId": "removeData",
+        "summary": "Remove data from a schema",
+        "description": "Removes records from a schema based on criteria.",
+        "tags": ["Data"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["schema", "query"],
+                "properties": {
+                  "schema": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the schema"
+                  },
+                  "query": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Query criteria for records to remove"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Data successfully removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deleted": {
+                          "type": "integer",
+                          "description": "Number of records deleted"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openai/openapi.json": {
+      "get": {
+        "operationId": "getOpenApiJson",
+        "summary": "Get OpenAPI specification",
+        "description": "Returns the OpenAPI specification for the API.",
+        "tags": ["Documentation"],
+        "responses": {
+          "200": {
+            "description": "OpenAPI specification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OrganizationProfile": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "description": "Decentralized identifier (DID) for the organization"
+              },
+              "_type": {
+                "type": "string",
+                "description": "Entity type"
+              },
+              "_created": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Creation timestamp"
+              },
+              "_updated": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Last update timestamp"
+              },
+              "name": {
+                "type": "string",
+                "description": "Organization name"
+              },
+              "subscription": {
+                "type": "object",
+                "description": "Subscription details",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Subscription start date"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Subscription end date"
+                  },
+                  "txHash": {
+                    "type": "string",
+                    "description": "Transaction hash for the subscription payment"
+                  }
+                },
+                "required": ["start", "end", "txHash"]
+              },
+              "schemas": {
+                "type": "array",
+                "description": "List of schemas defined by the organization",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "queries": {
+                "type": "array",
+                "description": "List of saved queries",
+                "items": {
+                  "type": "object"
+                }
+              }
+            },
+            "required": [
+              "_id",
+              "_type",
+              "_created",
+              "_updated",
+              "name",
+              "subscription",
+              "schemas",
+              "queries"
+            ]
+          }
+        },
+        "required": ["data"]
+      },
+      "SchemaDocument": {
+        "type": "object",
+        "required": ["_id", "_created", "_updated", "owner", "name", "schema"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the schema"
+          },
+          "_created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "_updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          },
+          "owner": {
+            "type": "string",
+            "description": "DID of the organization that owns this schema"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the schema"
+          },
+          "schema": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "JSON schema definition"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
