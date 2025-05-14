@@ -6,10 +6,13 @@ import {
   injectVariablesIntoAggregation,
   validateVariables,
 } from "#/queries/queries.services";
-import type { QueryVariable } from "#/queries/queries.types";
+import type {
+  QueryArrayVariable,
+  QueryVariable,
+} from "#/queries/queries.types";
 
 function executePartialQuery(
-  queryVariables: Record<string, QueryRuntimeVariables>,
+  queryVariables: Record<string, QueryVariable | QueryArrayVariable>,
   pipeline: Record<string, unknown>[],
   requestVariables: Record<string, unknown>,
 ) {
@@ -26,20 +29,19 @@ function executePartialQuery(
 
 describe("pipeline variable injection", () => {
   it("replaces simple variables", async ({ expect }) => {
-    const queryVariables = {
+    const queryVariables: Record<string, QueryVariable> = {
       address: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.wallet",
       },
     };
     const pipeline = [
       {
-        $match: { wallet: "##address" },
+        $match: { wallet: "" },
       },
     ];
 
-    const requestVariables = { address: "abc123" };
+    const requestVariables: QueryRuntimeVariables = { address: "abc123" };
 
     const actual = executePartialQuery(
       queryVariables,
@@ -57,19 +59,16 @@ describe("pipeline variable injection", () => {
   });
 
   it("replaces multiple variable types", async ({ expect }) => {
-    const queryVariables = {
+    const queryVariables: Record<string, QueryVariable> = {
       address: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.wallet",
       },
       value: {
-        description: "",
         type: "number",
         path: "$.pipeline[0].$match.amount",
       },
       isActive: {
-        description: "",
         type: "boolean",
         path: "$.pipeline[0].$match.active",
       },
@@ -77,9 +76,9 @@ describe("pipeline variable injection", () => {
     const pipeline = [
       {
         $match: {
-          wallet: "##address",
-          amount: "##value",
-          active: "##isActive",
+          wallet: "",
+          amount: 0,
+          active: false,
         },
       },
     ];
@@ -87,7 +86,7 @@ describe("pipeline variable injection", () => {
     const requestVariables = {
       address: "abc123",
       value: 1000,
-      isActive: false,
+      isActive: true,
     };
 
     const actual = executePartialQuery(
@@ -101,6 +100,55 @@ describe("pipeline variable injection", () => {
         $match: {
           wallet: "abc123",
           amount: 1000,
+          active: true,
+        },
+      },
+    ];
+
+    expect(actual.pipeline).toEqual(expected);
+  });
+
+  it("replaces optional variables", async ({ expect }) => {
+    const queryVariables: Record<string, QueryVariable> = {
+      address: {
+        type: "string",
+        path: "$.pipeline[0].$match.wallet",
+        optional: true,
+      },
+      value: {
+        type: "number",
+        path: "$.pipeline[0].$match.amount",
+        optional: true,
+      },
+      isActive: {
+        type: "boolean",
+        path: "$.pipeline[0].$match.active",
+        optional: true,
+      },
+    };
+    const pipeline = [
+      {
+        $match: {
+          wallet: "",
+          amount: 0,
+          active: false,
+        },
+      },
+    ];
+
+    const requestVariables = {};
+
+    const actual = executePartialQuery(
+      queryVariables,
+      pipeline,
+      requestVariables,
+    );
+
+    const expected = [
+      {
+        $match: {
+          wallet: "",
+          amount: 0,
           active: false,
         },
       },
@@ -110,12 +158,11 @@ describe("pipeline variable injection", () => {
   });
 
   it("throws error for unexpected variables", async ({ expect }) => {
-    const queryVariables = {
+    const queryVariables: Record<string, QueryVariable> = {
       address: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.wallet",
-      } as QueryVariable,
+      },
     };
 
     const variables = {
@@ -139,12 +186,11 @@ describe("pipeline variable injection", () => {
   });
 
   it("throws error for missing variables", async ({ expect }) => {
-    const queryVariables = {
+    const queryVariables: Record<string, QueryVariable> = {
       address: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.wallet",
-      } as QueryVariable,
+      },
     };
 
     const variables = {};
@@ -165,34 +211,28 @@ describe("pipeline variable injection", () => {
   });
 
   it("handles complex pipeline with multiple stages", async ({ expect }) => {
-    const queryVariables = {
+    const queryVariables: Record<string, QueryVariable> = {
       status: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.status",
       },
       startDate: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match._created.$gt",
       },
       collection: {
-        description: "",
         type: "string",
         path: "$.pipeline[1].$lookup.from",
       },
       localField: {
-        description: "",
         type: "string",
         path: "$.pipeline[1].$lookup.localField",
       },
       groupField: {
-        description: "",
         type: "string",
         path: "$.pipeline[3].$group._id.$concat[1]",
       },
       valueField: {
-        description: "",
         type: "number",
         path: "$.pipeline[3].$group.total.$sum",
       },
@@ -200,14 +240,14 @@ describe("pipeline variable injection", () => {
     const pipeline = [
       {
         $match: {
-          status: "##status",
-          _created: { $gt: "##startDate" },
+          status: "",
+          _created: { $gt: "" },
         },
       },
       {
         $lookup: {
-          from: "##collection",
-          localField: "##localField",
+          from: "",
+          localField: "",
           foreignField: "id",
           as: "joined",
         },
@@ -217,8 +257,8 @@ describe("pipeline variable injection", () => {
       },
       {
         $group: {
-          _id: { $concat: ["$joined.", "##groupField"] },
-          total: { $sum: "##valueField" },
+          _id: { $concat: ["$joined.", ""] },
+          total: { $sum: 0 },
         },
       },
     ];
@@ -268,29 +308,24 @@ describe("pipeline variable injection", () => {
   });
 
   it("handles deeply nested structures", async ({ expect }) => {
-    const queryVariables = {
+    const queryVariables: Record<string, QueryVariable> = {
       type1: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[0].type",
       },
       category1: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[1].category.$in[0]",
       },
       category2: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[1].category.$in[1]",
       },
       status: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[2].$and[0].status",
       },
       deepValue: {
-        description: "",
         type: "string",
         path: "$.pipeline[0].$match.$or[2].$and[1].nested.deep.value",
       },
@@ -300,15 +335,15 @@ describe("pipeline variable injection", () => {
       {
         $match: {
           $or: [
-            { type: "##type1" },
-            { category: { $in: ["##category1", "##category2"] } },
+            { type: "" },
+            { category: { $in: ["", ""] } },
             {
               $and: [
-                { status: "##status" },
+                { status: "" },
                 {
                   nested: {
                     deep: {
-                      value: "##deepValue",
+                      value: "",
                     },
                   },
                 },

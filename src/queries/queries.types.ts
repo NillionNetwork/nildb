@@ -19,12 +19,12 @@ export const QueryVariableValidatorSchema = z.union([
   z.object({
     type: VariablePrimitiveSchema,
     path: VariablePathSchema,
-    description: z.string(),
+    description: z.string().optional(),
   }),
   z.object({
     type: z.enum(["array"]),
     path: VariablePathSchema,
-    description: z.string(),
+    description: z.string().optional(),
     items: z.object({
       type: VariablePrimitiveSchema,
     }),
@@ -57,16 +57,18 @@ export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequestSchema>;
 export type QueryVariable = {
   type: "string" | "number" | "boolean" | "date";
   path: string;
-  description: string;
+  description?: string;
+  optional?: boolean;
 };
 
 export type QueryArrayVariable = {
   type: "array";
   path: string;
-  description: string;
+  description?: string;
   items: {
     type: "string" | "number" | "boolean" | "date";
   };
+  optional?: boolean;
 };
 
 export type QueryDocument = DocumentBase & {
