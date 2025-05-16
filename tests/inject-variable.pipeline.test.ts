@@ -2,8 +2,8 @@ import { Effect as E, Either, pipe } from "effect";
 import type { Document } from "mongodb";
 import { describe, it } from "vitest";
 import {
-  type QueryRuntimeVariables,
   injectVariablesIntoAggregation,
+  type QueryRuntimeVariables,
   validateVariables,
 } from "#/queries/queries.services";
 import type { QueryVariable } from "#/queries/queries.types";

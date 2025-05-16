@@ -9,8 +9,8 @@ import { type ControllerOptions, Uuid } from "#/common/types";
 import { paramsValidator, payloadValidator } from "#/common/zod-utils";
 import type { AppContext } from "#/env";
 import {
-  RoleSchema,
   enforceCapability,
+  RoleSchema,
   verifyNucAndLoadSubject,
 } from "#/middleware/capability.middleware";
 import * as SchemasService from "#/schemas/schemas.services";

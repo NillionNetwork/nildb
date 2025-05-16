@@ -7,9 +7,9 @@ import {
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import {
-  CollectionName,
   addDocumentBaseCoercions,
   applyCoercions,
+  CollectionName,
   checkPrimaryCollectionExists,
 } from "#/common/mongo";
 import type { CoercibleMap } from "#/common/types";

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import { type UuidDto, createUuidDto } from "#/common/types";
+import { createUuidDto, type UuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
 import { MAX_RECORDS_LENGTH } from "#/data/data.types";
 import queryJson from "./data/simple.query.json";

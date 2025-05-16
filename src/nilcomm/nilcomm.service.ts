@@ -4,8 +4,8 @@ import * as AccountService from "#/accounts/accounts.services";
 import { RegisterAccountRequestSchema } from "#/accounts/accounts.types";
 import type { AmqpPublishMessageError } from "#/common/amqp";
 import {
-  type DataValidationError,
   type DatabaseError,
+  type DataValidationError,
   DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";

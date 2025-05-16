@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { describe } from "vitest";
-import { type UuidDto, createUuidDto } from "#/common/types";
+import { createUuidDto, type UuidDto } from "#/common/types";
 import queryJson from "./data/variables.array.query.json";
 import schemaJson from "./data/variables.array.schema.json";
 import {

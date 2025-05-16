@@ -1,10 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import {
-  type DataCollectionNotFoundError,
   DatabaseError,
+  type DataCollectionNotFoundError,
 } from "#/common/errors";
-import { type DocumentBase, checkDataCollectionExists } from "#/common/mongo";
+import { checkDataCollectionExists, type DocumentBase } from "#/common/mongo";
 import type { AppBindingsWithNilcomm } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 

@@ -3,8 +3,8 @@ import {
   type DeleteResult,
   type Document,
   type StrictFilter,
-  UUID,
   type UpdateResult,
+  UUID,
 } from "mongodb";
 import {
   type Filter,
@@ -13,17 +13,17 @@ import {
 } from "mongodb/lib/beta";
 import type { JsonObject } from "type-fest";
 import {
-  type DataCollectionNotFoundError,
   DatabaseError,
+  type DataCollectionNotFoundError,
   InvalidIndexOptionsError,
 } from "#/common/errors";
 import {
-  type DocumentBase,
-  MongoErrorCode,
   addDocumentBaseCoercions,
   applyCoercions,
   checkDataCollectionExists,
+  type DocumentBase,
   isMongoError,
+  MongoErrorCode,
 } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";

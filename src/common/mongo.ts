@@ -8,8 +8,8 @@ import {
   UUID,
 } from "mongodb";
 import {
-  DataCollectionNotFoundError,
   DatabaseError,
+  DataCollectionNotFoundError,
   PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import type {

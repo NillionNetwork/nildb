@@ -9,7 +9,7 @@ import {
 } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { MiddlewareHandler, Next } from "hono";
-import { StatusCodes, getReasonPhrase } from "http-status-codes";
+import { getReasonPhrase, StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import * as AccountsRepository from "#/accounts/accounts.repository";
 import type { Path } from "#/common/paths";

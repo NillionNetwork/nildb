@@ -3,8 +3,8 @@ import type { CreateIndexesOptions, IndexSpecification, UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type { CreateSchemaIndexRequest } from "#/admin/admin.types";
 import type {
-  DataCollectionNotFoundError,
   DatabaseError,
+  DataCollectionNotFoundError,
   DocumentNotFoundError,
   IndexNotFoundError,
   InvalidIndexOptionsError,

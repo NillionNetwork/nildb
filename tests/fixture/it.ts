@@ -2,10 +2,10 @@ import * as vitest from "vitest";
 import type { App } from "#/app";
 import type { AppBindingsWithNilcomm } from "#/env";
 import {
+  buildFixture,
   type QueryFixture,
   type SchemaFixture,
   type TestFixture,
-  buildFixture,
 } from "./fixture";
 import type {
   TestAdminUserClient,
@@ -38,38 +38,34 @@ export function createTestFixtureExtension(
 ): TestFixtureExtension {
   let fixture: TestFixture | null = null;
 
+  // biome-ignore-start lint/correctness/noEmptyPattern: Vitest fixture API requires this parameter structure
   const it = vitest.test.extend<FixtureContext>({
-    // biome-ignore lint/correctness/noEmptyPattern: <explanation>
     id: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture not initialized");
+      if (!fixture) throw new Error("Fixture is not initialized");
       await use(fixture.id);
     },
-    // biome-ignore lint/correctness/noEmptyPattern: <explanation>
     app: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture not initialized");
+      if (!fixture) throw new Error("Fixture is not initialized");
       await use(fixture.app);
     },
-    // biome-ignore lint/correctness/noEmptyPattern: <explanation>
     bindings: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture not initialized");
+      if (!fixture) throw new Error("Fixture is not initialized");
       await use(fixture.bindings);
     },
-    // biome-ignore lint/correctness/noEmptyPattern: <explanation>
     root: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture not initialized");
+      if (!fixture) throw new Error("Fixture is not initialized");
       await use(fixture.root);
     },
-    // biome-ignore lint/correctness/noEmptyPattern: <explanation>
     admin: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture not initialized");
+      if (!fixture) throw new Error("Fixture is not initialized");
       await use(fixture.admin);
     },
-    // biome-ignore lint/correctness/noEmptyPattern: <explanation>
     organization: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture not initialized");
+      if (!fixture) throw new Error("Fixture is not initialized");
       await use(fixture.organization);
     },
   });
+  // biome-ignore-end lint/correctness/noEmptyPattern: Vitest fixture API requires this parameter structure
 
   const beforeAll = (fn: (ctx: FixtureContext) => Promise<void>) =>
     vitest.beforeAll(async () => {
@@ -84,7 +80,7 @@ export function createTestFixtureExtension(
 
   const afterAll = (fn: (ctx: FixtureContext) => Promise<void>) =>
     vitest.afterAll(async () => {
-      if (!fixture) throw new Error("Fixture not initialized");
+      if (!fixture) throw new Error("Fixture is not initialized");
       const { bindings } = fixture;
       const { config, db } = bindings;
 

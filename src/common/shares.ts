@@ -1,4 +1,4 @@
-import { PrivateKey, decrypt } from "eciesjs";
+import { decrypt, PrivateKey } from "eciesjs";
 import { UUID } from "mongodb";
 
 export class EncryptedShare {

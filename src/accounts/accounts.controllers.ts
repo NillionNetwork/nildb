@@ -8,8 +8,8 @@ import type { ControllerOptions } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
 import type { AppContext } from "#/env";
 import {
-  RoleSchema,
   enforceCapability,
+  RoleSchema,
   verifyNucAndLoadSubject,
 } from "#/middleware/capability.middleware";
 import * as AccountService from "./accounts.services";
