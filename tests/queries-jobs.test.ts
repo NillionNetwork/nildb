@@ -1,0 +1,93 @@
+import { faker } from "@faker-js/faker";
+import { UUID } from "mongodb";
+import { Temporal } from "temporal-polyfill";
+import { describe } from "vitest";
+import { type UuidDto, createUuidDto } from "#/common/types";
+import type { QueryJobDocument } from "#/queries/queries.types";
+import queryJson from "./data/variables.wallet.query.json";
+import schemaJson from "./data/variables.wallet.schema.json";
+import { expectSuccessResponse } from "./fixture/assertions";
+import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import { createTestFixtureExtension } from "./fixture/it";
+
+describe("long running query job", () => {
+  let jobId: string;
+  const schema = schemaJson as unknown as SchemaFixture;
+  const query = queryJson as unknown as QueryFixture;
+  const { it, beforeAll, afterAll } = createTestFixtureExtension({
+    schema,
+    query,
+  });
+
+  type Record = {
+    _id: UuidDto;
+    wallet: string;
+    amount: number;
+    status: "pending" | "completed" | "failed";
+    timestamp: string;
+  };
+
+  beforeAll(async ({ organization }) => {
+    const data: Record[] = Array.from({ length: 10 }, () => ({
+      _id: createUuidDto(),
+      wallet: faker.finance.ethereumAddress(),
+      amount: faker.number.int({ min: 100, max: 1000 }),
+      status: faker.helpers.arrayElement(["pending", "completed", "failed"]),
+      timestamp: faker.date.recent().toISOString(),
+    }));
+
+    const response = await organization.uploadData({
+      schema: schema.id,
+      data,
+    });
+
+    await expectSuccessResponse(response);
+  });
+
+  afterAll(async (_ctx) => {});
+
+  it("can start a long running query job", async ({ expect, organization }) => {
+    const variables = {
+      minAmount: 500,
+      status: "completed",
+      startDate: Temporal.Now.instant().subtract({ hours: 24 }).toString(),
+    };
+
+    const response = await organization.executeQuery({
+      id: query.id,
+      variables,
+      background: true,
+    });
+
+    const result = await expectSuccessResponse<{ jobId: string }>(response);
+
+    expect(result.data.jobId).toBeDefined();
+    jobId = result.data.jobId;
+  });
+
+  it("can poll for long running job result", async ({
+    expect,
+    organization,
+  }) => {
+    expect(jobId).toBeDefined();
+    const jobIdUuid = new UUID(jobId);
+
+    const response = await organization.getQueryJob({ id: jobIdUuid });
+    let result = await expectSuccessResponse<QueryJobDocument>(response);
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (result.data.status === "complete") {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const pollResponse = await organization.getQueryJob({
+        id: jobIdUuid,
+      });
+      result = await expectSuccessResponse<QueryJobDocument>(pollResponse);
+    }
+
+    expect(result.data.status).toBe("complete");
+    expect(result.data.result).toBeDefined();
+  });
+});

@@ -36,6 +36,7 @@ import type {
   AddQueryRequest,
   DeleteQueryRequest,
   ExecuteQueryRequest,
+  QueryJobRequest,
 } from "#/queries/queries.types";
 import type {
   AddSchemaRequest,
@@ -344,6 +345,13 @@ export class TestOrganizationUserClient extends TestClient {
 
   async executeQuery(body: ExecuteQueryRequest): Promise<Response> {
     return this.request(PathsV1.queries.execute, {
+      method: "POST",
+      body,
+    });
+  }
+
+  async getQueryJob(body: QueryJobRequest): Promise<Response> {
+    return this.request(PathsV1.queries.job, {
       method: "POST",
       body,
     });
