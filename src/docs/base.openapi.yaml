@@ -155,6 +155,8 @@ paths:
     $ref: '../queries/queries.openapi.yaml#/paths/~1api~1v1~1queries'
   /api/v1/queries/execute:
     $ref: '../queries/queries.openapi.yaml#/paths/~1api~1v1~1queries~1execute'
+  /api/v1/queries/job:
+    $ref: '../queries/queries.openapi.yaml#/paths/~1api~1v1~1queries~1job'
 
   # Data endpoints
   /api/v1/data/create:
