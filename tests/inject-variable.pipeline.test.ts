@@ -6,13 +6,10 @@ import {
   type QueryRuntimeVariables,
   validateVariables,
 } from "#/queries/queries.services";
-import type {
-  QueryArrayVariable,
-  QueryVariable,
-} from "#/queries/queries.types";
+import type { QueryVariable } from "#/queries/queries.types";
 
 function executePartialQuery(
-  queryVariables: Record<string, QueryVariable | QueryArrayVariable>,
+  queryVariables: Record<string, QueryVariable>,
   pipeline: Record<string, unknown>[],
   requestVariables: Record<string, unknown>,
 ) {
@@ -21,7 +18,7 @@ function executePartialQuery(
       validateVariables(queryVariables as Document, requestVariables),
     ),
     E.bind("pipeline", ({ variables }) =>
-      injectVariablesIntoAggregation(pipeline, variables),
+      injectVariablesIntoAggregation(queryVariables, pipeline, variables),
     ),
     E.runSync,
   );
@@ -31,7 +28,6 @@ describe("pipeline variable injection", () => {
   it("replaces simple variables", async ({ expect }) => {
     const queryVariables: Record<string, QueryVariable> = {
       address: {
-        type: "string",
         path: "$.pipeline[0].$match.wallet",
       },
     };
@@ -61,15 +57,12 @@ describe("pipeline variable injection", () => {
   it("replaces multiple variable types", async ({ expect }) => {
     const queryVariables: Record<string, QueryVariable> = {
       address: {
-        type: "string",
         path: "$.pipeline[0].$match.wallet",
       },
       value: {
-        type: "number",
         path: "$.pipeline[0].$match.amount",
       },
       isActive: {
-        type: "boolean",
         path: "$.pipeline[0].$match.active",
       },
     };
@@ -111,17 +104,14 @@ describe("pipeline variable injection", () => {
   it("replaces optional variables", async ({ expect }) => {
     const queryVariables: Record<string, QueryVariable> = {
       address: {
-        type: "string",
         path: "$.pipeline[0].$match.wallet",
         optional: true,
       },
       value: {
-        type: "number",
         path: "$.pipeline[0].$match.amount",
         optional: true,
       },
       isActive: {
-        type: "boolean",
         path: "$.pipeline[0].$match.active",
         optional: true,
       },
@@ -160,7 +150,6 @@ describe("pipeline variable injection", () => {
   it("throws error for unexpected variables", async ({ expect }) => {
     const queryVariables: Record<string, QueryVariable> = {
       address: {
-        type: "string",
         path: "$.pipeline[0].$match.wallet",
       },
     };
@@ -188,7 +177,6 @@ describe("pipeline variable injection", () => {
   it("throws error for missing variables", async ({ expect }) => {
     const queryVariables: Record<string, QueryVariable> = {
       address: {
-        type: "string",
         path: "$.pipeline[0].$match.wallet",
       },
     };
@@ -213,27 +201,21 @@ describe("pipeline variable injection", () => {
   it("handles complex pipeline with multiple stages", async ({ expect }) => {
     const queryVariables: Record<string, QueryVariable> = {
       status: {
-        type: "string",
         path: "$.pipeline[0].$match.status",
       },
       startDate: {
-        type: "string",
         path: "$.pipeline[0].$match._created.$gt",
       },
       collection: {
-        type: "string",
         path: "$.pipeline[1].$lookup.from",
       },
       localField: {
-        type: "string",
         path: "$.pipeline[1].$lookup.localField",
       },
       groupField: {
-        type: "string",
         path: "$.pipeline[3].$group._id.$concat[1]",
       },
       valueField: {
-        type: "number",
         path: "$.pipeline[3].$group.total.$sum",
       },
     };
@@ -310,23 +292,18 @@ describe("pipeline variable injection", () => {
   it("handles deeply nested structures", async ({ expect }) => {
     const queryVariables: Record<string, QueryVariable> = {
       type1: {
-        type: "string",
         path: "$.pipeline[0].$match.$or[0].type",
       },
       category1: {
-        type: "string",
         path: "$.pipeline[0].$match.$or[1].category.$in[0]",
       },
       category2: {
-        type: "string",
         path: "$.pipeline[0].$match.$or[1].category.$in[1]",
       },
       status: {
-        type: "string",
         path: "$.pipeline[0].$match.$or[2].$and[0].status",
       },
       deepValue: {
-        type: "string",
         path: "$.pipeline[0].$match.$or[2].$and[1].nested.deep.value",
       },
     };

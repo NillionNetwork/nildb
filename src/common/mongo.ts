@@ -156,26 +156,30 @@ function applyCoercionToField(
     if (typeof coercibleValues[field] === "object") {
       const value = coercibleValues[field] as Record<string, unknown>;
       for (const op in value) {
-        if (op.startsWith("$") && Array.isArray(value[op])) {
+        if (Array.isArray(value[op])) {
           value[op] = Array.from(value[op]).map((innerValue) =>
-            toPrimitiveValue(innerValue, type),
+            coerceValue(innerValue, type),
           );
         }
       }
     } else {
-      coercibleValues[field] = toPrimitiveValue(coercibleValues[field], type);
+      coercibleValues[field] = coerceValue(coercibleValues[field], type);
     }
   }
 }
 
-function toPrimitiveValue(value: unknown, type: string): unknown {
-  if (typeof value === "string") {
-    switch (type.toLowerCase()) {
-      case "uuid":
-        return new UUID(value);
-      case "date":
-        return new Date(value);
-    }
+function coerceValue(value: unknown, type: string): unknown {
+  switch (type.toLowerCase()) {
+    case "string":
+      return `${value}`;
+    case "number":
+      return Number(value);
+    case "boolean":
+      return Boolean(value);
+    case "uuid":
+      return new UUID(`${value}`);
+    case "date":
+      return new Date(`${value}`);
   }
   return value;
 }

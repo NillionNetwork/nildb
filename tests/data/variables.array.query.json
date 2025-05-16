@@ -4,11 +4,7 @@
   "schema": "",
   "variables": {
     "values": {
-      "type": "array",
       "description": "The values to find",
-      "items": {
-        "type": "number"
-      },
       "path": "$.pipeline[0].$match.values"
     }
   },

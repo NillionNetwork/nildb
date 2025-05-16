@@ -55,7 +55,10 @@ describe("query variable validation", () => {
     const variables = {
       minAmount: 500,
       status: "completed",
-      startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      startDate: "2025-02-24T17:09:00.267Z",
+      // $coerce: {
+      //   startDate: "date",
+      // },
     };
 
     const response = await organization.executeQuery({

@@ -11,6 +11,7 @@ import {
 import type { SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
+// TODO add more tests for the new coercions types: int, boolean, string
 describe("data operations", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -78,6 +79,33 @@ describe("data operations", () => {
     const coercedData = applyCoercions(data) as CoercibleMap;
     const coercedDates = coercedData._created as Record<string, unknown>;
     expect(coercedDates.$in).toStrictEqual(expected);
+  });
+
+  it("coerces mixed values", async ({ expect }) => {
+    const identifiers = [
+      "3f5c92dd-214a-49b5-a129-e56c29fe5d3a",
+      "3f5c92dd-214a-49b5-a129-e56c29fe5d3a",
+    ];
+    const expectedUuids = identifiers.map((id) => new UUID(id));
+    const dates = ["2025-02-24T17:09:00.267Z", "2025-02-24T17:09:00.267Z"];
+    const expectedDates = dates.map((date) => new Date(date));
+    const data: CoercibleMap = {
+      identifiers: {
+        $in: identifiers,
+      },
+      dates: {
+        $in: dates,
+      },
+      $coerce: {
+        identifiers: "uuid",
+        dates: "date",
+      },
+    };
+    const coercedData = applyCoercions(data) as CoercibleMap;
+    const coercedUuids = coercedData.identifiers as Record<string, unknown>;
+    expect(coercedUuids.$in).toStrictEqual(expectedUuids);
+    const coercedDates = coercedData.dates as Record<string, unknown>;
+    expect(coercedDates.$in).toStrictEqual(expectedDates);
   });
 
   it("do not coerce value", async ({ expect }) => {
