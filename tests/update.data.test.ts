@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import type { UpdateResult } from "mongodb";
 import { describe } from "vitest";
-import { type UuidDto, createUuidDto } from "#/common/types";
+import { createUuidDto, type UuidDto } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";

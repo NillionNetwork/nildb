@@ -3,9 +3,9 @@ import type { Document, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { z } from "zod";
 import {
+  type DatabaseError,
   type DataCollectionNotFoundError,
   DataValidationError,
-  type DatabaseError,
   type DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
   type QueryValidationError,
@@ -183,7 +183,6 @@ export function validateVariables(
 
   return pipe(
     providedKeys,
-    // biome-ignore lint/complexity/noForEach: biome mistakes `Effect.forEach` for a conventional `for ... each`
     E.forEach((key) => {
       const variableTemplate = template[key];
 
@@ -204,7 +203,6 @@ export function validateVariables(
         const itemType = (template[key] as QueryArrayVariable).items.type;
         return pipe(
           provided[key] as unknown[],
-          // biome-ignore lint/complexity/noForEach: biome doesn't recognise Effect.forEach
           E.forEach((item) => parsePrimitiveVariable(key, item, itemType)),
           E.map(
             (values) => [variableTemplate.path, values] as [string, unknown],

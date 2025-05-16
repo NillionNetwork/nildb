@@ -19,8 +19,8 @@ import schemaJson from "./data/wallet.schema.json";
 import { expectSuccessResponse } from "./fixture/assertions";
 import {
   type QueryFixture,
-  type SchemaFixture,
   registerSchemaAndQuery,
+  type SchemaFixture,
 } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 

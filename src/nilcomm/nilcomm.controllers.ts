@@ -1,10 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import {
+  defaultConsumeOptions,
   ExchangeName,
+  parseAmqpMessage,
   QueueName,
   RoutingKey,
-  defaultConsumeOptions,
-  parseAmqpMessage,
   runMessageConsume,
 } from "#/common/amqp";
 import type { AppBindingsWithNilcomm } from "#/env";

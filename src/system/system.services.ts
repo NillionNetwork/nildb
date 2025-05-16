@@ -5,8 +5,8 @@ import { Effect as E, Option as O, pipe } from "effect";
 import { Temporal } from "temporal-polyfill";
 import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
 import {
-  DataValidationError,
   type DatabaseError,
+  DataValidationError,
   type DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";

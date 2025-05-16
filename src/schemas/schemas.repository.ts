@@ -8,22 +8,22 @@ import type {
 } from "mongodb";
 import type { Filter } from "mongodb/lib/beta";
 import {
-  type DataCollectionNotFoundError,
   DatabaseError,
+  type DataCollectionNotFoundError,
   DocumentNotFoundError,
   IndexNotFoundError,
   InvalidIndexOptionsError,
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import {
-  CollectionName,
-  type DocumentBase,
-  MongoErrorCode,
   addDocumentBaseCoercions,
   applyCoercions,
+  CollectionName,
   checkDataCollectionExists,
   checkPrimaryCollectionExists,
+  type DocumentBase,
   isMongoError,
+  MongoErrorCode,
 } from "#/common/mongo";
 import type { CoercibleMap, Did } from "#/common/types";
 import type { AppBindings } from "#/env";

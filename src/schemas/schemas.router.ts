@@ -1,4 +1,3 @@
-import {} from "http-status-codes";
 import type { ControllerOptions } from "#/common/types";
 import * as SchemasController from "#/schemas/schemas.controllers";
 

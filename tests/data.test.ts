@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import { type UuidDto, createUuidDto } from "#/common/types";
+import { createUuidDto, type UuidDto } from "#/common/types";
 import type { DataDocument, UploadResult } from "#/data/data.repository";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";

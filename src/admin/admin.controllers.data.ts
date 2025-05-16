@@ -16,8 +16,8 @@ import {
 } from "#/data/data.types";
 import type { AppContext } from "#/env";
 import {
-  RoleSchema,
   enforceCapability,
+  RoleSchema,
   verifyNucAndLoadSubject,
 } from "#/middleware/capability.middleware";
 

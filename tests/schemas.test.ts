@@ -3,7 +3,7 @@ import { UUID } from "mongodb";
 import { describe } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { CollectionName } from "#/common/mongo";
-import { type UuidDto, createUuidDto } from "#/common/types";
+import { createUuidDto, type UuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
 import type { SchemaMetadata } from "#/schemas/schemas.types";

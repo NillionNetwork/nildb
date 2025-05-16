@@ -115,7 +115,7 @@ export async function loadBindings(
 ): Promise<AppBindings> {
   const config = parseConfigFromEnv(overrides);
 
-  let mq: AppBindingsWithNilcomm["mq"] | undefined = undefined;
+  let mq: AppBindingsWithNilcomm["mq"] | undefined;
   if (hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILCOMM)) {
     if (!config.mqUri) {
       throw new TypeError(

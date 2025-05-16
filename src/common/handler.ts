@@ -3,9 +3,9 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
 import type {
+  DatabaseError,
   DataCollectionNotFoundError,
   DataValidationError,
-  DatabaseError,
   DocumentNotFoundError,
   DuplicateEntryError,
   IndexNotFoundError,

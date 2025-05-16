@@ -1,9 +1,9 @@
 import { Effect as E, pipe } from "effect";
-import type { DeleteResult, UUID, UpdateResult } from "mongodb";
+import type { DeleteResult, UpdateResult, UUID } from "mongodb";
 import type {
+  DatabaseError,
   DataCollectionNotFoundError,
   DataValidationError,
-  DatabaseError,
   DocumentNotFoundError,
   PrimaryCollectionNotFoundError,
 } from "#/common/errors";

@@ -13,8 +13,8 @@ import { paramsValidator, payloadValidator } from "#/common/zod-utils";
 import type { AppContext } from "#/env";
 import {
   type EnforceCapabilityOptions,
-  RoleSchema,
   enforceCapability,
+  RoleSchema,
   verifyNucAndLoadSubject,
 } from "#/middleware/capability.middleware";
 import * as SchemasService from "./schemas.services";
