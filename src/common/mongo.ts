@@ -164,23 +164,30 @@ function applyCoercionToField(
   if (coercibleValues[field]) {
     if (Array.isArray(coercibleValues[field])) {
       return applyCoercionToArrayItems(Array.from(coercibleValues[field])).pipe(
-        E.map((result) => (coercibleValues[field] = result)),
-        E.andThen(() => coercibleValues),
+        E.map((result) => {
+          coercibleValues[field] = result;
+          return coercibleValues;
+        }),
       );
-    } else if (typeof coercibleValues[field] === "object") {
+    }
+    if (typeof coercibleValues[field] === "object") {
       const value = coercibleValues[field] as Record<string, unknown>;
       for (const op in value) {
         if (op.startsWith("$") && Array.isArray(value[op])) {
           return applyCoercionToArrayItems(Array.from(value[op])).pipe(
-            E.map((result) => (value[op] = result)),
-            E.andThen(() => coercibleValues),
+            E.map((result) => {
+              value[op] = result;
+              return coercibleValues;
+            }),
           );
         }
       }
     } else {
       return coerceValue(coercibleValues[field], type).pipe(
-        E.map((result) => (coercibleValues[field] = result)),
-        E.map(() => coercibleValues),
+        E.map((result) => {
+          coercibleValues[field] = result;
+          return coercibleValues;
+        }),
       );
     }
   }
@@ -191,7 +198,10 @@ function coerceValue(
   value: unknown,
   type: string,
 ): E.Effect<unknown, DataValidationError> {
-  let result;
+  let result:
+    | { data: unknown; success: true }
+    | { success: false; error: z.ZodError };
+
   switch (type.toLowerCase()) {
     case "string":
       result = z.string().safeParse(`${value}`);
@@ -231,13 +241,14 @@ function coerceValue(
         }, z.date())
         .safeParse(value);
       break;
-    default:
+    default: {
       const issues = ["Unsupported type coercion"];
       const error = new DataValidationError({
         issues,
         cause: { value, type },
       });
       return E.fail(error);
+    }
   }
   if (result.success) {
     return E.succeed(result.data);
