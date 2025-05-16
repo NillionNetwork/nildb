@@ -129,7 +129,7 @@ export function enforceCapability(
 
     if (!options.roles.includes(account._type)) {
       log.debug(
-        "Role not allowed at path: role=%s path=%s",
+        "Role %s is not authorized at path=%s",
         account._type,
         options.path,
       );
@@ -142,7 +142,7 @@ export function enforceCapability(
     const isValidCommand = options.cmd.isAttenuationOf(token.command);
     if (!isValidCommand) {
       log.debug(
-        "Invalid command: %s, expected: %s",
+        "Command %s not attenuation of %s",
         token.command.toString(),
         options.cmd.toString(),
       );
