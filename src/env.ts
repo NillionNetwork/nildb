@@ -1,6 +1,5 @@
 import { Keypair, type NucTokenEnvelope } from "@nillion/nuc";
 import * as amqp from "amqplib";
-import type { Context } from "hono";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
@@ -22,8 +21,6 @@ export const FeatureFlag = {
 } as const;
 
 export type FeatureFlag = (typeof FeatureFlag)[keyof typeof FeatureFlag];
-
-export type AppContext = Context<AppEnv>;
 
 export type AppEnv = {
   Bindings: AppBindings;

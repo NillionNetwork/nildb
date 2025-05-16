@@ -1,4 +1,3 @@
-import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
@@ -8,7 +7,6 @@ import { enforceQueryOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
-import type { AppContext } from "#/env";
 import {
   enforceCapability,
   RoleSchema,
@@ -16,28 +14,30 @@ import {
 } from "#/middleware/capability.middleware";
 import * as QueriesService from "./queries.services";
 import {
+  type AddQueryRequest,
   AddQueryRequestSchema,
+  type DeleteQueryRequest,
   DeleteQueryRequestSchema,
+  type ExecuteQueryRequest,
   ExecuteQueryRequestSchema,
+  type QueryJobRequest,
   QueryJobRequestSchema,
 } from "./queries.types";
 
 export function add(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.queries.root;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.queries,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.post(
     path,
     payloadValidator(AddQueryRequestSchema),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: AddQueryRequest }>({
+      path,
+      cmd: NucCmd.nil.db.queries,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
@@ -58,19 +58,17 @@ export function add(options: ControllerOptions): void {
 export function remove(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.queries.root;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.queries,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.delete(
     path,
     payloadValidator(DeleteQueryRequestSchema),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: DeleteQueryRequest }>({
+      path,
+      cmd: NucCmd.nil.db.queries,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
@@ -89,19 +87,17 @@ export function remove(options: ControllerOptions): void {
 export function execute(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.queries.execute;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.queries,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.post(
     path,
     payloadValidator(ExecuteQueryRequestSchema),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: ExecuteQueryRequest }>({
+      path,
+      cmd: NucCmd.nil.db.queries,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
@@ -120,18 +116,16 @@ export function execute(options: ControllerOptions): void {
 export function list(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.queries.root;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.queries,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.get(
     path,
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.queries,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
 
@@ -148,19 +142,17 @@ export function list(options: ControllerOptions): void {
 export function getQueryJob(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.queries.job;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.queries,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.post(
     path,
     payloadValidator(QueryJobRequestSchema),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: QueryJobRequest }>({
+      path,
+      cmd: NucCmd.nil.db.queries,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");

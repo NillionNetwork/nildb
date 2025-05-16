@@ -1,43 +1,44 @@
-import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
+import type { UUID } from "mongodb";
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
-import { CreateSchemaIndexRequestSchema } from "#/admin/admin.types";
+import {
+  type CreateSchemaIndexRequest,
+  CreateSchemaIndexRequestSchema,
+} from "#/admin/admin.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { enforceSchemaOwnership } from "#/common/ownership";
 import { PathsBeta, PathsV1 } from "#/common/paths";
 import { type ControllerOptions, Uuid } from "#/common/types";
 import { paramsValidator, payloadValidator } from "#/common/zod-utils";
-import type { AppContext } from "#/env";
 import {
-  type EnforceCapabilityOptions,
   enforceCapability,
   RoleSchema,
   verifyNucAndLoadSubject,
 } from "#/middleware/capability.middleware";
 import * as SchemasService from "./schemas.services";
 import {
+  type AddSchemaRequest,
   AddSchemaRequestSchema,
+  type DeleteSchemaRequest,
   DeleteSchemaRequestSchema,
 } from "./schemas.types";
 
 export function list(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.schemas.root;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.schemas,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.get(
     path,
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.schemas,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
 
@@ -54,19 +55,17 @@ export function list(options: ControllerOptions): void {
 export function add(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.schemas.root;
-  const guard: EnforceCapabilityOptions = {
-    path,
-    cmd: NucCmd.nil.db.schemas,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c, _token) => true,
-  };
 
   app.post(
     path,
     payloadValidator(AddSchemaRequestSchema),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: AddSchemaRequest }>({
+      path,
+      cmd: NucCmd.nil.db.schemas,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
@@ -87,19 +86,17 @@ export function add(options: ControllerOptions): void {
 export function remove(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.schemas.root;
-  const guard: EnforceCapabilityOptions = {
-    path,
-    cmd: NucCmd.nil.db.schemas,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c, _token) => true,
-  };
 
   app.delete(
     path,
     payloadValidator(DeleteSchemaRequestSchema),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: DeleteSchemaRequest }>({
+      path,
+      cmd: NucCmd.nil.db.schemas,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
@@ -118,13 +115,6 @@ export function remove(options: ControllerOptions): void {
 export function metadata(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsBeta.schemas.byIdMeta;
-  const guard: EnforceCapabilityOptions = {
-    path,
-    cmd: NucCmd.nil.db.schemas,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c, _token) => true,
-  };
 
   app.get(
     path,
@@ -134,7 +124,12 @@ export function metadata(options: ControllerOptions): void {
       }),
     ),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ param: { id: UUID } }>({
+      path,
+      cmd: NucCmd.nil.db.schemas,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("param");
@@ -157,13 +152,6 @@ export function metadata(options: ControllerOptions): void {
 export function createIndex(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsBeta.schemas.byIdIndexes;
-  const guard: EnforceCapabilityOptions = {
-    path,
-    cmd: NucCmd.nil.db.schemas,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c, _token) => true,
-  };
 
   app.post(
     path,
@@ -174,7 +162,14 @@ export function createIndex(options: ControllerOptions): void {
       }),
     ),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: CreateSchemaIndexRequest; params: { id: UUID } }>(
+      {
+        path,
+        cmd: NucCmd.nil.db.schemas,
+        roles: [RoleSchema.enum.organization],
+        validate: (_c, _token) => true,
+      },
+    ),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
@@ -194,13 +189,6 @@ export function createIndex(options: ControllerOptions): void {
 export function dropIndex(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsBeta.schemas.byIdIndexesByName;
-  const guard: EnforceCapabilityOptions = {
-    path,
-    cmd: NucCmd.nil.db.schemas,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c, _token) => true,
-  };
 
   app.delete(
     PathsBeta.schemas.byIdIndexesByName,
@@ -211,7 +199,12 @@ export function dropIndex(options: ControllerOptions): void {
       }),
     ),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ param: { id: UUID; name: string } }>({
+      path,
+      cmd: NucCmd.nil.db.schemas,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
       const { id, name } = c.req.valid("param");

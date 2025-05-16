@@ -1,4 +1,3 @@
-import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { handleTaggedErrors } from "#/common/handler";
@@ -6,7 +5,6 @@ import { NucCmd } from "#/common/nuc-cmd-tree";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
-import type { AppContext } from "#/env";
 import {
   enforceCapability,
   RoleSchema,
@@ -15,25 +13,25 @@ import {
 import * as AccountService from "./accounts.services";
 import {
   RegisterAccountRequestSchema,
+  type RemoveAccountRequest,
   RemoveAccountRequestSchema,
+  type SetPublicKeyRequest,
   SetPublicKeyRequestSchema,
 } from "./accounts.types";
 
 export function get(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.accounts.root;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.accounts,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.get(
     path,
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.accounts,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account");
       return pipe(
@@ -65,19 +63,17 @@ export function register(options: ControllerOptions): void {
 export function remove(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.accounts.root;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.accounts,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.delete(
     path,
     payloadValidator(RemoveAccountRequestSchema),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: RemoveAccountRequest }>({
+      path,
+      cmd: NucCmd.nil.db.accounts,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const payload = c.req.valid("json");
 
@@ -94,19 +90,17 @@ export function remove(options: ControllerOptions): void {
 export function setPublicKey(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.accounts.publicKey;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.accounts,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.post(
     path,
     payloadValidator(SetPublicKeyRequestSchema),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: SetPublicKeyRequest }>({
+      path,
+      cmd: NucCmd.nil.db.accounts,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       // TODO: this is really replace the org owner so (a) it might need a better name
       //  and (b) should we to enforce a cooldown period or add additional protections?
@@ -125,18 +119,16 @@ export function setPublicKey(options: ControllerOptions): void {
 export function getSubscription(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.accounts.subscription;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.accounts,
-    roles: [RoleSchema.enum.organization],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.get(
     path,
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.accounts,
+      roles: [RoleSchema.enum.organization],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const account = c.get("account");
 
