@@ -8,12 +8,12 @@ import {
   ValidationParameters,
 } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
-import type { MiddlewareHandler, Next } from "hono";
+import type { Context, MiddlewareHandler, Next } from "hono";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import * as AccountsRepository from "#/accounts/accounts.repository";
 import type { Path } from "#/common/paths";
-import type { AppBindings, AppContext } from "#/env";
+import type { AppBindings, AppContext, AppEnv } from "#/env";
 
 export function verifyNucAndLoadSubject(
   bindings: AppBindings,
@@ -106,11 +106,18 @@ export function verifyNucAndLoadSubject(
 export const RoleSchema = z.enum(["root", "admin", "organization", "user"]);
 export type Role = z.infer<typeof RoleSchema>;
 
-export type EnforceCapabilityOptions = {
+export type ValidatedRequest<T> = {
+  out: { json: T };
+};
+
+export type EnforceCapabilityOptions<T = unknown, P extends string = string> = {
   path: Path;
   cmd: Command;
   roles: Role[];
-  validate: (c: AppContext, token: NucToken) => boolean;
+  validate: (
+    c: Context<AppEnv, P, ValidatedRequest<T>>,
+    token: NucToken,
+  ) => boolean;
 };
 
 export function enforceCapability(
@@ -129,7 +136,7 @@ export function enforceCapability(
 
     if (!options.roles.includes(account._type)) {
       log.debug(
-        "Role not allowed at path: role=%s path=%s",
+        "Role %s is not authorized at path=%s",
         account._type,
         options.path,
       );
@@ -142,7 +149,7 @@ export function enforceCapability(
     const isValidCommand = options.cmd.isAttenuationOf(token.command);
     if (!isValidCommand) {
       log.debug(
-        "Invalid command: %s, expected: %s",
+        "Command %s not attenuation of %s",
         token.command.toString(),
         options.cmd.toString(),
       );
