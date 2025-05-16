@@ -14,22 +14,10 @@ const VariablePathSchema = z
 /**
  * Controller types
  */
-const VariablePrimitiveSchema = z.enum(["string", "number", "boolean", "date"]);
-export const QueryVariableValidatorSchema = z.union([
-  z.object({
-    type: VariablePrimitiveSchema,
-    path: VariablePathSchema,
-    description: z.string().optional(),
-  }),
-  z.object({
-    type: z.enum(["array"]),
-    path: VariablePathSchema,
-    description: z.string().optional(),
-    items: z.object({
-      type: VariablePrimitiveSchema,
-    }),
-  }),
-]);
+export const QueryVariableValidatorSchema = z.object({
+  path: VariablePathSchema,
+  description: z.string().optional(),
+});
 
 export const AddQueryRequestSchema = z.object({
   _id: Uuid,
@@ -55,19 +43,8 @@ export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequestSchema>;
  * Repository types
  */
 export type QueryVariable = {
-  type: "string" | "number" | "boolean" | "date";
   path: string;
   description?: string;
-  optional?: boolean;
-};
-
-export type QueryArrayVariable = {
-  type: "array";
-  path: string;
-  description?: string;
-  items: {
-    type: "string" | "number" | "boolean" | "date";
-  };
   optional?: boolean;
 };
 
@@ -76,6 +53,6 @@ export type QueryDocument = DocumentBase & {
   name: string;
   // the query's starting collection
   schema: UUID;
-  variables: Record<string, QueryVariable | QueryArrayVariable>;
+  variables: Record<string, QueryVariable>;
   pipeline: Record<string, unknown>[];
 };

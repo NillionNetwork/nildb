@@ -11,6 +11,7 @@ import {
   type QueryValidationError,
   VariableInjectionError,
 } from "#/common/errors";
+import { applyCoercions } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
@@ -21,7 +22,6 @@ import * as QueriesRepository from "./queries.repository";
 import type {
   AddQueryRequest,
   ExecuteQueryRequest,
-  QueryArrayVariable,
   QueryDocument,
   QueryVariable,
 } from "./queries.types";
@@ -72,7 +72,11 @@ export function executeQuery(
       validateVariables(query.variables, request.variables),
     ),
     E.bind("pipeline", ({ query, variables }) =>
-      injectVariablesIntoAggregation(query.pipeline, variables),
+      injectVariablesIntoAggregation(
+        query.variables,
+        query.pipeline,
+        variables,
+      ),
     ),
     E.flatMap(({ query, pipeline }) => {
       return pipe(DataRepository.runAggregation(ctx, query, pipeline));
@@ -85,7 +89,10 @@ export function findQueries(
   owner: Did,
 ): E.Effect<
   QueryDocument[],
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
   return pipe(QueriesRepository.findMany(ctx, { owner }));
 }
@@ -95,7 +102,10 @@ export function removeQuery(
   _id: UUID,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
   return pipe(
     QueriesRepository.findOneAndDelete(ctx, { _id }),
@@ -115,23 +125,18 @@ export function validateQuery(
 
   const validateVariableDefinition: (
     key: string,
-    variable: QueryVariable | QueryArrayVariable,
-  ) => E.Effect<QueryVariable | QueryArrayVariable, QueryValidationError> = (
-    key,
-    variable,
-  ) => {
+    variable: QueryVariable,
+  ) => E.Effect<QueryVariable, QueryValidationError> = (key, variable) => {
     return pipe(
       pathSegments(variable.path),
       E.andThen((segments) => getAggregationField(pipeline, segments)),
       E.andThen((value) => {
-        if (variable.type === "array") {
-          const itemType = (variable as QueryArrayVariable).items.type;
-          return E.forEach(value as unknown[], (item) =>
-            parsePrimitiveVariable(key, item, itemType),
-          ).pipe(E.andThen(() => E.succeed(variable)));
+        if (Array.isArray(value)) {
+          return validateArray(key, value as unknown[]).pipe(
+            E.andThen(() => E.succeed(variable)),
+          );
         }
-        return pipe(
-          parsePrimitiveVariable(key, value, variable.type),
+        return primitiveType(key, value).pipe(
           E.andThen(() => E.succeed(variable)),
         );
       }),
@@ -143,7 +148,7 @@ export function validateQuery(
   ).pipe(E.map(() => query));
 }
 
-export type QueryPrimitive = string | number | boolean | Date;
+export type QueryPrimitive = string | number | boolean | Date | UUID;
 
 export type QueryRuntimeVariables = Record<
   string,
@@ -154,8 +159,8 @@ export function validateVariables(
   template: QueryDocument["variables"],
   provided: ExecuteQueryRequest["variables"],
 ): E.Effect<QueryRuntimeVariables, DataValidationError> {
-  const permittedTypes = ["array", "string", "number", "boolean", "date"];
-  const providedKeys = Object.keys(provided);
+  const { $coerce: _$coerce, ...values } = provided;
+  const providedKeys = Object.keys(values);
   const permittedKeys = Object.keys(template);
 
   const missingVariables = permittedKeys.filter(
@@ -181,94 +186,60 @@ export function validateVariables(
     return E.fail(error);
   }
 
-  return pipe(
-    providedKeys,
-    E.forEach((key) => {
-      const variableTemplate = template[key];
+  return E.forEach(Object.entries(values), ([key, value]) => {
+    if (Array.isArray(value)) {
+      return validateArray(key, value as unknown[]).pipe(E.map(() => value));
+    }
+    return primitiveType(key, value).pipe(E.map(() => value));
+  }).pipe(E.andThen(() => applyCoercions<QueryRuntimeVariables>(provided)));
+}
 
-      const type = variableTemplate.type.toLowerCase();
-      if (!permittedTypes.includes(type)) {
-        const issues = ["Unsupported type", `type=${type}`];
-        const error = new DataValidationError({
-          issues,
-          cause: {
-            template,
-            provided,
-          },
-        });
-        return E.fail(error);
-      }
-
-      if (type === "array") {
-        const itemType = (template[key] as QueryArrayVariable).items.type;
-        return pipe(
-          provided[key] as unknown[],
-          E.forEach((item) => parsePrimitiveVariable(key, item, itemType)),
-          E.map(
-            (values) => [variableTemplate.path, values] as [string, unknown],
-          ),
-        );
-      }
-
-      return pipe(
-        parsePrimitiveVariable(key, provided[key], type),
-        E.map((value) => [variableTemplate.path, value] as [string, unknown]),
-      );
-    }),
-    E.map((entries) => Object.fromEntries(entries) as QueryRuntimeVariables),
+function validateArray<T = unknown>(
+  key: string,
+  value: unknown[],
+): E.Effect<T, DataValidationError> {
+  const allTypesEquals = (types: PrimitiveType[]) => {
+    if (types.length === 0 || types.every((t) => t === types[0])) {
+      return E.succeed(types);
+    }
+    const issues = ["Unsupported mixed-type array"];
+    const error = new DataValidationError({
+      issues,
+      cause: { key, value },
+    });
+    return E.fail(error);
+  };
+  return E.forEach(value as unknown[], (item) => primitiveType(key, item)).pipe(
+    E.andThen((types) => allTypesEquals(types)),
+    E.andThen(() => E.succeed(value as T)),
   );
 }
 
-function parsePrimitiveVariable(
+type PrimitiveType = "string" | "number" | "boolean";
+function primitiveType(
   key: string,
   value: unknown,
-  type: QueryPrimitive,
-): E.Effect<QueryPrimitive, DataValidationError> {
+): E.Effect<PrimitiveType, DataValidationError> {
   let result:
     | { data: QueryPrimitive; success: true }
     | { success: false; error: z.ZodError };
 
-  switch (type) {
-    case "string": {
-      result = z.string().safeParse(value, { path: [key] });
-      break;
-    }
-    case "number": {
-      result = z.number().safeParse(value, { path: [key] });
-      break;
-    }
-    case "boolean": {
-      result = z.boolean().safeParse(value, { path: [key] });
-      break;
-    }
-    case "date": {
-      result = z
-        .preprocess((arg) => {
-          if (arg === null || arg === undefined) return undefined;
-          if (typeof arg !== "string") return undefined;
-          return new Date(arg);
-        }, z.date())
-        .safeParse(value, { path: [key] });
-
-      break;
-    }
-    default: {
-      const issues = ["Unsupported type"];
-      const error = new DataValidationError({
-        issues,
-        cause: { key, value, type },
-      });
-      return E.fail(error);
-    }
-  }
-
+  result = z.string().safeParse(value, { path: [key] });
   if (result.success) {
-    return E.succeed(result.data);
+    return E.succeed("string");
   }
-
+  result = z.number().safeParse(value, { path: [key] });
+  if (result.success) {
+    return E.succeed("number");
+  }
+  result = z.boolean().safeParse(value, { path: [key] });
+  if (result.success) {
+    return E.succeed("boolean");
+  }
+  const issues = ["Unsupported value type"];
   const error = new DataValidationError({
-    issues: [result.error],
-    cause: null,
+    issues,
+    cause: { key, value },
   });
   return E.fail(error);
 }
@@ -304,6 +275,7 @@ function getAggregationField(
 }
 
 export function injectVariablesIntoAggregation(
+  queryVariables: Record<string, QueryVariable>,
   aggregation: Record<string, unknown>[],
   variables: QueryRuntimeVariables,
 ): E.Effect<Document[], VariableInjectionError> {
@@ -349,7 +321,7 @@ export function injectVariablesIntoAggregation(
   };
 
   return E.forEach(Object.entries(variables), ([key, value]) =>
-    injectVariables(key, value),
+    injectVariables(queryVariables[key].path, value),
   ).pipe(E.map((_) => aggregation as JsonValue as Document[]));
 }
 

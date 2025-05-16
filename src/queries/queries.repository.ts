@@ -3,6 +3,7 @@ import type { StrictFilter } from "mongodb";
 import type { Filter } from "mongodb/lib/beta";
 import {
   DatabaseError,
+  type DataValidationError,
   DocumentNotFoundError,
   type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
@@ -11,6 +12,7 @@ import {
   applyCoercions,
   CollectionName,
   checkPrimaryCollectionExists,
+  type DocumentBase,
 } from "#/common/mongo";
 import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
@@ -37,14 +39,17 @@ export function findMany(
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<
   QueryDocument[],
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
-  const documentFilter = applyCoercions<Filter<QueryDocument>>(
-    addQueryDocumentCoercions(filter),
-  );
   return pipe(
-    checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
-    E.flatMap((collection) =>
+    E.all([
+      checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+    ]),
+    E.flatMap(([collection, documentFilter]) =>
       E.tryPromise({
         try: () => collection.find(documentFilter).toArray(),
         catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
@@ -68,14 +73,17 @@ export function findOne(
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<
   QueryDocument,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
-  const documentFilter = applyCoercions<Filter<QueryDocument>>(
-    addQueryDocumentCoercions(filter),
-  );
   return pipe(
-    checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
-    E.flatMap((collection) =>
+    E.all([
+      checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+    ]),
+    E.flatMap(([collection, documentFilter]) =>
       E.tryPromise({
         try: () => collection.findOne(documentFilter),
         catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
@@ -99,14 +107,17 @@ export function findOneAndDelete(
   filter: StrictFilter<QueryDocument>,
 ): E.Effect<
   QueryDocument,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
-  const documentFilter = applyCoercions<Filter<QueryDocument>>(
-    addQueryDocumentCoercions(filter),
-  );
   return pipe(
-    checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
-    E.flatMap((collection) =>
+    E.all([
+      checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+    ]),
+    E.flatMap(([collection, documentFilter]) =>
       E.tryPromise({
         try: () => collection.findOneAndDelete(documentFilter),
         catch: (cause) =>

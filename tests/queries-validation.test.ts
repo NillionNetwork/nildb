@@ -3,27 +3,20 @@ import { Effect as E, Either, pipe } from "effect";
 import { UUID } from "mongodb";
 import { describe, it } from "vitest";
 import { validateQuery } from "#/queries/queries.services";
-import type {
-  QueryArrayVariable,
-  QueryDocument,
-  QueryVariable,
-} from "#/queries/queries.types";
+import type { QueryDocument, QueryVariable } from "#/queries/queries.types";
 
 describe("query definition", () => {
   it("valid query", async ({ expect }) => {
-    const variables: Record<string, QueryVariable | QueryArrayVariable> = {
+    const variables: Record<string, QueryVariable> = {
       minAmount: {
-        type: "number",
         description: "Minimum amount filter",
         path: "$.pipeline[0].$match.amount.$gte",
       },
       status: {
-        type: "string",
         description: "Status to filter by",
         path: "$.pipeline[0].$match.status",
       },
       startDate: {
-        type: "date",
         description: "Start date filter",
         path: "$.pipeline[0].$match.timestamp.$gte",
       },
@@ -68,13 +61,9 @@ describe("query definition", () => {
   });
 
   it("valid array query", async ({ expect }) => {
-    const variables: Record<string, QueryVariable | QueryArrayVariable> = {
+    const variables: Record<string, QueryVariable> = {
       values: {
-        type: "array",
         description: "The values to find",
-        items: {
-          type: "number",
-        },
         path: "$.pipeline[0].$match.values",
       },
     };
@@ -95,10 +84,9 @@ describe("query definition", () => {
     expect(Either.isRight(result)).toBe(true);
   });
 
-  it("unexpected type", async ({ expect }) => {
-    const variables: Record<string, QueryVariable | QueryArrayVariable> = {
+  it("unsupported type", async ({ expect }) => {
+    const variables: Record<string, QueryVariable> = {
       minAmount: {
-        type: "number",
         description: "Minimum amount filter",
         path: "$.pipeline[0].$match.amount.$gte",
       },
@@ -108,7 +96,7 @@ describe("query definition", () => {
       {
         $match: {
           amount: {
-            $gte: "",
+            $gte: new Date(),
           },
         },
       },
@@ -123,18 +111,14 @@ describe("query definition", () => {
     if (Either.isLeft(result)) {
       const error = result.left.humanize();
       expect(error[0]).toBe("DataValidationError");
-      expect(error[1]).toBe('Expected number, received string at "minAmount"');
+      expect(error[1]).toBe("Unsupported value type");
     }
   });
 
-  it("unexpected inner type", async ({ expect }) => {
-    const variables: Record<string, QueryVariable | QueryArrayVariable> = {
+  it("unsupported inner type", async ({ expect }) => {
+    const variables: Record<string, QueryVariable> = {
       values: {
-        type: "array",
         description: "The values to find",
-        items: {
-          type: "number",
-        },
         path: "$.pipeline[0].$match.values",
       },
     };
@@ -142,7 +126,7 @@ describe("query definition", () => {
     const pipeline = [
       {
         $match: {
-          values: [1, 2, "3", 4, 5],
+          values: [1, 2, { value: 3 }, 4, 5],
         },
       },
     ];
@@ -156,19 +140,17 @@ describe("query definition", () => {
     if (Either.isLeft(result)) {
       const error = result.left.humanize();
       expect(error[0]).toBe("DataValidationError");
-      expect(error[1]).toBe('Expected number, received string at "values"');
+      expect(error[1]).toBe("Unsupported value type");
     }
   });
 
   it("variable not found", async ({ expect }) => {
-    const variables: Record<string, QueryVariable | QueryArrayVariable> = {
+    const variables: Record<string, QueryVariable> = {
       minAmount: {
-        type: "number",
         description: "Minimum amount filter",
         path: "$.pipeline[0].$match.amount.$gte",
       },
       status: {
-        type: "string",
         description: "Status to filter by",
         path: "$.pipeline[0].$match.status",
       },
@@ -199,7 +181,7 @@ describe("query definition", () => {
 });
 
 function buildQuery(
-  variables: Record<string, QueryVariable | QueryArrayVariable>,
+  variables: Record<string, QueryVariable>,
   pipeline: Record<string, unknown>[],
 ): QueryDocument {
   return {

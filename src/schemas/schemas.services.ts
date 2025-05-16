@@ -5,6 +5,7 @@ import type { CreateSchemaIndexRequest } from "#/admin/admin.types";
 import type {
   DatabaseError,
   DataCollectionNotFoundError,
+  DataValidationError,
   DocumentNotFoundError,
   IndexNotFoundError,
   InvalidIndexOptionsError,
@@ -24,7 +25,10 @@ export function getOrganizationSchemas(
   organization: OrganizationAccountDocument,
 ): E.Effect<
   SchemaDocument[],
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
   return SchemasRepository.findMany(ctx, { owner: organization._id });
 }
@@ -68,6 +72,7 @@ export function deleteSchema(
   | DataCollectionNotFoundError
   | PrimaryCollectionNotFoundError
   | DatabaseError
+  | DataValidationError
 > {
   return pipe(
     SchemasRepository.deleteOne(ctx, { _id: schemaId }),

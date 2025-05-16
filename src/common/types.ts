@@ -15,7 +15,13 @@ export function createUuidDto(): UuidDto {
   return new UUID().toString() as UuidDto;
 }
 
-export const CoercibleTypesSchema = z.enum(["date", "uuid"] as const);
+export const CoercibleTypesSchema = z.enum([
+  "string",
+  "number",
+  "boolean",
+  "date",
+  "uuid",
+] as const);
 export type CoercibleTypes = z.infer<typeof CoercibleTypesSchema>;
 
 export const CoercibleValuesSchema = z.record(z.string(), z.unknown());

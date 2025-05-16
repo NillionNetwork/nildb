@@ -15,6 +15,7 @@ import type { JsonObject } from "type-fest";
 import {
   DatabaseError,
   type DataCollectionNotFoundError,
+  type DataValidationError,
   InvalidIndexOptionsError,
 } from "#/common/errors";
 import {
@@ -230,16 +231,19 @@ export function updateMany(
   schema: UUID,
   filter: Filter<DocumentBase>,
   update: UpdateFilter<DocumentBase>,
-): E.Effect<UpdateResult, DataCollectionNotFoundError | DatabaseError> {
-  const documentFilter = applyCoercions<Filter<DocumentBase>>(
-    addDocumentBaseCoercions(filter),
-  );
-  const documentUpdate = applyCoercions<UpdateFilter<DocumentBase>>(
-    addDocumentBaseCoercions(update),
-  );
+): E.Effect<
+  UpdateResult,
+  DataCollectionNotFoundError | DatabaseError | DataValidationError
+> {
   return pipe(
-    checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
-    E.flatMap((collection) =>
+    E.all([
+      checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+      applyCoercions<UpdateFilter<DocumentBase>>(
+        addDocumentBaseCoercions(update),
+      ),
+    ]),
+    E.flatMap(([collection, documentFilter, documentUpdate]) =>
       E.tryPromise({
         try: () => collection.updateMany(documentFilter, documentUpdate),
         catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
@@ -252,13 +256,16 @@ export function deleteMany(
   ctx: AppBindings,
   schema: UUID,
   filter: StrictFilter<DocumentBase>,
-): E.Effect<DeleteResult, DataCollectionNotFoundError | DatabaseError> {
-  const documentFilter = applyCoercions<Filter<DocumentBase>>(
-    addDocumentBaseCoercions(filter),
-  );
+): E.Effect<
+  DeleteResult,
+  DataCollectionNotFoundError | DatabaseError | DataValidationError
+> {
   return pipe(
-    checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
-    E.flatMap((collection) =>
+    E.all([
+      checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+    ]),
+    E.flatMap(([collection, documentFilter]) =>
       E.tryPromise({
         try: () => collection.deleteMany(documentFilter),
         catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
@@ -288,13 +295,16 @@ export function findMany(
   ctx: AppBindings,
   schema: UUID,
   filter: Filter<DocumentBase>,
-): E.Effect<DataDocument[], DataCollectionNotFoundError | DatabaseError> {
-  const documentFilter = applyCoercions<Filter<DocumentBase>>(
-    addDocumentBaseCoercions(filter),
-  );
+): E.Effect<
+  DataDocument[],
+  DataCollectionNotFoundError | DatabaseError | DataValidationError
+> {
   return pipe(
-    checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
-    E.flatMap((collection) =>
+    E.all([
+      checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+    ]),
+    E.flatMap(([collection, documentFilter]) =>
       E.tryPromise({
         try: () =>
           collection.find(documentFilter).sort({ _created: -1 }).toArray(),
