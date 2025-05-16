@@ -55,10 +55,10 @@ describe("query variable validation", () => {
     const variables = {
       minAmount: 500,
       status: "completed",
-      startDate: "2025-02-24T17:09:00.267Z",
-      // $coerce: {
-      //   startDate: "date",
-      // },
+      startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      $coerce: {
+        startDate: "date",
+      },
     };
 
     const response = await organization.executeQuery({
@@ -80,6 +80,9 @@ describe("query variable validation", () => {
       minAmount: 500,
       status: { value: "completed" },
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      $coerce: {
+        startDate: "date",
+      },
     };
 
     const response = await organization.executeQuery({
@@ -96,6 +99,9 @@ describe("query variable validation", () => {
       minAmount: 500,
       status: "completed",
       startDate: null,
+      $coerce: {
+        startDate: "date",
+      },
     };
 
     const response = await organization.executeQuery({
@@ -115,6 +121,9 @@ describe("query variable validation", () => {
       minAmount: 500,
       status: "completed",
       startDate: undefined,
+      $coerce: {
+        startDate: "date",
+      },
     };
 
     const response = await organization.executeQuery({
@@ -131,6 +140,9 @@ describe("query variable validation", () => {
       minAmount: 500,
       status: "completed",
       startDate: () => new Date().toISOString(),
+      $coerce: {
+        startDate: "date",
+      },
     };
 
     const response = await organization.executeQuery({

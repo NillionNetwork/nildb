@@ -89,7 +89,10 @@ export function findQueries(
   owner: Did,
 ): E.Effect<
   QueryDocument[],
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
   return pipe(QueriesRepository.findMany(ctx, { owner }));
 }
@@ -99,7 +102,10 @@ export function removeQuery(
   _id: UUID,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | PrimaryCollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
   return pipe(
     QueriesRepository.findOneAndDelete(ctx, { _id }),
@@ -142,7 +148,7 @@ export function validateQuery(
   ).pipe(E.map(() => query));
 }
 
-export type QueryPrimitive = string | number | boolean | Date;
+export type QueryPrimitive = string | number | boolean | Date | UUID;
 
 export type QueryRuntimeVariables = Record<
   string,
@@ -153,7 +159,7 @@ export function validateVariables(
   template: QueryDocument["variables"],
   provided: ExecuteQueryRequest["variables"],
 ): E.Effect<QueryRuntimeVariables, DataValidationError> {
-  const { $coerce, ...values } = provided;
+  const { $coerce: _$coerce, ...values } = provided;
   const providedKeys = Object.keys(values);
   const permittedKeys = Object.keys(template);
 
@@ -185,7 +191,7 @@ export function validateVariables(
       return validateArray(key, value as unknown[]).pipe(E.map(() => value));
     }
     return primitiveType(key, value).pipe(E.map(() => value));
-  }).pipe(E.map(() => applyCoercions(provided)));
+  }).pipe(E.andThen(() => applyCoercions<QueryRuntimeVariables>(provided)));
 }
 
 function validateArray<T = unknown>(

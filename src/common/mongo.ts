@@ -5,18 +5,21 @@ import {
   type Document,
   MongoClient,
   MongoError,
-  UUID,
+  type UUID,
 } from "mongodb";
+import { z } from "zod";
 import {
   DatabaseError,
   DataCollectionNotFoundError,
+  DataValidationError,
   PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import type {
-  CoercibleMap,
-  CoercibleTypes,
-  CoercibleValues,
-  UuidDto,
+import {
+  type CoercibleMap,
+  type CoercibleTypes,
+  type CoercibleValues,
+  Uuid,
+  type UuidDto,
 } from "#/common/types";
 import type { AppBindings, EnvVars } from "#/env";
 
@@ -133,53 +136,115 @@ export function checkDataCollectionExists<T extends Document>(
   );
 }
 
-export function applyCoercions<T>(coercibleMap: CoercibleMap): T {
+export function applyCoercions<T>(
+  coercibleMap: CoercibleMap,
+): E.Effect<T, DataValidationError> {
   if ("$coerce" in coercibleMap) {
     const { $coerce, ...coercibleValues } = coercibleMap;
     if ($coerce && typeof $coerce === "object") {
-      for (const field in $coerce) {
-        const type = $coerce[field];
-        applyCoercionToField(coercibleValues, field, type);
-      }
+      return E.forEach(Object.entries($coerce), ([key, type]) =>
+        applyCoercionToField(coercibleValues, key, type),
+      ).pipe(E.map(() => coercibleValues as unknown as T));
     }
-    return coercibleValues as unknown as T;
   }
-  return coercibleMap as unknown as T;
+  return E.succeed(coercibleMap as unknown as T);
 }
 
 function applyCoercionToField(
   coercibleValues: CoercibleValues,
   field: string,
   type: CoercibleTypes,
-) {
+): E.Effect<CoercibleMap, DataValidationError> {
+  const applyCoercionToArrayItems = (
+    array: Array<unknown>,
+  ): E.Effect<unknown, DataValidationError> => {
+    return E.forEach(array, (item) => coerceValue(item, type));
+  };
+
   if (coercibleValues[field]) {
-    if (typeof coercibleValues[field] === "object") {
+    if (Array.isArray(coercibleValues[field])) {
+      return applyCoercionToArrayItems(Array.from(coercibleValues[field])).pipe(
+        E.map((result) => (coercibleValues[field] = result)),
+        E.andThen(() => coercibleValues),
+      );
+    } else if (typeof coercibleValues[field] === "object") {
       const value = coercibleValues[field] as Record<string, unknown>;
       for (const op in value) {
-        if (Array.isArray(value[op])) {
-          value[op] = Array.from(value[op]).map((innerValue) =>
-            coerceValue(innerValue, type),
+        if (op.startsWith("$") && Array.isArray(value[op])) {
+          return applyCoercionToArrayItems(Array.from(value[op])).pipe(
+            E.map((result) => (value[op] = result)),
+            E.andThen(() => coercibleValues),
           );
         }
       }
     } else {
-      coercibleValues[field] = coerceValue(coercibleValues[field], type);
+      return coerceValue(coercibleValues[field], type).pipe(
+        E.map((result) => (coercibleValues[field] = result)),
+        E.map(() => coercibleValues),
+      );
     }
   }
+  return E.succeed(coercibleValues);
 }
 
-function coerceValue(value: unknown, type: string): unknown {
+function coerceValue(
+  value: unknown,
+  type: string,
+): E.Effect<unknown, DataValidationError> {
+  let result;
   switch (type.toLowerCase()) {
     case "string":
-      return `${value}`;
+      result = z.string().safeParse(`${value}`);
+      break;
     case "number":
-      return Number(value);
+      result = z
+        .preprocess((arg) => {
+          if (arg === null || arg === undefined) return undefined;
+          return Number(arg);
+        }, z.number())
+        .safeParse(value);
+      break;
     case "boolean":
-      return Boolean(value);
+      result = z
+        .preprocess((arg) => {
+          if (typeof arg === "boolean") return Boolean(arg);
+          if (typeof arg === "number" && (arg === 0 || arg === 1))
+            return Boolean(arg);
+          if (
+            typeof arg === "string" &&
+            (arg.toLowerCase() === "true" || arg.toLowerCase() === "false")
+          )
+            return true;
+          return undefined;
+        }, z.boolean())
+        .safeParse(value);
+      break;
     case "uuid":
-      return new UUID(`${value}`);
+      result = Uuid.safeParse(value);
+      break;
     case "date":
-      return new Date(`${value}`);
+      result = z
+        .preprocess((arg) => {
+          if (arg === null || arg === undefined) return undefined;
+          if (typeof arg !== "string") return undefined;
+          return new Date(arg);
+        }, z.date())
+        .safeParse(value);
+      break;
+    default:
+      const issues = ["Unsupported type coercion"];
+      const error = new DataValidationError({
+        issues,
+        cause: { value, type },
+      });
+      return E.fail(error);
   }
-  return value;
+  if (result.success) {
+    return E.succeed(result.data);
+  }
+  const error = new DataValidationError({
+    issues: [result.error],
+    cause: null,
+  });
+  return E.fail(error);
 }
