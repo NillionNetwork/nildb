@@ -25,9 +25,9 @@ import type {
   AddQueryRequest,
   ExecuteQueryRequest,
   QueryDocument,
-  QueryVariable,
   QueryJobDocument,
   QueryJobStatus,
+  QueryVariable,
 } from "./queries.types";
 
 export function addQuery(
