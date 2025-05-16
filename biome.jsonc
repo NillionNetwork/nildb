@@ -36,6 +36,9 @@
         "useNumberNamespace": "error",
         "noInferrableTypes": "error",
         "noUselessElse": "error"
+      },
+      "nursery": {
+        "noImportCycles": "error"
       }
     }
   },
