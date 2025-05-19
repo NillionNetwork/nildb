@@ -39,10 +39,9 @@ components:
       required:
         - path
       properties:
-        type:
-          type: string
-          enum: [ 'string', 'number', 'boolean', 'date' ]
         description:
+          type: string
+        path:
           type: string
         optional:
           type: boolean
