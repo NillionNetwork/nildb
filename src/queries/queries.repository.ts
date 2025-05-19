@@ -12,7 +12,6 @@ import {
   applyCoercions,
   CollectionName,
   checkPrimaryCollectionExists,
-  type DocumentBase,
 } from "#/common/mongo";
 import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
@@ -24,12 +23,10 @@ export function insert(
 ): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
     checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.insertOne(document),
-        catch: (cause) => new DatabaseError({ cause, message: "insert" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.insertOne(document),
+      catch: (cause) => new DatabaseError({ cause, message: "insert" }),
+    }),
     E.as(void 0),
   );
 }
@@ -47,14 +44,13 @@ export function findMany(
   return pipe(
     E.all([
       checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+      applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
     ]),
-    E.flatMap(([collection, documentFilter]) =>
-      E.tryPromise({
-        try: () => collection.find(documentFilter).toArray(),
-        catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) =>
+        collection.find(documentFilter).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
@@ -81,14 +77,12 @@ export function findOne(
   return pipe(
     E.all([
       checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+      applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
     ]),
-    E.flatMap(([collection, documentFilter]) =>
-      E.tryPromise({
-        try: () => collection.findOne(documentFilter),
-        catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) => collection.findOne(documentFilter),
+      catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
@@ -115,15 +109,14 @@ export function findOneAndDelete(
   return pipe(
     E.all([
       checkPrimaryCollectionExists<QueryDocument>(ctx, CollectionName.Queries),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+      applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
     ]),
-    E.flatMap(([collection, documentFilter]) =>
-      E.tryPromise({
-        try: () => collection.findOneAndDelete(documentFilter),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "findOneAndDelete" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) =>
+        collection.findOneAndDelete(documentFilter),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "findOneAndDelete" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(

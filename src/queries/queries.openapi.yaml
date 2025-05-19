@@ -59,6 +59,34 @@ components:
         optional:
           type: boolean
 
+    QueryJob:
+      allOf:
+        - $ref: '../docs/base.openapi.yaml#/components/schemas/DocumentBase'
+        - type: object
+          required:
+            - queryId
+            - status
+          properties:
+            queryId:
+              $ref: '../docs/base.openapi.yaml#/components/schemas/UUID'
+            status:
+              type: string
+              enum: [ 'pending', 'running', 'complete' ]
+            startedAt:
+              type: string
+              format: date-time
+            endedAt:
+              type: string
+              format: date-time
+            result:
+              description: The result of the query job, if available
+              type: object
+              additionalProperties: true
+            errors:
+              type: array
+              items:
+                type: string
+
 paths:
   /api/v1/queries:
     get:
@@ -185,6 +213,10 @@ paths:
                 variables:
                   type: object
                   additionalProperties: true
+                background:
+                  type: boolean
+                  description: Run the query in background
+                  example: false
       responses:
         '200':
           description: Query executed successfully
@@ -204,5 +236,45 @@ paths:
           $ref: '../docs/base.openapi.yaml#/components/responses/400'
         '401':
           $ref: '../docs/base.openapi.yaml#/components/responses/401'
+        '500':
+          $ref: '../docs/base.openapi.yaml#/components/responses/500'
+
+  /api/v1/queries/job:
+    post:
+      summary: Get query job
+      description: Get the status and result of a query job
+      security:
+        - jwt: [ ]
+      tags:
+        - Query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  $ref: '../docs/base.openapi.yaml#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Query job status and result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/QueryJob'
+        '400':
+          $ref: '../docs/base.openapi.yaml#/components/responses/400'
+        '401':
+          $ref: '../docs/base.openapi.yaml#/components/responses/401'
+        '404':
+          $ref: '../docs/base.openapi.yaml#/components/responses/404'
         '500':
           $ref: '../docs/base.openapi.yaml#/components/responses/500'

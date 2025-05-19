@@ -36,6 +36,7 @@ export const PathsV1 = {
     queries: {
       root: PathSchema.parse("/api/v1/admin/queries"),
       execute: PathSchema.parse("/api/v1/admin/queries/execute"),
+      job: PathSchema.parse("/api/v1/admin/queries/job"),
     },
     schemas: {
       root: PathSchema.parse("/api/v1/admin/schemas"),
@@ -58,6 +59,7 @@ export const PathsV1 = {
   queries: {
     root: PathSchema.parse("/api/v1/queries"),
     execute: PathSchema.parse("/api/v1/queries/execute"),
+    job: PathSchema.parse("/api/v1/queries/job"),
   },
   schemas: {
     root: PathSchema.parse("/api/v1/schemas"),

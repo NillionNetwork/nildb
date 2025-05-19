@@ -132,3 +132,11 @@ export class VariableInjectionError extends Data.TaggedError(
     return [this._tag, this.message];
   }
 }
+
+export class TimeoutError extends Data.TaggedError("TimeoutError")<{
+  message: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, this.message];
+  }
+}
