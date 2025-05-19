@@ -36,19 +36,15 @@ export function runCommitRevealAggregation(
 
   return pipe(
     checkDataCollectionExists<DocumentBase>(ctx, query.schema.toString()),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () =>
-          collection
-            .aggregate<SecretShareDocumentProjection>(pipeline)
-            .toArray(),
-        catch: (cause) =>
-          new DatabaseError({
-            cause,
-            message: "commit-reveal.query.json aggregation failed",
-          }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.aggregate<SecretShareDocumentProjection>(pipeline).toArray(),
+      catch: (cause) =>
+        new DatabaseError({
+          cause,
+          message: "commit-reveal.query.json aggregation failed",
+        }),
+    }),
     E.map((listOfShares) => {
       const sharesMap = new Map(
         listOfShares.map((document) => [

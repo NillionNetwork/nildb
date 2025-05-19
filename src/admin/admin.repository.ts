@@ -42,13 +42,11 @@ export function deleteOneById(
 
   return pipe(
     checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.deleteOne(filter),
-        catch: (cause: unknown) =>
-          new DatabaseError({ cause, message: "deleteOneById" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.deleteOne(filter),
+      catch: (cause: unknown) =>
+        new DatabaseError({ cause, message: "deleteOneById" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
@@ -68,13 +66,11 @@ export function insert(
 ): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
     checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.insertOne(document),
-        catch: (cause: unknown) =>
-          new DatabaseError({ cause, message: "insert" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.insertOne(document),
+      catch: (cause: unknown) =>
+        new DatabaseError({ cause, message: "insert" }),
+    }),
     E.as(void 0),
   );
 }
@@ -84,12 +80,10 @@ export function listAll(
 ): E.Effect<AccountDocument[], PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
     checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.find({}).toArray(),
-        catch: (cause: unknown) =>
-          new DatabaseError({ cause, message: "listAll" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.find({}).toArray(),
+      catch: (cause: unknown) =>
+        new DatabaseError({ cause, message: "listAll" }),
+    }),
   );
 }

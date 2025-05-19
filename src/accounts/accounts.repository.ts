@@ -47,12 +47,10 @@ export function insert(
       ctx,
       CollectionName.Accounts,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.insertOne(document),
-        catch: (cause) => new DatabaseError({ cause, message: "insert" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.insertOne(document),
+      catch: (cause) => new DatabaseError({ cause, message: "insert" }),
+    }),
     E.as(void 0),
   );
 }
@@ -74,13 +72,11 @@ export function findByIdWithCache(
 
   return pipe(
     checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.findOne(filter),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "findByIdWithCache" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.findOne(filter),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "findByIdWithCache" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
@@ -111,13 +107,11 @@ export function findOneOrganization(
       ctx,
       CollectionName.Accounts,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.findOne(filter),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "findOneOrganization" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.findOne(filter),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "findOneOrganization" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
@@ -148,13 +142,10 @@ export function deleteOneById(
       ctx,
       CollectionName.Accounts,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.deleteOne(filter),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "deleteOneById" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.deleteOne(filter),
+      catch: (cause) => new DatabaseError({ cause, message: "deleteOneById" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
@@ -196,13 +187,11 @@ export function setSubscriptionState(
       ctx,
       CollectionName.Accounts,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.updateOne(filter, update),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "setSubscriptionState" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "setSubscriptionState" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
@@ -260,12 +249,10 @@ export function setPublicKey(
       ctx,
       CollectionName.Accounts,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.updateOne(filter, update),
-        catch: (cause) => new DatabaseError({ cause, message: "setPublicKey" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "setPublicKey" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
