@@ -37,7 +37,6 @@ components:
     QueryVariable:
       type: object
       required:
-        - type
         - path
       properties:
         type:
@@ -45,31 +44,16 @@ components:
           enum: [ 'string', 'number', 'boolean', 'date' ]
         description:
           type: string
-        path:
-          type: string
         optional:
           type: boolean
 
     QueryArrayVariable:
       type: object
       required:
-        - type
-        - items
         - path
       properties:
-        type:
-          type: string
-          enum: [ 'array' ]
         description:
           type: string
-        items:
-          type: object
-          required:
-            - type
-          properties:
-            type:
-              type: string
-              enum: [ 'string', 'number', 'boolean', 'date' ]
         path:
           type: string
         optional:

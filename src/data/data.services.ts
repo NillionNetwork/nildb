@@ -49,7 +49,10 @@ export function createRecords(
 export function updateRecords(
   ctx: AppBindings,
   request: UpdateDataRequest,
-): E.Effect<UpdateResult, DataCollectionNotFoundError | DatabaseError> {
+): E.Effect<
+  UpdateResult,
+  DataCollectionNotFoundError | DatabaseError | DataValidationError
+> {
   return pipe(
     DataRepository.updateMany(
       ctx,
@@ -63,7 +66,10 @@ export function updateRecords(
 export function readRecords(
   ctx: AppBindings,
   request: ReadDataRequest,
-): E.Effect<DataDocument[], DataCollectionNotFoundError | DatabaseError> {
+): E.Effect<
+  DataDocument[],
+  DataCollectionNotFoundError | DatabaseError | DataValidationError
+> {
   return pipe(
     E.succeed(request),
     E.map(({ schema, filter }) => {
@@ -81,7 +87,11 @@ export function readRecords(
 export function deleteRecords(
   ctx: AppBindings,
   request: DeleteDataRequest,
-): E.Effect<DeleteResult, DataCollectionNotFoundError | DatabaseError, never> {
+): E.Effect<
+  DeleteResult,
+  DataCollectionNotFoundError | DatabaseError | DataValidationError,
+  never
+> {
   return pipe(DataRepository.deleteMany(ctx, request.schema, request.filter));
 }
 
