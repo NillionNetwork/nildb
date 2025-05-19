@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { UUID } from "mongodb";
 import { Temporal } from "temporal-polyfill";
 import { describe } from "vitest";
-import { type UuidDto, createUuidDto } from "#/common/types";
+import { createUuidDto, type UuidDto } from "#/common/types";
 import type { QueryJobDocument } from "#/queries/queries.types";
 import queryJson from "./data/variables.wallet.query.json";
 import schemaJson from "./data/variables.wallet.schema.json";
