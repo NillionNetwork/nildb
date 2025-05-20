@@ -8,8 +8,6 @@ import {
 import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
-import type { AccountDocument } from "#/admin/admin.types";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { PathsV1 } from "#/common/paths";
 import { createUuidDto } from "#/common/types";
@@ -36,50 +34,10 @@ describe("nuc-based access control", () => {
     kp: Keypair.generate(),
   };
 
-  beforeAll(async (_ctx) => {});
-  afterAll(async (_ctx) => {});
-
-  it("permits admin requests without subscription", async ({
-    expect,
-    admin,
-  }) => {
-    const response = await admin.listAccounts();
-    const { data: accounts } = (await response.json()) as {
-      data: AccountDocument[];
-    };
-
-    // an admin account and an org account
-    expect(accounts.length).toBe(2);
-  });
-
-  it("rejects requests when subscription inactive", async ({
-    expect,
-    organization,
-  }) => {
-    const selfSignedRootNuc = organization.nuc();
-    const response = await organization.app.request(PathsV1.accounts.root, {
-      headers: {
-        Authorization: `Bearer ${selfSignedRootNuc}`,
-      },
-    });
-    // Unauthorised for now since we'd need to handle the throw for nuc-ts to delineate
-    // between accounts that exist but have no subscription vs accounts that don't exist
-    expect(response.status).toBe(401);
-  });
-
-  it("accepts requests when subscription active", async ({
-    expect,
-    organization,
-  }) => {
+  beforeAll(async ({ organization }) => {
     await organization.ensureSubscriptionActive();
-
-    const response = await organization.getAccount();
-
-    const { data } =
-      await expectSuccessResponse<OrganizationAccountDocument>(response);
-
-    expect(data._id).toBe(organization.did);
   });
+  afterAll(async (_ctx) => {});
 
   it("can setup schemas and queries", async ({ expect, organization }) => {
     const promise = registerSchemaAndQuery({ organization, schema, query });

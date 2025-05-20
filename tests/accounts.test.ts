@@ -5,18 +5,21 @@ import { describe } from "vitest";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type { AccountDocument } from "#/admin/admin.types";
 import { CollectionName } from "#/common/mongo";
+import { PathsV1 } from "#/common/paths";
 import { expectSuccessResponse } from "./fixture/assertions";
 import { createTestFixtureExtension } from "./fixture/it";
 import { TestOrganizationUserClient } from "./fixture/test-client";
 
 describe("account management", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
-  beforeAll(async (ctx) => {
-    await ctx.organization.ensureSubscriptionActive();
-  });
+  beforeAll(async (_ctx) => {});
   afterAll(async (_ctx) => {});
 
-  it("root can create an admin account", async ({ expect, bindings, root }) => {
+  it("root can create an admin account without subscription", async ({
+    expect,
+    bindings,
+    root,
+  }) => {
     const keypair = Keypair.generate();
     const did = keypair.toDidString();
 
@@ -32,6 +35,33 @@ describe("account management", () => {
       .collection<AccountDocument>(CollectionName.Accounts)
       .findOne({ _id: did });
     expect(document).toBeDefined;
+  });
+
+  it("rejects requests when the subscription is inactive", async ({
+    expect,
+    organization,
+  }) => {
+    const selfSignedRootNuc = organization.nuc();
+    const response = await organization.app.request(PathsV1.accounts.root, {
+      headers: {
+        Authorization: `Bearer ${selfSignedRootNuc}`,
+      },
+    });
+    // Unauthorised for now since we'd need to handle the throw for nuc-ts to delineate
+    // between accounts that exist but have no subscription vs accounts that don't exist
+    expect(response.status).toBe(401);
+  });
+
+  it("accepts requests when the subscription is active", async ({
+    expect,
+    organization,
+  }) => {
+    await organization.ensureSubscriptionActive();
+
+    const response = await organization.getAccount();
+    const { data } =
+      await expectSuccessResponse<OrganizationAccountDocument>(response);
+    expect(data._id).toBe(organization.did);
   });
 
   it("admin can register an organization account", async ({
@@ -56,7 +86,7 @@ describe("account management", () => {
     expect(document).toBeDefined;
   });
 
-  it("organization can get its own profile", async ({
+  it("an organization can read its profile", async ({
     expect,
     organization,
   }) => {
@@ -69,7 +99,7 @@ describe("account management", () => {
     });
   });
 
-  it("an organization can self register", async ({
+  it("an organization can self-register", async ({
     app,
     bindings,
     expect,
