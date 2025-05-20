@@ -7,7 +7,7 @@ export const NucCmd = {
       accounts: new Command(["nil", "db", "accounts"]),
       data: new Command(["nil", "db", "data"]),
       schemas: new Command(["nil", "db", "schemas"]),
-      queries: new Command(["nil", "db", "queries", "add"]),
+      queries: new Command(["nil", "db", "queries"]),
     },
   },
 } as const;

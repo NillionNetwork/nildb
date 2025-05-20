@@ -2,6 +2,7 @@ import {
   Command,
   Did,
   type DidString,
+  InvocationBody,
   type Keypair,
   type NilauthClient,
   NucTokenBuilder,
@@ -251,6 +252,7 @@ export class TestOrganizationUserClient extends TestClient {
     return NucTokenBuilder.extending(rootToken)
       .proof(rootToken)
       .audience(Did.fromHex(this._options.node.keypair.publicKey("hex")))
+      .body(new InvocationBody({}))
       .build(this.keypair.privateKey());
   }
 

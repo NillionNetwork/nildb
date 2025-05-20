@@ -1,5 +1,6 @@
 import {
   Did,
+  InvocationBody,
   Keypair,
   NucTokenBuilder,
   NucTokenEnvelopeSchema,
@@ -13,6 +14,7 @@ import { NucCmd } from "#/common/nuc-cmd-tree";
 import { PathsV1 } from "#/common/paths";
 import { createUuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
+import type { TailDataRequest } from "#/data/data.types";
 import type { ExecuteQueryRequest } from "#/queries/queries.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
@@ -71,11 +73,12 @@ describe("nuc-based access control", () => {
   }) => {
     await organization.ensureSubscriptionActive();
 
-    const response = await expectSuccessResponse<OrganizationAccountDocument>(
-      await organization.getAccount(),
-    );
+    const response = await organization.getAccount();
 
-    expect(response.data._id).toBe(organization.did);
+    const { data } =
+      await expectSuccessResponse<OrganizationAccountDocument>(response);
+
+    expect(data._id).toBe(organization.did);
   });
 
   it("can setup schemas and queries", async ({ expect, organization }) => {
@@ -121,6 +124,7 @@ describe("nuc-based access control", () => {
       delegationFromBuilderEnvelope,
     )
       .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
     // 3. User creates an upload data request
@@ -182,6 +186,7 @@ describe("nuc-based access control", () => {
       delegationFromBuilderEnvelope,
     )
       .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
     // 3. User creates an upload data request
@@ -250,6 +255,7 @@ describe("nuc-based access control", () => {
       delegationFromBuilderEnvelope,
     )
       .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
     // 3. User creates a query execution request (average age of wallets in GBR)
@@ -288,6 +294,48 @@ describe("nuc-based access control", () => {
       },
     });
     expect(forbiddenResponse.status).toBe(StatusCodes.FORBIDDEN);
+  });
+
+  it("rejects namespace v path jumps: token.cmd=/nil/db/queries attempting to access /api/v1/data/tail)", async ({
+    expect,
+    app,
+    admin,
+    organization,
+  }) => {
+    // 1. The org mints a delegation nuc address to the user
+    const root = await organization.getRootToken();
+    const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
+      .audience(Did.fromHex(user.kp.publicKey("hex")))
+      .command(NucCmd.nil.db.queries)
+      .build(organization.keypair.privateKey());
+
+    // 2. The user receives the delegation nuc, mints an invocation addressed to the nildb node
+
+    const delegationFromBuilderEnvelope = NucTokenEnvelopeSchema.parse(
+      delegationFromBuilderRaw,
+    );
+    const invocationByUser = NucTokenBuilder.extending(
+      delegationFromBuilderEnvelope,
+    )
+      .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .body(new InvocationBody({}))
+      .build(user.kp.privateKey());
+
+    // 3. Send namespace-jump attempt
+    const body: TailDataRequest = {
+      schema: schema.id,
+    };
+    const response = await app.request(PathsV1.data.tail, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${invocationByUser}`,
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    // 4. Check the response was rejected
+    expect(response.status).toBe(StatusCodes.FORBIDDEN);
   });
 
   it("enforces revocations", async ({ expect, app, admin, organization }) => {
