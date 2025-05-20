@@ -95,18 +95,15 @@ export function tailCollection(
 ): E.Effect<DataDocument[], DataCollectionNotFoundError | DatabaseError> {
   return pipe(
     checkDataCollectionExists<DataDocument>(ctx, schema.toString()),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () =>
-          collection
-            .find()
-            .sort({ _created: -1 })
-            .limit(TAIL_DATA_LIMIT)
-            .toArray(),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "tailCollection" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection
+          .find()
+          .sort({ _created: -1 })
+          .limit(TAIL_DATA_LIMIT)
+          .toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "tailCollection" }),
+    }),
   );
 }
 
@@ -116,13 +113,12 @@ export function deleteCollection(
 ): E.Effect<void, DataCollectionNotFoundError | DatabaseError> {
   return pipe(
     checkDataCollectionExists<DataDocument>(ctx, schema.toString()),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => ctx.db.data.dropCollection(collection.collectionName),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "deleteCollection" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) =>
+        ctx.db.data.dropCollection(collection.collectionName),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "deleteCollection" }),
+    }),
     E.as(void 0),
   );
 }
@@ -133,13 +129,11 @@ export function flushCollection(
 ): E.Effect<DeleteResult, DataCollectionNotFoundError | DatabaseError> {
   return pipe(
     checkDataCollectionExists<DataDocument>(ctx, schema.toString()),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.deleteMany(),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "flushCollection" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.deleteMany(),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "flushCollection" }),
+    }),
   );
 }
 
@@ -164,65 +158,63 @@ export function insert(
 ): E.Effect<UploadResult, DataCollectionNotFoundError | DatabaseError> {
   return pipe(
     checkDataCollectionExists<DataDocument>(ctx, schema._id.toString()),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: async () => {
-          const created = new Set<UuidDto>();
-          const errors: CreateFailure[] = [];
+    E.tryMapPromise({
+      try: async (collection) => {
+        const created = new Set<UuidDto>();
+        const errors: CreateFailure[] = [];
 
-          const batchSize = 1000;
-          const batches: DataDocument[][] = [];
-          const now = new Date();
+        const batchSize = 1000;
+        const batches: DataDocument[][] = [];
+        const now = new Date();
 
-          for (let i = 0; i < data.length; i += batchSize) {
-            const batch = data.slice(i, i + batchSize).map((partial) => ({
-              ...partial,
-              _id: new UUID(partial._id),
-              _created: now,
-              _updated: now,
-            }));
-            batches.push(batch);
-          }
+        for (let i = 0; i < data.length; i += batchSize) {
+          const batch = data.slice(i, i + batchSize).map((partial) => ({
+            ...partial,
+            _id: new UUID(partial._id),
+            _created: now,
+            _updated: now,
+          }));
+          batches.push(batch);
+        }
 
-          for (const batch of batches) {
-            try {
-              const result = await collection.insertMany(batch, {
-                ordered: false,
-              });
+        for (const batch of batches) {
+          try {
+            const result = await collection.insertMany(batch, {
+              ordered: false,
+            });
+            for (const id of Object.values(result.insertedIds)) {
+              created.add(id.toString() as UuidDto);
+            }
+          } catch (e) {
+            if (e instanceof MongoBulkWriteError) {
+              const result = e.result;
+
               for (const id of Object.values(result.insertedIds)) {
                 created.add(id.toString() as UuidDto);
               }
-            } catch (e) {
-              if (e instanceof MongoBulkWriteError) {
-                const result = e.result;
 
-                for (const id of Object.values(result.insertedIds)) {
-                  created.add(id.toString() as UuidDto);
-                }
-
-                result.getWriteErrors().map((writeError) => {
-                  const document = batch[writeError.index];
-                  created.delete(document._id.toString() as UuidDto);
-                  errors.push({
-                    error: writeError.errmsg ?? "Unknown bulk operation error",
-                    document,
-                  });
+              result.getWriteErrors().map((writeError) => {
+                const document = batch[writeError.index];
+                created.delete(document._id.toString() as UuidDto);
+                errors.push({
+                  error: writeError.errmsg ?? "Unknown bulk operation error",
+                  document,
                 });
-              } else {
-                console.error("An unhandled error occurred: %O", e);
-                throw e;
-              }
+              });
+            } else {
+              console.error("An unhandled error occurred: %O", e);
+              throw e;
             }
           }
+        }
 
-          return {
-            created: Array.from(created),
-            errors,
-          };
-        },
-        catch: (cause) => new DatabaseError({ cause, message: "" }),
-      }),
-    ),
+        return {
+          created: Array.from(created),
+          errors,
+        };
+      },
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
   );
 }
 
@@ -243,12 +235,11 @@ export function updateMany(
         addDocumentBaseCoercions(update),
       ),
     ]),
-    E.flatMap(([collection, documentFilter, documentUpdate]) =>
-      E.tryPromise({
-        try: () => collection.updateMany(documentFilter, documentUpdate),
-        catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: ([collection, documentFilter, documentUpdate]) =>
+        collection.updateMany(documentFilter, documentUpdate),
+      catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
+    }),
   );
 }
 
@@ -265,12 +256,11 @@ export function deleteMany(
       checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
       applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
     ]),
-    E.flatMap(([collection, documentFilter]) =>
-      E.tryPromise({
-        try: () => collection.deleteMany(documentFilter),
-        catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) =>
+        collection.deleteMany(documentFilter),
+      catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
+    }),
   );
 }
 
@@ -281,13 +271,10 @@ export function runAggregation(
 ): E.Effect<JsonObject[], DataCollectionNotFoundError | DatabaseError> {
   return pipe(
     checkDataCollectionExists<DocumentBase>(ctx, query.schema.toString()),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.aggregate(pipeline).toArray(),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "runAggregation" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.aggregate(pipeline).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "runAggregation" }),
+    }),
   );
 }
 
@@ -304,12 +291,10 @@ export function findMany(
       checkDataCollectionExists<DocumentBase>(ctx, schema.toString()),
       applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
     ]),
-    E.flatMap(([collection, documentFilter]) =>
-      E.tryPromise({
-        try: () =>
-          collection.find(documentFilter).sort({ _created: -1 }).toArray(),
-        catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) =>
+        collection.find(documentFilter).sort({ _created: -1 }).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
+    }),
   );
 }

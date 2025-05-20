@@ -48,12 +48,10 @@ export function insert(
 ): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
   return pipe(
     checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.insertOne(document),
-        catch: (cause) => new DatabaseError({ cause, message: "" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.insertOne(document),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
     E.as(void 0),
   );
 }
@@ -72,12 +70,11 @@ export function findMany(
         addSchemaDocumentCoercions(filter),
       ),
     ]),
-    E.flatMap(([collection, documentFilter]) =>
-      E.tryPromise({
-        try: async () => collection.find(documentFilter).toArray(),
-        catch: (cause) => new DatabaseError({ cause, message: "" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) =>
+        collection.find(documentFilter).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
   );
 }
 
@@ -98,12 +95,10 @@ export function findOne(
         addSchemaDocumentCoercions(filter),
       ),
     ]),
-    E.flatMap(([collection, documentFilter]) =>
-      E.tryPromise({
-        try: async () => collection.findOne(documentFilter),
-        catch: (cause) => new DatabaseError({ cause, message: "" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) => collection.findOne(documentFilter),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
@@ -134,12 +129,11 @@ export function deleteOne(
         addSchemaDocumentCoercions(filter),
       ),
     ]),
-    E.flatMap(([collection, documentFilter]) =>
-      E.tryPromise({
-        try: () => collection.findOneAndDelete(documentFilter),
-        catch: (cause) => new DatabaseError({ cause, message: "deleteOne" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) =>
+        collection.findOneAndDelete(documentFilter),
+      catch: (cause) => new DatabaseError({ cause, message: "deleteOne" }),
+    }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
@@ -263,23 +257,21 @@ export function createIndex(
 > {
   return pipe(
     checkPrimaryCollectionExists(ctx, schema.toString()),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: async () => collection.createIndex(specification, options),
-        catch: (cause) => {
-          if (
-            isMongoError(cause) &&
-            cause.code === MongoErrorCode.CannotCreateIndex
-          ) {
-            return new InvalidIndexOptionsError({
-              collection: schema.toString(),
-              message: cause.message,
-            });
-          }
-          return new DatabaseError({ cause, message: "Failed to drop index" });
-        },
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.createIndex(specification, options),
+      catch: (cause) => {
+        if (
+          isMongoError(cause) &&
+          cause.code === MongoErrorCode.CannotCreateIndex
+        ) {
+          return new InvalidIndexOptionsError({
+            collection: schema.toString(),
+            message: cause.message,
+          });
+        }
+        return new DatabaseError({ cause, message: "Failed to drop index" });
+      },
+    }),
   );
 }
 
@@ -293,22 +285,20 @@ export function dropIndex(
 > {
   return pipe(
     checkPrimaryCollectionExists(ctx, schema.toString()),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: async () => collection.dropIndex(name),
-        catch: (cause) => {
-          if (
-            isMongoError(cause) &&
-            cause.code === MongoErrorCode.IndexNotFound
-          ) {
-            return new IndexNotFoundError({
-              collection: schema.toString(),
-              index: name,
-            });
-          }
-          return new DatabaseError({ cause, message: "Failed to drop index" });
-        },
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.dropIndex(name),
+      catch: (cause) => {
+        if (
+          isMongoError(cause) &&
+          cause.code === MongoErrorCode.IndexNotFound
+        ) {
+          return new IndexNotFoundError({
+            collection: schema.toString(),
+            index: name,
+          });
+        }
+        return new DatabaseError({ cause, message: "Failed to drop index" });
+      },
+    }),
   );
 }

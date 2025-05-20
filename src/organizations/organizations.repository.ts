@@ -28,12 +28,10 @@ export function addSchema(
       ctx,
       CollectionName.Accounts,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.updateOne(filter, update),
-        catch: (cause) => new DatabaseError({ cause, message: "" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
     E.flatMap((result) =>
       result.modifiedCount === 1
         ? E.succeed(void 0)
@@ -65,12 +63,10 @@ export function removeSchema(
       ctx,
       CollectionName.Accounts,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.updateOne(filter, update),
-        catch: (cause) => new DatabaseError({ cause, message: "" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
     E.flatMap((result) =>
       result.modifiedCount === 1
         ? E.succeed(void 0)
@@ -102,12 +98,10 @@ export function addQuery(
       ctx,
       CollectionName.Accounts,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.updateOne(filter, update),
-        catch: (cause) => new DatabaseError({ cause, message: "" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
     E.flatMap((result) =>
       result.modifiedCount === 1
         ? E.succeed(void 0)
@@ -139,12 +133,10 @@ export function removeQuery(
       ctx,
       CollectionName.Accounts,
     ),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.updateOne(filter, update),
-        catch: (cause) => new DatabaseError({ cause, message: "removeQuery" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "removeQuery" }),
+    }),
     E.flatMap((result) =>
       result.modifiedCount === 1
         ? E.succeed(void 0)

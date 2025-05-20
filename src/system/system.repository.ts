@@ -22,16 +22,14 @@ export function setMaintenanceWindow(
 
   return pipe(
     checkPrimaryCollectionExists<ConfigDocument>(ctx, CollectionName.Config),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () =>
-          collection.updateOne(filter, update, {
-            upsert: true,
-          }),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "setMaintenanceWindow" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, update, {
+          upsert: true,
+        }),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "setMaintenanceWindow" }),
+    }),
     E.as(void 0),
   );
 }
@@ -48,13 +46,11 @@ export function findMaintenanceWindow(
 
   return pipe(
     checkPrimaryCollectionExists<ConfigDocument>(ctx, CollectionName.Config),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () => collection.findOne(filter),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "findMaintenanceWindow" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) => collection.findOne(filter),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "findMaintenanceWindow" }),
+    }),
     E.flatMap((result) => {
       if (!result || !result.window) {
         return O.none();
@@ -86,16 +82,14 @@ export function deleteMaintenanceWindow(
 
   return pipe(
     checkPrimaryCollectionExists<ConfigDocument>(ctx, CollectionName.Config),
-    E.flatMap((collection) =>
-      E.tryPromise({
-        try: () =>
-          collection.updateOne(filter, {
-            $unset: { window: "" },
-          }),
-        catch: (cause) =>
-          new DatabaseError({ cause, message: "deleteMaintenanceWindow" }),
-      }),
-    ),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, {
+          $unset: { window: "" },
+        }),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "deleteMaintenanceWindow" }),
+    }),
     E.mapError(
       () =>
         new DocumentNotFoundError({
