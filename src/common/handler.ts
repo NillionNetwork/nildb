@@ -1,4 +1,5 @@
 import { Effect as E, pipe } from "effect";
+import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
@@ -14,7 +15,7 @@ import type {
   ResourceAccessDeniedError,
   VariableInjectionError,
 } from "#/common/errors";
-import type { AppContext } from "#/env";
+import type { AppEnv } from "#/env";
 
 export type ApiSuccessResponse<T> = {
   data: T;
@@ -39,7 +40,7 @@ type KnownError =
   | ResourceAccessDeniedError
   | VariableInjectionError;
 
-export function handleTaggedErrors(c: AppContext) {
+export function handleTaggedErrors(c: Context<AppEnv>) {
   const toResponse = (
     e: KnownError,
     statusCode: ContentfulStatusCode,

@@ -1,4 +1,3 @@
-import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { handleTaggedErrors } from "#/common/handler";
@@ -6,7 +5,6 @@ import { NucCmd } from "#/common/nuc-cmd-tree";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
-import type { AppContext } from "#/env";
 import {
   enforceCapability,
   RoleSchema,
@@ -14,7 +12,9 @@ import {
 } from "#/middleware/capability.middleware";
 import * as SystemService from "#/system/system.services";
 import {
+  type AdminSetLogLevelRequest,
   AdminSetLogLevelRequestSchema,
+  type AdminSetMaintenanceWindowRequest,
   AdminSetMaintenanceWindowRequestSchema,
   type LogLevelInfo,
 } from "./admin.types";
@@ -22,19 +22,17 @@ import {
 export function setMaintenanceWindow(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.admin.system.maintenance;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.admin,
-    roles: [RoleSchema.enum.admin],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.post(
     path,
     payloadValidator(AdminSetMaintenanceWindowRequestSchema),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability<{ json: AdminSetMaintenanceWindowRequest }>({
+      path,
+      cmd: NucCmd.nil.db.admin,
+      roles: [RoleSchema.enum.admin],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const payload = c.req.valid("json");
       return pipe(
@@ -50,18 +48,16 @@ export function setMaintenanceWindow(options: ControllerOptions): void {
 export function deleteMaintenanceWindow(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.admin.system.maintenance;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.admin,
-    roles: [RoleSchema.enum.admin],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.delete(
     path,
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.admin,
+      roles: [RoleSchema.enum.admin],
+      validate: (_c, _token) => true,
+    }),
     async (c) =>
       pipe(
         SystemService.deleteMaintenanceWindow(c.env),
@@ -75,19 +71,17 @@ export function deleteMaintenanceWindow(options: ControllerOptions): void {
 export function setLogLevel(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.admin.system.logLevel;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.admin,
-    roles: [RoleSchema.enum.admin],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.post(
     path,
-    verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
     payloadValidator(AdminSetLogLevelRequestSchema),
+    verifyNucAndLoadSubject(bindings),
+    enforceCapability<{ json: AdminSetLogLevelRequest }>({
+      path,
+      cmd: NucCmd.nil.db.admin,
+      roles: [RoleSchema.enum.admin],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const payload = c.req.valid("json");
       c.env.log.level = payload.level;
@@ -99,18 +93,16 @@ export function setLogLevel(options: ControllerOptions): void {
 export function getLogLevel(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.admin.system.logLevel;
-  const guard = {
-    path,
-    cmd: NucCmd.nil.db.admin,
-    roles: [RoleSchema.enum.admin],
-    // TODO: implement policy validation fix json on body type inference
-    validate: (_c: AppContext, _token: NucToken) => true,
-  };
 
   app.get(
     path,
     verifyNucAndLoadSubject(bindings),
-    enforceCapability(bindings, guard),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.admin,
+      roles: [RoleSchema.enum.admin],
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const logLevelInfo = {
         level: c.env.log.level,

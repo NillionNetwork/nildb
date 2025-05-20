@@ -9,16 +9,19 @@ import {
   ValidationParameters,
 } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
-import type { MiddlewareHandler, Next } from "hono";
+import type { Context, Env, Input, MiddlewareHandler } from "hono";
+import type { BlankInput } from "hono/types";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
+import type { EmptyObject } from "type-fest";
 import { z } from "zod";
 import * as AccountsRepository from "#/accounts/accounts.repository";
-import type { Path } from "#/common/paths";
-import type { AppBindings, AppContext } from "#/env";
+import type { AppBindings, AppEnv } from "#/env";
 
-export function verifyNucAndLoadSubject(
-  bindings: AppBindings,
-): MiddlewareHandler {
+export function verifyNucAndLoadSubject<
+  P extends string = string,
+  I extends Input = BlankInput,
+  E extends AppEnv = AppEnv,
+>(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
 
   const nilauthDid = Did.fromHex(config.nilauthPubKey);
@@ -29,7 +32,7 @@ export function verifyNucAndLoadSubject(
   });
   const validateNucWithSubscription = new NucTokenValidator([nilauthDid]);
 
-  return async (c: AppContext, next: Next) => {
+  return async (c, next) => {
     try {
       const authHeader = c.req.header("Authorization") ?? "";
       const [scheme, tokenString] = authHeader.split(" ");
@@ -115,20 +118,37 @@ export function verifyNucAndLoadSubject(
 export const RoleSchema = z.enum(["root", "admin", "organization", "user"]);
 export type Role = z.infer<typeof RoleSchema>;
 
-export type EnforceCapabilityOptions = {
+export type ValidatedOutput = Partial<{
+  json: EmptyObject;
+  param: EmptyObject;
+  query: EmptyObject;
+}>;
+
+export type EnforceCapabilityOptions<
+  // Define the payload first since it's the most used generic
+  ValidatedParams extends Input["out"] = ValidatedOutput,
+  Path extends string = string,
+  E extends Env = AppEnv,
+> = {
   path: Path;
   cmd: Command;
   roles: Role[];
-  validate: (c: AppContext, token: NucToken) => boolean;
+  validate: (
+    c: Context<E, Path, { out: ValidatedParams }>,
+    token: NucToken,
+  ) => boolean | Promise<boolean>;
 };
 
-export function enforceCapability(
-  bindings: AppBindings,
-  options: EnforceCapabilityOptions,
-): MiddlewareHandler {
-  const { log } = bindings;
-
-  return async (c: AppContext, next) => {
+export function enforceCapability<
+  // Define the payload first since it's the most used generic
+  ValidatedParams extends Input["out"] = ValidatedOutput,
+  Path extends string = string,
+  E extends AppEnv = AppEnv,
+>(
+  options: EnforceCapabilityOptions<ValidatedParams, Path, E>,
+): MiddlewareHandler<E, Path, { out: ValidatedParams }> {
+  return async (c, next) => {
+    const { log } = c.env;
     const { token } = c.get("envelope").token;
     const account = c.get("account");
 

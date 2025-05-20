@@ -1,8 +1,8 @@
 import { Effect as E, pipe } from "effect";
-import type { MiddlewareHandler, Next } from "hono";
+import type { Context, MiddlewareHandler, Next } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { PathsV1 } from "#/common/paths";
-import type { AppBindings, AppContext } from "#/env";
+import type { AppBindings, AppEnv } from "#/env";
 import * as SystemService from "#/system/system.services";
 
 const MAINTENANCE_EXCLUDED_PATHS: string[] = [
@@ -16,7 +16,7 @@ const MAINTENANCE_EXCLUDED_PATHS: string[] = [
 export function useMaintenanceMiddleware(
   bindings: AppBindings,
 ): MiddlewareHandler {
-  return async (c: AppContext, next: Next) => {
+  return async (c: Context<AppEnv>, next: Next) => {
     const isPathExcludedFromMaintenance = MAINTENANCE_EXCLUDED_PATHS.some(
       (path) => c.req.path.startsWith(path),
     );
