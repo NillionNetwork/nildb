@@ -1,5 +1,6 @@
 import {
   Did,
+  InvocationBody,
   Keypair,
   NucTokenBuilder,
   NucTokenEnvelopeSchema,
@@ -72,11 +73,12 @@ describe("nuc-based access control", () => {
   }) => {
     await organization.ensureSubscriptionActive();
 
-    const response = await expectSuccessResponse<OrganizationAccountDocument>(
-      await organization.getAccount(),
-    );
+    const response = await organization.getAccount();
 
-    expect(response.data._id).toBe(organization.did);
+    const { data } =
+      await expectSuccessResponse<OrganizationAccountDocument>(response);
+
+    expect(data._id).toBe(organization.did);
   });
 
   it("can setup schemas and queries", async ({ expect, organization }) => {
@@ -122,6 +124,7 @@ describe("nuc-based access control", () => {
       delegationFromBuilderEnvelope,
     )
       .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
     // 3. User creates an upload data request
@@ -183,6 +186,7 @@ describe("nuc-based access control", () => {
       delegationFromBuilderEnvelope,
     )
       .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
     // 3. User creates an upload data request
@@ -251,6 +255,7 @@ describe("nuc-based access control", () => {
       delegationFromBuilderEnvelope,
     )
       .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
     // 3. User creates a query execution request (average age of wallets in GBR)
@@ -313,6 +318,7 @@ describe("nuc-based access control", () => {
       delegationFromBuilderEnvelope,
     )
       .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
     // 3. Send namespace-jump attempt

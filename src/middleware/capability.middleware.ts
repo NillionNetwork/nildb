@@ -1,6 +1,7 @@
 import {
   type Command,
   Did,
+  InvocationRequirement,
   NilauthClient,
   type NucToken,
   NucTokenEnvelopeSchema,
@@ -21,7 +22,11 @@ export function verifyNucAndLoadSubject(
   const { log, config } = bindings;
 
   const nilauthDid = Did.fromHex(config.nilauthPubKey);
-  const defaultValidationParameters = new ValidationParameters();
+  const nildbNodeDid = Did.fromHex(bindings.node.keypair.publicKey("hex"));
+
+  const defaultValidationParameters = new ValidationParameters({
+    tokenRequirements: new InvocationRequirement(nildbNodeDid),
+  });
   const validateNucWithSubscription = new NucTokenValidator([nilauthDid]);
 
   return async (c: AppContext, next: Next) => {
@@ -93,8 +98,12 @@ export function verifyNucAndLoadSubject(
       c.set("account", account);
 
       return next();
-    } catch (error) {
-      log.error("Auth error:", error);
+    } catch (cause) {
+      if (cause && typeof cause === "object" && "message" in cause) {
+        log.error("Auth error: %O", cause);
+      } else {
+        log.error("Auth error: unknown");
+      }
       return c.text(
         getReasonPhrase(StatusCodes.UNAUTHORIZED),
         StatusCodes.UNAUTHORIZED,
