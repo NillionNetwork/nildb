@@ -32,7 +32,7 @@ describe("query variable validation", () => {
     count: number;
   };
 
-  beforeAll(async ({ organization }) => {
+  beforeAll(async (c) => {
     const data: Record[] = Array.from({ length: 10 }, () => ({
       _id: createUuidDto(),
       wallet: faker.finance.ethereumAddress(),
@@ -41,17 +41,17 @@ describe("query variable validation", () => {
       timestamp: faker.date.recent().toISOString(),
     }));
 
-    const response = await organization.uploadData({
+    const _response = await c.organization.uploadData({
       schema: schema.id,
       data,
     });
-
-    await expectSuccessResponse(response);
   });
 
-  afterAll(async (_ctx) => {});
+  afterAll(async (_c) => {});
 
-  it("can execute query with variables", async ({ expect, organization }) => {
+  it("can execute query with variables", async ({ c }) => {
+    const { expect, organization } = c;
+
     const variables = {
       minAmount: 500,
       status: "completed",
@@ -66,7 +66,7 @@ describe("query variable validation", () => {
       variables,
     });
 
-    const result = await expectSuccessResponse<QueryResult[]>(response);
+    const result = await expectSuccessResponse<QueryResult[]>(c, response);
 
     for (const record of result.data) {
       expect(record._id).toBe("completed");
@@ -75,7 +75,9 @@ describe("query variable validation", () => {
     }
   });
 
-  it("rejects object as variable value", async ({ expect, organization }) => {
+  it("rejects object as variable value", async ({ c }) => {
+    const { expect, organization } = c;
+
     const variables = {
       minAmount: 500,
       status: { value: "completed" },
@@ -90,11 +92,13 @@ describe("query variable validation", () => {
       variables,
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("DataValidationError");
   });
 
-  it("rejects null as variable value", async ({ expect, organization }) => {
+  it("rejects null as variable value", async ({ c }) => {
+    const { expect, organization } = c;
+
     const variables = {
       minAmount: 500,
       status: "completed",
@@ -109,14 +113,13 @@ describe("query variable validation", () => {
       variables,
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("DataValidationError");
   });
 
-  it("rejects undefined as variable value", async ({
-    expect,
-    organization,
-  }) => {
+  it("rejects undefined as variable value", async ({ c }) => {
+    const { expect, organization } = c;
+
     const variables = {
       minAmount: 500,
       status: "completed",
@@ -131,11 +134,13 @@ describe("query variable validation", () => {
       variables,
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("DataValidationError");
   });
 
-  it("rejects function as variable value", async ({ expect, organization }) => {
+  it("rejects function as variable value", async ({ c }) => {
+    const { expect, organization } = c;
+
     const variables = {
       minAmount: 500,
       status: "completed",
@@ -150,7 +155,7 @@ describe("query variable validation", () => {
       variables,
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("DataValidationError");
   });
 });

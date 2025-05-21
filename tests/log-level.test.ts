@@ -5,10 +5,12 @@ import { createTestFixtureExtension } from "./fixture/it";
 
 describe("log level management", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
-  beforeAll(async (_ctx) => {});
-  afterAll(async (_ctx) => {});
+  beforeAll(async (_c) => {});
+  afterAll(async (_c) => {});
 
-  it("should return current log level", async ({ admin, bindings }) => {
+  it("should return the current log level", async ({ c }) => {
+    const { admin, bindings } = c;
+
     const response = await admin.getLogLevel();
     expect(response.status).toBe(StatusCodes.OK);
 
@@ -19,9 +21,11 @@ describe("log level management", () => {
     expect(result.levelValue).toEqual(bindings.log.levelVal);
   });
 
-  it("can set log level", async ({ admin, bindings }) => {
+  it("can set the log level", async ({ c }) => {
+    const { admin, bindings } = c;
+
     const request = {
-      level: "info",
+      level: "warn",
     } as const;
 
     const response = await admin.setLogLevel(request);

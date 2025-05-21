@@ -17,8 +17,8 @@ describe("data operations", () => {
     schema,
     query,
   });
-  beforeAll(async (_ctx) => {});
-  afterAll(async (_ctx) => {});
+  beforeAll(async (_c) => {});
+  afterAll(async (_c) => {});
 
   type Record = {
     _id: UuidDto;
@@ -27,7 +27,9 @@ describe("data operations", () => {
     age: number;
   };
 
-  it("can upload data", async ({ expect, bindings, organization }) => {
+  it("can upload data", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
     const data: Record[] = [
       {
         _id: createUuidDto(),
@@ -54,7 +56,7 @@ describe("data operations", () => {
       data,
     });
 
-    const result = await expectSuccessResponse<UploadResult>(response);
+    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.created).toHaveLength(3);
 
     const cursor = bindings.db.data.collection(schema.id.toString()).find({});
@@ -62,13 +64,9 @@ describe("data operations", () => {
     expect(records).toHaveLength(3);
   });
 
-  it("rejects primary key collisions", async ({
-    expect,
-    skip,
-    bindings,
-    organization,
-  }) => {
-    skip("depends on indexes, disable until index endpoint is ready");
+  it("rejects primary key collisions", async ({ skip, c }) => {
+    skip("TODO: depends on indexes, disable until index endpoint is ready");
+    const { expect, bindings, organization } = c;
 
     const data = [
       {
@@ -84,7 +82,7 @@ describe("data operations", () => {
       data,
     });
 
-    const result = await expectSuccessResponse<UploadResult>(response);
+    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.errors).toHaveLength(1);
 
     const cursor = bindings.db.data.collection(schema.id.toString()).find({});
@@ -92,8 +90,9 @@ describe("data operations", () => {
     expect(records).toHaveLength(3);
   });
 
-  it("allows for partial success", async ({ expect, skip, organization }) => {
+  it("allows for partial success", async ({ skip, c }) => {
     skip("depends on indexes, disable until index endpoint is ready");
+    const { expect, organization } = c;
 
     const data: Record[] = [
       {
@@ -115,18 +114,14 @@ describe("data operations", () => {
       data,
     });
 
-    const result = await expectSuccessResponse<UploadResult>(response);
+    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.errors).toHaveLength(1);
     expect(result.data.created).toHaveLength(1);
   });
 
-  it("rejects duplicates in data payload", async ({
-    expect,
-    skip,
-    bindings,
-    organization,
-  }) => {
+  it("rejects duplicates in data payload", async ({ skip, c }) => {
     skip("depends on indexes, disable until index endpoint is ready");
+    const { expect, organization } = c;
 
     const data: Record[] = [
       {
@@ -148,12 +143,14 @@ describe("data operations", () => {
       data,
     });
 
-    const cursor = bindings.db.data.collection(schema.id.toString()).find({});
+    const cursor = c.bindings.db.data.collection(schema.id.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(4);
   });
 
-  it("rejects data that does not conform", async ({ expect, organization }) => {
+  it("rejects data that does not conform", async ({ c }) => {
+    const { expect, organization } = c;
+
     const data: Record[] = [
       {
         _id: createUuidDto(),
@@ -169,19 +166,20 @@ describe("data operations", () => {
       data,
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("DataValidationError");
   });
 
-  it("can run a query", async ({ expect, skip, organization }) => {
+  it("can run a query", async ({ skip, c }) => {
     skip("depends on indexes, disable until index endpoint is ready");
+    const { expect, organization } = c;
 
     const response = await organization.executeQuery({
       id: query.id,
       variables: query.variables,
     });
 
-    const result = await expectSuccessResponse(response);
+    const result = await expectSuccessResponse(c, response);
     expect(result.data).toEqual([
       {
         averageAge: 30,
@@ -190,11 +188,9 @@ describe("data operations", () => {
     ]);
   });
 
-  it("can read data by a single id", async ({
-    expect,
-    bindings,
-    organization,
-  }) => {
+  it("can read data by a single id", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
       .findOne({});
@@ -207,16 +203,14 @@ describe("data operations", () => {
       filter: { _id },
     });
 
-    const result = await expectSuccessResponse<Record[]>(response);
+    const result = await expectSuccessResponse<Record[]>(c, response);
     const actual = result.data[0];
     expect(actual._id).toBe(_id);
   });
 
-  it("can read data from a list of ids", async ({
-    expect,
-    bindings,
-    organization,
-  }) => {
+  it("can read data from a list of ids", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
       .find({})
@@ -231,7 +225,7 @@ describe("data operations", () => {
       filter: { _id: { $in: ids } },
     });
 
-    const result = await expectSuccessResponse(response);
+    const result = await expectSuccessResponse(c, response);
     expect(result.data).toHaveLength(3);
   });
 });

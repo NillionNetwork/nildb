@@ -4,15 +4,19 @@ import { createTestFixtureExtension } from "./fixture/it";
 
 describe("system.test.ts", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
-  beforeAll(async (_ctx) => {});
-  afterAll(async (_ctx) => {});
+  beforeAll(async (_c) => {});
+  afterAll(async (_c) => {});
 
-  it("responds to health checks", async ({ expect, admin }) => {
+  it("responds to health checks", async ({ c }) => {
+    const { expect, admin } = c;
+
     const response = await admin.health();
     expect(response.ok).toBeTruthy();
   });
 
-  it("reports app version", async ({ expect, bindings, admin }) => {
+  it("reports app version", async ({ c }) => {
+    const { expect, bindings, admin } = c;
+
     const response = await admin.about();
     expect(response.ok).toBeTruthy();
 

@@ -27,7 +27,7 @@ describe("long running query job", () => {
     timestamp: string;
   };
 
-  beforeAll(async ({ organization }) => {
+  beforeAll(async (c) => {
     const data: Record[] = Array.from({ length: 10 }, () => ({
       _id: createUuidDto(),
       wallet: faker.finance.ethereumAddress(),
@@ -36,17 +36,17 @@ describe("long running query job", () => {
       timestamp: faker.date.recent().toISOString(),
     }));
 
-    const response = await organization.uploadData({
+    const _response = await c.organization.uploadData({
       schema: schema.id,
       data,
     });
-
-    await expectSuccessResponse(response);
   });
 
-  afterAll(async (_ctx) => {});
+  afterAll(async (_c) => {});
 
-  it("can start a long running query job", async ({ expect, organization }) => {
+  it("can start a long running query job", async ({ c }) => {
+    const { expect, organization } = c;
+
     const variables = {
       minAmount: 500,
       status: "completed",
@@ -59,21 +59,20 @@ describe("long running query job", () => {
       background: true,
     });
 
-    const result = await expectSuccessResponse<{ jobId: string }>(response);
+    const result = await expectSuccessResponse<{ jobId: string }>(c, response);
 
     expect(result.data.jobId).toBeDefined();
     jobId = result.data.jobId;
   });
 
-  it("can poll for long running job result", async ({
-    expect,
-    organization,
-  }) => {
+  it("can poll for long running job result", async ({ c }) => {
+    const { expect, organization } = c;
+
     expect(jobId).toBeDefined();
     const jobIdUuid = new UUID(jobId);
 
     const response = await organization.getQueryJob({ id: jobIdUuid });
-    let result = await expectSuccessResponse<QueryJobDocument>(response);
+    let result = await expectSuccessResponse<QueryJobDocument>(c, response);
 
     for (let attempt = 0; attempt < 5; attempt++) {
       if (result.data.status === "complete") {
@@ -84,7 +83,7 @@ describe("long running query job", () => {
       const pollResponse = await organization.getQueryJob({
         id: jobIdUuid,
       });
-      result = await expectSuccessResponse<QueryJobDocument>(pollResponse);
+      result = await expectSuccessResponse<QueryJobDocument>(c, pollResponse);
     }
 
     expect(result.data.status).toBe("complete");

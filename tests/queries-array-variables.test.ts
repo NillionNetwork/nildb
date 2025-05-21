@@ -35,9 +35,11 @@ describe("array variable queries", () => {
     });
   });
 
-  afterAll(async (_ctx) => {});
+  afterAll(async (_c) => {});
 
-  it("rejects mixed-type arrays", async ({ expect, organization }) => {
+  it("rejects mixed-type arrays", async ({ c }) => {
+    const { expect, organization } = c;
+
     const variables = {
       values: [1, "string"],
     };
@@ -47,11 +49,13 @@ describe("array variable queries", () => {
       variables,
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("DataValidationError");
   });
 
-  it("can execute with empty array", async ({ expect, organization }) => {
+  it("can execute with empty array", async ({ c }) => {
+    const { expect, organization } = c;
+
     const variables = {
       values: [],
     };
@@ -61,14 +65,13 @@ describe("array variable queries", () => {
       variables,
     });
 
-    const result = await expectSuccessResponse<unknown[]>(response);
+    const result = await expectSuccessResponse<unknown[]>(c, response);
     expect(result.data).toHaveLength(0);
   });
 
-  it("can use valid array of variables in pipeline", async ({
-    expect,
-    organization,
-  }) => {
+  it("can use valid array of variables in pipeline", async ({ c }) => {
+    const { expect, organization } = c;
+
     const testRecord = data[2];
     const variables = {
       values: testRecord.values,
@@ -79,7 +82,7 @@ describe("array variable queries", () => {
       variables,
     });
 
-    const result = await expectSuccessResponse<unknown[]>(response);
+    const result = await expectSuccessResponse<unknown[]>(c, response);
     expect(result.data).toHaveLength(1);
   });
 });

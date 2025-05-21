@@ -1,13 +1,13 @@
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
-import { describe, expect } from "vitest";
+import { describe } from "vitest";
 import { expectErrorResponse } from "./fixture/assertions";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("node maintenance window management", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
-  beforeAll(async (_ctx) => {});
-  afterAll(async (_ctx) => {});
+  beforeAll(async (_c) => {});
+  afterAll(async (_c) => {});
 
   const start = Temporal.Now.instant();
   const end = start.add({ hours: 1 });
@@ -16,7 +16,9 @@ describe("node maintenance window management", () => {
     end: new Date(end.epochMilliseconds),
   };
 
-  it("rejects if start or end dates are invalid", async ({ expect, admin }) => {
+  it("rejects if start or end dates are invalid", async ({ c }) => {
+    const { expect, admin } = c;
+
     // End is less than start
     const invalidMaintenanceWindow = {
       start: maintenanceWindow.start,
@@ -26,7 +28,7 @@ describe("node maintenance window management", () => {
     let response = await admin.setMaintenanceWindow(invalidMaintenanceWindow);
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 
-    let error = await expectErrorResponse(response);
+    let error = await expectErrorResponse(c, response);
     expect(error.errors).includes("DataValidationError");
 
     // End is same as start
@@ -35,7 +37,7 @@ describe("node maintenance window management", () => {
     response = await admin.setMaintenanceWindow(invalidMaintenanceWindow);
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 
-    error = await expectErrorResponse(response);
+    error = await expectErrorResponse(c, response);
     expect(error.errors).includes("DataValidationError");
 
     // End is less than now
@@ -48,11 +50,12 @@ describe("node maintenance window management", () => {
     response = await admin.setMaintenanceWindow(invalidMaintenanceWindow);
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 
-    error = await expectErrorResponse(response);
+    error = await expectErrorResponse(c, response);
     expect(error.errors).includes("DataValidationError");
   });
 
-  it("can set a maintenance window", async ({ admin }) => {
+  it("can set a maintenance window", async ({ c }) => {
+    const { expect, admin } = c;
     const response = await admin.setMaintenanceWindow({
       start: maintenanceWindow.start,
       end: maintenanceWindow.end,
@@ -61,9 +64,10 @@ describe("node maintenance window management", () => {
   });
 
   it("should return maintenance window details at `/about` when node is in maintenance", async ({
-    expect,
-    admin,
+    c,
   }) => {
+    const { expect, admin } = c;
+
     const response = await admin.about();
     expect(response.status).toBe(StatusCodes.OK);
 
@@ -80,7 +84,9 @@ describe("node maintenance window management", () => {
     expect(actualEnd).toEqual(expectedEnd.getUTCSeconds());
   });
 
-  it("can delete a maintenance window", async ({ expect, admin }) => {
+  it("can delete a maintenance window", async ({ c }) => {
+    const { expect, admin } = c;
+
     const response = await admin.deleteMaintenanceWindow();
     expect(response.status).toBe(StatusCodes.NO_CONTENT);
   });

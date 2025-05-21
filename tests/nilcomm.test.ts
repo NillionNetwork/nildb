@@ -46,8 +46,8 @@ describe.skip("nilcomm.test.ts > blind auction", () => {
     pt: bid,
   }));
 
-  beforeAll(async (ctx) => {
-    const connection = await amqp.connect(ctx.bindings.config.mqUri);
+  beforeAll(async (c) => {
+    const connection = await amqp.connect(c.bindings.config.mqUri);
     channel = await connection.createChannel();
     await bindQueues(channel);
   });
@@ -56,10 +56,9 @@ describe.skip("nilcomm.test.ts > blind auction", () => {
     await purgeQueues(channel);
   });
 
-  it("handles secret store commands and emits stored events", async ({
-    expect,
-    bindings,
-  }) => {
+  it("handles secret store commands and emits stored events", async ({ c }) => {
+    const { expect, bindings } = c;
+
     const receivedIds = new Set<string>();
     let consumerTag = "";
 
@@ -133,10 +132,8 @@ describe.skip("nilcomm.test.ts > blind auction", () => {
     }
   });
 
-  it("stores plain text shares in the database", async ({
-    expect,
-    bindings,
-  }) => {
+  it("stores plain text shares in the database", async ({ c }) => {
+    const { expect, bindings } = c;
     // Verify all shares exist in DB
     const collection = bindings.db.data.collection<
       DocumentBase & { share: string }
@@ -152,9 +149,9 @@ describe.skip("nilcomm.test.ts > blind auction", () => {
   });
 
   it("handles the commit reveal command and emits the result ", async ({
-    expect,
-    bindings,
+    c,
   }) => {
+    const { expect, bindings } = c;
     const mapping_id = new UUID();
     let consumerTag = "";
 

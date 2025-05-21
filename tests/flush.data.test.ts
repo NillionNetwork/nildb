@@ -4,7 +4,10 @@ import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
-import { expectSuccessResponse } from "./fixture/assertions";
+import {
+  assertDocumentCount,
+  expectSuccessResponse,
+} from "./fixture/assertions";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
@@ -26,28 +29,27 @@ describe("flush data collection", () => {
     name: faker.person.fullName(),
   }));
 
-  beforeAll(async ({ organization }) => {
-    const response = await organization.uploadData({
+  beforeAll(async (c) => {
+    const _response = await c.organization.uploadData({
       schema: schema.id,
       data,
     });
-
-    await expectSuccessResponse(response);
   });
 
-  afterAll(async (_ctx) => {});
+  afterAll(async (_c) => {});
 
-  it("can flush a collection", async ({ expect, bindings, organization }) => {
+  it("can flush a collection", async ({ c }) => {
+    const { expect, organization } = c;
+
+    await assertDocumentCount(c, schema.id, collectionSize);
+
     const response = await organization.flushData({
       schema: schema.id,
     });
 
-    const result = await expectSuccessResponse<DeleteResult>(response);
-    expect(result.data.deletedCount).toBe(collectionSize);
+    const result = await expectSuccessResponse<DeleteResult>(c, response);
 
-    const count = await bindings.db.data
-      .collection(schema.id.toString())
-      .countDocuments();
-    expect(count).toBe(0);
+    expect(result.data.deletedCount).toBe(collectionSize);
+    await assertDocumentCount(c, schema.id, 0);
   });
 });

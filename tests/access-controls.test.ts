@@ -18,18 +18,19 @@ describe("account access controls", () => {
     schema,
     query,
   });
-  beforeAll(async (_ctx) => {});
-  afterAll(async (_ctx) => {});
+  beforeAll(async (_c) => {});
+  afterAll(async (_c) => {});
 
-  it("rejects unauthenticated requests", async ({ expect, admin }) => {
+  it("rejects unauthenticated requests", async ({ c }) => {
+    const { admin, expect } = c;
+
     const response = await admin.app.request(PathsV1.accounts.root);
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
-  it("organizations cannot create admin accounts", async ({
-    organization,
-    expect,
-  }) => {
+  it("organizations cannot create admin accounts", async ({ c }) => {
+    const { organization, expect } = c;
+
     const keypair = Keypair.generate();
     const response = await organization.request(PathsV1.admin.accounts.root, {
       method: "POST",
@@ -44,20 +45,22 @@ describe("account access controls", () => {
     expect(response.status).toBe(StatusCodes.FORBIDDEN);
   });
 
-  it("organizations cannot list accounts", async ({ organization, expect }) => {
+  it("organizations cannot list accounts", async ({ c }) => {
+    const { organization, expect } = c;
+
     const response = await organization.request(PathsV1.admin.accounts.root);
     expect(response.status).toBe(StatusCodes.FORBIDDEN);
   });
 });
 
-describe("restrict cross organization operations", () => {
+describe("restrict cross-organization operations", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
     schema,
     query,
   });
-  afterAll(async (_ctx) => {});
+  afterAll(async (_c) => {});
 
   let organizationB: TestOrganizationUserClient;
   const collectionSize = 10;
@@ -95,7 +98,9 @@ describe("restrict cross organization operations", () => {
     });
   });
 
-  it("prevents data upload", async ({ expect }) => {
+  it("prevents data upload", async ({ c }) => {
+    const { expect } = c;
+
     const response = await organizationB.uploadData({
       schema: schema.id,
       data: [
@@ -106,21 +111,25 @@ describe("restrict cross organization operations", () => {
       ],
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("ResourceAccessDeniedError");
   });
 
-  it("prevents data reads", async ({ expect }) => {
+  it("prevents data reads", async ({ c }) => {
+    const { expect } = c;
+
     const response = await organizationB.readData({
       schema: schema.id,
       filter: {},
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("ResourceAccessDeniedError");
   });
 
-  it("prevents data updates", async ({ expect }) => {
+  it("prevents data updates", async ({ c }) => {
+    const { expect } = c;
+
     const record = data[Math.floor(Math.random() * collectionSize)];
     const response = await organizationB.updateData({
       schema: schema.id,
@@ -128,36 +137,42 @@ describe("restrict cross organization operations", () => {
       update: { name: "foo" },
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("ResourceAccessDeniedError");
   });
 
-  it("prevents data deletes", async ({ expect }) => {
+  it("prevents data deletes", async ({ c }) => {
+    const { expect } = c;
+
     const record = data[Math.floor(Math.random() * collectionSize)];
     const response = await organizationB.deleteData({
       schema: schema.id,
       filter: { name: record.name },
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("ResourceAccessDeniedError");
   });
 
-  it("prevents data flush", async ({ expect }) => {
+  it("prevents data flush", async ({ c }) => {
+    const { expect } = c;
+
     const response = await organizationB.flushData({
       schema: schema.id,
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("ResourceAccessDeniedError");
   });
 
-  it("prevents data tail", async ({ expect }) => {
+  it("prevents data tail", async ({ c }) => {
+    const { expect } = c;
+
     const response = await organizationB.tailData({
       schema: schema.id,
     });
 
-    const error = await expectErrorResponse(response);
+    const error = await expectErrorResponse(c, response);
     expect(error.errors).includes("ResourceAccessDeniedError");
   });
 });

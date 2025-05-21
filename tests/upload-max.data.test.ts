@@ -18,8 +18,8 @@ describe("upload.max.data.test", () => {
     schema,
     query,
   });
-  beforeAll(async (_ctx) => {});
-  afterAll(async (_ctx) => {});
+  beforeAll(async (_c) => {});
+  afterAll(async (_c) => {});
 
   type Record = {
     _id: UuidDto;
@@ -31,10 +31,9 @@ describe("upload.max.data.test", () => {
     name: createUuidDto(),
   });
 
-  it("rejects payload that exceeds MAX_RECORDS_LENGTH", async ({
-    expect,
-    organization,
-  }) => {
+  it("rejects payload that exceeds MAX_RECORDS_LENGTH", async ({ c }) => {
+    const { expect, organization } = c;
+
     const data: Record[] = Array.from({ length: MAX_RECORDS_LENGTH + 1 }, () =>
       nextDocument(),
     );
@@ -44,16 +43,15 @@ describe("upload.max.data.test", () => {
       data,
     });
 
-    const result = await expectErrorResponse(response);
+    const result = await expectErrorResponse(c, response);
     expect(result.errors).toContain(
       'Length must be non zero and lte 10000 at "data"',
     );
   });
 
-  it("accepts payload at MAX_RECORDS_LENGTH", async ({
-    expect,
-    organization,
-  }) => {
+  it("accepts payload at MAX_RECORDS_LENGTH", async ({ c }) => {
+    const { expect, organization } = c;
+
     const data: Record[] = Array.from({ length: MAX_RECORDS_LENGTH }, () =>
       nextDocument(),
     );
@@ -63,7 +61,7 @@ describe("upload.max.data.test", () => {
       data,
     });
 
-    const result = await expectSuccessResponse<UploadResult>(response);
+    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.errors).toHaveLength(0);
     expect(result.data.created).toHaveLength(MAX_RECORDS_LENGTH);
   });

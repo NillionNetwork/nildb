@@ -5,6 +5,7 @@ import { createUuidDto, type UuidDto } from "#/common/types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import {
+  assertDocumentCount,
   expectErrorResponse,
   expectSuccessResponse,
 } from "./fixture/assertions";
@@ -42,59 +43,44 @@ describe("schema data deletion", () => {
     });
   });
 
-  afterAll(async (_ctx) => {});
+  afterAll(async (_c) => {});
 
-  it("rejects empty filter", async ({ expect, organization }) => {
-    const filter = {};
+  it("rejects empty filter", async ({ c }) => {
+    const { organization, expect } = c;
 
     const response = await organization.deleteData({
       schema: schema.id,
-      filter,
+      filter: {},
     });
 
-    const result = await expectErrorResponse(response);
+    const result = await expectErrorResponse(c, response);
     expect(result.errors).toContain('Filter cannot be empty at "filter"');
   });
 
-  it("can remove a single match", async ({
-    expect,
-    bindings,
-    organization,
-  }) => {
-    const filter = { name: "foo" };
+  it("can remove a single match", async ({ c }) => {
+    const { organization, expect } = c;
 
     const response = await organization.deleteData({
       schema: schema.id,
-      filter,
+      filter: { name: "foo" },
     });
 
-    const result = await expectSuccessResponse<DeleteResult>(response);
+    const result = await expectSuccessResponse<DeleteResult>(c, response);
     expect(result.data.deletedCount).toBe(1);
-
-    const count = await bindings.db.data
-      .collection(schema.id.toString())
-      .countDocuments();
-    expect(count).toBe(collectionSize - 1);
+    await assertDocumentCount(c, schema.id, collectionSize - 1);
   });
 
-  it("can remove multiple matches", async ({
-    expect,
-    bindings,
-    organization,
-  }) => {
-    const filter = { name: "bar" };
+  it("can remove multiple matches", async ({ c }) => {
+    const { organization, expect } = c;
 
     const response = await organization.deleteData({
       schema: schema.id,
-      filter,
+      filter: { name: "bar" },
     });
 
-    const result = await expectSuccessResponse<DeleteResult>(response);
+    const result = await expectSuccessResponse<DeleteResult>(c, response);
     expect(result.data.deletedCount).toBe(2);
 
-    const count = await bindings.db.data
-      .collection(schema.id.toString())
-      .countDocuments();
-    expect(count).toBe(collectionSize - 3);
+    await assertDocumentCount(c, schema.id, collectionSize - 3);
   });
 });

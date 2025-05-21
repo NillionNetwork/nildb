@@ -34,18 +34,22 @@ describe("data reading operations", () => {
     });
   });
 
-  afterAll(async (_ctx) => {});
+  afterAll(async (_c) => {});
 
-  it("can tail a collection", async ({ expect, organization }) => {
+  it("can tail a collection", async ({ c }) => {
+    const { expect, organization } = c;
+
     const response = await organization.tailData({
       schema: schema.id,
     });
 
-    const result = await expectSuccessResponse<Record[]>(response);
+    const result = await expectSuccessResponse<Record[]>(c, response);
     expect(result.data).toHaveLength(TAIL_DATA_LIMIT);
   });
 
-  it("can read data from a collection", async ({ expect, organization }) => {
+  it("can read data from a collection", async ({ c }) => {
+    const { expect, organization } = c;
+
     const testRecord = testData[Math.floor(Math.random() * collectionSize)];
 
     const response = await organization.readData({
@@ -53,7 +57,7 @@ describe("data reading operations", () => {
       filter: { name: testRecord.name },
     });
 
-    const result = await expectSuccessResponse<Record[]>(response);
+    const result = await expectSuccessResponse<Record[]>(c, response);
     expect(result.data).toHaveLength(1);
     expect(result.data[0]?._id).toBe(testRecord._id);
     expect(result.data[0]?.name).toBe(testRecord.name);
