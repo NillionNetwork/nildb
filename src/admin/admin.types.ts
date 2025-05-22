@@ -24,16 +24,6 @@ export type AdminDeleteAccountRequest = z.infer<
   typeof AdminDeleteAccountRequestSchema
 >;
 
-export const AdminSetSubscriptionStateRequestSchema = z.object({
-  did: DidSchema,
-  start: z.coerce.date().optional(),
-  end: z.coerce.date().optional(),
-  txHash: z.string().optional(),
-});
-export type AdminSetSubscriptionStateRequest = z.infer<
-  typeof AdminSetSubscriptionStateRequestSchema
->;
-
 export const AdminAddQueryRequestSchema = AddQueryRequestSchema.extend({
   owner: DidSchema,
 });

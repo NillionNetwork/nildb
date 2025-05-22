@@ -115,29 +115,3 @@ export function setPublicKey(options: ControllerOptions): void {
     },
   );
 }
-
-export function getSubscription(options: ControllerOptions): void {
-  const { app, bindings } = options;
-  const path = PathsV1.accounts.subscription;
-
-  app.get(
-    path,
-    verifyNucAndLoadSubject(bindings),
-    enforceCapability({
-      path,
-      cmd: NucCmd.nil.db.accounts,
-      roles: [RoleSchema.enum.organization],
-      validate: (_c, _token) => true,
-    }),
-    async (c) => {
-      const account = c.get("account");
-
-      return pipe(
-        AccountService.getSubscriptionState(c.env, account._id),
-        E.map((data) => c.json({ data })),
-        handleTaggedErrors(c),
-        E.runPromise,
-      );
-    },
-  );
-}

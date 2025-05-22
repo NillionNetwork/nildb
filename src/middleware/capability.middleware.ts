@@ -103,9 +103,9 @@ export function verifyNucAndLoadSubject<
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
-        log.error("Auth error: %O", cause);
+        log.error({ cause: cause.message }, "Auth error");
       } else {
-        log.error("Auth error: unknown");
+        log.error({ cause: "unknown" }, "Auth error");
       }
       return c.text(
         getReasonPhrase(StatusCodes.UNAUTHORIZED),

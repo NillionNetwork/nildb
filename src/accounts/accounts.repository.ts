@@ -1,7 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UpdateResult } from "mongodb";
 import type { AccountDocument } from "#/admin/admin.types";
-import { advance } from "#/common/date";
 import {
   DatabaseError,
   DocumentNotFoundError,
@@ -11,7 +10,6 @@ import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type {
-  AccountSubscriptionDocument,
   OrganizationAccountDocument,
   RegisterAccountRequest,
 } from "./accounts.types";
@@ -28,11 +26,6 @@ export function toOrganizationAccountDocument(
     _created: now,
     _updated: now,
     name,
-    subscription: {
-      start: now,
-      end: advance(now, 365),
-      txHash: "",
-    },
     schemas: [],
     queries: [],
   };
@@ -157,74 +150,6 @@ export function deleteOneById(
         : E.succeed(result),
     ),
     E.tap(() => ctx.cache.accounts.delete(_id)),
-  );
-}
-
-export function setSubscriptionState(
-  ctx: AppBindings,
-  did: Did,
-  start: Date,
-  end: Date,
-  txHash: string,
-): E.Effect<
-  UpdateResult,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
-> {
-  const filter: StrictFilter<OrganizationAccountDocument> = {
-    _id: did,
-    _type: "organization",
-  };
-  const update: StrictUpdateFilter<OrganizationAccountDocument> = {
-    $set: {
-      "subscription.start": start,
-      "subscription.end": end,
-      "subscription.txHash": txHash,
-    },
-  };
-
-  return pipe(
-    checkPrimaryCollectionExists<OrganizationAccountDocument>(
-      ctx,
-      CollectionName.Accounts,
-    ),
-    E.tryMapPromise({
-      try: (collection) => collection.updateOne(filter, update),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "setSubscriptionState" }),
-    }),
-    E.flatMap((result) =>
-      result === null
-        ? E.fail(
-            new DocumentNotFoundError({
-              collection: CollectionName.Accounts,
-              filter,
-            }),
-          )
-        : E.succeed(result),
-    ),
-    E.tap(() => ctx.cache.accounts.taint(did)),
-  );
-}
-
-export function getSubscriptionState(
-  ctx: AppBindings,
-  _id: Did,
-): E.Effect<
-  AccountSubscriptionDocument,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
-> {
-  const now = new Date();
-  return pipe(
-    findOneOrganization(ctx, _id),
-    E.map((document) => {
-      const { start, end, txHash } = document.subscription;
-      return {
-        active: start <= now && end >= now,
-        start,
-        end,
-        txHash,
-      };
-    }),
   );
 }
 

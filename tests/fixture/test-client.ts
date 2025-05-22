@@ -20,7 +20,6 @@ import type {
   AdminDeleteAccountRequest,
   AdminSetLogLevelRequest,
   AdminSetMaintenanceWindowRequest,
-  AdminSetSubscriptionStateRequest,
 } from "#/admin/admin.types";
 import type { App } from "#/app";
 import { PathsBeta, PathsV1 } from "#/common/paths";
@@ -132,21 +131,6 @@ export class TestAdminUserClient extends TestRootUserClient {
       method: "DELETE",
       body,
     });
-  }
-
-  async setSubscriptionState(
-    body: AdminSetSubscriptionStateRequest,
-  ): Promise<Response> {
-    return this.request(PathsV1.admin.accounts.subscription, {
-      method: "POST",
-      body,
-    });
-  }
-
-  async getSubscriptionState(did: DidString): Promise<Response> {
-    return this.request(
-      PathsV1.admin.accounts.subscriptionByDid.replace(":did", did),
-    );
   }
 
   async setMaintenanceWindow(
@@ -297,10 +281,6 @@ export class TestOrganizationUserClient extends TestClient {
 
   async getAccount(): Promise<Response> {
     return this.request(PathsV1.accounts.root);
-  }
-
-  async getSubscriptionState(): Promise<Response> {
-    return this.request(PathsV1.accounts.subscription);
   }
 
   async updateAccount(body: SetPublicKeyRequest): Promise<Response> {

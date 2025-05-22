@@ -4,7 +4,7 @@ export const PathSchema = z
   .string()
   .startsWith("/")
   .regex(/^(\/[a-z0-9_:.-]+)+$/i, {
-    message: "Path must follow format: /parent/child/:param/grandchild",
+    message: "Path must follow the format: /parent/child/:param/grandchild",
   })
   .brand<"path">();
 
@@ -14,16 +14,11 @@ export const PathsV1 = {
   accounts: {
     root: PathSchema.parse("/api/v1/accounts"),
     publicKey: PathSchema.parse("/api/v1/accounts/public_key"),
-    subscription: PathSchema.parse("/api/v1/accounts/subscription"),
   },
   admin: {
     root: PathSchema.parse("/api/v1/admin"),
     accounts: {
       root: PathSchema.parse("/api/v1/admin/accounts"),
-      subscription: PathSchema.parse("/api/v1/admin/accounts/subscription"),
-      subscriptionByDid: PathSchema.parse(
-        "/api/v1/admin/accounts/subscription/:did",
-      ),
     },
     data: {
       delete: PathSchema.parse("/api/v1/admin/data/delete"),

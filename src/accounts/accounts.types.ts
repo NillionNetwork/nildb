@@ -31,13 +31,6 @@ export const RemoveAccountRequestSchema = z.object({
 export type RemoveAccountRequest = z.infer<typeof RemoveAccountRequestSchema>;
 export type RemoveAccountResponse = ApiResponse<string>;
 
-export type AccountSubscriptionDocument = {
-  active: boolean;
-  start: Date;
-  end: Date;
-  txHash: string;
-};
-
 /**
  * Repository types
  */
@@ -47,11 +40,6 @@ export type OrganizationAccountDocument = {
   _created: Date;
   _updated: Date;
   name: string;
-  subscription: {
-    start: Date;
-    end: Date;
-    txHash: string;
-  };
   schemas: UUID[];
   queries: UUID[];
 };
