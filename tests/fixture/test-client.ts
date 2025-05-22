@@ -239,7 +239,9 @@ export class TestOrganizationUserClient extends TestClient {
           await this._options.nilauth.payAndValidate();
           return;
         } catch (_error) {
-          console.log("Retrying to pay and validate subscription after 200ms");
+          console.log(
+            "Retrying to pay and validate the subscription after 200ms",
+          );
           await new Promise((f) => setTimeout(f, 200));
         }
       }

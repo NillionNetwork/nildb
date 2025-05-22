@@ -42,7 +42,7 @@ describe("nuc-based access control", () => {
   it("can setup schemas and queries", async ({ c }) => {
     const { expect, organization } = c;
 
-    const promise = registerSchemaAndQuery({ organization, schema, query });
+    const promise = registerSchemaAndQuery({ c, organization, schema, query });
     await expect(promise).resolves.not.toThrow();
 
     const response = await organization.uploadData({

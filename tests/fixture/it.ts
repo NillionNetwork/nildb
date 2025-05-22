@@ -1,27 +1,10 @@
 import * as vitest from "vitest";
-import type { App } from "#/app";
-import type { AppBindingsWithNilcomm } from "#/env";
 import {
   buildFixture,
+  type FixtureContext,
   type QueryFixture,
   type SchemaFixture,
-  type TestFixture,
 } from "./fixture";
-import type {
-  TestAdminUserClient,
-  TestOrganizationUserClient,
-  TestRootUserClient,
-} from "./test-client";
-
-export type FixtureContext = {
-  id: string;
-  app: App;
-  bindings: AppBindingsWithNilcomm;
-  root: TestRootUserClient;
-  admin: TestAdminUserClient;
-  organization: TestOrganizationUserClient;
-  expect: vitest.ExpectStatic;
-};
 
 type TestFixtureExtension = {
   it: vitest.TestAPI<{ c: FixtureContext }>;
@@ -37,19 +20,12 @@ export function createTestFixtureExtension(
     enableNilcomm?: boolean;
   } = {},
 ): TestFixtureExtension {
-  let fixture: TestFixture | null = null;
+  let fixture: Omit<FixtureContext, "expect"> | null = null;
 
   const it = vitest.test.extend<{ c: FixtureContext }>({
     c: async ({ expect }, use) => {
-      if (!fixture) throw new Error("Fixture is not initialized");
-
       const ctx: FixtureContext = {
-        id: fixture.id,
-        app: fixture.app,
-        bindings: fixture.bindings,
-        root: fixture.root,
-        admin: fixture.admin,
-        organization: fixture.organization,
+        ...fixture!,
         expect,
       };
 
@@ -64,15 +40,29 @@ export function createTestFixtureExtension(
       try {
         fixture = await buildFixture(opts);
         await fn(fixture);
-      } catch (error) {
-        console.error("Fixture setup failed:", error);
-        throw error;
+      } catch (cause) {
+        // Fallback to `process.stderr` to ensure fixture setup failures are logged during suite setup/teardown
+        process.stderr.write("***\n");
+        process.stderr.write(
+          "Critical: Fixture setup failed, stopping test run\n",
+        );
+        process.stderr.write(`${cause}\n`);
+        process.stderr.write("***\n");
+        throw new Error("Critical: Fixture setup failed, stopping test run", {
+          cause,
+        });
       }
     });
 
   const afterAll = (fn: (c: Omit<FixtureContext, "expect">) => Promise<void>) =>
     vitest.afterAll(async () => {
-      if (!fixture) throw new Error("Fixture is not initialized");
+      if (!fixture) {
+        // Fallback to `process.stderr` to ensure fixture setup failures are logged during suite setup/teardown
+        process.stderr.write(
+          "Fixture is not initialized, skipping 'afterAll' hook\n",
+        );
+        return;
+      }
       const { bindings } = fixture;
       const { config, db } = bindings;
 
