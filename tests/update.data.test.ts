@@ -33,13 +33,11 @@ describe("update.data.test", () => {
     });
   });
 
-  afterAll(async (_ctx) => {});
+  afterAll(async (_c) => {});
 
-  it("can update data in a collection", async ({
-    expect,
-    bindings,
-    organization,
-  }) => {
+  it("can update data in a collection", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
     const record = data[Math.floor(Math.random() * collectionSize)];
 
     const filter = { name: record.name };
@@ -50,7 +48,7 @@ describe("update.data.test", () => {
       update,
     });
 
-    const result = await expectSuccessResponse<UpdateResult>(response);
+    const result = await expectSuccessResponse<UpdateResult>(c, response);
     expect(result.data.modifiedCount).toBe(1);
     expect(result.data.matchedCount).toBe(1);
 
@@ -58,8 +56,7 @@ describe("update.data.test", () => {
       .collection<DataDocument>(schema.id.toString())
       .findOne({ name: "foo" });
 
-    assertDefined(actual);
-
+    assertDefined(c, actual);
     expect(actual._id.toString()).toBe(record._id);
   });
 });

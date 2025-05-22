@@ -37,10 +37,12 @@ describe("nuc-based access control", () => {
   beforeAll(async ({ organization }) => {
     await organization.ensureSubscriptionActive();
   });
-  afterAll(async (_ctx) => {});
+  afterAll(async (_c) => {});
 
-  it("can setup schemas and queries", async ({ expect, organization }) => {
-    const promise = registerSchemaAndQuery({ organization, schema, query });
+  it("can setup schemas and queries", async ({ c }) => {
+    const { expect, organization } = c;
+
+    const promise = registerSchemaAndQuery({ c, organization, schema, query });
     await expect(promise).resolves.not.toThrow();
 
     const response = await organization.uploadData({
@@ -55,17 +57,13 @@ describe("nuc-based access control", () => {
       ],
     });
 
-    const result = await expectSuccessResponse<UploadResult>(response);
+    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.created).toHaveLength(1);
   });
 
-  it("allows for delegated access (cmd: /nil/db)", async ({
-    expect,
-    app,
-    admin,
-    bindings,
-    organization,
-  }) => {
+  it("allows for delegated access (cmd: /nil/db)", async ({ c }) => {
+    const { expect, app, admin, bindings, organization } = c;
+
     // 1. The org mints a delegation nuc address to the user
     const root = await organization.getRootToken();
 
@@ -109,7 +107,7 @@ describe("nuc-based access control", () => {
     });
 
     // 5. Check the response succeeded
-    const result = await expectSuccessResponse<UploadResult>(response);
+    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.created).toHaveLength(1);
 
     // 6. Check the organisations schema to confirm the data upload
@@ -122,13 +120,9 @@ describe("nuc-based access control", () => {
     expect(documents[0]._id.toString()).toBe(body.data[0]._id);
   });
 
-  it("allows for delegated upload data (cmd: /nil/db/data)", async ({
-    expect,
-    app,
-    admin,
-    bindings,
-    organization,
-  }) => {
+  it("allows for delegated upload data (cmd: /nil/db/data)", async ({ c }) => {
+    const { expect, app, admin, bindings, organization } = c;
+
     // 1. The org mints a delegation nuc address to the user
     const root = await organization.getRootToken();
     const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
@@ -171,7 +165,7 @@ describe("nuc-based access control", () => {
     });
 
     // 5. Check the response succeeded
-    const result = await expectSuccessResponse<UploadResult>(response);
+    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.created).toHaveLength(1);
 
     // 6. Check the organisations schema to confirm the data upload
@@ -192,12 +186,9 @@ describe("nuc-based access control", () => {
     expect(forbiddenResponse.status).toBe(StatusCodes.FORBIDDEN);
   });
 
-  it("allows for delegated run query (cmd: /nil/db/queries)", async ({
-    expect,
-    app,
-    admin,
-    organization,
-  }) => {
+  it("allows for delegated run query (cmd: /nil/db/queries)", async ({ c }) => {
+    const { expect, app, admin, organization } = c;
+
     // 1. The org mints a delegation nuc address to the user
     const root = await organization.getRootToken();
     const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
@@ -233,15 +224,14 @@ describe("nuc-based access control", () => {
     });
 
     // 5. Check the response succeeded
-    const result =
-      await expectSuccessResponse<
-        [
-          {
-            averageAge: number;
-            count: number;
-          },
-        ]
-      >(response);
+    const result = await expectSuccessResponse<
+      [
+        {
+          averageAge: number;
+          count: number;
+        },
+      ]
+    >(c, response);
     expect(result.data[0].averageAge).toBe(10);
     expect(result.data[0].count).toBe(1);
 
@@ -255,11 +245,10 @@ describe("nuc-based access control", () => {
   });
 
   it("rejects namespace v path jumps: token.cmd=/nil/db/queries attempting to access /api/v1/data/tail)", async ({
-    expect,
-    app,
-    admin,
-    organization,
+    c,
   }) => {
+    const { expect, app, admin, organization } = c;
+
     // 1. The org mints a delegation nuc address to the user
     const root = await organization.getRootToken();
     const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
@@ -296,7 +285,9 @@ describe("nuc-based access control", () => {
     expect(response.status).toBe(StatusCodes.FORBIDDEN);
   });
 
-  it("enforces revocations", async ({ expect, app, admin, organization }) => {
+  it("enforces revocations", async ({ c }) => {
+    const { expect, app, admin, organization } = c;
+
     // 1. The org mints a delegation nuc addressed to the user
     const root = await organization.getRootToken();
     const delegationFromBuilderRaw = NucTokenBuilder.extending(root)

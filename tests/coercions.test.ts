@@ -17,8 +17,8 @@ describe("data operations", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
     schema,
   });
-  beforeAll(async (_ctx) => {});
-  afterAll(async (_ctx) => {});
+  beforeAll(async (_c) => {});
+  afterAll(async (_c) => {});
 
   it("coerces primitive values implicitly", async ({ expect }) => {
     const _id = "string";
@@ -246,7 +246,9 @@ describe("data operations", () => {
     expect(coercedDates.$in).toStrictEqual(_created);
   });
 
-  it("coerces valid data", async ({ expect, organization, bindings }) => {
+  it("coerces valid data", async ({ c }) => {
+    const { expect, organization, bindings } = c;
+
     const testId = createUuidDto();
     const testDate = new Date().toISOString();
     const testDouble = "123.45";
@@ -264,7 +266,7 @@ describe("data operations", () => {
       data,
     });
 
-    const result = await expectSuccessResponse<UploadResult>(response);
+    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.created).toHaveLength(1);
     expect(result.data.errors).toHaveLength(0);
 
@@ -280,7 +282,9 @@ describe("data operations", () => {
     expect(document.numeric_from_string).toBe(Number(testDouble));
   });
 
-  it("rejects invalid date-time strings", async ({ expect, organization }) => {
+  it("rejects invalid date-time strings", async ({ c }) => {
+    const { expect, organization } = c;
+
     const testId = createUuidDto();
     const notADate = new Date().toISOString().split("T")[0]; // just take date
     const testDouble = "123.45";
@@ -298,7 +302,7 @@ describe("data operations", () => {
       data,
     });
 
-    const errors = await expectErrorResponse(response);
+    const errors = await expectErrorResponse(c, response);
 
     expect(errors.errors).toHaveLength(2);
     expect(errors.errors[0]).toBe("DataValidationError");
@@ -307,7 +311,9 @@ describe("data operations", () => {
     );
   });
 
-  it("rejects invalid numeric strings", async ({ expect, organization }) => {
+  it("rejects invalid numeric strings", async ({ c }) => {
+    const { expect, organization } = c;
+
     const testId = createUuidDto();
     const notADate = new Date().toISOString();
     const testDouble = "abcde"; // not numeric
@@ -325,7 +331,7 @@ describe("data operations", () => {
       data,
     });
 
-    const errors = await expectErrorResponse(response);
+    const errors = await expectErrorResponse(c, response);
 
     expect(errors.errors).toHaveLength(2);
     expect(errors.errors[0]).toBe("DataValidationError");
@@ -334,7 +340,9 @@ describe("data operations", () => {
     );
   });
 
-  it("rejects invalid uuid strings", async ({ expect, organization }) => {
+  it("rejects invalid uuid strings", async ({ c }) => {
+    const { expect, organization } = c;
+
     const testId = "xxxx-xxxx";
     const notADate = new Date().toISOString();
     const testDouble = "42";
@@ -352,7 +360,7 @@ describe("data operations", () => {
       data,
     });
 
-    const errors = await expectErrorResponse(response);
+    const errors = await expectErrorResponse(c, response);
 
     expect(errors.errors).toHaveLength(2);
     expect(errors.errors[0]).toBe("DataValidationError");

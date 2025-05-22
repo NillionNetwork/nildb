@@ -17,10 +17,12 @@ describe("schemas.datetime.test", () => {
     schema,
     query,
   });
-  beforeAll(async (_ctx) => {});
-  afterAll(async (_ctx) => {});
+  beforeAll(async (_c) => {});
+  afterAll(async (_c) => {});
 
-  it("can upload date-times", async ({ expect, bindings, organization }) => {
+  it("can upload date-times", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
     const data = [
       { _id: createUuidDto(), datetime: "2024-03-19T14:30:00Z" },
       { _id: createUuidDto(), datetime: "2024-03-19T14:30:00.123Z" },
@@ -32,7 +34,7 @@ describe("schemas.datetime.test", () => {
       data,
     });
 
-    const result = await expectSuccessResponse<UploadResult>(response);
+    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.created).toHaveLength(3);
 
     const cursor = bindings.db.data.collection(schema.id.toString()).find({});
@@ -40,7 +42,9 @@ describe("schemas.datetime.test", () => {
     expect(records).toHaveLength(3);
   });
 
-  it("rejects invalid date-times", async ({ expect, organization }) => {
+  it("rejects invalid date-times", async ({ c }) => {
+    const { expect, organization } = c;
+
     const data = [
       { _id: createUuidDto(), datetime: "2024-03-19" },
       { _id: createUuidDto(), datetime: "14:30:00" },
@@ -55,19 +59,23 @@ describe("schemas.datetime.test", () => {
         data: [invalid],
       });
 
-      const result = await expectErrorResponse(response);
+      const result = await expectErrorResponse(c, response);
       expect(result.errors).includes("DataValidationError");
     }
   });
 
-  it("can run query with datetime data", async ({ expect, organization }) => {
+  it("can run query with datetime data", async ({ c }) => {
+    const { expect, organization } = c;
+
     const response = await organization.executeQuery({
       id: query.id,
       variables: query.variables,
     });
 
-    const result =
-      await expectSuccessResponse<Record<string, unknown>>(response);
+    const result = await expectSuccessResponse<Record<string, unknown>>(
+      c,
+      response,
+    );
 
     expect(result.data).toEqual([
       {

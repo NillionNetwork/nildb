@@ -1,31 +1,15 @@
 import * as vitest from "vitest";
-import type { App } from "#/app";
-import type { AppBindingsWithNilcomm } from "#/env";
 import {
   buildFixture,
+  type FixtureContext,
   type QueryFixture,
   type SchemaFixture,
-  type TestFixture,
 } from "./fixture";
-import type {
-  TestAdminUserClient,
-  TestOrganizationUserClient,
-  TestRootUserClient,
-} from "./test-client";
-
-export type FixtureContext = {
-  id: string;
-  app: App;
-  bindings: AppBindingsWithNilcomm;
-  root: TestRootUserClient;
-  admin: TestAdminUserClient;
-  organization: TestOrganizationUserClient;
-};
 
 type TestFixtureExtension = {
-  it: vitest.TestAPI<FixtureContext>;
-  beforeAll: (fn: (ctx: FixtureContext) => Promise<void>) => void;
-  afterAll: (fn: (ctx: FixtureContext) => Promise<void>) => void;
+  it: vitest.TestAPI<{ c: FixtureContext }>;
+  beforeAll: (fn: (c: Omit<FixtureContext, "expect">) => Promise<void>) => void;
+  afterAll: (fn: (c: Omit<FixtureContext, "expect">) => Promise<void>) => void;
 };
 
 export function createTestFixtureExtension(
@@ -36,51 +20,49 @@ export function createTestFixtureExtension(
     enableNilcomm?: boolean;
   } = {},
 ): TestFixtureExtension {
-  let fixture: TestFixture | null = null;
+  let fixture: Omit<FixtureContext, "expect"> | null = null;
 
-  // biome-ignore-start lint/correctness/noEmptyPattern: Vitest fixture API requires this parameter structure
-  const it = vitest.test.extend<FixtureContext>({
-    id: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture is not initialized");
-      await use(fixture.id);
-    },
-    app: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture is not initialized");
-      await use(fixture.app);
-    },
-    bindings: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture is not initialized");
-      await use(fixture.bindings);
-    },
-    root: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture is not initialized");
-      await use(fixture.root);
-    },
-    admin: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture is not initialized");
-      await use(fixture.admin);
-    },
-    organization: async ({}, use) => {
-      if (!fixture) throw new Error("Fixture is not initialized");
-      await use(fixture.organization);
+  const it = vitest.test.extend<{ c: FixtureContext }>({
+    c: async ({ expect }, use) => {
+      const ctx: FixtureContext = {
+        ...fixture!,
+        expect,
+      };
+
+      await use(ctx);
     },
   });
-  // biome-ignore-end lint/correctness/noEmptyPattern: Vitest fixture API requires this parameter structure
 
-  const beforeAll = (fn: (ctx: FixtureContext) => Promise<void>) =>
+  const beforeAll = (
+    fn: (c: Omit<FixtureContext, "expect">) => Promise<void>,
+  ) =>
     vitest.beforeAll(async () => {
       try {
         fixture = await buildFixture(opts);
         await fn(fixture);
-      } catch (error) {
-        console.error("Fixture setup failed:", error);
-        throw error;
+      } catch (cause) {
+        // Fallback to `process.stderr` to ensure fixture setup failures are logged during suite setup/teardown
+        process.stderr.write("***\n");
+        process.stderr.write(
+          "Critical: Fixture setup failed, stopping test run\n",
+        );
+        process.stderr.write(`${cause}\n`);
+        process.stderr.write("***\n");
+        throw new Error("Critical: Fixture setup failed, stopping test run", {
+          cause,
+        });
       }
     });
 
-  const afterAll = (fn: (ctx: FixtureContext) => Promise<void>) =>
+  const afterAll = (fn: (c: Omit<FixtureContext, "expect">) => Promise<void>) =>
     vitest.afterAll(async () => {
-      if (!fixture) throw new Error("Fixture is not initialized");
+      if (!fixture) {
+        // Fallback to `process.stderr` to ensure fixture setup failures are logged during suite setup/teardown
+        process.stderr.write(
+          "Fixture is not initialized, skipping 'afterAll' hook\n",
+        );
+        return;
+      }
       const { bindings } = fixture;
       const { config, db } = bindings;
 
