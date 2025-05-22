@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.9.3",
+    "@asteasolutions/zod-to-openapi": "^7.3.0",
     "@hono/node-server": "^1.14.0",
     "@hono/prometheus": "^1.0.1",
     "@hono/swagger-ui": "^0.5.1",
@@ -46,7 +47,7 @@
     "swagger-ui-express": "^5.0.1",
     "temporal-polyfill": "^0.3.0",
     "tsx": "^4.19.3",
-    "zod": "^3.24.2",
+    "zod": "^3.25.20",
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {

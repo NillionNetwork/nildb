@@ -3,9 +3,9 @@ import type { Db, MongoClient } from "mongodb";
 import { CollectionName } from "#/common/mongo";
 
 /**
- * Add `jobs_queries` collection
+ * Setup/teardown primary collections
  */
-export class add_jobs_queries_collection implements MigrationInterface {
+export class init_collections implements MigrationInterface {
   #dbNamePrimary: string;
 
   constructor() {
@@ -15,16 +15,20 @@ export class add_jobs_queries_collection implements MigrationInterface {
     this.#dbNamePrimary = process.env.APP_DB_NAME_PRIMARY;
   }
 
-  public async up(_db: Db, client: MongoClient): Promise<void> {
+  public async up(db: Db, client: MongoClient): Promise<void> {
     const primary = client.db(this.#dbNamePrimary);
     const session = client.startSession();
     try {
       await session.withTransaction(async () => {
-        const collection = await primary.createCollection(
-          CollectionName.JobsQueries,
-        );
+        await Promise.all([
+          primary.createCollection(CollectionName.Accounts),
+          primary.createCollection(CollectionName.Queries),
+          primary.createCollection(CollectionName.Schemas),
+          primary.createCollection(CollectionName.Config),
+          primary.createCollection(CollectionName.JobsQueries),
+        ]);
 
-        await collection.createIndexes([
+        await primary.collection(CollectionName.JobsQueries).createIndexes([
           {
             key: { _created: 1 },
             name: "_created_1",
@@ -42,7 +46,13 @@ export class add_jobs_queries_collection implements MigrationInterface {
     const primary = client.db(this.#dbNamePrimary);
     const session = client.startSession();
     try {
-      await primary.dropCollection(CollectionName.JobsQueries);
+      await Promise.all([
+        primary.dropCollection(CollectionName.Accounts),
+        primary.dropCollection(CollectionName.Queries),
+        primary.dropCollection(CollectionName.Schemas),
+        primary.dropCollection(CollectionName.Config),
+        primary.dropCollection(CollectionName.JobsQueries),
+      ]);
     } finally {
       await session.endSession();
     }
