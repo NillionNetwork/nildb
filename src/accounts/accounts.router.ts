@@ -6,5 +6,4 @@ export function buildAccountsRouter(options: ControllerOptions): void {
   AccountController.register(options);
   AccountController.remove(options);
   AccountController.setPublicKey(options);
-  AccountController.getSubscription(options);
 }

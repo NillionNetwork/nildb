@@ -95,29 +95,3 @@ paths:
           $ref: '../docs/base.openapi.yaml#/components/responses/401'
         '500':
           $ref: '../docs/base.openapi.yaml#/components/responses/500'
-  /api/v1/accounts/subscription:
-    get:
-      summary: Get account subscription information
-      description: Retrieve an organization's account subscription details
-      tags:
-        - Accounts
-      security:
-        - jwt: [ ]
-      responses:
-        '200':
-          description: "The organization's account subscription details"
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - did
-                properties:
-                  data:
-                    $ref: '#/components/schemas/Account'
-        '400':
-          $ref: '../docs/base.openapi.yaml#/components/responses/400'
-        '401':
-          $ref: '../docs/base.openapi.yaml#/components/responses/401'
-        '500':
-          $ref: '../docs/base.openapi.yaml#/components/responses/500'

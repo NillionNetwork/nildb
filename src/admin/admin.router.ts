@@ -9,8 +9,6 @@ export function buildAdminRouter(options: ControllerOptions): void {
   AdminAccountsControllers.create(options);
   AdminAccountsControllers.remove(options);
   AdminAccountsControllers.list(options);
-  AdminAccountsControllers.setSubscriptionState(options);
-  AdminAccountsControllers.getSubscriptionState(options);
 
   AdminDataControllers.remove(options);
   AdminDataControllers.flush(options);
