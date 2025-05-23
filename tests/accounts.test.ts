@@ -23,7 +23,7 @@ describe("account management", () => {
     const response = await root.createAccount({
       did,
       name: faker.person.fullName(),
-      type: "admin",
+      role: "admin",
     });
 
     expect(response.status).toBe(StatusCodes.CREATED);
@@ -66,7 +66,7 @@ describe("account management", () => {
     const response = await admin.createAccount({
       did,
       name: faker.company.name(),
-      type: "organization",
+      role: "organization",
     });
 
     expect(response.status).toBe(StatusCodes.CREATED);

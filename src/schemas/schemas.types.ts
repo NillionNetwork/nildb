@@ -9,6 +9,7 @@ export const AddSchemaRequestSchema = z.object({
   _id: Uuid,
   name: z.string().min(1),
   schema: z.record(z.string(), z.unknown()),
+  documentType: z.union([z.literal("standard"), z.literal("owned")]),
 });
 export type AddSchemaRequest = z.infer<typeof AddSchemaRequestSchema>;
 

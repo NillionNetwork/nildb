@@ -19,5 +19,6 @@
       },
       "required": ["wallet", "amount", "status", "timestamp"]
     }
-  }
+  },
+  "documentType": "owned"
 }

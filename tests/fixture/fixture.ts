@@ -20,6 +20,7 @@ import {
   TestOrganizationUserClient,
   TestRootUserClient,
 } from "./test-client";
+import { SchemaDocumentType } from "#/schemas/schemas.repository";
 
 export type FixtureContext = {
   id: string;
@@ -135,7 +136,7 @@ export async function buildFixture(
   const createAdminResponse = await root.createAccount({
     did: admin.keypair.toDidString(),
     name: faker.person.fullName(),
-    type: "admin",
+    role: "admin",
   });
 
   if (!createAdminResponse.ok) {
@@ -146,7 +147,7 @@ export async function buildFixture(
   const createOrgResponse = await admin.createAccount({
     did: organization.keypair.toDidString(),
     name: faker.person.fullName(),
-    type: "organization",
+    role: "organization",
   });
 
   if (!createOrgResponse.ok) {
@@ -174,6 +175,7 @@ export type SchemaFixture = {
   name: string;
   keys: string[];
   schema: JsonObject;
+  documentType: SchemaDocumentType;
 };
 
 export type QueryFixture = {
@@ -201,6 +203,7 @@ export async function registerSchemaAndQuery(opts: {
     _id: schema.id,
     name: schema.name,
     schema: schema.schema,
+    documentType: schema.documentType,
   });
 
   if (response.status !== StatusCodes.CREATED) {

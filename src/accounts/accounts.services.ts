@@ -45,7 +45,7 @@ export function createAccount(
   }
 
   const isAdminRegistration =
-    "type" in request && request.type.toLocaleLowerCase() === "admin";
+    "role" in request && request.role.toLocaleLowerCase() === "admin";
 
   if (isAdminRegistration) {
     const document = AdminAccountRepository.toAdminAccountDocument(request);

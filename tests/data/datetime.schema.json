@@ -19,5 +19,6 @@
       },
       "required": ["_id", "datetime"]
     }
-  }
+  },
+  "documentType": "owned"
 }

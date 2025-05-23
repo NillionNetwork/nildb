@@ -28,11 +28,13 @@ import type { CoercibleMap, Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { SchemaMetadata } from "#/schemas/schemas.types";
 
+export type SchemaDocumentType = "standard" | "owned";
 export type SchemaDocumentBase = DocumentBase<UUID>;
 export type SchemaDocument = SchemaDocumentBase & {
   owner: Did;
   name: string;
   schema: Record<string, unknown>;
+  documentType: SchemaDocumentType;
 };
 
 export function addSchemaDocumentCoercions(

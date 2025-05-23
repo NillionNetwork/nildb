@@ -38,7 +38,7 @@ describe("account access controls", () => {
         did: organization.did,
         publicKey: keypair.publicKey("hex"),
         name: faker.person.fullName(),
-        type: "admin",
+        role: "admin",
       },
     });
 

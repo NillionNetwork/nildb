@@ -67,7 +67,7 @@ export function findByIdWithCache(
   return pipe(
     checkCollectionExists<AccountDocument>(
       ctx,
-      "system",
+      "primary",
       CollectionName.Accounts,
     ),
     E.tryMapPromise({

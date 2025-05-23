@@ -16,7 +16,7 @@ import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import * as OrganizationRepository from "#/organizations/organizations.repository";
 import type { AddSchemaRequest, SchemaMetadata } from "#/schemas/schemas.types";
-import type { SchemaDocument } from "./schemas.repository";
+import type { SchemaDocument, SchemaDocumentType } from "./schemas.repository";
 import * as SchemasRepository from "./schemas.repository";
 
 export function getOrganizationSchemas(
@@ -34,7 +34,7 @@ export function getOrganizationSchemas(
 
 export function addSchema(
   ctx: AppBindings,
-  request: AddSchemaRequest & { owner: Did },
+  request: AddSchemaRequest & { owner: Did; documentType: SchemaDocumentType },
 ): E.Effect<
   void,
   | DocumentNotFoundError

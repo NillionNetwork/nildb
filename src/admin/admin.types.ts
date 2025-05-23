@@ -12,7 +12,7 @@ import { AddSchemaRequestSchema } from "#/schemas/schemas.types";
 export const AdminCreateAccountRequestSchema = z.object({
   did: DidSchema,
   name: z.string(),
-  type: z.enum(["admin", "organization"]),
+  role: z.enum(["admin", "organization"]),
 });
 export type AdminCreateAccountRequest = z.infer<
   typeof AdminCreateAccountRequestSchema
