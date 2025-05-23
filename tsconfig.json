@@ -2,17 +2,28 @@
   "$schema": "https://json.schemastore.org/tsconfig",
 
   "compilerOptions": {
-    "lib": ["esnext"],
     "noEmit": true,
-    "module": "esnext",
-    "target": "esnext",
 
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
+    // language and module features
+    "lib": ["esnext", "es2024"],
+    "target": "esnext",
+    "module": "esnext",
     "moduleResolution": "node",
+    "moduleDetection": "force",
+    "esModuleInterop": true,
     "resolveJsonModule": true,
 
+    // type checking
+    "skipLibCheck": true,
+    "strict": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "isolatedModules": true,
+
+    // import aliases
     "baseUrl": ".",
     "paths": {
       "#/*": ["src/*"]
