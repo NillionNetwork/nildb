@@ -15,7 +15,7 @@ export class init_collections implements MigrationInterface {
     this.#dbNamePrimary = process.env.APP_DB_NAME_PRIMARY;
   }
 
-  public async up(db: Db, client: MongoClient): Promise<void> {
+  public async up(_db: Db, client: MongoClient): Promise<void> {
     const primary = client.db(this.#dbNamePrimary);
     const session = client.startSession();
     try {

@@ -247,7 +247,7 @@ export class TestOrganizationUserClient extends TestClient {
     return response.token;
   }
 
-  async request<T>(
+  override async request<T>(
     path: string,
     options: {
       method?: "GET" | "POST" | "DELETE";
