@@ -5,7 +5,6 @@ import {
   type Document,
   MongoClient,
   MongoError,
-  type UUID,
 } from "mongodb";
 import { z } from "zod";
 import {
@@ -25,8 +24,8 @@ import type { AppBindings, EnvVars } from "#/env";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
 // identifier across the cluster.
-export type DocumentBase = {
-  _id: UUID;
+export type DocumentBase<I> = {
+  _id: I;
   _created: Date;
   _updated: Date;
 };

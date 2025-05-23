@@ -138,7 +138,7 @@ export async function loadBindings(
   const accounts = new Cache<Did, AccountDocument>();
   const rootDocument: RootAccountDocument = {
     _id: keypair.toDidString(),
-    _type: "root",
+    _role: "root",
   };
   accounts.set(rootDocument._id, rootDocument, CACHE_FOREVER);
 

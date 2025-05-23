@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { DocumentBase } from "#/common/mongo";
 import { type Did, DidSchema } from "#/common/types";
 import { LOG_LEVELS } from "#/env";
 import { AddQueryRequestSchema } from "#/queries/queries.types";
@@ -80,17 +81,12 @@ export type AccountDocument =
   | AdminAccountDocument
   | OrganizationAccountDocument;
 
-export type AccountType = "root" | "admin" | "organization";
-
 export type RootAccountDocument = {
   _id: Did;
-  _type: "root";
+  _role: "root";
 };
 
-export type AdminAccountDocument = {
-  _id: Did;
-  _type: "admin";
-  _created: Date;
-  _updated: Date;
+export type AdminAccountDocument = DocumentBase<Did> & {
+  _role: "admin";
   name: string;
 };

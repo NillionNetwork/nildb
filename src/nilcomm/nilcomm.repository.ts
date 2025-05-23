@@ -4,7 +4,8 @@ import {
   DatabaseError,
   type DataCollectionNotFoundError,
 } from "#/common/errors";
-import { checkDataCollectionExists, type DocumentBase } from "#/common/mongo";
+import { checkDataCollectionExists } from "#/common/mongo";
+import type { DataDocumentBase } from "#/data/data.repository";
 import type { AppBindingsWithNilcomm } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 
@@ -12,7 +13,7 @@ type Address = string;
 type StoreId = UUID;
 type ShareBytes = number[];
 
-type SecretShareDocument = DocumentBase & {
+type SecretShareDocument = DataDocumentBase & {
   share: string;
 };
 
@@ -35,7 +36,7 @@ export function runCommitRevealAggregation(
   pipeline[0].$match._id.$in = storeIds;
 
   return pipe(
-    checkDataCollectionExists<DocumentBase>(ctx, query.schema.toString()),
+    checkDataCollectionExists<DataDocumentBase>(ctx, query.schema.toString()),
     E.tryMapPromise({
       try: (collection) =>
         collection.aggregate<SecretShareDocumentProjection>(pipeline).toArray(),

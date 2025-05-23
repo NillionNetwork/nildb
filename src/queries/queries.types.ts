@@ -58,7 +58,9 @@ export type QueryVariable = {
   optional?: boolean;
 };
 
-export type QueryDocument = DocumentBase & {
+export type QueryDocumentBase = DocumentBase<UUID>;
+
+export type QueryDocument = QueryDocumentBase & {
   owner: DidString;
   name: string;
   // the query's starting collection
@@ -67,7 +69,7 @@ export type QueryDocument = DocumentBase & {
   pipeline: Record<string, unknown>[];
 };
 
-export type QueryJobDocument = DocumentBase & {
+export type QueryJobDocument = QueryDocumentBase & {
   queryId: UUID;
   status: QueryJobStatus;
   startedAt?: Date;

@@ -22,9 +22,9 @@ export function toOrganizationAccountDocument(
 
   return {
     _id: did,
-    _type: "organization",
     _created: now,
     _updated: now,
+    _role: "organization",
     name,
     schemas: [],
     queries: [],
@@ -93,7 +93,7 @@ export function findOneOrganization(
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = {
     _id,
-    _type: "organization",
+    _role: "organization",
   };
   return pipe(
     checkPrimaryCollectionExists<OrganizationAccountDocument>(
@@ -127,7 +127,7 @@ export function deleteOneById(
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = {
     _id,
-    _type: "organization",
+    _role: "organization",
   };
 
   return pipe(
@@ -163,7 +163,7 @@ export function setPublicKey(
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = {
     _id,
-    _type: "organization",
+    _role: "organization",
   };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
     $set: { publicKey },

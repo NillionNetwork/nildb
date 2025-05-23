@@ -84,7 +84,7 @@ describe("account management", () => {
 
     expect(data).toMatchObject({
       _id: organization.did,
-      _type: "organization",
+      _role: "organization",
     });
   });
 
@@ -129,7 +129,7 @@ describe("account management", () => {
 
     expect(data.data).toMatchObject({
       _id: organization.did,
-      _type: "organization",
+      _role: "organization",
       publicKey: updatedPublicKey,
     });
   });

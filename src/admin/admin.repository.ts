@@ -22,9 +22,9 @@ export function toAdminAccountDocument(
 
   return {
     _id: did,
-    _type: "admin",
     _created: now,
     _updated: now,
+    _role: "admin",
     name,
   };
 }
