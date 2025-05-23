@@ -4,10 +4,10 @@ import * as AccountService from "#/accounts/accounts.services";
 import { RegisterAccountRequestSchema } from "#/accounts/accounts.types";
 import type { AmqpPublishMessageError } from "#/common/amqp";
 import {
+  type CollectionNotFoundError,
   type DatabaseError,
   type DataValidationError,
   DocumentNotFoundError,
-  type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import { DidSchema } from "#/common/types";
@@ -38,7 +38,7 @@ export function processDappStoreSecret(
   void,
   | Error
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | AmqpPublishMessageError
 > {
@@ -82,7 +82,7 @@ export function processDappStartQueryExecution(
   void,
   | Error
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | AmqpPublishMessageError
 > {

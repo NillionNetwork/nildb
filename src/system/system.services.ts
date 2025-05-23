@@ -5,10 +5,10 @@ import { Effect as E, Option as O, pipe } from "effect";
 import { Temporal } from "temporal-polyfill";
 import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
 import {
+  type CollectionNotFoundError,
   type DatabaseError,
   DataValidationError,
   type DocumentNotFoundError,
-  type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
@@ -35,7 +35,7 @@ let buildInfo: BuildInfo;
 
 export function getNodeInfo(
   bindings: AppBindings,
-): E.Effect<AboutNode, PrimaryCollectionNotFoundError | DatabaseError> {
+): E.Effect<AboutNode, CollectionNotFoundError | DatabaseError> {
   const nodeInfo: AboutNode = {
     started,
     build: getBuildInfo(bindings),
@@ -82,7 +82,7 @@ export function setMaintenanceWindow(
   request: AdminSetMaintenanceWindowRequest,
 ): E.Effect<
   void,
-  DataValidationError | PrimaryCollectionNotFoundError | DatabaseError
+  DataValidationError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(
     E.succeed(request),
@@ -122,7 +122,7 @@ type MaintenanceStatus = {
 
 export function getMaintenanceStatus(
   ctx: AppBindings,
-): E.Effect<MaintenanceStatus, PrimaryCollectionNotFoundError | DatabaseError> {
+): E.Effect<MaintenanceStatus, CollectionNotFoundError | DatabaseError> {
   return pipe(
     SystemRepository.findMaintenanceWindow(ctx),
     E.catchTag("DocumentNotFoundError", () => E.succeed(O.none())),
@@ -153,7 +153,7 @@ export function deleteMaintenanceWindow(
   void,
   | DocumentNotFoundError
   | DataValidationError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
 > {
   return pipe(

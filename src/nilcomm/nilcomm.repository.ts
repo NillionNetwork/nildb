@@ -1,10 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
-import {
-  DatabaseError,
-  type DataCollectionNotFoundError,
-} from "#/common/errors";
-import { checkDataCollectionExists } from "#/common/mongo";
+import { type CollectionNotFoundError, DatabaseError } from "#/common/errors";
+import { checkCollectionExists } from "#/common/mongo";
 import type { DataDocumentBase } from "#/data/data.repository";
 import type { AppBindingsWithNilcomm } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
@@ -25,7 +22,7 @@ export function runCommitRevealAggregation(
   ctx: AppBindingsWithNilcomm,
   query: QueryDocument,
   variables: StoreId[],
-): E.Effect<CommitRevealResult, DatabaseError | DataCollectionNotFoundError> {
+): E.Effect<CommitRevealResult, DatabaseError | CollectionNotFoundError> {
   const { log } = ctx;
 
   // ref commit-reveal.query.json
@@ -36,7 +33,11 @@ export function runCommitRevealAggregation(
   pipeline[0].$match._id.$in = storeIds;
 
   return pipe(
-    checkDataCollectionExists<DataDocumentBase>(ctx, query.schema.toString()),
+    checkCollectionExists<DataDocumentBase>(
+      ctx,
+      "data",
+      query.schema.toString(),
+    ),
     E.tryMapPromise({
       try: (collection) =>
         collection.aggregate<SecretShareDocumentProjection>(pipeline).toArray(),

@@ -3,13 +3,12 @@ import type { CreateIndexesOptions, IndexSpecification, UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type { CreateSchemaIndexRequest } from "#/admin/admin.types";
 import type {
+  CollectionNotFoundError,
   DatabaseError,
-  DataCollectionNotFoundError,
   DataValidationError,
   DocumentNotFoundError,
   IndexNotFoundError,
   InvalidIndexOptionsError,
-  PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import type { Did } from "#/common/types";
 import { validateSchema } from "#/common/validator";
@@ -26,7 +25,7 @@ export function getOrganizationSchemas(
 ): E.Effect<
   SchemaDocument[],
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
@@ -40,7 +39,7 @@ export function addSchema(
   void,
   | DocumentNotFoundError
   | InvalidIndexOptionsError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
 > {
   const now = new Date();
@@ -69,8 +68,7 @@ export function deleteSchema(
 ): E.Effect<
   void,
   | DocumentNotFoundError
-  | DataCollectionNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
@@ -90,7 +88,7 @@ export function deleteSchema(
 export function getSchemaMetadata(
   ctx: AppBindings,
   _id: UUID,
-): E.Effect<SchemaMetadata, DataCollectionNotFoundError | DatabaseError> {
+): E.Effect<SchemaMetadata, CollectionNotFoundError | DatabaseError> {
   return pipe(SchemasRepository.getCollectionStats(ctx, _id));
 }
 
@@ -100,7 +98,7 @@ export function createIndex(
   request: CreateSchemaIndexRequest,
 ): E.Effect<
   void,
-  InvalidIndexOptionsError | PrimaryCollectionNotFoundError | DatabaseError
+  InvalidIndexOptionsError | CollectionNotFoundError | DatabaseError
 > {
   const specification: IndexSpecification = request.keys;
   const options: CreateIndexesOptions = {
@@ -124,7 +122,7 @@ export function dropIndex(
   name: string,
 ): E.Effect<
   void,
-  IndexNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  IndexNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(SchemasRepository.dropIndex(ctx, schema, name), E.as(void 0));
 }

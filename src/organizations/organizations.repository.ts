@@ -2,11 +2,11 @@ import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UUID } from "mongodb";
 import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import {
+  type CollectionNotFoundError,
   DatabaseError,
   DocumentNotFoundError,
-  type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
+import { checkCollectionExists, CollectionName } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 
@@ -16,7 +16,7 @@ export function addSchema(
   schemaId: UUID,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = { _id: owner };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
@@ -24,8 +24,9 @@ export function addSchema(
   };
 
   return pipe(
-    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<OrganizationAccountDocument>(
       ctx,
+      "primary",
       CollectionName.Accounts,
     ),
     E.tryMapPromise({
@@ -51,7 +52,7 @@ export function removeSchema(
   schemaId: UUID,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgDid };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
@@ -59,8 +60,9 @@ export function removeSchema(
   };
 
   return pipe(
-    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<OrganizationAccountDocument>(
       ctx,
+      "primary",
       CollectionName.Accounts,
     ),
     E.tryMapPromise({
@@ -86,7 +88,7 @@ export function addQuery(
   queryId: UUID,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgId };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
@@ -94,8 +96,9 @@ export function addQuery(
   };
 
   return pipe(
-    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<OrganizationAccountDocument>(
       ctx,
+      "primary",
       CollectionName.Accounts,
     ),
     E.tryMapPromise({
@@ -121,7 +124,7 @@ export function removeQuery(
   queryId: UUID,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgId };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
@@ -129,8 +132,9 @@ export function removeQuery(
   };
 
   return pipe(
-    checkPrimaryCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<OrganizationAccountDocument>(
       ctx,
+      "primary",
       CollectionName.Accounts,
     ),
     E.tryMapPromise({

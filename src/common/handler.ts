@@ -4,14 +4,13 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
 import type {
+  CollectionNotFoundError,
   DatabaseError,
-  DataCollectionNotFoundError,
   DataValidationError,
   DocumentNotFoundError,
   DuplicateEntryError,
   IndexNotFoundError,
   InvalidIndexOptionsError,
-  PrimaryCollectionNotFoundError,
   ResourceAccessDeniedError,
   VariableInjectionError,
 } from "#/common/errors";
@@ -29,14 +28,13 @@ export type ApiErrorResponse = {
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 type KnownError =
-  | DataCollectionNotFoundError
+  | CollectionNotFoundError
   | DataValidationError
   | DatabaseError
   | DocumentNotFoundError
   | DuplicateEntryError
   | IndexNotFoundError
   | InvalidIndexOptionsError
-  | PrimaryCollectionNotFoundError
   | ResourceAccessDeniedError
   | VariableInjectionError;
 
@@ -58,16 +56,18 @@ export function handleTaggedErrors(c: Context<AppEnv>) {
     pipe(
       effect,
       E.catchTags({
-        DataCollectionNotFoundError: (e) =>
-          toResponse(e, StatusCodes.BAD_REQUEST),
+        CollectionNotFoundError: (e) => {
+          if (e.dbName === "data") {
+            return toResponse(e, StatusCodes.BAD_REQUEST);
+          }
+          return toResponse(e, StatusCodes.NOT_FOUND);
+        },
         DataValidationError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
         DatabaseError: (e) => toResponse(e, StatusCodes.INTERNAL_SERVER_ERROR),
         DocumentNotFoundError: (e) => toResponse(e, StatusCodes.NOT_FOUND),
         DuplicateEntryError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
         IndexNotFoundError: (e) => toResponse(e, StatusCodes.NOT_FOUND),
         InvalidIndexOptionsError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
-        PrimaryCollectionNotFoundError: (e) =>
-          toResponse(e, StatusCodes.NOT_FOUND),
         ResourceAccessDeniedError: (e) => toResponse(e, StatusCodes.NOT_FOUND),
         VariableInjectionError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
       }),

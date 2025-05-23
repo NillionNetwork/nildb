@@ -13,15 +13,15 @@ import {
 } from "mongodb/lib/beta";
 import type { JsonObject } from "type-fest";
 import {
+  type CollectionNotFoundError,
   DatabaseError,
-  type DataCollectionNotFoundError,
   type DataValidationError,
   InvalidIndexOptionsError,
 } from "#/common/errors";
 import {
   addDocumentBaseCoercions,
   applyCoercions,
-  checkDataCollectionExists,
+  checkCollectionExists,
   type DocumentBase,
   isMongoError,
   MongoErrorCode,
@@ -92,9 +92,9 @@ export const TAIL_DATA_LIMIT = 25;
 export function tailCollection(
   ctx: AppBindings,
   schema: UUID,
-): E.Effect<DataDocument[], DataCollectionNotFoundError | DatabaseError> {
+): E.Effect<DataDocument[], CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkDataCollectionExists<DataDocument>(ctx, schema.toString()),
+    checkCollectionExists<DataDocument>(ctx, "data", schema.toString()),
     E.tryMapPromise({
       try: (collection) =>
         collection
@@ -110,9 +110,9 @@ export function tailCollection(
 export function deleteCollection(
   ctx: AppBindings,
   schema: UUID,
-): E.Effect<void, DataCollectionNotFoundError | DatabaseError> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkDataCollectionExists<DataDocument>(ctx, schema.toString()),
+    checkCollectionExists<DataDocument>(ctx, "data", schema.toString()),
     E.tryMapPromise({
       try: (collection) =>
         ctx.db.data.dropCollection(collection.collectionName),
@@ -126,9 +126,9 @@ export function deleteCollection(
 export function flushCollection(
   ctx: AppBindings,
   schema: UUID,
-): E.Effect<DeleteResult, DataCollectionNotFoundError | DatabaseError> {
+): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkDataCollectionExists<DataDocument>(ctx, schema.toString()),
+    checkCollectionExists<DataDocument>(ctx, "data", schema.toString()),
     E.tryMapPromise({
       try: (collection) => collection.deleteMany(),
       catch: (cause) =>
@@ -156,9 +156,9 @@ export function insert(
   ctx: AppBindings,
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
-): E.Effect<UploadResult, DataCollectionNotFoundError | DatabaseError> {
+): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkDataCollectionExists<DataDocument>(ctx, schema._id.toString()),
+    checkCollectionExists<DataDocument>(ctx, "data", schema._id.toString()),
     E.tryMapPromise({
       try: async (collection) => {
         const created = new Set<UuidDto>();
@@ -230,11 +230,11 @@ export function updateMany(
   update: UpdateFilter<DataDocumentBase>,
 ): E.Effect<
   UpdateResult,
-  DataCollectionNotFoundError | DatabaseError | DataValidationError
+  CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.all([
-      checkDataCollectionExists<DataDocumentBase>(ctx, schema.toString()),
+      checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
       applyCoercions<Filter<DataDocumentBase>>(
         addDocumentBaseCoercions(filter),
       ),
@@ -256,11 +256,11 @@ export function deleteMany(
   filter: StrictFilter<DataDocumentBase>,
 ): E.Effect<
   DeleteResult,
-  DataCollectionNotFoundError | DatabaseError | DataValidationError
+  CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.all([
-      checkDataCollectionExists<DataDocumentBase>(ctx, schema.toString()),
+      checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
       applyCoercions<Filter<DataDocumentBase>>(
         addDocumentBaseCoercions(filter),
       ),
@@ -277,9 +277,13 @@ export function runAggregation(
   ctx: AppBindings,
   query: QueryDocument,
   pipeline: Document[],
-): E.Effect<JsonObject[], DataCollectionNotFoundError | DatabaseError> {
+): E.Effect<JsonObject[], CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkDataCollectionExists<DataDocumentBase>(ctx, query.schema.toString()),
+    checkCollectionExists<DataDocumentBase>(
+      ctx,
+      "data",
+      query.schema.toString(),
+    ),
     E.tryMapPromise({
       try: (collection) => collection.aggregate(pipeline).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "runAggregation" }),
@@ -293,11 +297,11 @@ export function findMany(
   filter: Filter<DataDocumentBase>,
 ): E.Effect<
   DataDocument[],
-  DataCollectionNotFoundError | DatabaseError | DataValidationError
+  CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.all([
-      checkDataCollectionExists<DataDocumentBase>(ctx, schema.toString()),
+      checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
       applyCoercions<Filter<DataDocumentBase>>(
         addDocumentBaseCoercions(filter),
       ),

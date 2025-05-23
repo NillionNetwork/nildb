@@ -1,11 +1,10 @@
 import { Effect as E, pipe } from "effect";
 import type { DeleteResult, UpdateResult, UUID } from "mongodb";
 import type {
+  CollectionNotFoundError,
   DatabaseError,
-  DataCollectionNotFoundError,
   DataValidationError,
   DocumentNotFoundError,
-  PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
@@ -27,8 +26,7 @@ export function createRecords(
   UploadResult,
   | DataValidationError
   | DocumentNotFoundError
-  | DataCollectionNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
 > {
   return E.Do.pipe(
@@ -51,7 +49,7 @@ export function updateRecords(
   request: UpdateDataRequest,
 ): E.Effect<
   UpdateResult,
-  DataCollectionNotFoundError | DatabaseError | DataValidationError
+  CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     DataRepository.updateMany(
@@ -68,7 +66,7 @@ export function readRecords(
   request: ReadDataRequest,
 ): E.Effect<
   DataDocument[],
-  DataCollectionNotFoundError | DatabaseError | DataValidationError
+  CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.succeed(request),
@@ -89,7 +87,7 @@ export function deleteRecords(
   request: DeleteDataRequest,
 ): E.Effect<
   DeleteResult,
-  DataCollectionNotFoundError | DatabaseError | DataValidationError,
+  CollectionNotFoundError | DatabaseError | DataValidationError,
   never
 > {
   return pipe(DataRepository.deleteMany(ctx, request.schema, request.filter));
@@ -98,17 +96,13 @@ export function deleteRecords(
 export function flushCollection(
   ctx: AppBindings,
   schema: UUID,
-): E.Effect<DeleteResult, DataCollectionNotFoundError | DatabaseError, never> {
+): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError, never> {
   return pipe(DataRepository.flushCollection(ctx, schema));
 }
 
 export function tailData(
   ctx: AppBindings,
   schema: UUID,
-): E.Effect<
-  DataDocument[],
-  DataCollectionNotFoundError | DatabaseError,
-  never
-> {
+): E.Effect<DataDocument[], CollectionNotFoundError | DatabaseError, never> {
   return pipe(DataRepository.tailCollection(ctx, schema));
 }

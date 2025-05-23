@@ -2,11 +2,11 @@ import { Effect as E, pipe } from "effect";
 import * as AdminAccountRepository from "#/admin/admin.repository";
 import type { AdminCreateAccountRequest } from "#/admin/admin.types";
 import {
+  type CollectionNotFoundError,
   type DatabaseError,
   type DataValidationError,
   type DocumentNotFoundError,
   DuplicateEntryError,
-  type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
@@ -21,7 +21,7 @@ export function find(
   did: Did,
 ): E.Effect<
   OrganizationAccountDocument,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return AccountRepository.findOneOrganization(ctx, did);
 }
@@ -34,7 +34,7 @@ export function createAccount(
   | DataValidationError
   | DuplicateEntryError
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
 > {
   if (request.did === ctx.node.keypair.toDidString()) {
@@ -61,7 +61,7 @@ export function remove(
   id: Did,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(AccountRepository.deleteOneById(ctx, id));
 }
@@ -72,7 +72,7 @@ export function setPublicKey(
   publicKey: string,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(AccountRepository.setPublicKey(ctx, id, publicKey));
 }

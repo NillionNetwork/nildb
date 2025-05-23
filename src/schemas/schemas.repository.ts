@@ -8,23 +8,21 @@ import type {
 } from "mongodb";
 import type { Filter } from "mongodb/lib/beta";
 import {
+  type CollectionNotFoundError,
   DatabaseError,
-  type DataCollectionNotFoundError,
   type DataValidationError,
   DocumentNotFoundError,
   IndexNotFoundError,
   InvalidIndexOptionsError,
-  type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import {
   addDocumentBaseCoercions,
   applyCoercions,
-  CollectionName,
-  checkDataCollectionExists,
-  checkPrimaryCollectionExists,
+  checkCollectionExists,
   type DocumentBase,
   isMongoError,
   MongoErrorCode,
+  CollectionName,
 } from "#/common/mongo";
 import type { CoercibleMap, Did } from "#/common/types";
 import type { AppBindings } from "#/env";
@@ -46,9 +44,13 @@ export function addSchemaDocumentCoercions(
 export function insert(
   ctx: AppBindings,
   document: SchemaDocument,
-): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
+    checkCollectionExists<SchemaDocument>(
+      ctx,
+      "primary",
+      CollectionName.Schemas,
+    ),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
       catch: (cause) => new DatabaseError({ cause, message: "" }),
@@ -62,11 +64,15 @@ export function findMany(
   filter: StrictFilter<SchemaDocument>,
 ): E.Effect<
   SchemaDocument[],
-  PrimaryCollectionNotFoundError | DatabaseError | DataValidationError
+  CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.all([
-      checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
+      checkCollectionExists<SchemaDocument>(
+        ctx,
+        "primary",
+        CollectionName.Schemas,
+      ),
       applyCoercions<Filter<SchemaDocument>>(
         addSchemaDocumentCoercions(filter),
       ),
@@ -85,13 +91,17 @@ export function findOne(
 ): E.Effect<
   SchemaDocument,
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
   return pipe(
     E.all([
-      checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
+      checkCollectionExists<SchemaDocument>(
+        ctx,
+        "primary",
+        CollectionName.Schemas,
+      ),
       applyCoercions<Filter<SchemaDocument>>(
         addSchemaDocumentCoercions(filter),
       ),
@@ -119,13 +129,17 @@ export function deleteOne(
 ): E.Effect<
   SchemaDocument,
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
   return pipe(
     E.all([
-      checkPrimaryCollectionExists<SchemaDocument>(ctx, CollectionName.Schemas),
+      checkCollectionExists<SchemaDocument>(
+        ctx,
+        "primary",
+        CollectionName.Schemas,
+      ),
       applyCoercions<Filter<SchemaDocument>>(
         addSchemaDocumentCoercions(filter),
       ),
@@ -151,9 +165,9 @@ export function deleteOne(
 export function getCollectionStats(
   ctx: AppBindings,
   id: UUID,
-): E.Effect<SchemaMetadata, DataCollectionNotFoundError | DatabaseError> {
+): E.Effect<SchemaMetadata, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkDataCollectionExists(ctx, id.toString()),
+    checkCollectionExists(ctx, "data", id.toString()),
     E.flatMap((collection) =>
       E.Do.pipe(
         E.bind("timeStats", () =>
@@ -254,10 +268,10 @@ export function createIndex(
   options: CreateIndexesOptions,
 ): E.Effect<
   string,
-  PrimaryCollectionNotFoundError | InvalidIndexOptionsError | DatabaseError
+  CollectionNotFoundError | InvalidIndexOptionsError | DatabaseError
 > {
   return pipe(
-    checkPrimaryCollectionExists(ctx, schema.toString()),
+    checkCollectionExists(ctx, "primary", schema.toString()),
     E.tryMapPromise({
       try: (collection) => collection.createIndex(specification, options),
       catch: (cause) => {
@@ -282,10 +296,10 @@ export function dropIndex(
   name: string,
 ): E.Effect<
   Document,
-  PrimaryCollectionNotFoundError | IndexNotFoundError | DatabaseError
+  CollectionNotFoundError | IndexNotFoundError | DatabaseError
 > {
   return pipe(
-    checkPrimaryCollectionExists(ctx, schema.toString()),
+    checkCollectionExists(ctx, "primary", schema.toString()),
     E.tryMapPromise({
       try: (collection) => collection.dropIndex(name),
       catch: (cause) => {

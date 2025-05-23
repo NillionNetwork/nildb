@@ -2,16 +2,16 @@ import { Effect as E, pipe } from "effect";
 import type { Config as MongoMigrateConfig } from "mongo-migrate-ts/lib/config";
 import {
   type Collection,
+  type Db,
   type Document,
   MongoClient,
   MongoError,
 } from "mongodb";
 import { z } from "zod";
 import {
+  CollectionNotFoundError,
   DatabaseError,
-  DataCollectionNotFoundError,
   DataValidationError,
-  PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import {
   type CoercibleMap,
@@ -100,38 +100,36 @@ export const MongoErrorCode = {
   IndexNotFound: 27,
 } as const;
 
-export function checkPrimaryCollectionExists<T extends Document>(
+export function checkCollectionExists<T extends Document>(
   ctx: AppBindings,
+  dbName: string,
   name: string,
-): E.Effect<Collection<T>, PrimaryCollectionNotFoundError | DatabaseError> {
+): E.Effect<Collection<T>, CollectionNotFoundError | DatabaseError> {
+  const dbRegister = ctx.db as Record<string, unknown>;
+  if (!(dbName in dbRegister)) {
+    return E.fail(
+      new CollectionNotFoundError({
+        dbName,
+        name: name as UuidDto,
+      }),
+    );
+  }
+  const db = dbRegister[dbName] as Db;
   return pipe(
     E.tryPromise({
-      try: () => ctx.db.primary.listCollections({ name }).toArray(),
+      try: () => db.listCollections({ name }).toArray(),
       catch: (cause) =>
-        new DatabaseError({ cause, message: "checkPrimaryCollectionExists" }),
+        new DatabaseError({
+          cause,
+          message: `check${name[0].toUpperCase() + name.slice(1)}CollectionExists`,
+        }),
     }),
     E.flatMap((result) =>
       result.length === 1
-        ? E.succeed(ctx.db.primary.collection<T>(name))
-        : E.fail(new PrimaryCollectionNotFoundError({ name: name as UuidDto })),
-    ),
-  );
-}
-
-export function checkDataCollectionExists<T extends Document>(
-  ctx: AppBindings,
-  name: string,
-): E.Effect<Collection<T>, DataCollectionNotFoundError | DatabaseError> {
-  return pipe(
-    E.tryPromise({
-      try: () => ctx.db.data.listCollections({ name }).toArray(),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "checkDataCollectionExists" }),
-    }),
-    E.flatMap((result) =>
-      result.length === 1
-        ? E.succeed(ctx.db.data.collection<T>(name))
-        : E.fail(new DataCollectionNotFoundError({ name: name as UuidDto })),
+        ? E.succeed(db.collection<T>(name))
+        : E.fail(
+            new CollectionNotFoundError({ dbName, name: name as UuidDto }),
+          ),
     ),
   );
 }

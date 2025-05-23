@@ -6,11 +6,11 @@ import {
   UUID,
 } from "mongodb";
 import {
+  type CollectionNotFoundError,
   DatabaseError,
   DocumentNotFoundError,
-  type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
+import { checkCollectionExists, CollectionName } from "#/common/mongo";
 import type { AppBindings } from "#/env";
 import type { QueryJobDocument } from "./queries.types";
 
@@ -31,11 +31,12 @@ export function insert(
   document: QueryJobDocument,
 ): E.Effect<
   InsertOneResult<QueryJobDocument>,
-  PrimaryCollectionNotFoundError | DatabaseError
+  CollectionNotFoundError | DatabaseError
 > {
   return pipe(
-    checkPrimaryCollectionExists<QueryJobDocument>(
+    checkCollectionExists<QueryJobDocument>(
       ctx,
+      "primary",
       CollectionName.JobsQueries,
     ),
     E.tryMapPromise({
@@ -50,11 +51,12 @@ export function findOne(
   filter: StrictFilter<QueryJobDocument>,
 ): E.Effect<
   QueryJobDocument,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(
-    checkPrimaryCollectionExists<QueryJobDocument>(
+    checkCollectionExists<QueryJobDocument>(
       ctx,
+      "primary",
       CollectionName.JobsQueries,
     ),
     E.tryMapPromise({
@@ -80,7 +82,7 @@ export function updateOne(
   data: Partial<QueryJobDocument>,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const filter: StrictFilter<QueryJobDocument> = { _id: jobId };
   const update: StrictUpdateFilter<QueryJobDocument> = {
@@ -88,8 +90,9 @@ export function updateOne(
   };
 
   return pipe(
-    checkPrimaryCollectionExists<QueryJobDocument>(
+    checkCollectionExists<QueryJobDocument>(
       ctx,
+      "primary",
       CollectionName.JobsQueries,
     ),
     E.tryMapPromise({
