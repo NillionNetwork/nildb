@@ -79,23 +79,14 @@ export class DocumentNotFoundError extends Data.TaggedError(
   }
 }
 
-export class PrimaryCollectionNotFoundError extends Data.TaggedError(
-  "PrimaryCollectionNotFoundError",
+export class CollectionNotFoundError extends Data.TaggedError(
+  "CollectionNotFoundError",
 )<{
+  dbName: string;
   name: string;
 }> {
   humanize(): string[] {
-    return [this._tag, `collection: ${this.name}`];
-  }
-}
-
-export class DataCollectionNotFoundError extends Data.TaggedError(
-  "DataCollectionNotFoundError",
-)<{
-  name: string;
-}> {
-  humanize(): string[] {
-    return [this._tag, `collection: ${this.name}`];
+    return [this._tag, `db: ${this.dbName}, collection: ${this.name}`];
   }
 }
 

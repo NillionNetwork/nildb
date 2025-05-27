@@ -4,10 +4,10 @@ import * as AccountService from "#/accounts/accounts.services";
 import { RegisterAccountRequestSchema } from "#/accounts/accounts.types";
 import type { AmqpPublishMessageError } from "#/common/amqp";
 import {
+  type CollectionNotFoundError,
   type DatabaseError,
   type DataValidationError,
   DocumentNotFoundError,
-  type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
 import { CollectionName } from "#/common/mongo";
 import { DidSchema } from "#/common/types";
@@ -38,7 +38,7 @@ export function processDappStoreSecret(
   void,
   | Error
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | AmqpPublishMessageError
 > {
@@ -57,7 +57,15 @@ export function processDappStoreSecret(
       },
       catch: (cause) => Error("Share decryption failed", { cause }),
     }),
-    E.flatMap((data) => DataService.createRecords(ctx, schemaId, [data])),
+    E.flatMap((data) =>
+      DataService.createRecords(
+        ctx,
+        ctx.node.keypair.toDidString(),
+        schemaId,
+        [data],
+        [],
+      ),
+    ),
     E.flatMap((_record) =>
       NilCommMqService.emitSecretStoredEvent(ctx, payload.mappingId),
     ),
@@ -82,7 +90,7 @@ export function processDappStartQueryExecution(
   void,
   | Error
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | AmqpPublishMessageError
 > {

@@ -2,8 +2,8 @@ import * as amqp from "amqplib";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
 import { ExchangeName, QueueName, RoutingKey } from "#/common/amqp";
-import type { DocumentBase } from "#/common/mongo";
 import { uuidFromBytes } from "#/common/shares";
+import type { DataDocumentBase } from "#/data/data.repository";
 import {
   type DappEventQueryExecutionCompleted,
   type DappEventSecretStored,
@@ -136,7 +136,7 @@ describe.skip("nilcomm.test.ts > blind auction", () => {
     const { expect, bindings } = c;
     // Verify all shares exist in DB
     const collection = bindings.db.data.collection<
-      DocumentBase & { share: string }
+      DataDocumentBase & { share: string }
     >(NILCOMM_COMMIT_REVEAL_SCHEMA_ID.toString());
 
     await Promise.all(

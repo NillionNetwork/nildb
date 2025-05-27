@@ -138,7 +138,7 @@ export async function loadBindings(
   const accounts = new Cache<Did, AccountDocument>();
   const rootDocument: RootAccountDocument = {
     _id: keypair.toDidString(),
-    _type: "root",
+    _role: "root",
   };
   accounts.set(rootDocument._id, rootDocument, CACHE_FOREVER);
 
@@ -156,6 +156,7 @@ export async function loadBindings(
 
 export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
   const config = EnvVarsSchema.parse({
+    dbNamePermissions: process.env.APP_DB_NAME_PERMISSIONS,
     dbNameData: process.env.APP_DB_NAME_DATA,
     dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
     dbUri: process.env.APP_DB_URI,

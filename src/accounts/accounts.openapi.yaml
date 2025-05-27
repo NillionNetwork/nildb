@@ -4,7 +4,7 @@ components:
       type: object
       required:
         - _id
-        - _type
+        - _role
         - _created
         - _updated
         - publicKey
@@ -16,7 +16,7 @@ components:
           description: The accounts decentralised identifier (DID)
           type: string
           example: 'did:nil:nillion1eunreuzltxglx9fx493l2r8ef6rdlrau4dsdnc'
-        _type:
+        _role:
           type: string
           enum: [ 'admin', 'organization' ]
         _created:

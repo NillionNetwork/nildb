@@ -27,5 +27,6 @@
       },
       "required": ["_id", "wallet", "country", "age"]
     }
-  }
+  },
+  "documentType": "owned"
 }

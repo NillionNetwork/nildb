@@ -1,11 +1,11 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter } from "mongodb";
 import {
+  type CollectionNotFoundError,
   DatabaseError,
   DocumentNotFoundError,
-  type PrimaryCollectionNotFoundError,
 } from "#/common/errors";
-import { CollectionName, checkPrimaryCollectionExists } from "#/common/mongo";
+import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type {
@@ -22,9 +22,9 @@ export function toAdminAccountDocument(
 
   return {
     _id: did,
-    _type: "admin",
     _created: now,
     _updated: now,
+    _role: "admin",
     name,
   };
 }
@@ -34,14 +34,18 @@ export function deleteOneById(
   _id: Did,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const filter: StrictFilter<AccountDocument> = {
     _id,
   };
 
   return pipe(
-    checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
+    checkCollectionExists<AccountDocument>(
+      ctx,
+      "primary",
+      CollectionName.Accounts,
+    ),
     E.tryMapPromise({
       try: (collection) => collection.deleteOne(filter),
       catch: (cause: unknown) =>
@@ -63,9 +67,13 @@ export function deleteOneById(
 export function insert(
   ctx: AppBindings,
   document: AdminAccountDocument,
-): E.Effect<void, PrimaryCollectionNotFoundError | DatabaseError> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
+    checkCollectionExists<AccountDocument>(
+      ctx,
+      "primary",
+      CollectionName.Accounts,
+    ),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
       catch: (cause: unknown) =>
@@ -77,9 +85,13 @@ export function insert(
 
 export function listAll(
   ctx: AppBindings,
-): E.Effect<AccountDocument[], PrimaryCollectionNotFoundError | DatabaseError> {
+): E.Effect<AccountDocument[], CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkPrimaryCollectionExists<AccountDocument>(ctx, CollectionName.Accounts),
+    checkCollectionExists<AccountDocument>(
+      ctx,
+      "primary",
+      CollectionName.Accounts,
+    ),
     E.tryMapPromise({
       try: (collection) => collection.find({}).toArray(),
       catch: (cause: unknown) =>

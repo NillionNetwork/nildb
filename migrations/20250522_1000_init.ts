@@ -26,6 +26,7 @@ export class init_collections implements MigrationInterface {
           primary.createCollection(CollectionName.Schemas),
           primary.createCollection(CollectionName.Config),
           primary.createCollection(CollectionName.JobsQueries),
+          primary.createCollection(CollectionName.User),
         ]);
 
         await primary.collection(CollectionName.JobsQueries).createIndexes([
@@ -52,6 +53,7 @@ export class init_collections implements MigrationInterface {
         primary.dropCollection(CollectionName.Schemas),
         primary.dropCollection(CollectionName.Config),
         primary.dropCollection(CollectionName.JobsQueries),
+        primary.dropCollection(CollectionName.User),
       ]);
     } finally {
       await session.endSession();

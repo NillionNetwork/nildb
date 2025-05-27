@@ -1,6 +1,7 @@
 import type { UUID } from "mongodb";
 import { z } from "zod";
 import type { ApiResponse } from "#/common/handler";
+import type { DocumentBase } from "#/common/mongo";
 import { type Did, DidSchema } from "#/common/types";
 import { PUBLIC_KEY_LENGTH } from "#/env";
 
@@ -34,11 +35,8 @@ export type RemoveAccountResponse = ApiResponse<string>;
 /**
  * Repository types
  */
-export type OrganizationAccountDocument = {
-  _id: Did;
-  _type: "organization";
-  _created: Date;
-  _updated: Date;
+export type OrganizationAccountDocument = DocumentBase<Did> & {
+  _role: "organization";
   name: string;
   schemas: UUID[];
   queries: UUID[];

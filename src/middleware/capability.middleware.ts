@@ -71,7 +71,7 @@ export function verifyNucAndLoadSubject<
       }
 
       // both branches throw on validation failure
-      if (account._type === RoleSchema.enum.organization) {
+      if (account._role === RoleSchema.enum.organization) {
         validateNucWithSubscription.validate(
           envelope,
           defaultValidationParameters,
@@ -156,10 +156,10 @@ export function enforceCapability<
       log.warn("Path mismatch: %s, expected: %s", c.req.path, options.path);
     }
 
-    if (!options.roles.includes(account._type)) {
+    if (!options.roles.includes(account._role)) {
       log.debug(
         "Role %s is not authorized at path=%s",
-        account._type,
+        account._role,
         options.path,
       );
       return c.text(

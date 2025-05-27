@@ -17,5 +17,6 @@
       },
       "required": ["_id", "values"]
     }
-  }
+  },
+  "documentType": "owned"
 }

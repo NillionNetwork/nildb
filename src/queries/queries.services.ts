@@ -3,11 +3,10 @@ import type { Document, InsertOneResult, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { z } from "zod";
 import {
+  type CollectionNotFoundError,
   type DatabaseError,
-  type DataCollectionNotFoundError,
   DataValidationError,
   type DocumentNotFoundError,
-  type PrimaryCollectionNotFoundError,
   type QueryValidationError,
   TimeoutError,
   VariableInjectionError,
@@ -35,7 +34,7 @@ export function addQuery(
   request: AddQueryRequest & { owner: Did },
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const now = new Date();
   const document: QueryDocument = {
@@ -64,8 +63,7 @@ export function executeQuery(
 ): E.Effect<
   JsonValue,
   | DocumentNotFoundError
-  | DataCollectionNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
   | VariableInjectionError
@@ -106,7 +104,7 @@ export function findQueries(
 ): E.Effect<
   QueryDocument[],
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
@@ -119,7 +117,7 @@ export function removeQuery(
 ): E.Effect<
   void,
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
@@ -169,7 +167,7 @@ export function findQueryJob(
   _id: UUID,
 ): E.Effect<
   QueryJobDocument,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(QueriesJobsRepository.findOne(ctx, { _id }));
 }
@@ -179,7 +177,7 @@ export function addQueryJob(
   queryId: UUID,
 ): E.Effect<
   InsertOneResult<QueryJobDocument>,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const document = QueriesJobsRepository.toQueryJobDocument(queryId);
   return QueriesJobsRepository.insert(ctx, document);
@@ -193,11 +191,10 @@ type QueryJobUpdatePayload = {
   result?: JsonValue;
   error?:
     | DocumentNotFoundError
-    | PrimaryCollectionNotFoundError
+    | CollectionNotFoundError
     | DatabaseError
     | DataValidationError
     | VariableInjectionError
-    | DataCollectionNotFoundError
     | TimeoutError;
 };
 
@@ -206,7 +203,7 @@ export function updateQueryJob(
   payload: QueryJobUpdatePayload,
 ): E.Effect<
   void,
-  DocumentNotFoundError | PrimaryCollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const { jobId, error, ...rest } = payload;
   const update: Partial<QueryJobDocument> = {
@@ -228,11 +225,10 @@ export function processQueryJob(
 ): E.Effect<
   void,
   | DocumentNotFoundError
-  | PrimaryCollectionNotFoundError
+  | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
   | VariableInjectionError
-  | DataCollectionNotFoundError
 > {
   return pipe(
     findQueryJob(ctx, jobId),

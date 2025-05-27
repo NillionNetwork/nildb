@@ -42,6 +42,7 @@ describe("schemas.test.ts", () => {
       _id,
       name: schema.name,
       schema: schema.schema,
+      documentType: schema.documentType,
     });
 
     expect(response.status).toBe(StatusCodes.CREATED);

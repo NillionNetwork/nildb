@@ -15,6 +15,7 @@ import {
   loadBindings,
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
+import type { SchemaDocumentType } from "#/schemas/schemas.repository";
 import {
   TestAdminUserClient,
   TestOrganizationUserClient,
@@ -60,6 +61,7 @@ export async function buildFixture(
   // Use unique db names for each test
   process.env.APP_DB_NAME_PRIMARY = `${process.env.APP_DB_NAME_PRIMARY}_${id}`;
   process.env.APP_DB_NAME_DATA = `${process.env.APP_DB_NAME_DATA}_${id}`;
+  process.env.APP_DB_NAME_PERMISSIONS = `${process.env.APP_DB_NAME_PERMISSIONS}_${id}`;
 
   // nilcomm should only be enabled via the test fixture params else consumers and producers conflict
   const currentFeatures = process.env.APP_ENABLED_FEATURES || "";
@@ -135,7 +137,7 @@ export async function buildFixture(
   const createAdminResponse = await root.createAccount({
     did: admin.keypair.toDidString(),
     name: faker.person.fullName(),
-    type: "admin",
+    role: "admin",
   });
 
   if (!createAdminResponse.ok) {
@@ -146,7 +148,7 @@ export async function buildFixture(
   const createOrgResponse = await admin.createAccount({
     did: organization.keypair.toDidString(),
     name: faker.person.fullName(),
-    type: "organization",
+    role: "organization",
   });
 
   if (!createOrgResponse.ok) {
@@ -174,6 +176,7 @@ export type SchemaFixture = {
   name: string;
   keys: string[];
   schema: JsonObject;
+  documentType: SchemaDocumentType;
 };
 
 export type QueryFixture = {
@@ -201,6 +204,7 @@ export async function registerSchemaAndQuery(opts: {
     _id: schema.id,
     name: schema.name,
     schema: schema.schema,
+    documentType: schema.documentType,
   });
 
   if (response.status !== StatusCodes.CREATED) {
