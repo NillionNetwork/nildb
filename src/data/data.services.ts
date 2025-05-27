@@ -48,7 +48,7 @@ export function createRecords(
     ),
     E.flatMap(({ document, result }) => {
       if (document.documentType === "owned") {
-        return UserRepository.upsert(ctx, owner, result.created).pipe(
+        return UserRepository.upsert(ctx, owner, result.created, tokens).pipe(
           E.flatMap(() => E.succeed(result)),
         );
       }

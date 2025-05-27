@@ -1,3 +1,4 @@
+import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import {
   type CollectionNotFoundError,
@@ -14,7 +15,8 @@ import type { AppBindings } from "#/env";
 
 export type LogOperation =
   | { op: "write"; col: UuidDto }
-  | { op: "delete"; col: UuidDto };
+  | { op: "delete"; col: UuidDto }
+  | { op: "auth"; nuc: NucToken };
 
 export type UserDocument = DocumentBase<Did> & {
   data: UuidDto[];
@@ -25,6 +27,7 @@ export function upsert(
   ctx: AppBindings,
   userId: Did,
   data: UuidDto[],
+  tokens: NucToken[],
 ): E.Effect<
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
@@ -49,7 +52,12 @@ export function upsert(
                 $each: data,
               },
               log: {
-                $each: data.map((col) => ({ op: "write", col })),
+                $each: [
+                  ...data.map((col) => ({ op: "write", col }) as LogOperation),
+                  ...tokens.map(
+                    (token) => ({ op: "auth", nuc: token }) as LogOperation,
+                  ),
+                ],
               },
             },
           },
@@ -83,7 +91,7 @@ export function removeData(
             },
             $pull: {
               data: {
-                $in: data.map((uuid) => uuid.toString() as UuidDto),
+                $in: data.map((uuid) => uuid),
               },
             },
             $addToSet: {
