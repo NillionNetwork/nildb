@@ -53,13 +53,11 @@ export async function initAndCreateDbClients(
   const client = await MongoClient.connect(env.dbUri);
   const primary = client.db(env.dbNamePrimary);
   const data = client.db(env.dbNameData);
-  const permissions = client.db(env.dbNamePermissions);
 
   return {
     client,
     primary,
     data,
-    permissions,
   };
 }
 
