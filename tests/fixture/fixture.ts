@@ -15,12 +15,12 @@ import {
   loadBindings,
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
+import type { SchemaDocumentType } from "#/schemas/schemas.repository";
 import {
   TestAdminUserClient,
   TestOrganizationUserClient,
   TestRootUserClient,
 } from "./test-client";
-import { SchemaDocumentType } from "#/schemas/schemas.repository";
 
 export type FixtureContext = {
   id: string;
@@ -61,6 +61,7 @@ export async function buildFixture(
   // Use unique db names for each test
   process.env.APP_DB_NAME_PRIMARY = `${process.env.APP_DB_NAME_PRIMARY}_${id}`;
   process.env.APP_DB_NAME_DATA = `${process.env.APP_DB_NAME_DATA}_${id}`;
+  process.env.APP_DB_NAME_PERMISSIONS = `${process.env.APP_DB_NAME_PERMISSIONS}_${id}`;
 
   // nilcomm should only be enabled via the test fixture params else consumers and producers conflict
   const currentFeatures = process.env.APP_ENABLED_FEATURES || "";

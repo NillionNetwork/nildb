@@ -30,6 +30,7 @@ export type AppEnv = {
 export const EnvVarsSchema = z.object({
   dbNamePrimary: z.string().min(4),
   dbNameData: z.string().min(4),
+  dbNamePermissions: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
   enabledFeatures: z
     .string()
@@ -52,6 +53,7 @@ export type AppBindings = {
     client: MongoClient;
     primary: Db;
     data: Db;
+    permissions: Db;
   };
   cache: {
     accounts: Cache<Did, AccountDocument>;
@@ -82,6 +84,7 @@ export type AppBindingsWithNilcomm = Omit<AppBindings, "mq" | "config"> & {
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
+      APP_DB_NAME_PERMISSIONS: string;
       APP_DB_NAME_DATA: string;
       APP_DB_NAME_PRIMARY: string;
       APP_DB_URI: string;
@@ -156,6 +159,7 @@ export async function loadBindings(
 
 export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
   const config = EnvVarsSchema.parse({
+    dbNamePermissions: process.env.APP_DB_NAME_PERMISSIONS,
     dbNameData: process.env.APP_DB_NAME_DATA,
     dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
     dbUri: process.env.APP_DB_URI,

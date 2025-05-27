@@ -57,7 +57,15 @@ export function processDappStoreSecret(
       },
       catch: (cause) => Error("Share decryption failed", { cause }),
     }),
-    E.flatMap((data) => DataService.createRecords(ctx, schemaId, [data])),
+    E.flatMap((data) =>
+      DataService.createRecords(
+        ctx,
+        ctx.node.keypair.toDidString(),
+        schemaId,
+        [data],
+        [],
+      ),
+    ),
     E.flatMap((_record) =>
       NilCommMqService.emitSecretStoredEvent(ctx, payload.mappingId),
     ),

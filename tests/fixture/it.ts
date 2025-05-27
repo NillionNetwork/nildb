@@ -69,6 +69,7 @@ export function createTestFixtureExtension(
       if (!opts.keepDbs) {
         await db.client.db(config.dbNamePrimary).dropDatabase();
         await db.client.db(config.dbNameData).dropDatabase();
+        await db.client.db(config.dbNamePermissions).dropDatabase();
       }
       await db.client.close(true);
 

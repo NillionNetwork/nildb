@@ -6,7 +6,7 @@ import {
   DatabaseError,
   DocumentNotFoundError,
 } from "#/common/errors";
-import { checkCollectionExists, CollectionName } from "#/common/mongo";
+import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type {

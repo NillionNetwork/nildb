@@ -18,11 +18,11 @@ import {
 import {
   addDocumentBaseCoercions,
   applyCoercions,
+  CollectionName,
   checkCollectionExists,
   type DocumentBase,
   isMongoError,
   MongoErrorCode,
-  CollectionName,
 } from "#/common/mongo";
 import type { CoercibleMap, Did } from "#/common/types";
 import type { AppBindings } from "#/env";

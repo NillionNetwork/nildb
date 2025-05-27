@@ -10,8 +10,8 @@ import {
 import {
   addDocumentBaseCoercions,
   applyCoercions,
-  checkCollectionExists,
   CollectionName,
+  checkCollectionExists,
 } from "#/common/mongo";
 import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";

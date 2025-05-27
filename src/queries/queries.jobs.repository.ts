@@ -10,7 +10,7 @@ import {
   DatabaseError,
   DocumentNotFoundError,
 } from "#/common/errors";
-import { checkCollectionExists, CollectionName } from "#/common/mongo";
+import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { AppBindings } from "#/env";
 import type { QueryJobDocument } from "./queries.types";
 

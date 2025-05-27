@@ -6,6 +6,7 @@ import {
   type Document,
   MongoClient,
   MongoError,
+  UUID,
 } from "mongodb";
 import { z } from "zod";
 import {
@@ -52,11 +53,13 @@ export async function initAndCreateDbClients(
   const client = await MongoClient.connect(env.dbUri);
   const primary = client.db(env.dbNamePrimary);
   const data = client.db(env.dbNameData);
+  const permissions = client.db(env.dbNamePermissions);
 
   return {
     client,
     primary,
     data,
+    permissions,
   };
 }
 
@@ -66,6 +69,7 @@ export enum CollectionName {
   Queries = "queries",
   JobsQueries = "jobs_queries",
   Config = "config",
+  User = "user",
 }
 
 export async function mongoMigrateUp(
@@ -228,7 +232,18 @@ function coerceValue(
         .safeParse(value);
       break;
     case "uuid":
-      result = Uuid.safeParse(value);
+      if (typeof value === "string") {
+        result = Uuid.safeParse(value);
+      } else if (value instanceof UUID) {
+        result = Uuid.safeParse(value.toString());
+      } else {
+        const issues = ["value is not a valid UUID"];
+        const error = new DataValidationError({
+          issues,
+          cause: { value, type },
+        });
+        return E.fail(error);
+      }
       break;
     case "date":
       result = z

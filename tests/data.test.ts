@@ -1,3 +1,4 @@
+import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import type { DataDocument, UploadResult } from "#/data/data.repository";
@@ -227,5 +228,26 @@ describe("data operations", () => {
 
     const result = await expectSuccessResponse(c, response);
     expect(result.data).toHaveLength(3);
+  });
+
+  it("can delete data", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
+    const expected = await bindings.db.data
+      .collection<DataDocument>(schema.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    expect(expected).toBeDefined();
+    const ids = expected.map((document) => document._id.toString());
+
+    const response = await organization.deleteData({
+      schema: schema.id,
+      filter: { _id: { $in: ids } },
+    });
+
+    const result = await expectSuccessResponse(c, response);
+    expect((result.data as DeleteResult).deletedCount).toEqual(1);
   });
 });
