@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { enforceSchemaOwnership } from "#/common/ownership";

@@ -1,0 +1,1 @@
+import "zod-openapi/extend";
