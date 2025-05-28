@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
 import { CollectionName } from "#/common/mongo";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.repository";

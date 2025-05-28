@@ -11,7 +11,6 @@ import { useLoggerMiddleware } from "#/middleware/logger.middleware";
 import { buildNilCommRouter } from "#/nilcomm/nilcomm.router";
 import { buildQueriesRouter } from "#/queries/queries.router";
 import { buildSchemasRouter } from "#/schemas/schemas.router";
-import { createOpenApiRouter } from "./docs/docs.router";
 import {
   type AppBindings,
   type AppEnv,
@@ -19,6 +18,7 @@ import {
   hasFeatureFlag,
 } from "./env";
 import { useMaintenanceMiddleware } from "./middleware/maintenance.middleware";
+import { createOpenApiRouter } from "./openapi/openapi.router";
 import { buildSystemRouter } from "./system/system.router";
 
 export type App = Hono<AppEnv>;
@@ -43,7 +43,7 @@ export async function buildApp(
   buildSystemRouter({ app, bindings });
 
   if (
-    hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.OPENAPI_DOCS)
+    hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.OPENAPI_SPEC)
   ) {
     createOpenApiRouter({ app, bindings });
   }

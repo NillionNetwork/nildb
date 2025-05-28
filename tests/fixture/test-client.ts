@@ -9,15 +9,18 @@ import {
   type NucTokenEnvelope,
   type Payer,
 } from "@nillion/nuc";
-import type {
-  RegisterAccountRequest,
-  SetPublicKeyRequest,
-} from "#/accounts/accounts.types";
+import { StatusCodes } from "http-status-codes";
+import {
+  GetProfileResponse,
+  type RegisterAccountRequest,
+  type UpdateProfileRequest,
+} from "#/accounts/accounts.dto";
 import type {
   AdminSetLogLevelRequest,
   AdminSetMaintenanceWindowRequest,
 } from "#/admin/admin.types";
 import type { App } from "#/app";
+import type { ApiErrorResponse } from "#/common/handler";
 import { PathsV1 } from "#/common/paths";
 import type { UuidDto } from "#/common/types";
 import type {
@@ -39,6 +42,7 @@ import type {
   DeleteSchemaRequest,
 } from "#/schemas/schemas.types";
 import { SystemEndpoint } from "#/system/system.router";
+import type { FixtureContext } from "./fixture";
 
 export type TestClientOptions = {
   app: App;
@@ -141,6 +145,48 @@ export class TestRootUserClient extends TestClient {
   }
 }
 
+type ResponseExpectations =
+  | { success: true }
+  | { success: false; errors: string[]; status: StatusCodes };
+
+type TestResponseHandler<TSuccess> = {
+  request: () => Promise<Response>;
+  successStatus: StatusCodes;
+  parseSuccess?: (json: unknown) => TSuccess;
+};
+
+async function handleTestResponse<TSuccess>(
+  c: FixtureContext,
+  handler: TestResponseHandler<TSuccess>,
+  expectations: ResponseExpectations,
+): Promise<TSuccess | ApiErrorResponse> {
+  const { expect } = c;
+  const response = await handler.request();
+
+  if (expectations.success) {
+    expect(response.ok).toBe(true);
+    expect(response.status).toBe(handler.successStatus);
+
+    if (handler.parseSuccess) {
+      const json = await response.json();
+      return handler.parseSuccess(json);
+    }
+    return undefined as TSuccess;
+  }
+
+  const { errors, status } = expectations;
+  expect(response.ok).toBe(false);
+  expect(status).toBe(response.status);
+
+  const body = (await response.json()) as ApiErrorResponse;
+  for (const message of errors) {
+    expect(body.errors).toEqual(
+      expect.arrayContaining([expect.stringContaining(message)]),
+    );
+  }
+  return body;
+}
+
 export class TestOrganizationUserClient extends TestClient {
   async ensureSubscriptionActive(): Promise<void> {
     const { nilauth } = this._options;
@@ -185,34 +231,143 @@ export class TestOrganizationUserClient extends TestClient {
     const { method = "GET", body } = options;
     const token = await this.createInvocationToken();
 
+    const init: RequestInit = {
+      method,
+    };
+
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,
     };
 
     if (body) {
       headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(body);
     }
 
-    return this.app.request(path, {
-      method,
-      headers,
-      ...(body && { body: JSON.stringify(body) }),
-    });
+    init.headers = headers;
+
+    return this.app.request(path, init);
   }
 
-  async register(body: RegisterAccountRequest): Promise<Response> {
-    return this.request(PathsV1.accounts.root, {
-      method: "POST",
-      body,
-    });
+  async register(
+    c: FixtureContext,
+    body: RegisterAccountRequest,
+    expectations?: { success: true },
+  ): Promise<void>;
+  async register(
+    c: FixtureContext,
+    body: RegisterAccountRequest,
+    expectations: { success: false; errors: string[]; status: number },
+  ): Promise<ApiErrorResponse>;
+  async register(
+    c: FixtureContext,
+    body: RegisterAccountRequest,
+    expectations: ResponseExpectations = { success: true },
+  ): Promise<void | ApiErrorResponse> {
+    return handleTestResponse<void>(
+      c,
+      {
+        request: () =>
+          this.request(PathsV1.accounts.register, {
+            method: "POST",
+            body,
+          }),
+        successStatus: StatusCodes.CREATED,
+      },
+      expectations,
+    );
   }
 
-  async getAccount(): Promise<Response> {
-    return this.request(PathsV1.accounts.root);
+  async getProfile(
+    c: FixtureContext,
+    expectations?: { success: true },
+  ): Promise<GetProfileResponse>;
+  async getProfile(
+    c: FixtureContext,
+    expectations: { success: false; errors: string[]; status: number },
+  ): Promise<ApiErrorResponse>;
+  async getProfile(
+    c: FixtureContext,
+    expectations: ResponseExpectations = { success: true },
+  ): Promise<GetProfileResponse | ApiErrorResponse> {
+    return handleTestResponse<GetProfileResponse>(
+      c,
+      {
+        request: () => this.request(PathsV1.accounts.me),
+        successStatus: StatusCodes.OK,
+        parseSuccess: (json) => {
+          const result = GetProfileResponse.safeParse(json);
+          c.expect(result.success).toBe(true);
+          return result.data as GetProfileResponse;
+        },
+      },
+      expectations,
+    );
   }
 
-  async updateAccount(body: SetPublicKeyRequest): Promise<Response> {
-    return this.request(PathsV1.accounts.publicKey, { method: "POST", body });
+  async updateProfile(
+    c: FixtureContext,
+    body: UpdateProfileRequest,
+    expectations?: { success: true },
+  ): Promise<void>;
+  async updateProfile(
+    c: FixtureContext,
+    body: UpdateProfileRequest,
+    expectations: { success: false; errors: string[]; status: number },
+  ): Promise<ApiErrorResponse>;
+  async updateProfile(
+    c: FixtureContext,
+    body: UpdateProfileRequest,
+    expectations: ResponseExpectations = { success: true },
+  ): Promise<void | ApiErrorResponse> {
+    // Special case: this endpoint always returns 501 Not Implemented
+    if (expectations.success) {
+      const response = await this.request(PathsV1.accounts.me, {
+        method: "POST",
+        body,
+      });
+      c.expect(response.ok).toBe(false);
+      c.expect(response.status).toBe(StatusCodes.NOT_IMPLEMENTED);
+      return;
+    }
+
+    return handleTestResponse<void>(
+      c,
+      {
+        request: () =>
+          this.request(PathsV1.accounts.me, {
+            method: "POST",
+            body,
+          }),
+        successStatus: StatusCodes.OK, // placeholder, not used
+      },
+      expectations,
+    );
+  }
+
+  async deleteAccount(
+    c: FixtureContext,
+    expectations?: { success: true },
+  ): Promise<void>;
+  async deleteAccount(
+    c: FixtureContext,
+    expectations: { success: false; errors: string[]; status: number },
+  ): Promise<ApiErrorResponse>;
+  async deleteAccount(
+    c: FixtureContext,
+    expectations: ResponseExpectations = { success: true },
+  ): Promise<void | ApiErrorResponse> {
+    return handleTestResponse<void>(
+      c,
+      {
+        request: () =>
+          this.request(PathsV1.accounts.me, {
+            method: "DELETE",
+          }),
+        successStatus: StatusCodes.NO_CONTENT,
+      },
+      expectations,
+    );
   }
 
   async listSchemas(): Promise<Response> {
