@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { Keypair } from "@nillion/nuc";
 import type { UpdateResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
@@ -10,6 +11,7 @@ import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("update.data.test", () => {
+  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -28,6 +30,7 @@ describe("update.data.test", () => {
 
   beforeAll(async ({ organization }) => {
     await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });

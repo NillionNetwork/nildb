@@ -39,6 +39,7 @@ import type {
   DeleteSchemaRequest,
 } from "#/schemas/schemas.types";
 import { SystemEndpoint } from "#/system/system.router";
+import type { UserDataRequest } from "#/user/user.types";
 
 export type TestClientOptions = {
   app: App;
@@ -311,12 +312,10 @@ export class TestOrganizationUserClient extends TestClient {
     });
   }
 
-  async readUserData(): Promise<Response> {
-    return this.request(PathsV1.user.data, {
+  async readUserData(body: UserDataRequest): Promise<Response> {
+    return this.request(PathsV1.user.data.root, {
       method: "POST",
-      body: {
-        userId: this._options.node.keypair.toDidString(),
-      },
+      body,
     });
   }
 }
