@@ -18,7 +18,7 @@ import type {
   AdminSetMaintenanceWindowRequest,
 } from "#/admin/admin.types";
 import type { App } from "#/app";
-import { PathsBeta, PathsV1 } from "#/common/paths";
+import { PathsV1 } from "#/common/paths";
 import type { UuidDto } from "#/common/types";
 import type {
   DeleteDataRequest,
@@ -220,7 +220,7 @@ export class TestOrganizationUserClient extends TestClient {
   }
 
   async getSchemaMetadata(id: UuidDto): Promise<Response> {
-    return this.request(PathsBeta.schemas.byIdMeta.replace(":id", id));
+    return this.request(PathsV1.schemas.byIdMeta.replace(":id", id));
   }
 
   async addSchema(body: AddSchemaRequest): Promise<Response> {

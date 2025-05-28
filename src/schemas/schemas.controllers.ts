@@ -10,7 +10,7 @@ import {
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { enforceSchemaOwnership } from "#/common/ownership";
-import { PathsBeta, PathsV1 } from "#/common/paths";
+import { PathsV1 } from "#/common/paths";
 import { type ControllerOptions, Uuid } from "#/common/types";
 import { paramsValidator, payloadValidator } from "#/common/zod-utils";
 import {
@@ -114,7 +114,7 @@ export function remove(options: ControllerOptions): void {
 
 export function metadata(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsBeta.schemas.byIdMeta;
+  const path = PathsV1.schemas.byIdMeta;
 
   app.get(
     path,
@@ -151,7 +151,7 @@ export function metadata(options: ControllerOptions): void {
 
 export function createIndex(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsBeta.schemas.byIdIndexes;
+  const path = PathsV1.schemas.byIdIndexes;
 
   app.post(
     path,
@@ -188,10 +188,10 @@ export function createIndex(options: ControllerOptions): void {
 
 export function dropIndex(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsBeta.schemas.byIdIndexesByName;
+  const path = PathsV1.schemas.byIdIndexesByName;
 
   app.delete(
-    PathsBeta.schemas.byIdIndexesByName,
+    path,
     paramsValidator(
       z.object({
         id: Uuid,

@@ -66,13 +66,13 @@ export async function buildFixture(
     featuresArray.push("nilcomm");
   }
   process.env.APP_ENABLED_FEATURES = featuresArray.join(",");
-  log.info(`Enabled features: ${process.env.APP_ENABLED_FEATURES}`)
+  log.info(`Enabled features: ${process.env.APP_ENABLED_FEATURES}`);
 
   const bindings = (await loadBindings()) as AppBindingsWithNilcomm;
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
     await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
-    log.info("Ran db migrations")
+    log.info("Ran db migrations");
   }
 
   log.info("Bootstrapping test fixture");

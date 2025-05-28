@@ -37,18 +37,13 @@ export const PathsV1 = {
   },
   schemas: {
     root: PathSchema.parse("/api/v1/schemas"),
+    byIdMeta: PathSchema.parse("/api/v1/schemas/:id/meta"),
+    byIdIndexes: PathSchema.parse("/api/v1/schemas/:id/indexes"),
+    byIdIndexesByName: PathSchema.parse("/api/v1/schemas/:id/indexes/:name"),
   },
   system: {
     about: PathSchema.parse("/about"),
     health: PathSchema.parse("/health"),
     metrics: PathSchema.parse("/metrics"),
-  },
-} as const;
-
-export const PathsBeta = {
-  schemas: {
-    byIdMeta: PathSchema.parse("/api/beta/schemas/:id/meta"),
-    byIdIndexes: PathSchema.parse("/api/beta/schemas/:id/indexes"),
-    byIdIndexesByName: PathSchema.parse("/api/beta/schemas/:id/indexes/:name"),
   },
 } as const;
