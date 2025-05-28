@@ -8,6 +8,7 @@ export const NucCmd = {
       data: new Command(["nil", "db", "data"]),
       schemas: new Command(["nil", "db", "schemas"]),
       queries: new Command(["nil", "db", "queries"]),
+      user: new Command(["nil", "db", "user"]),
     },
   },
 } as const;

@@ -7,7 +7,7 @@ import type {
   DataValidationError,
   DocumentNotFoundError,
 } from "#/common/errors";
-import type { Did, UuidDto } from "#/common/types";
+import { type Did, Uuid } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import * as SchemasRepository from "#/schemas/schemas.repository";
@@ -48,9 +48,13 @@ export function createRecords(
     ),
     E.flatMap(({ document, result }) => {
       if (document.documentType === "owned") {
-        return UserRepository.upsert(ctx, owner, result.created, tokens).pipe(
-          E.flatMap(() => E.succeed(result)),
-        );
+        return UserRepository.upsert(
+          ctx,
+          owner,
+          schemaId,
+          result.created.map((id) => Uuid.parse(id)),
+          tokens,
+        ).pipe(E.flatMap(() => E.succeed(result)));
       }
       return E.succeed(result);
     }),
@@ -96,7 +100,7 @@ export function deleteRecords(
       UserRepository.removeData(
         ctx,
         owner,
-        docs.map((doc) => doc._id.toString() as UuidDto),
+        docs.map((doc) => doc._id),
       ),
     ),
     E.flatMap(() =>

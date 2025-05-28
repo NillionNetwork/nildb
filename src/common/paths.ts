@@ -46,4 +46,8 @@ export const PathsV1 = {
     health: PathSchema.parse("/health"),
     metrics: PathSchema.parse("/metrics"),
   },
+  user: {
+    data: PathSchema.parse("/api/v1/user/data"),
+    perms: PathSchema.parse("/api/v1/user/perms"),
+  },
 } as const;

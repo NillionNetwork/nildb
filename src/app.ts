@@ -11,6 +11,7 @@ import { useLoggerMiddleware } from "#/middleware/logger.middleware";
 import { buildNilCommRouter } from "#/nilcomm/nilcomm.router";
 import { buildQueriesRouter } from "#/queries/queries.router";
 import { buildSchemasRouter } from "#/schemas/schemas.router";
+import { buildUserRouter } from "#/user/user.router";
 import {
   type AppBindings,
   type AppEnv,
@@ -63,6 +64,7 @@ export async function buildApp(
 
   buildQueriesRouter({ app, bindings });
   buildDataRouter({ app, bindings });
+  buildUserRouter({ app, bindings });
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.NILCOMM)) {
     await buildNilCommRouter({ app, bindings });
