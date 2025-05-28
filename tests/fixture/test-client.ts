@@ -310,4 +310,13 @@ export class TestOrganizationUserClient extends TestClient {
       body,
     });
   }
+
+  async readUserData(): Promise<Response> {
+    return this.request(PathsV1.user.data, {
+      method: "POST",
+      body: {
+        userId: this._options.node.keypair.toDidString(),
+      },
+    });
+  }
 }

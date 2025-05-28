@@ -250,4 +250,13 @@ describe("data operations", () => {
     const result = await expectSuccessResponse(c, response);
     expect((result.data as DeleteResult).deletedCount).toEqual(1);
   });
+
+  it("users can read their data", async ({ c }) => {
+    const { expect, organization } = c;
+
+    const response = await organization.readUserData();
+
+    const result = await expectSuccessResponse(c, response);
+    expect(result.data).toHaveLength(2);
+  });
 });

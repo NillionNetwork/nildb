@@ -1,32 +1,40 @@
 import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
+import type { StrictFilter, UUID } from "mongodb";
 import {
   type CollectionNotFoundError,
   DatabaseError,
   type DataValidationError,
+  DocumentNotFoundError,
 } from "#/common/errors";
 import {
   CollectionName,
   checkCollectionExists,
   type DocumentBase,
 } from "#/common/mongo";
-import type { Did, UuidDto } from "#/common/types";
+import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 
 export type LogOperation =
-  | { op: "write"; col: UuidDto }
-  | { op: "delete"; col: UuidDto }
+  | { op: "write"; col: UUID }
+  | { op: "delete"; col: UUID }
   | { op: "auth"; nuc: NucToken };
 
+export type DataDocumentReference = {
+  id: UUID;
+  schema: UUID;
+};
+
 export type UserDocument = DocumentBase<Did> & {
-  data: UuidDto[];
+  data: DataDocumentReference[];
   log: LogOperation[];
 };
 
 export function upsert(
   ctx: AppBindings,
   userId: Did,
-  data: UuidDto[],
+  schema: UUID,
+  data: UUID[],
   tokens: NucToken[],
 ): E.Effect<
   void,
@@ -49,7 +57,7 @@ export function upsert(
             },
             $addToSet: {
               data: {
-                $each: data,
+                $each: data.map((col) => ({ id: col, schema })),
               },
               log: {
                 $each: [
@@ -72,7 +80,7 @@ export function upsert(
 export function removeData(
   ctx: AppBindings,
   userId: Did,
-  data: UuidDto[],
+  data: UUID[],
 ): E.Effect<
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
@@ -91,7 +99,9 @@ export function removeData(
             },
             $pull: {
               data: {
-                $in: data.map((uuid) => uuid),
+                id: {
+                  $in: data.map((uuid) => uuid),
+                },
               },
             },
             $addToSet: {
@@ -105,5 +115,32 @@ export function removeData(
       catch: (cause) => new DatabaseError({ cause, message: "remove data" }),
     }),
     E.as(void 0),
+  );
+}
+
+export function findById(
+  ctx: AppBindings,
+  userId: Did,
+): E.Effect<
+  UserDocument,
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  const filter: StrictFilter<UserDocument> = { _id: userId };
+  return pipe(
+    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
+    E.tryMapPromise({
+      try: (collection) => collection.findOne(filter),
+      catch: (cause) => new DatabaseError({ cause, message: "findOneUser" }),
+    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.User,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
   );
 }
