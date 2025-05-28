@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UUID } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
 import {
   type CollectionNotFoundError,
   DatabaseError,

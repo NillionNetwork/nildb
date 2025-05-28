@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { enforceQueryOwnership } from "#/common/ownership";

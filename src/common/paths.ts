@@ -12,8 +12,8 @@ export type Path = z.infer<typeof PathSchema>;
 
 export const PathsV1 = {
   accounts: {
-    root: PathSchema.parse("/api/v1/accounts"),
-    publicKey: PathSchema.parse("/api/v1/accounts/public_key"),
+    register: PathSchema.parse("/api/v1/register"),
+    me: PathSchema.parse("/api/v1/accounts/me"),
   },
   admin: {
     root: PathSchema.parse("/api/v1/admin"),

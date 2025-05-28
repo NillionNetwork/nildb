@@ -9,28 +9,15 @@ import {
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
-import type {
-  OrganizationAccountDocument,
-  RegisterAccountRequest,
-} from "./accounts.types";
+import type { OrganizationAccountDocument } from "./accounts.mapper";
 
-export function toOrganizationAccountDocument(
-  data: RegisterAccountRequest,
-): OrganizationAccountDocument {
-  const { did, name } = data;
-  const now = new Date();
-
-  return {
-    _id: did,
-    _created: now,
-    _updated: now,
-    _role: "organization",
-    name,
-    schemas: [],
-    queries: [],
-  };
-}
-
+/**
+ * Inserts a new organisation account document into the database.
+ *
+ * @param ctx - Application context containing database connections
+ * @param document - Complete account document to insert
+ * @returns Effect indicating success or database errors
+ */
 export function insert(
   ctx: AppBindings,
   document: OrganizationAccountDocument,
@@ -49,6 +36,16 @@ export function insert(
   );
 }
 
+/**
+ * Retrieves any account type by DID with caching.
+ *
+ * Checks the cache first, falls back to database if not found.
+ * Caches the result for subsequent requests.
+ *
+ * @param ctx - Application context containing database connections and cache
+ * @param _id - DID of the account to retrieve
+ * @returns Effect containing the account document or relevant errors
+ */
 export function findByIdWithCache(
   ctx: AppBindings,
   _id: Did,
@@ -89,6 +86,16 @@ export function findByIdWithCache(
   );
 }
 
+/**
+ * Retrieves an organisation account by DID.
+ *
+ * Filters by both DID and organisation role to ensure
+ * only organisation accounts are returned.
+ *
+ * @param ctx - Application context containing database connections
+ * @param _id - DID of the organisation to retrieve
+ * @returns Effect containing the organisation document or relevant errors
+ */
 export function findOneOrganization(
   ctx: AppBindings,
   _id: Did,
@@ -124,6 +131,16 @@ export function findOneOrganization(
   );
 }
 
+/**
+ * Deletes an organisation account by DID.
+ *
+ * Removes the account from the database and invalidates
+ * any cached entries for this DID.
+ *
+ * @param ctx - Application context containing database connections and cache
+ * @param _id - DID of the organisation to delete
+ * @returns Effect indicating success or relevant errors
+ */
 export function deleteOneById(
   ctx: AppBindings,
   _id: Did,
@@ -160,10 +177,21 @@ export function deleteOneById(
   );
 }
 
-export function setPublicKey(
+/**
+ * Updates an organisation account's fields.
+ *
+ * Performs a partial update of allowed fields using MongoDB's
+ * $set operator. Currently supports updating name only.
+ *
+ * @param ctx - Application context containing database connections
+ * @param _id - DID of the organisation to update
+ * @param updates - Partial object containing fields to update
+ * @returns Effect containing update result or relevant errors
+ */
+export function update(
   ctx: AppBindings,
   _id: Did,
-  publicKey: string,
+  updates: Partial<{ _id: Did; name: string }>,
 ): E.Effect<
   UpdateResult,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
@@ -173,7 +201,10 @@ export function setPublicKey(
     _role: "organization",
   };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
-    $set: { publicKey },
+    $set: {
+      ...(updates._id && { _id: updates._id }),
+      ...(updates.name && { name: updates.name }),
+    },
   };
 
   return pipe(

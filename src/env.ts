@@ -14,8 +14,8 @@ export const PUBLIC_KEY_LENGTH = 66;
 export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
 
 export const FeatureFlag = {
-  OPENAPI_DOCS: "openapi-docs",
-  PROMETHEUS_METRICS: "prometheus-metrics",
+  OPENAPI_SPEC: "openapi",
+  PROMETHEUS_METRICS: "metrics",
   MIGRATIONS: "migrations",
   NILCOMM: "nilcomm",
 } as const;

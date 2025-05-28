@@ -24,7 +24,7 @@ describe("account access controls", () => {
   it("rejects unauthenticated requests", async ({ c }) => {
     const { app, expect } = c;
 
-    const response = await app.request(PathsV1.accounts.root);
+    const response = await app.request(PathsV1.accounts.me);
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 });
@@ -45,7 +45,7 @@ describe("restrict cross-organization operations", () => {
     name: faker.person.fullName(),
   }));
 
-  beforeAll(async ({ app, bindings, organization }) => {
+  beforeAll(async ({ organization, bindings, app }) => {
     await organization.uploadData({
       schema: schema.id,
       data,
@@ -67,10 +67,12 @@ describe("restrict cross-organization operations", () => {
     });
 
     await organizationB.ensureSubscriptionActive();
-
-    await organizationB.register({
-      did: organizationB.did,
-      name: faker.company.name(),
+    const _response = await organizationB.request(PathsV1.accounts.register, {
+      method: "POST",
+      body: {
+        did: organizationB.did,
+        name: "organizationB",
+      },
     });
   });
 

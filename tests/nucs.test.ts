@@ -179,7 +179,7 @@ describe("nuc-based access control", () => {
     expect(documents[0]._id.toString()).toBe(body.data[0]._id);
 
     // 7. Confirm delegation is limited to /nil/db/data by trying to access the org's profile
-    const forbiddenResponse = await app.request(PathsV1.accounts.root, {
+    const forbiddenResponse = await app.request(PathsV1.accounts.me, {
       headers: {
         Authorization: `Bearer ${invocationByUser}`,
       },
@@ -238,7 +238,7 @@ describe("nuc-based access control", () => {
     expect(result.data[0].count).toBe(1);
 
     // 7. Confirm delegation is limited to /nil/db/queries by trying to access the org's profile
-    const forbiddenResponse = await app.request(PathsV1.accounts.root, {
+    const forbiddenResponse = await app.request(PathsV1.accounts.me, {
       headers: {
         Authorization: `Bearer ${invocationByUser}`,
       },

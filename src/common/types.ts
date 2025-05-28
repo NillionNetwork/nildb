@@ -9,7 +9,12 @@ export type UuidDto = `${string}-${string}-${string}-${string}-${string}`;
 export const Uuid = z
   .string()
   .uuid()
-  .transform((val) => new UUID(val));
+  .transform((v) => new UUID(v))
+  .openapi({
+    description: "UUID v4",
+    type: "string",
+    format: "uuid",
+  });
 
 export function createUuidDto(): UuidDto {
   return new UUID().toString() as UuidDto;
@@ -41,7 +46,14 @@ export type Did = `did:nil:${string}`;
 export const DidSchema = z
   .string()
   .regex(DID_EXPRESSION)
-  .transform((d) => d as Did);
+  .transform((v) => v as Did)
+  .openapi({
+    description:
+      "The account's decentralised identifier following the form: `did:nil:<secp256k1_pub_key_as_hex>`",
+    example:
+      "did:nil:037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b",
+    type: "string",
+  });
 
 export type ControllerOptions = {
   app: App;

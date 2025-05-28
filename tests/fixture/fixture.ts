@@ -8,6 +8,7 @@ import type { JsonObject } from "type-fest";
 import type * as vitest from "vitest";
 import { type App, buildApp } from "#/app";
 import { mongoMigrateUp } from "#/common/mongo";
+import { PathsV1 } from "#/common/paths";
 import {
   type AppBindingsWithNilcomm,
   FeatureFlag,
@@ -126,10 +127,16 @@ export async function buildFixture(
   const c = { id, log, app, bindings, root, organization };
 
   await organization.ensureSubscriptionActive();
-  const createOrgResponse = await organization.register({
-    did: organization.keypair.toDidString(),
-    name: faker.person.fullName(),
-  });
+  const createOrgResponse = await organization.request(
+    PathsV1.accounts.register,
+    {
+      method: "POST",
+      body: {
+        did: organization.keypair.toDidString(),
+        name: faker.person.fullName(),
+      },
+    },
+  );
 
   if (!createOrgResponse.ok) {
     throw new Error("Failed to create the organization", {

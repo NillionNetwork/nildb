@@ -44,7 +44,7 @@ describe("long running query job", () => {
 
   afterAll(async (_c) => {});
 
-  it("can start a long running query job", async ({ c }) => {
+  it("can start a long-running job", async ({ c }) => {
     const { expect, organization } = c;
 
     const variables = {
@@ -65,7 +65,7 @@ describe("long running query job", () => {
     jobId = result.data.jobId;
   });
 
-  it("can poll for long running job result", async ({ c }) => {
+  it("can poll for a job result", async ({ c }) => {
     const { expect, organization } = c;
 
     expect(jobId).toBeDefined();

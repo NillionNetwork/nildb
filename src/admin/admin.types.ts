@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
 import type { DocumentBase } from "#/common/mongo";
 import { type Did, DidSchema } from "#/common/types";
 import { LOG_LEVELS } from "#/env";
