@@ -8,16 +8,16 @@ describe("system.test.ts", () => {
   afterAll(async (_c) => {});
 
   it("responds to health checks", async ({ c }) => {
-    const { expect, admin } = c;
+    const { expect, root } = c;
 
-    const response = await admin.health();
+    const response = await root.health();
     expect(response.ok).toBeTruthy();
   });
 
   it("reports app version", async ({ c }) => {
-    const { expect, bindings, admin } = c;
+    const { expect, bindings, root } = c;
 
-    const response = await admin.about();
+    const response = await root.about();
     expect(response.ok).toBeTruthy();
 
     const result = (await response.json()) as unknown as AboutNode;

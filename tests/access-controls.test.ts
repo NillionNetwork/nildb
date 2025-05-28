@@ -22,34 +22,10 @@ describe("account access controls", () => {
   afterAll(async (_c) => {});
 
   it("rejects unauthenticated requests", async ({ c }) => {
-    const { admin, expect } = c;
+    const { app, expect } = c;
 
-    const response = await admin.app.request(PathsV1.accounts.root);
+    const response = await app.request(PathsV1.accounts.root);
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
-  });
-
-  it("organizations cannot create admin accounts", async ({ c }) => {
-    const { organization, expect } = c;
-
-    const keypair = Keypair.generate();
-    const response = await organization.request(PathsV1.admin.accounts.root, {
-      method: "POST",
-      body: {
-        did: organization.did,
-        publicKey: keypair.publicKey("hex"),
-        name: faker.person.fullName(),
-        role: "admin",
-      },
-    });
-
-    expect(response.status).toBe(StatusCodes.FORBIDDEN);
-  });
-
-  it("organizations cannot list accounts", async ({ c }) => {
-    const { organization, expect } = c;
-
-    const response = await organization.request(PathsV1.admin.accounts.root);
-    expect(response.status).toBe(StatusCodes.FORBIDDEN);
   });
 });
 

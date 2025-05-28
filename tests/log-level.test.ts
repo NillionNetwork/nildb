@@ -9,9 +9,9 @@ describe("log level management", () => {
   afterAll(async (_c) => {});
 
   it("should return the current log level", async ({ c }) => {
-    const { admin, bindings } = c;
+    const { root, bindings } = c;
 
-    const response = await admin.getLogLevel();
+    const response = await root.getLogLevel();
     expect(response.status).toBe(StatusCodes.OK);
 
     const result = (await response.json()) as LogLevelInfo;
@@ -22,13 +22,13 @@ describe("log level management", () => {
   });
 
   it("can set the log level", async ({ c }) => {
-    const { admin, bindings } = c;
+    const { root, bindings } = c;
 
     const request = {
       level: "warn",
     } as const;
 
-    const response = await admin.setLogLevel(request);
+    const response = await root.setLogLevel(request);
     expect(response.status).toBe(StatusCodes.OK);
     expect(bindings.log.level).toEqual(request.level);
   });

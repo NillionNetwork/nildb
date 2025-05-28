@@ -62,12 +62,12 @@ describe("nuc-based access control", () => {
   });
 
   it("allows for delegated access (cmd: /nil/db)", async ({ c }) => {
-    const { expect, app, admin, bindings, organization } = c;
+    const { expect, app, root, bindings, organization } = c;
 
     // 1. The org mints a delegation nuc address to the user
-    const root = await organization.getRootToken();
-
-    const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
+    const delegationFromBuilderRaw = NucTokenBuilder.extending(
+      await organization.getRootToken(),
+    )
       .audience(Did.fromHex(user.kp.publicKey("hex")))
       .build(organization.keypair.privateKey());
 
@@ -79,7 +79,7 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
       .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
@@ -121,11 +121,12 @@ describe("nuc-based access control", () => {
   });
 
   it("allows for delegated upload data (cmd: /nil/db/data)", async ({ c }) => {
-    const { expect, app, admin, bindings, organization } = c;
+    const { expect, app, root, bindings, organization } = c;
 
     // 1. The org mints a delegation nuc address to the user
-    const root = await organization.getRootToken();
-    const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
+    const delegationFromBuilderRaw = NucTokenBuilder.extending(
+      await organization.getRootToken(),
+    )
       .audience(Did.fromHex(user.kp.publicKey("hex")))
       .command(NucCmd.nil.db.data)
       .build(organization.keypair.privateKey());
@@ -137,7 +138,7 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
       .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
@@ -187,11 +188,12 @@ describe("nuc-based access control", () => {
   });
 
   it("allows for delegated run query (cmd: /nil/db/queries)", async ({ c }) => {
-    const { expect, app, admin, organization } = c;
+    const { expect, app, root, organization } = c;
 
     // 1. The org mints a delegation nuc address to the user
-    const root = await organization.getRootToken();
-    const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
+    const delegationFromBuilderRaw = NucTokenBuilder.extending(
+      await organization.getRootToken(),
+    )
       .audience(Did.fromHex(user.kp.publicKey("hex")))
       .command(NucCmd.nil.db.queries)
       .build(organization.keypair.privateKey());
@@ -203,7 +205,7 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
       .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
@@ -247,11 +249,12 @@ describe("nuc-based access control", () => {
   it("rejects namespace v path jumps: token.cmd=/nil/db/queries attempting to access /api/v1/data/tail)", async ({
     c,
   }) => {
-    const { expect, app, admin, organization } = c;
+    const { expect, app, root, organization } = c;
 
     // 1. The org mints a delegation nuc address to the user
-    const root = await organization.getRootToken();
-    const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
+    const delegationFromBuilderRaw = NucTokenBuilder.extending(
+      await organization.getRootToken(),
+    )
       .audience(Did.fromHex(user.kp.publicKey("hex")))
       .command(NucCmd.nil.db.queries)
       .build(organization.keypair.privateKey());
@@ -264,7 +267,7 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
       .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
@@ -286,11 +289,11 @@ describe("nuc-based access control", () => {
   });
 
   it("enforces revocations", async ({ c }) => {
-    const { expect, app, admin, organization } = c;
+    const { expect, app, root, organization } = c;
 
     // 1. The org mints a delegation nuc addressed to the user
-    const root = await organization.getRootToken();
-    const delegationFromBuilderRaw = NucTokenBuilder.extending(root)
+    const rootNuc = await organization.getRootToken();
+    const delegationFromBuilderRaw = NucTokenBuilder.extending(rootNuc)
       .audience(Did.fromHex(user.kp.publicKey("hex")))
       .command(NucCmd.nil.db.queries)
       .build(organization.keypair.privateKey());
@@ -302,11 +305,11 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(admin._options.node.keypair.publicKey("hex")))
+      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
       .build(user.kp.privateKey());
 
     // 3. The org revokes the delegation nuc
-    await organization._options.nilauth.revokeToken(root);
+    await organization._options.nilauth.revokeToken(rootNuc);
 
     // 4. User creates a query execution request (average age of wallets in GBR)
     const body: ExecuteQueryRequest = {

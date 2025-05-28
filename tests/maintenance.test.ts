@@ -17,7 +17,7 @@ describe("node maintenance window management", () => {
   };
 
   it("rejects if start or end dates are invalid", async ({ c }) => {
-    const { expect, admin } = c;
+    const { expect, root } = c;
 
     // End is less than start
     const invalidMaintenanceWindow = {
@@ -25,7 +25,7 @@ describe("node maintenance window management", () => {
       end: new Date(start.subtract({ hours: 2 }).epochMilliseconds),
     };
 
-    let response = await admin.setMaintenanceWindow(invalidMaintenanceWindow);
+    let response = await root.setMaintenanceWindow(invalidMaintenanceWindow);
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 
     let error = await expectErrorResponse(c, response);
@@ -34,7 +34,7 @@ describe("node maintenance window management", () => {
     // End is same as start
     invalidMaintenanceWindow.end = invalidMaintenanceWindow.start;
 
-    response = await admin.setMaintenanceWindow(invalidMaintenanceWindow);
+    response = await root.setMaintenanceWindow(invalidMaintenanceWindow);
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 
     error = await expectErrorResponse(c, response);
@@ -47,7 +47,7 @@ describe("node maintenance window management", () => {
       }).epochMilliseconds,
     );
 
-    response = await admin.setMaintenanceWindow(invalidMaintenanceWindow);
+    response = await root.setMaintenanceWindow(invalidMaintenanceWindow);
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 
     error = await expectErrorResponse(c, response);
@@ -55,8 +55,8 @@ describe("node maintenance window management", () => {
   });
 
   it("can set a maintenance window", async ({ c }) => {
-    const { expect, admin } = c;
-    const response = await admin.setMaintenanceWindow({
+    const { expect, root } = c;
+    const response = await root.setMaintenanceWindow({
       start: maintenanceWindow.start,
       end: maintenanceWindow.end,
     });
@@ -66,9 +66,9 @@ describe("node maintenance window management", () => {
   it("should return maintenance window details at `/about` when node is in maintenance", async ({
     c,
   }) => {
-    const { expect, admin } = c;
+    const { expect, root } = c;
 
-    const response = await admin.about();
+    const response = await root.about();
     expect(response.status).toBe(StatusCodes.OK);
 
     const result = (await response.json()) as {
@@ -85,9 +85,9 @@ describe("node maintenance window management", () => {
   });
 
   it("can delete a maintenance window", async ({ c }) => {
-    const { expect, admin } = c;
+    const { expect, root } = c;
 
-    const response = await admin.deleteMaintenanceWindow();
+    const response = await root.deleteMaintenanceWindow();
     expect(response.status).toBe(StatusCodes.NO_CONTENT);
   });
 });

@@ -6,7 +6,7 @@ import type { AppBindings, AppEnv } from "#/env";
 import * as SystemService from "#/system/system.services";
 
 const MAINTENANCE_EXCLUDED_PATHS: string[] = [
-  PathsV1.admin.system.maintenance,
+  PathsV1.admin.maintenance,
   PathsV1.system.health,
   PathsV1.system.about,
   PathsV1.system.metrics,
