@@ -17,29 +17,8 @@ export const PathsV1 = {
   },
   admin: {
     root: PathSchema.parse("/api/v1/admin"),
-    accounts: {
-      root: PathSchema.parse("/api/v1/admin/accounts"),
-    },
-    data: {
-      delete: PathSchema.parse("/api/v1/admin/data/delete"),
-      flush: PathSchema.parse("/api/v1/admin/data/flush"),
-      read: PathSchema.parse("/api/v1/admin/data/read"),
-      tail: PathSchema.parse("/api/v1/admin/data/tail"),
-      update: PathSchema.parse("/api/v1/admin/data/update"),
-      upload: PathSchema.parse("/api/v1/admin/data/create"),
-    },
-    queries: {
-      root: PathSchema.parse("/api/v1/admin/queries"),
-      execute: PathSchema.parse("/api/v1/admin/queries/execute"),
-      job: PathSchema.parse("/api/v1/admin/queries/job"),
-    },
-    schemas: {
-      root: PathSchema.parse("/api/v1/admin/schemas"),
-    },
-    system: {
-      maintenance: PathSchema.parse("/api/v1/admin/maintenance"),
-      logLevel: PathSchema.parse("/api/v1/admin/log_level"),
-    },
+    maintenance: PathSchema.parse("/api/v1/admin/maintenance"),
+    logLevel: PathSchema.parse("/api/v1/admin/log_level"),
   },
   data: {
     root: PathSchema.parse("/api/v1/data"),
@@ -67,15 +46,6 @@ export const PathsV1 = {
 } as const;
 
 export const PathsBeta = {
-  admin: {
-    schemas: {
-      byIdMeta: PathSchema.parse("/api/beta/admin/schemas/:id/meta"),
-      byIdIndexes: PathSchema.parse("/api/beta/admin/schemas/:id/indexes"),
-      byIdIndexesByName: PathSchema.parse(
-        "/api/beta/admin/schemas/:id/indexes/:name",
-      ),
-    },
-  },
   schemas: {
     byIdMeta: PathSchema.parse("/api/beta/schemas/:id/meta"),
     byIdIndexes: PathSchema.parse("/api/beta/schemas/:id/indexes"),

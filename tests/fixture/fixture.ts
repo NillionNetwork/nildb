@@ -16,11 +16,7 @@ import {
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
 import type { SchemaDocumentType } from "#/schemas/schemas.repository";
-import {
-  TestAdminUserClient,
-  TestOrganizationUserClient,
-  TestRootUserClient,
-} from "./test-client";
+import { TestOrganizationUserClient, TestRootUserClient } from "./test-client";
 
 export type FixtureContext = {
   id: string;
@@ -28,7 +24,6 @@ export type FixtureContext = {
   app: App;
   bindings: AppBindingsWithNilcomm;
   root: TestRootUserClient;
-  admin: TestAdminUserClient;
   organization: TestOrganizationUserClient;
   expect: vitest.ExpectStatic;
 };
@@ -71,13 +66,16 @@ export async function buildFixture(
     featuresArray.push("nilcomm");
   }
   process.env.APP_ENABLED_FEATURES = featuresArray.join(",");
+  log.info(`Enabled features: ${process.env.APP_ENABLED_FEATURES}`)
 
   const bindings = (await loadBindings()) as AppBindingsWithNilcomm;
-  log.info("Bootstrapping test fixture");
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
     await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
+    log.info("Ran db migrations")
   }
+
+  log.info("Bootstrapping test fixture");
 
   const { app } = await buildApp(bindings);
 
@@ -106,13 +104,6 @@ export async function buildFixture(
     nilauth: adminNilauthClient,
     node,
   });
-  const admin = new TestAdminUserClient({
-    app,
-    keypair: adminKeypair,
-    payer: adminPayer,
-    nilauth: adminNilauthClient,
-    node,
-  });
 
   const orgKeypair = Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!);
   const orgPayer = await new PayerBuilder()
@@ -132,23 +123,12 @@ export async function buildFixture(
     node,
   });
 
-  const c = { id, log, app, bindings, root, admin, organization };
+  const c = { id, log, app, bindings, root, organization };
 
-  const createAdminResponse = await root.createAccount({
-    did: admin.keypair.toDidString(),
-    name: faker.person.fullName(),
-    role: "admin",
-  });
-
-  if (!createAdminResponse.ok) {
-    throw new Error("Failed to create admin", { cause: createAdminResponse });
-  }
-  log.info({ did: admin.keypair.toDidString() }, "Created admin");
-
-  const createOrgResponse = await admin.createAccount({
+  await organization.ensureSubscriptionActive();
+  const createOrgResponse = await organization.register({
     did: organization.keypair.toDidString(),
     name: faker.person.fullName(),
-    role: "organization",
   });
 
   if (!createOrgResponse.ok) {

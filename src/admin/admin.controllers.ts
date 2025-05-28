@@ -21,7 +21,7 @@ import {
 
 export function setMaintenanceWindow(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.admin.system.maintenance;
+  const path = PathsV1.admin.maintenance;
 
   app.post(
     path,
@@ -30,7 +30,7 @@ export function setMaintenanceWindow(options: ControllerOptions): void {
     enforceCapability<{ json: AdminSetMaintenanceWindowRequest }>({
       path,
       cmd: NucCmd.nil.db.admin,
-      roles: [RoleSchema.enum.admin],
+      roles: [RoleSchema.enum.root],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -47,7 +47,7 @@ export function setMaintenanceWindow(options: ControllerOptions): void {
 
 export function deleteMaintenanceWindow(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.admin.system.maintenance;
+  const path = PathsV1.admin.maintenance;
 
   app.delete(
     path,
@@ -55,7 +55,7 @@ export function deleteMaintenanceWindow(options: ControllerOptions): void {
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.admin,
-      roles: [RoleSchema.enum.admin],
+      roles: [RoleSchema.enum.root],
       validate: (_c, _token) => true,
     }),
     async (c) =>
@@ -70,7 +70,7 @@ export function deleteMaintenanceWindow(options: ControllerOptions): void {
 
 export function setLogLevel(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.admin.system.logLevel;
+  const path = PathsV1.admin.logLevel;
 
   app.post(
     path,
@@ -79,7 +79,7 @@ export function setLogLevel(options: ControllerOptions): void {
     enforceCapability<{ json: AdminSetLogLevelRequest }>({
       path,
       cmd: NucCmd.nil.db.admin,
-      roles: [RoleSchema.enum.admin],
+      roles: [RoleSchema.enum.root],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -92,7 +92,7 @@ export function setLogLevel(options: ControllerOptions): void {
 
 export function getLogLevel(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.admin.system.logLevel;
+  const path = PathsV1.admin.logLevel;
 
   app.get(
     path,
@@ -100,7 +100,7 @@ export function getLogLevel(options: ControllerOptions): void {
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.admin,
-      roles: [RoleSchema.enum.admin],
+      roles: [RoleSchema.enum.root],
       validate: (_c, _token) => true,
     }),
     async (c) => {

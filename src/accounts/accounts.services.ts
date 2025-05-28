@@ -1,5 +1,4 @@
 import { Effect as E, pipe } from "effect";
-import * as AdminAccountRepository from "#/admin/admin.repository";
 import type { AdminCreateAccountRequest } from "#/admin/admin.types";
 import {
   type CollectionNotFoundError,
@@ -42,14 +41,6 @@ export function createAccount(
       document: { name: request.name, did: request.did },
     });
     return E.fail(e);
-  }
-
-  const isAdminRegistration =
-    "role" in request && request.role.toLocaleLowerCase() === "admin";
-
-  if (isAdminRegistration) {
-    const document = AdminAccountRepository.toAdminAccountDocument(request);
-    return AdminAccountRepository.insert(ctx, document);
   }
 
   const document = AccountRepository.toOrganizationAccountDocument(request);

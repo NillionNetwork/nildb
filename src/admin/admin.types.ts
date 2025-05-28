@@ -43,13 +43,6 @@ export type AdminSetMaintenanceWindowRequest = z.infer<
   typeof AdminSetMaintenanceWindowRequestSchema
 >;
 
-export const AdminSetLogLevelRequestSchema = z.object({
-  level: z.enum(LOG_LEVELS),
-});
-export type AdminSetLogLevelRequest = z.infer<
-  typeof AdminSetLogLevelRequestSchema
->;
-
 export const CreateSchemaIndexRequestSchema = z.object({
   name: z.string().min(4),
   keys: z.array(
@@ -66,6 +59,13 @@ export const CreateSchemaIndexRequestSchema = z.object({
 
 export type CreateSchemaIndexRequest = z.infer<
   typeof CreateSchemaIndexRequestSchema
+>;
+
+export const AdminSetLogLevelRequestSchema = z.object({
+  level: z.enum(LOG_LEVELS),
+});
+export type AdminSetLogLevelRequest = z.infer<
+  typeof AdminSetLogLevelRequestSchema
 >;
 
 export type LogLevelInfo = {

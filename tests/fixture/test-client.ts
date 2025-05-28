@@ -14,10 +14,6 @@ import type {
   SetPublicKeyRequest,
 } from "#/accounts/accounts.types";
 import type {
-  AdminAddQueryRequest,
-  AdminAddSchemaRequest,
-  AdminCreateAccountRequest,
-  AdminDeleteAccountRequest,
   AdminSetLogLevelRequest,
   AdminSetMaintenanceWindowRequest,
 } from "#/admin/admin.types";
@@ -116,100 +112,32 @@ abstract class TestClient {
 }
 
 export class TestRootUserClient extends TestClient {
-  async createAccount(body: AdminCreateAccountRequest): Promise<Response> {
-    return this.request(PathsV1.admin.accounts.root, { method: "POST", body });
-  }
-}
-
-export class TestAdminUserClient extends TestRootUserClient {
-  async listAccounts(): Promise<Response> {
-    return this.request(PathsV1.admin.accounts.root);
-  }
-
-  async deleteAccount(body: AdminDeleteAccountRequest): Promise<Response> {
-    return this.request(PathsV1.admin.accounts.root, {
-      method: "DELETE",
-      body,
-    });
-  }
-
   async setMaintenanceWindow(
     body: AdminSetMaintenanceWindowRequest,
   ): Promise<Response> {
-    return this.request(PathsV1.admin.system.maintenance, {
+    return this.request(PathsV1.admin.maintenance, {
       method: "POST",
       body,
     });
   }
 
   async deleteMaintenanceWindow(): Promise<Response> {
-    return this.request(PathsV1.admin.system.maintenance, {
+    return this.request(PathsV1.admin.maintenance, {
       method: "DELETE",
     });
   }
 
   async getLogLevel(): Promise<Response> {
-    return this.request(PathsV1.admin.system.logLevel, {
+    return this.request(PathsV1.admin.logLevel, {
       method: "GET",
     });
   }
 
   async setLogLevel(body: AdminSetLogLevelRequest): Promise<Response> {
-    return this.request(PathsV1.admin.system.logLevel, {
+    return this.request(PathsV1.admin.logLevel, {
       method: "POST",
       body,
     });
-  }
-
-  async addSchema(body: AdminAddSchemaRequest): Promise<Response> {
-    return this.request(PathsV1.admin.schemas.root, { method: "POST", body });
-  }
-
-  async getSchemaMetadata(id: UuidDto): Promise<Response> {
-    return this.request(`${PathsBeta.admin.schemas.byIdMeta}/${id}`);
-  }
-
-  async deleteSchema(body: DeleteSchemaRequest): Promise<Response> {
-    return this.request(PathsV1.admin.schemas.root, { method: "DELETE", body });
-  }
-
-  async addQuery(body: AdminAddQueryRequest): Promise<Response> {
-    return this.request(PathsV1.admin.queries.root, { method: "POST", body });
-  }
-
-  async deleteQuery(body: DeleteQueryRequest): Promise<Response> {
-    return this.request(PathsV1.admin.queries.root, { method: "DELETE", body });
-  }
-
-  async executeQuery(body: ExecuteQueryRequest): Promise<Response> {
-    return this.request(PathsV1.admin.queries.execute, {
-      method: "POST",
-      body,
-    });
-  }
-
-  async uploadData(body: UploadDataRequest): Promise<Response> {
-    return this.request(PathsV1.admin.data.upload, { method: "POST", body });
-  }
-
-  async deleteData(body: DeleteDataRequest): Promise<Response> {
-    return this.request(PathsV1.admin.data.delete, { method: "POST", body });
-  }
-
-  async flushData(body: FlushDataRequest): Promise<Response> {
-    return this.request(PathsV1.admin.data.flush, { method: "POST", body });
-  }
-
-  async tailData(body: TailDataRequest): Promise<Response> {
-    return this.request(PathsV1.admin.data.tail, { method: "POST", body });
-  }
-
-  async readData(body: ReadDataRequest): Promise<Response> {
-    return this.request(PathsV1.admin.data.read, { method: "POST", body });
-  }
-
-  async updateData(body: UpdateDataRequest): Promise<Response> {
-    return this.request(PathsV1.admin.data.update, { method: "POST", body });
   }
 }
 
