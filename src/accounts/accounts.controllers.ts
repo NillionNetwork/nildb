@@ -1,30 +1,102 @@
 import { Effect as E, pipe } from "effect";
-import { StatusCodes } from "http-status-codes";
+import { describeRoute } from "hono-openapi";
+import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { ReasonPhrases } from "http-status-codes";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
+import {
+  OpenApiSpecCommonErrorResponses,
+  OpenApiSpecEmptySuccessResponses,
+} from "#/common/openapi";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
-import { payloadValidator } from "#/common/zod-utils";
 import {
   enforceCapability,
   RoleSchema,
   verifyNucAndLoadSubject,
 } from "#/middleware/capability.middleware";
-import * as AccountService from "./accounts.services";
 import {
-  RegisterAccountRequestSchema,
-  type RemoveAccountRequest,
-  RemoveAccountRequestSchema,
-  type SetPublicKeyRequest,
-  SetPublicKeyRequestSchema,
-} from "./accounts.types";
+  DeleteAccountResponse,
+  GetProfileResponse,
+  RegisterAccountRequest,
+  RegisterAccountResponse,
+  UpdateProfileRequest,
+  UpdateProfileResponse,
+} from "./accounts.dto";
+import { AccountMapper } from "./accounts.mapper";
+import * as AccountService from "./accounts.services";
 
-export function get(options: ControllerOptions): void {
+/**
+ * Registers the account registration endpoint.
+ *
+ * Accepts a DID and name, validates the request, converts DTO to domain model,
+ * and delegates to the service layer for account creation.
+ *
+ * @param options - Controller configuration including app instance
+ */
+export function register(options: ControllerOptions): void {
+  const { app } = options;
+  const path = PathsV1.accounts.register;
+
+  app.post(
+    path,
+    describeRoute({
+      tags: ["Accounts"],
+      summary: "Register a new account",
+      description:
+        "Creates a new account with the provided DID and name. Returns 201 with no content on success.",
+      responses: {
+        201: OpenApiSpecEmptySuccessResponses["201"],
+        400: OpenApiSpecCommonErrorResponses["400"],
+        500: OpenApiSpecCommonErrorResponses["500"],
+      },
+    }),
+    zValidator("json", RegisterAccountRequest),
+    async (c) => {
+      const payload = c.req.valid("json");
+
+      return pipe(
+        AccountMapper.fromRegisterAccountRequest(payload),
+        (partial) => AccountService.createAccount(c.env, partial),
+        E.map(() => RegisterAccountResponse),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+/**
+ * Registers the profile retrieval endpoint.
+ *
+ * Authenticates the user, validates their capability, retrieves account data
+ * from the service layer, and converts the domain model to a DTO response.
+ *
+ * @param options - Controller configuration including app instance and bindings
+ */
+export function getProfile(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.accounts.root;
+  const path = PathsV1.accounts.me;
 
   app.get(
     path,
+    describeRoute({
+      tags: ["Accounts"],
+      security: [{ bearerAuth: [] }],
+      summary: "Get your profile",
+      description: "Retrieves the profile for the authenticated user.",
+      responses: {
+        200: {
+          description: "Profile retrieved",
+          content: {
+            "application/json": {
+              schema: resolver(GetProfileResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
     verifyNucAndLoadSubject(bindings),
     enforceCapability({
       path,
@@ -36,7 +108,8 @@ export function get(options: ControllerOptions): void {
       const account = c.get("account");
       return pipe(
         AccountService.find(c.env, account._id),
-        E.map((data) => c.json({ data })),
+        E.map((account) => AccountMapper.toGetProfileResponse(account)),
+        E.map((profile) => c.json<GetProfileResponse>(profile)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -44,42 +117,44 @@ export function get(options: ControllerOptions): void {
   );
 }
 
-export function register(options: ControllerOptions): void {
-  const { app } = options;
-  const path = PathsV1.accounts.root;
-
-  app.post(path, payloadValidator(RegisterAccountRequestSchema), async (c) => {
-    const payload = c.req.valid("json");
-
-    return pipe(
-      AccountService.createAccount(c.env, payload),
-      E.map(() => new Response(null, { status: StatusCodes.CREATED })),
-      handleTaggedErrors(c),
-      E.runPromise,
-    );
-  });
-}
-
-export function remove(options: ControllerOptions): void {
+/**
+ * Registers the account deletion endpoint.
+ *
+ * Authenticates the user, validates their capability, and delegates
+ * to the service layer for permanent account removal.
+ *
+ * @param options - Controller configuration including app instance and bindings
+ */
+export function _delete(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.accounts.root;
+  const path = PathsV1.accounts.me;
 
   app.delete(
     path,
-    payloadValidator(RemoveAccountRequestSchema),
+    describeRoute({
+      tags: ["Accounts"],
+      security: [{ bearerAuth: [] }],
+      summary: "Delete your account",
+      description:
+        "Permanently delete the authenticated user's account (cannot be undone)",
+      responses: {
+        204: OpenApiSpecEmptySuccessResponses["204"],
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability<{ json: RemoveAccountRequest }>({
+    enforceCapability({
       path,
       cmd: NucCmd.nil.db.accounts,
       roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const payload = c.req.valid("json");
+      const account = c.get("account");
 
       return pipe(
-        AccountService.remove(c.env, payload.id),
-        E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
+        AccountService.remove(c.env, account._id),
+        E.map(() => DeleteAccountResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -87,28 +162,48 @@ export function remove(options: ControllerOptions): void {
   );
 }
 
-export function setPublicKey(options: ControllerOptions): void {
+/**
+ * Registers the profile update endpoint.
+ *
+ * Authenticates the user, validates their capability and request,
+ * then delegates to the service layer for profile updates.
+ *
+ * @param options - Controller configuration including app instance and bindings
+ */
+export function updateProfile(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.accounts.publicKey;
+  const path = PathsV1.accounts.me;
 
   app.post(
     path,
-    payloadValidator(SetPublicKeyRequestSchema),
+    describeRoute({
+      tags: ["Accounts"],
+      security: [{ bearerAuth: [] }],
+      summary: "Update your profile",
+      description: "Update your profile",
+      responses: {
+        200: OpenApiSpecEmptySuccessResponses["200"],
+        ...OpenApiSpecCommonErrorResponses,
+        501: {
+          description: ReasonPhrases.NOT_IMPLEMENTED,
+        },
+      },
+    }),
+    zValidator("json", UpdateProfileRequest),
     verifyNucAndLoadSubject(bindings),
-    enforceCapability<{ json: SetPublicKeyRequest }>({
+    enforceCapability<{ json: UpdateProfileRequest }>({
       path,
       cmd: NucCmd.nil.db.accounts,
       roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      // TODO: this is really replace the org owner so (a) it might need a better name
-      //  and (b) should we to enforce a cooldown period or add additional protections?
-      const payload = c.req.valid("json");
+      const account = c.get("account");
 
       return pipe(
-        AccountService.setPublicKey(c.env, payload.did, payload.publicKey),
-        E.map(() => new Response(null, { status: StatusCodes.OK })),
+        c.req.valid("json"),
+        (updates) => AccountService.updateProfile(c.env, account._id, updates),
+        E.map(() => UpdateProfileResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );

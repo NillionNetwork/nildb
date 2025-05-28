@@ -2,7 +2,7 @@ import { Effect as E, pipe } from "effect";
 import { StatusCodes } from "http-status-codes";
 import type { UUID } from "mongodb";
 import { z } from "zod";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
 import {
   type CreateSchemaIndexRequest,
   CreateSchemaIndexRequestSchema,
