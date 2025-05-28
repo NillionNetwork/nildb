@@ -7,7 +7,7 @@ import type {
   DataValidationError,
   DocumentNotFoundError,
 } from "#/common/errors";
-import { type Did, Uuid } from "#/common/types";
+import { type Did, DidSchema, Uuid } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import * as SchemasRepository from "#/schemas/schemas.repository";
@@ -89,20 +89,36 @@ export function readRecords(
 export function deleteRecords(
   ctx: AppBindings,
   request: DeleteDataRequest,
-  owner: Did,
 ): E.Effect<
   DeleteResult,
   CollectionNotFoundError | DatabaseError | DataValidationError,
   never
 > {
+  const groupByOwner = (documents: DataDocument[]): Record<string, UUID[]> => {
+    return documents.reduce<Record<string, UUID[]>>((acc, data) => {
+      const owner = data._owner;
+      if (!acc[owner]) {
+        acc[owner] = [];
+      }
+      acc[owner].push(data._id);
+      return acc;
+    }, {});
+  };
+
+  const deleteAllUserDataReferences = (
+    documents: Record<string, UUID[]>,
+  ): E.Effect<
+    void,
+    CollectionNotFoundError | DatabaseError | DataValidationError
+  > => {
+    return E.forEach(Object.entries(documents), ([owner, ids]) =>
+      UserRepository.removeData(ctx, DidSchema.parse(owner), ids),
+    ).pipe(E.map((arrays) => arrays.flat()));
+  };
+
   return DataRepository.findMany(ctx, request.schema, request.filter).pipe(
-    E.flatMap((docs) =>
-      UserRepository.removeData(
-        ctx,
-        owner,
-        docs.map((doc) => doc._id),
-      ),
-    ),
+    E.map((documents) => groupByOwner(documents)),
+    E.flatMap((documents) => deleteAllUserDataReferences(documents)),
     E.flatMap(() =>
       DataRepository.deleteMany(ctx, request.schema, request.filter),
     ),

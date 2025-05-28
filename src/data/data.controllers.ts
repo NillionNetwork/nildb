@@ -43,19 +43,11 @@ export function remove(options: ControllerOptions): void {
     }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
-      const token = c.get("envelope").token.token;
       const payload = c.req.valid("json");
 
       return pipe(
         enforceSchemaOwnership(account, payload.schema),
-        E.flatMap(
-          () =>
-            DataService.deleteRecords(
-              c.env,
-              payload,
-              token.audience.toString(),
-            ), // TODO We need to revisit the owner assignment
-        ),
+        E.flatMap(() => DataService.deleteRecords(c.env, payload)),
         E.map((data) => c.json({ data })),
         handleTaggedErrors(c),
         E.runPromise,
@@ -213,7 +205,7 @@ export function upload(options: ControllerOptions): void {
         E.flatMap(() =>
           DataService.createRecords(
             c.env,
-            token.audience.toString(), // TODO We need to revisit the owner assignment
+            payload.userId,
             payload.schema,
             payload.data,
             [token],

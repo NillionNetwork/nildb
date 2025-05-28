@@ -1,3 +1,4 @@
+import { Keypair } from "@nillion/nuc";
 import { Effect as E, Either, pipe } from "effect";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
@@ -13,6 +14,7 @@ import type { SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("data operations", () => {
+  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
     schema,
@@ -262,6 +264,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -298,6 +301,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -327,6 +331,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -356,6 +361,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });

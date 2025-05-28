@@ -44,6 +44,7 @@ import type {
 import { SystemEndpoint } from "#/system/system.router";
 // biome-ignore lint/nursery/noImportCycles: requires refactor to address
 import type { FixtureContext } from "./fixture";
+import type { UserDataRequest } from "#/user/user.types";
 
 export type TestClientOptions = {
   app: App;
@@ -467,12 +468,10 @@ export class TestOrganizationUserClient extends TestClient {
     });
   }
 
-  async readUserData(): Promise<Response> {
-    return this.request(PathsV1.user.data, {
+  async readUserData(body: UserDataRequest): Promise<Response> {
+    return this.request(PathsV1.user.data.root, {
       method: "POST",
-      body: {
-        userId: this._options.node.keypair.toDidString(),
-      },
+      body,
     });
   }
 }

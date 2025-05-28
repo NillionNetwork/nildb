@@ -1,3 +1,4 @@
+import { Keypair } from "@nillion/nuc";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
@@ -12,6 +13,7 @@ import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("data operations", () => {
+  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -53,6 +55,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -79,6 +82,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -111,6 +115,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -140,6 +145,7 @@ describe("data operations", () => {
     ];
 
     await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -163,6 +169,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -254,7 +261,7 @@ describe("data operations", () => {
   it("users can read their data", async ({ c }) => {
     const { expect, organization } = c;
 
-    const response = await organization.readUserData();
+    const response = await organization.readUserData({ userId });
 
     const result = await expectSuccessResponse(c, response);
     expect(result.data).toHaveLength(2);

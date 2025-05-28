@@ -14,7 +14,7 @@ import { type UserDataRequest, UserDataRequestSchema } from "#/user/user.types";
 
 export function list(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.user.data;
+  const path = PathsV1.user.data.root;
 
   app.post(
     path,
@@ -38,10 +38,6 @@ export function list(options: ControllerOptions): void {
   );
 }
 
-export function updateData() {}
-
 export function addPermission() {}
-
-export function deleteData() {}
 
 export function removePermission() {}

@@ -30,6 +30,7 @@ describe("account access controls", () => {
 });
 
 describe("restrict cross-organization operations", () => {
+  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -47,6 +48,7 @@ describe("restrict cross-organization operations", () => {
 
   beforeAll(async ({ organization, bindings, app }) => {
     await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -80,6 +82,7 @@ describe("restrict cross-organization operations", () => {
     const { expect } = c;
 
     const response = await organizationB.uploadData({
+      userId,
       schema: schema.id,
       data: [
         {

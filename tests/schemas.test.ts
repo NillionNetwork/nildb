@@ -1,3 +1,4 @@
+import { Keypair } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
@@ -18,6 +19,7 @@ import type { SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("schemas.test.ts", () => {
+  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
   beforeAll(async (ctx) => {
@@ -61,6 +63,7 @@ describe("schemas.test.ts", () => {
     const { expect, bindings, organization } = c;
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data: [
         {

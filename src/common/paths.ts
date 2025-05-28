@@ -47,7 +47,10 @@ export const PathsV1 = {
     metrics: PathSchema.parse("/metrics"),
   },
   user: {
-    data: PathSchema.parse("/api/v1/user/data"),
+    data: {
+      root: PathSchema.parse("/api/v1/user/data"),
+      delete: PathSchema.parse("/api/v1/user/data/delete"),
+    },
     perms: PathSchema.parse("/api/v1/user/perms"),
   },
 } as const;

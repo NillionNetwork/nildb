@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Uuid, type UuidDto } from "#/common/types";
+import { DidSchema, Uuid, type UuidDto } from "#/common/types";
 
 /**
  * Constants
@@ -10,6 +10,7 @@ export const MAX_RECORDS_LENGTH = 10_000;
  * Controller types
  */
 export const UploadDataRequestSchema = z.object({
+  userId: DidSchema,
   schema: Uuid,
   data: z
     .array(z.record(z.string(), z.unknown()))
