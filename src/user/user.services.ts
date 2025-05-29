@@ -61,10 +61,10 @@ export function listUserData(
   );
 }
 
-export function updateData() {}
+export function addPermissions() {}
 
-export function deleteData() {}
+export function readPermissions() {}
 
-export function addPermission() {}
+export function updatePermissions() {}
 
-export function removePermission() {}
+export function removePermissions() {}

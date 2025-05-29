@@ -1,4 +1,3 @@
-import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import {
   type DeleteResult,
@@ -31,7 +30,11 @@ import type { Did, UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
-import type { PartialDataDocumentDto } from "./data.types";
+import type {
+  PartialDataDocumentDto,
+  Permissions,
+  PermissionsDto,
+} from "./data.types";
 
 export function createCollection(
   ctx: AppBindings,
@@ -140,7 +143,7 @@ export function flushCollection(
 
 export type DataDocumentBase = DocumentBase<UUID> & {
   _owner: Did;
-  _tokens: NucToken[];
+  _perms: PermissionsDto[];
 };
 export type DataDocument<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -161,7 +164,7 @@ export function insert(
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
   owner: Did,
-  tokens: NucToken[],
+  perms: Permissions[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
     checkCollectionExists<DataDocument>(ctx, "data", schema._id.toString()),
@@ -183,7 +186,7 @@ export function insert(
               _created: now,
               _updated: now,
               _owner: owner,
-              _tokens: tokens,
+              _perms: perms.map((perm) => perm.toJSON()),
               documentType: schema.documentType,
             }));
           batches.push(batch);

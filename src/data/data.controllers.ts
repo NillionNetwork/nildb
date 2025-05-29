@@ -197,7 +197,6 @@ export function upload(options: ControllerOptions): void {
     }),
     async (c) => {
       const account = c.get("account") as OrganizationAccountDocument;
-      const token = c.get("envelope").token.token;
       const payload = c.req.valid("json");
 
       return pipe(
@@ -208,7 +207,7 @@ export function upload(options: ControllerOptions): void {
             payload.userId,
             payload.schema,
             payload.data,
-            [token],
+            account._id,
           ),
         ),
         E.map((data) =>

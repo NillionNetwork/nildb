@@ -1,4 +1,3 @@
-import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, UUID } from "mongodb";
 import {
@@ -13,12 +12,13 @@ import {
   type DocumentBase,
 } from "#/common/mongo";
 import type { Did } from "#/common/types";
+import type { Permissions, PermissionsDto } from "#/data/data.types";
 import type { AppBindings } from "#/env";
 
 export type LogOperation =
   | { op: "write"; col: UUID }
   | { op: "delete"; col: UUID }
-  | { op: "auth"; nuc: NucToken };
+  | { op: "auth"; perm: PermissionsDto };
 
 export type DataDocumentReference = {
   id: UUID;
@@ -35,7 +35,7 @@ export function upsert(
   userId: Did,
   schema: UUID,
   data: UUID[],
-  tokens: NucToken[],
+  perms: Permissions[],
 ): E.Effect<
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
@@ -62,9 +62,9 @@ export function upsert(
               log: {
                 $each: [
                   ...data.map((col) => ({ op: "write", col }) as LogOperation),
-                  ...tokens.map(
-                    (token) => ({ op: "auth", nuc: token }) as LogOperation,
-                  ),
+                  ...perms
+                    .map((perm) => perm.toJSON())
+                    .map((perm) => ({ op: "auth", perm }) as LogOperation),
                 ],
               },
             },
