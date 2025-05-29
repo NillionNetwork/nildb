@@ -60,11 +60,3 @@ export function listUserData(
     E.flatMap((collections) => readAllDataCollections(collections)),
   );
 }
-
-export function addPermissions() {}
-
-export function readPermissions() {}
-
-export function updatePermissions() {}
-
-export function removePermissions() {}

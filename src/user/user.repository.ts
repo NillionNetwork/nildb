@@ -18,7 +18,7 @@ import type { AppBindings } from "#/env";
 export type LogOperation =
   | { op: "write"; col: UUID }
   | { op: "delete"; col: UUID }
-  | { op: "auth"; perm: PermissionsDto };
+  | { op: "auth"; col: UUID; perms: PermissionsDto };
 
 export type DataDocumentReference = {
   id: UUID;
@@ -35,7 +35,7 @@ export function upsert(
   userId: Did,
   schema: UUID,
   data: UUID[],
-  perms: Permissions[],
+  perms?: Permissions,
 ): E.Effect<
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
@@ -62,9 +62,16 @@ export function upsert(
               log: {
                 $each: [
                   ...data.map((col) => ({ op: "write", col }) as LogOperation),
-                  ...perms
-                    .map((perm) => perm.toJSON())
-                    .map((perm) => ({ op: "auth", perm }) as LogOperation),
+                  ...(perms
+                    ? data.map(
+                        (col) =>
+                          ({
+                            op: "auth",
+                            col,
+                            perms: perms.toJSON(),
+                          }) as LogOperation,
+                      )
+                    : []),
                 ],
               },
             },

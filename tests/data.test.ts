@@ -1,8 +1,9 @@
 import { Keypair } from "@nillion/nuc";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
-import { createUuidDto, type UuidDto } from "#/common/types";
+import { createUuidDto, Uuid, type UuidDto } from "#/common/types";
 import type { DataDocument, UploadResult } from "#/data/data.repository";
+import { Permissions, type PermissionsDto } from "#/data/data.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import {
@@ -258,10 +259,124 @@ describe("data operations", () => {
     expect((result.data as DeleteResult).deletedCount).toEqual(1);
   });
 
-  it("users can read their data", async ({ c }) => {
+  it("can read user data", async ({ c }) => {
     const { expect, organization } = c;
     const response = await organization.readUserData({ userId });
     const result = await expectSuccessResponse(c, response);
     expect(result.data).toHaveLength(2);
+  });
+
+  it("can read data permissions", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
+    const expected = await bindings.db.data
+      .collection<DataDocument>(schema.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    const documentId = expected.map((document) => document._id.toString())[0];
+
+    const response = await organization.readPermissions({
+      schema: schema.id,
+      documentId: Uuid.parse(documentId),
+    });
+    const result = await expectSuccessResponse(c, response);
+    expect(result.data).toHaveLength(1);
+    const permissions = Array.isArray(result.data)
+      ? (Array.from(result.data)[0] as PermissionsDto)
+      : undefined;
+    expect(permissions?.perms).toBe(3);
+  });
+
+  const targetDid = Keypair.generate().toDidString();
+  it("can add data permissions", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
+    const expected = await bindings.db.data
+      .collection<DataDocument>(schema.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    const documentId = expected.map((document) => document._id.toString())[0];
+
+    const addResponse = await organization.addPermissions({
+      schema: schema.id,
+      documentId: Uuid.parse(documentId),
+      permissions: new Permissions(targetDid),
+    });
+    await expectSuccessResponse(c, addResponse);
+
+    const response = await organization.readPermissions({
+      schema: schema.id,
+      documentId: Uuid.parse(documentId),
+    });
+    const result = await expectSuccessResponse(c, response);
+    expect(result.data).toHaveLength(2);
+    const permissions = Array.isArray(result.data)
+      ? (Array.from(result.data)[1] as PermissionsDto)
+      : undefined;
+    expect(permissions?.perms).toBe(3);
+  });
+
+  it("can update data permissions", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
+    const expected = await bindings.db.data
+      .collection<DataDocument>(schema.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    const documentId = expected.map((document) => document._id.toString())[0];
+
+    const updateResponse = await organization.updatePermissions({
+      schema: schema.id,
+      documentId: Uuid.parse(documentId),
+      permissions: new Permissions(targetDid, {
+        read: true,
+        write: true,
+        execute: true,
+      }),
+    });
+    await expectSuccessResponse(c, updateResponse);
+
+    const response = await organization.readPermissions({
+      schema: schema.id,
+      documentId: Uuid.parse(documentId),
+    });
+    const result = await expectSuccessResponse(c, response);
+    expect(result.data).toHaveLength(2);
+    const permissions = Array.isArray(result.data)
+      ? (Array.from(result.data)[1] as PermissionsDto)
+      : undefined;
+    expect(permissions?.perms).toBe(7);
+  });
+
+  it("can delete data permissions", async ({ c }) => {
+    const { expect, bindings, organization } = c;
+
+    const expected = await bindings.db.data
+      .collection<DataDocument>(schema.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    const documentId = expected.map((document) => document._id.toString())[0];
+
+    const updateResponse = await organization.deletePermissions({
+      schema: schema.id,
+      documentId: Uuid.parse(documentId),
+      did: targetDid,
+    });
+    await expectSuccessResponse(c, updateResponse);
+
+    const response = await organization.readPermissions({
+      schema: schema.id,
+      documentId: Uuid.parse(documentId),
+    });
+    const result = await expectSuccessResponse(c, response);
+    expect(result.data).toHaveLength(1);
   });
 });

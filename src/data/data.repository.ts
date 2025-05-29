@@ -324,3 +324,86 @@ export function findMany(
     }),
   );
 }
+
+export function addPermissions(
+  ctx: AppBindings,
+  schema: UUID,
+  documentId: UUID,
+  permission: Permissions,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  const documentFilter = {
+    _id: documentId,
+  };
+  const documentUpdate = {
+    $push: {
+      _perms: permission.toJSON(),
+    },
+  };
+  return pipe(
+    checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(documentFilter, documentUpdate, { upsert: true }),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "upsertPermissions" }),
+    }),
+  );
+}
+
+export function updatePermissions(
+  ctx: AppBindings,
+  schema: UUID,
+  documentId: UUID,
+  permission: Permissions,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  const documentFilter = {
+    _id: documentId,
+    "_perms.did": permission.did,
+  };
+  const documentUpdate = {
+    $set: {
+      "_perms.$": permission.toJSON(),
+    },
+  };
+  return pipe(
+    checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(documentFilter, documentUpdate),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "upsertPermissions" }),
+    }),
+  );
+}
+
+export function deletePermissions(
+  ctx: AppBindings,
+  schema: UUID,
+  documentId: UUID,
+  did: Did,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  const documentFilter = {
+    _id: documentId,
+  };
+  const documentUpdate = {
+    $pull: {
+      _perms: { did },
+    },
+  };
+  return pipe(
+    checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(documentFilter, documentUpdate),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "upsertPermissions" }),
+    }),
+  );
+}

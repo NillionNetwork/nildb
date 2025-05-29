@@ -14,11 +14,16 @@ import * as UserRepository from "#/user/user.repository";
 import type { DataDocument, UploadResult } from "./data.repository";
 import * as DataRepository from "./data.repository";
 import {
+  type AddPermissionsRequest,
   type DeleteDataRequest,
+  type DeletePermissionsRequest,
   type PartialDataDocumentDto,
   Permissions,
+  PermissionsSchema,
   type ReadDataRequest,
+  type ReadPermissionsRequest,
   type UpdateDataRequest,
+  type UpdatePermissionsRequest,
 } from "./data.types";
 
 export function createRecords(
@@ -34,7 +39,7 @@ export function createRecords(
   | CollectionNotFoundError
   | DatabaseError
 > {
-  const permissions = builder ? [new Permissions(builder)] : [];
+  const permissions = builder ? new Permissions(builder) : undefined;
   return E.Do.pipe(
     E.bind("document", () =>
       SchemasRepository.findOne(ctx, {
@@ -45,7 +50,13 @@ export function createRecords(
       validateData<PartialDataDocumentDto[]>(document.schema, data),
     ),
     E.bind("result", ({ document, data }) =>
-      DataRepository.insert(ctx, document, data, owner, permissions),
+      DataRepository.insert(
+        ctx,
+        document,
+        data,
+        owner,
+        permissions ? [permissions] : [],
+      ),
     ),
     E.flatMap(({ document, result }) => {
       if (document.documentType === "owned") {
@@ -138,4 +149,67 @@ export function tailData(
   schema: UUID,
 ): E.Effect<DataDocument[], CollectionNotFoundError | DatabaseError, never> {
   return pipe(DataRepository.tailCollection(ctx, schema));
+}
+
+export function readPermissions(
+  ctx: AppBindings,
+  request: ReadPermissionsRequest,
+): E.Effect<
+  Permissions[],
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataRepository.findMany(ctx, request.schema, {
+    _id: request.documentId,
+  }).pipe(
+    E.map((documents) =>
+      documents.flatMap((document) =>
+        document._perms.map((perms) => PermissionsSchema.parse(perms)),
+      ),
+    ),
+  );
+}
+
+export function addPermissions(
+  ctx: AppBindings,
+  request: AddPermissionsRequest,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataRepository.addPermissions(
+    ctx,
+    request.schema,
+    request.documentId,
+    request.permissions,
+  );
+}
+
+export function updatePermissions(
+  ctx: AppBindings,
+  request: UpdatePermissionsRequest,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataRepository.updatePermissions(
+    ctx,
+    request.schema,
+    request.documentId,
+    request.permissions,
+  );
+}
+
+export function deletePermissions(
+  ctx: AppBindings,
+  request: DeletePermissionsRequest,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataRepository.deletePermissions(
+    ctx,
+    request.schema,
+    request.documentId,
+    request.did,
+  );
 }
