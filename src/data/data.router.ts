@@ -8,4 +8,8 @@ export function buildDataRouter(options: ControllerOptions): void {
   DataController.tail(options);
   DataController.update(options);
   DataController.upload(options);
+  DataController.readPermissions(options);
+  DataController.addPermissions(options);
+  DataController.updatePermissions(options);
+  DataController.deletePermissions(options);
 }

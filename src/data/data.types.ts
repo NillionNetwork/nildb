@@ -6,6 +6,43 @@ import { type Did, DidSchema, Uuid, type UuidDto } from "#/common/types";
  */
 export const MAX_RECORDS_LENGTH = 10_000;
 
+export type PermissionsDto = {
+  did: Did;
+  perms: number; // Bitwise representation of permissions
+};
+
+export class Permissions {
+  constructor(
+    public readonly did: Did,
+    public readonly perms: {
+      read: boolean;
+      write: boolean;
+      execute: boolean;
+    } = { read: true, write: true, execute: false }, // Default permissions
+  ) {}
+
+  toJSON(): PermissionsDto {
+    return {
+      did: this.did,
+      perms:
+        Number(this.perms.read) |
+        (Number(this.perms.write) << 1) |
+        (Number(this.perms.execute) << 2),
+    };
+  }
+}
+
+export const PermissionsSchema = z
+  .object({
+    did: DidSchema,
+    perms: z.number().transform((value) => ({
+      read: Boolean(value & 1),
+      write: Boolean(value & 2),
+      execute: Boolean(value & 4),
+    })),
+  })
+  .transform(({ did, perms }) => new Permissions(did, perms));
+
 /**
  * Controller types
  */
@@ -61,39 +98,35 @@ export type TailDataRequest = z.infer<typeof TailDataRequestSchema>;
  * Repository types
  */
 
-export type PermissionsDto = {
-  did: Did;
-  perms: number; // Bitwise representation of permissions
-};
+export const ReadPermissionsRequestSchema = z.object({
+  schema: Uuid,
+  documentId: Uuid,
+});
+export type ReadPermissionsRequest = z.infer<
+  typeof ReadPermissionsRequestSchema
+>;
 
-export class Permissions {
-  constructor(
-    public readonly did: Did,
-    public readonly perms: {
-      read: boolean;
-      write: boolean;
-      execute: boolean;
-    } = { read: true, write: true, execute: false }, // Default permissions
-  ) {}
+export const AddPermissionsRequestSchema = z.object({
+  schema: Uuid,
+  documentId: Uuid,
+  permissions: PermissionsSchema,
+});
+export type AddPermissionsRequest = z.infer<typeof AddPermissionsRequestSchema>;
 
-  toJSON(): PermissionsDto {
-    return {
-      did: this.did,
-      perms:
-        Number(this.perms.read) |
-        (Number(this.perms.write) << 1) |
-        (Number(this.perms.execute) << 2),
-    };
-  }
-}
+export const UpdatePermissionsRequestSchema = z.object({
+  schema: Uuid,
+  documentId: Uuid,
+  permissions: PermissionsSchema,
+});
+export type UpdatePermissionsRequest = z.infer<
+  typeof UpdatePermissionsRequestSchema
+>;
 
-export const PermissionsSchema = z
-  .object({
-    did: DidSchema,
-    perms: z.number().transform((value) => ({
-      read: Boolean(value & 1),
-      write: Boolean(value & 2),
-      execute: Boolean(value & 4),
-    })),
-  })
-  .transform(({ did, perms }) => new Permissions(did, perms));
+export const DeletePermissionsRequestSchema = z.object({
+  schema: Uuid,
+  documentId: Uuid,
+  did: DidSchema,
+});
+export type DeletePermissionsRequest = z.infer<
+  typeof DeletePermissionsRequestSchema
+>;
