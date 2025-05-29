@@ -25,6 +25,7 @@ import {
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("nuc-based access control", () => {
+  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   // don't create schema and query as part of fixture standup else the fixture activates the org account
@@ -46,6 +47,7 @@ describe("nuc-based access control", () => {
     await expect(promise).resolves.not.toThrow();
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data: [
         {
@@ -85,6 +87,7 @@ describe("nuc-based access control", () => {
 
     // 3. User creates an upload data request
     const body = {
+      userId,
       schema: schema.id,
       data: [
         {
@@ -144,6 +147,7 @@ describe("nuc-based access control", () => {
 
     // 3. User creates an upload data request
     const body = {
+      userId,
       schema: schema.id,
       data: [
         {

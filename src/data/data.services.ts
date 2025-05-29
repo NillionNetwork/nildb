@@ -1,4 +1,3 @@
-import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { DeleteResult, UpdateResult, UUID } from "mongodb";
 import type {
@@ -7,18 +6,24 @@ import type {
   DataValidationError,
   DocumentNotFoundError,
 } from "#/common/errors";
-import type { Did, UuidDto } from "#/common/types";
+import { type Did, DidSchema, Uuid } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import * as SchemasRepository from "#/schemas/schemas.repository";
 import * as UserRepository from "#/user/user.repository";
 import type { DataDocument, UploadResult } from "./data.repository";
 import * as DataRepository from "./data.repository";
-import type {
-  DeleteDataRequest,
-  PartialDataDocumentDto,
-  ReadDataRequest,
-  UpdateDataRequest,
+import {
+  type AddPermissionsRequest,
+  type DeleteDataRequest,
+  type DeletePermissionsRequest,
+  type PartialDataDocumentDto,
+  Permissions,
+  PermissionsSchema,
+  type ReadDataRequest,
+  type ReadPermissionsRequest,
+  type UpdateDataRequest,
+  type UpdatePermissionsRequest,
 } from "./data.types";
 
 export function createRecords(
@@ -26,7 +31,7 @@ export function createRecords(
   owner: Did,
   schemaId: UUID,
   data: Record<string, unknown>[],
-  tokens: NucToken[],
+  builder?: Did,
 ): E.Effect<
   UploadResult,
   | DataValidationError
@@ -34,6 +39,7 @@ export function createRecords(
   | CollectionNotFoundError
   | DatabaseError
 > {
+  const permissions = builder ? new Permissions(builder) : undefined;
   return E.Do.pipe(
     E.bind("document", () =>
       SchemasRepository.findOne(ctx, {
@@ -44,13 +50,23 @@ export function createRecords(
       validateData<PartialDataDocumentDto[]>(document.schema, data),
     ),
     E.bind("result", ({ document, data }) =>
-      DataRepository.insert(ctx, document, data, owner, tokens),
+      DataRepository.insert(
+        ctx,
+        document,
+        data,
+        owner,
+        permissions ? [permissions] : [],
+      ),
     ),
     E.flatMap(({ document, result }) => {
       if (document.documentType === "owned") {
-        return UserRepository.upsert(ctx, owner, result.created, tokens).pipe(
-          E.flatMap(() => E.succeed(result)),
-        );
+        return UserRepository.upsert(
+          ctx,
+          owner,
+          schemaId,
+          result.created.map((id) => Uuid.parse(id)),
+          permissions,
+        ).pipe(E.flatMap(() => E.succeed(result)));
       }
       return E.succeed(result);
     }),
@@ -85,20 +101,36 @@ export function readRecords(
 export function deleteRecords(
   ctx: AppBindings,
   request: DeleteDataRequest,
-  owner: Did,
 ): E.Effect<
   DeleteResult,
   CollectionNotFoundError | DatabaseError | DataValidationError,
   never
 > {
+  const groupByOwner = (documents: DataDocument[]): Record<string, UUID[]> => {
+    return documents.reduce<Record<string, UUID[]>>((acc, data) => {
+      const owner = data._owner;
+      if (!acc[owner]) {
+        acc[owner] = [];
+      }
+      acc[owner].push(data._id);
+      return acc;
+    }, {});
+  };
+
+  const deleteAllUserDataReferences = (
+    documents: Record<string, UUID[]>,
+  ): E.Effect<
+    void,
+    CollectionNotFoundError | DatabaseError | DataValidationError
+  > => {
+    return E.forEach(Object.entries(documents), ([owner, ids]) =>
+      UserRepository.removeData(ctx, DidSchema.parse(owner), ids),
+    ).pipe(E.map((arrays) => arrays.flat()));
+  };
+
   return DataRepository.findMany(ctx, request.schema, request.filter).pipe(
-    E.flatMap((docs) =>
-      UserRepository.removeData(
-        ctx,
-        owner,
-        docs.map((doc) => doc._id.toString() as UuidDto),
-      ),
-    ),
+    E.map((documents) => groupByOwner(documents)),
+    E.flatMap((documents) => deleteAllUserDataReferences(documents)),
     E.flatMap(() =>
       DataRepository.deleteMany(ctx, request.schema, request.filter),
     ),
@@ -117,4 +149,67 @@ export function tailData(
   schema: UUID,
 ): E.Effect<DataDocument[], CollectionNotFoundError | DatabaseError, never> {
   return pipe(DataRepository.tailCollection(ctx, schema));
+}
+
+export function readPermissions(
+  ctx: AppBindings,
+  request: ReadPermissionsRequest,
+): E.Effect<
+  Permissions[],
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataRepository.findMany(ctx, request.schema, {
+    _id: request.documentId,
+  }).pipe(
+    E.map((documents) =>
+      documents.flatMap((document) =>
+        document._perms.map((perms) => PermissionsSchema.parse(perms)),
+      ),
+    ),
+  );
+}
+
+export function addPermissions(
+  ctx: AppBindings,
+  request: AddPermissionsRequest,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataRepository.addPermissions(
+    ctx,
+    request.schema,
+    request.documentId,
+    request.permissions,
+  );
+}
+
+export function updatePermissions(
+  ctx: AppBindings,
+  request: UpdatePermissionsRequest,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataRepository.updatePermissions(
+    ctx,
+    request.schema,
+    request.documentId,
+    request.permissions,
+  );
+}
+
+export function deletePermissions(
+  ctx: AppBindings,
+  request: DeletePermissionsRequest,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataRepository.deletePermissions(
+    ctx,
+    request.schema,
+    request.documentId,
+    request.did,
+  );
 }

@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { Keypair } from "@nillion/nuc";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import { TAIL_DATA_LIMIT } from "#/data/data.repository";
@@ -9,6 +10,7 @@ import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("data reading operations", () => {
+  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -29,6 +31,7 @@ describe("data reading operations", () => {
 
   beforeAll(async ({ organization }) => {
     await organization.uploadData({
+      userId,
       schema: schema.id,
       data: testData,
     });
