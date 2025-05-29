@@ -1,4 +1,3 @@
-import type { NucToken } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { DeleteResult, UpdateResult, UUID } from "mongodb";
 import type {
@@ -14,11 +13,12 @@ import * as SchemasRepository from "#/schemas/schemas.repository";
 import * as UserRepository from "#/user/user.repository";
 import type { DataDocument, UploadResult } from "./data.repository";
 import * as DataRepository from "./data.repository";
-import type {
-  DeleteDataRequest,
-  PartialDataDocumentDto,
-  ReadDataRequest,
-  UpdateDataRequest,
+import {
+  type DeleteDataRequest,
+  type PartialDataDocumentDto,
+  Permissions,
+  type ReadDataRequest,
+  type UpdateDataRequest,
 } from "./data.types";
 
 export function createRecords(
@@ -26,7 +26,7 @@ export function createRecords(
   owner: Did,
   schemaId: UUID,
   data: Record<string, unknown>[],
-  tokens: NucToken[],
+  builder?: Did,
 ): E.Effect<
   UploadResult,
   | DataValidationError
@@ -34,6 +34,7 @@ export function createRecords(
   | CollectionNotFoundError
   | DatabaseError
 > {
+  const permissions = builder ? [new Permissions(builder)] : [];
   return E.Do.pipe(
     E.bind("document", () =>
       SchemasRepository.findOne(ctx, {
@@ -44,7 +45,7 @@ export function createRecords(
       validateData<PartialDataDocumentDto[]>(document.schema, data),
     ),
     E.bind("result", ({ document, data }) =>
-      DataRepository.insert(ctx, document, data, owner, tokens),
+      DataRepository.insert(ctx, document, data, owner, permissions),
     ),
     E.flatMap(({ document, result }) => {
       if (document.documentType === "owned") {
@@ -53,7 +54,7 @@ export function createRecords(
           owner,
           schemaId,
           result.created.map((id) => Uuid.parse(id)),
-          tokens,
+          permissions,
         ).pipe(E.flatMap(() => E.succeed(result)));
       }
       return E.succeed(result);
