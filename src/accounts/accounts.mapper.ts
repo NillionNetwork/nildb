@@ -28,7 +28,7 @@ export type OrganizationAccountDocument = {
  * Higher layers (controllers) use these functions to convert DTOs to domain
  * models before passing them to lower layers (services).
  */
-export const AccountMapper = {
+export const AccountDataMapper = {
   /**
    * Converts a registration request DTO to a complete account document.
    *

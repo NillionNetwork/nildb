@@ -23,7 +23,7 @@ import {
   UpdateProfileRequest,
   UpdateProfileResponse,
 } from "./accounts.dto";
-import { AccountMapper } from "./accounts.mapper";
+import { AccountDataMapper } from "./accounts.mapper";
 import * as AccountService from "./accounts.services";
 
 /**
@@ -56,7 +56,7 @@ export function register(options: ControllerOptions): void {
       const payload = c.req.valid("json");
 
       return pipe(
-        AccountMapper.fromRegisterAccountRequest(payload),
+        AccountDataMapper.fromRegisterAccountRequest(payload),
         (partial) => AccountService.createAccount(c.env, partial),
         E.map(() => RegisterAccountResponse),
         handleTaggedErrors(c),
@@ -108,7 +108,7 @@ export function getProfile(options: ControllerOptions): void {
       const account = c.get("account");
       return pipe(
         AccountService.find(c.env, account._id),
-        E.map((account) => AccountMapper.toGetProfileResponse(account)),
+        E.map((account) => AccountDataMapper.toGetProfileResponse(account)),
         E.map((profile) => c.json<GetProfileResponse>(profile)),
         handleTaggedErrors(c),
         E.runPromise,

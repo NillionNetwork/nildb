@@ -1,7 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import { UUID } from "mongodb";
 import { RegisterAccountRequest } from "#/accounts/accounts.dto";
-import { AccountMapper } from "#/accounts/accounts.mapper";
+import { AccountDataMapper } from "#/accounts/accounts.mapper";
 import * as AccountService from "#/accounts/accounts.services";
 import type { AmqpPublishMessageError } from "#/common/amqp";
 import {
@@ -167,7 +167,7 @@ export async function ensureNilcommAccount(
       return pipe(
         AccountService.createAccount(
           ctx,
-          AccountMapper.fromRegisterAccountRequest(registerRequest),
+          AccountDataMapper.fromRegisterAccountRequest(registerRequest),
         ),
         E.flatMap(() =>
           SchemaService.addSchema(ctx, {
