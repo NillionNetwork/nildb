@@ -28,6 +28,12 @@ export const PathsV1 = {
     tail: PathSchema.parse("/api/v1/data/tail"),
     update: PathSchema.parse("/api/v1/data/update"),
     upload: PathSchema.parse("/api/v1/data/create"),
+    perms: {
+      read: PathSchema.parse("/api/v1/data/perms/read"),
+      add: PathSchema.parse("/api/v1/data/perms/add"),
+      update: PathSchema.parse("/api/v1/data/perms/update"),
+      delete: PathSchema.parse("/api/v1/data/perms/delete"),
+    },
   },
   docs: PathSchema.parse("/api/v1/openapi/docs"),
   queries: {
@@ -45,5 +51,10 @@ export const PathsV1 = {
     about: PathSchema.parse("/about"),
     health: PathSchema.parse("/health"),
     metrics: PathSchema.parse("/metrics"),
+  },
+  user: {
+    data: {
+      root: PathSchema.parse("/api/v1/user/data"),
+    },
   },
 } as const;

@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { Keypair } from "@nillion/nuc";
 import { UUID } from "mongodb";
 import { Temporal } from "temporal-polyfill";
 import { describe } from "vitest";
@@ -11,6 +12,7 @@ import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("long running query job", () => {
+  const userId = Keypair.generate().toDidString();
   let jobId: string;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
@@ -37,6 +39,7 @@ describe("long running query job", () => {
     }));
 
     const _response = await c.organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });

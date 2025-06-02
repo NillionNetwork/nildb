@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { Keypair } from "@nillion/nuc";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
@@ -13,6 +14,7 @@ import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("schema data deletion", () => {
+  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -38,6 +40,7 @@ describe("schema data deletion", () => {
     const shuffledData = [...data].sort(() => Math.random() - 0.5);
 
     await organization.uploadData({
+      userId,
       schema: schema.id,
       data: shuffledData,
     });

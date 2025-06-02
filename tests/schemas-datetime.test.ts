@@ -1,3 +1,4 @@
+import { Keypair } from "@nillion/nuc";
 import { describe } from "vitest";
 import { createUuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
@@ -11,6 +12,7 @@ import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("schemas.datetime.test", () => {
+  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -30,6 +32,7 @@ describe("schemas.datetime.test", () => {
     ];
 
     const response = await organization.uploadData({
+      userId,
       schema: schema.id,
       data,
     });
@@ -55,6 +58,7 @@ describe("schemas.datetime.test", () => {
 
     for (const invalid of data) {
       const response = await organization.uploadData({
+        userId,
         schema: schema.id,
         data: [invalid],
       });
