@@ -42,6 +42,7 @@ import type {
   DeleteSchemaRequest,
 } from "#/schemas/schemas.types";
 import { SystemEndpoint } from "#/system/system.router";
+// biome-ignore lint/nursery/noImportCycles: requires refactor to address
 import type { FixtureContext } from "./fixture";
 
 export type TestClientOptions = {
@@ -253,7 +254,7 @@ export class TestOrganizationUserClient extends TestClient {
     c: FixtureContext,
     body: RegisterAccountRequest,
     expectations?: { success: true },
-  ): Promise<void>;
+  ): Promise<undefined>;
   async register(
     c: FixtureContext,
     body: RegisterAccountRequest,
@@ -263,8 +264,8 @@ export class TestOrganizationUserClient extends TestClient {
     c: FixtureContext,
     body: RegisterAccountRequest,
     expectations: ResponseExpectations = { success: true },
-  ): Promise<void | ApiErrorResponse> {
-    return handleTestResponse<void>(
+  ): Promise<undefined | ApiErrorResponse> {
+    return handleTestResponse<undefined>(
       c,
       {
         request: () =>
@@ -309,7 +310,7 @@ export class TestOrganizationUserClient extends TestClient {
     c: FixtureContext,
     body: UpdateProfileRequest,
     expectations?: { success: true },
-  ): Promise<void>;
+  ): Promise<undefined>;
   async updateProfile(
     c: FixtureContext,
     body: UpdateProfileRequest,
@@ -319,7 +320,7 @@ export class TestOrganizationUserClient extends TestClient {
     c: FixtureContext,
     body: UpdateProfileRequest,
     expectations: ResponseExpectations = { success: true },
-  ): Promise<void | ApiErrorResponse> {
+  ): Promise<undefined | ApiErrorResponse> {
     // Special case: this endpoint always returns 501 Not Implemented
     if (expectations.success) {
       const response = await this.request(PathsV1.accounts.me, {
@@ -328,10 +329,10 @@ export class TestOrganizationUserClient extends TestClient {
       });
       c.expect(response.ok).toBe(false);
       c.expect(response.status).toBe(StatusCodes.NOT_IMPLEMENTED);
-      return;
+      return undefined;
     }
 
-    return handleTestResponse<void>(
+    return handleTestResponse<undefined>(
       c,
       {
         request: () =>
@@ -348,7 +349,7 @@ export class TestOrganizationUserClient extends TestClient {
   async deleteAccount(
     c: FixtureContext,
     expectations?: { success: true },
-  ): Promise<void>;
+  ): Promise<undefined>;
   async deleteAccount(
     c: FixtureContext,
     expectations: { success: false; errors: string[]; status: number },
@@ -356,8 +357,8 @@ export class TestOrganizationUserClient extends TestClient {
   async deleteAccount(
     c: FixtureContext,
     expectations: ResponseExpectations = { success: true },
-  ): Promise<void | ApiErrorResponse> {
-    return handleTestResponse<void>(
+  ): Promise<undefined | ApiErrorResponse> {
+    return handleTestResponse<undefined>(
       c,
       {
         request: () =>
