@@ -3,7 +3,7 @@ import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, Uuid, type UuidDto } from "#/common/types";
 import type { DataDocument, UploadResult } from "#/data/data.repository";
-import { Permissions, type PermissionsDto } from "#/data/data.types";
+import { Permissions, type PermissionsDto } from "#/user/user.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import {
