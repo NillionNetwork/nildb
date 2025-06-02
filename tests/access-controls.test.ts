@@ -75,7 +75,7 @@ describe("restrict cross-organization operations", () => {
     });
 
     await organizationB.ensureSubscriptionActive();
-    const _response = await organizationB.request(PathsV1.accounts.register, {
+    await organizationB.request(PathsV1.accounts.register, {
       method: "POST",
       body: {
         did: organizationB.did,

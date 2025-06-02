@@ -33,7 +33,7 @@ describe("flush data collection", () => {
   }));
 
   beforeAll(async (c) => {
-    const _response = await c.organization.uploadData({
+    await c.organization.uploadData({
       userId,
       schema: schema.id,
       data,

@@ -44,7 +44,7 @@ describe("query variable validation", () => {
       timestamp: faker.date.recent().toISOString(),
     }));
 
-    const _response = await c.organization.uploadData({
+    await c.organization.uploadData({
       userId,
       schema: schema.id,
       data,

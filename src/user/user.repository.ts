@@ -14,12 +14,12 @@ import {
 import type { Did } from "#/common/types";
 import type { DataDocumentBase } from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import type { Permissions, PermissionsDto } from "#/user/user.types";
+import type { Permissions } from "#/user/user.types";
 
 export type LogOperation =
   | { op: "write"; col: UUID }
   | { op: "delete"; col: UUID }
-  | { op: "auth"; col: UUID; perms: PermissionsDto };
+  | { op: "auth"; col: UUID; perms: Permissions };
 
 export type DataDocumentReference = {
   id: UUID;
@@ -69,7 +69,7 @@ export function upsert(
                           ({
                             op: "auth",
                             col,
-                            perms: perms.toJSON(),
+                            perms,
                           }) as LogOperation,
                       )
                     : []),
@@ -157,7 +157,7 @@ export function addPermissions(
   ctx: AppBindings,
   schema: UUID,
   documentId: UUID,
-  permission: Permissions,
+  perms: Permissions,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
@@ -167,7 +167,7 @@ export function addPermissions(
   };
   const documentUpdate = {
     $push: {
-      _perms: permission.toJSON(),
+      _perms: perms,
     },
   };
   return pipe(
@@ -185,18 +185,18 @@ export function updatePermissions(
   ctx: AppBindings,
   schema: UUID,
   documentId: UUID,
-  permission: Permissions,
+  perms: Permissions,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   const documentFilter = {
     _id: documentId,
-    "_perms.did": permission.did,
+    "_perms.did": perms.did,
   };
   const documentUpdate = {
     $set: {
-      "_perms.$": permission.toJSON(),
+      "_perms.$": perms,
     },
   };
   return pipe(

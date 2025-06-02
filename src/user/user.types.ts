@@ -1,11 +1,6 @@
 import { z } from "zod";
 import { type Did, DidSchema, Uuid } from "#/common/types";
 
-export type PermissionsDto = {
-  did: Did;
-  perms: number; // Bitwise representation of permissions
-};
-
 export class Permissions {
   constructor(
     public readonly did: Did,
@@ -13,28 +8,18 @@ export class Permissions {
       read: boolean;
       write: boolean;
       execute: boolean;
-    } = { read: true, write: true, execute: false }, // Default permissions
+    } = { read: false, write: false, execute: false }, // Default permissions
   ) {}
-
-  toJSON(): PermissionsDto {
-    return {
-      did: this.did,
-      perms:
-        Number(this.perms.read) |
-        (Number(this.perms.write) << 1) |
-        (Number(this.perms.execute) << 2),
-    };
-  }
 }
 
 export const PermissionsSchema = z
   .object({
     did: DidSchema,
-    perms: z.number().transform((value) => ({
-      read: Boolean(value & 1),
-      write: Boolean(value & 2),
-      execute: Boolean(value & 4),
-    })),
+    perms: z.object({
+      read: z.boolean().default(false),
+      write: z.boolean().default(false),
+      execute: z.boolean().default(false),
+    }),
   })
   .transform(({ did, perms }) => new Permissions(did, perms));
 /**
