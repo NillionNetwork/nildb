@@ -8,7 +8,7 @@
     "lib": ["esnext", "es2024"],
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "moduleDetection": "force",
     "esModuleInterop": true,
     "resolveJsonModule": true,
