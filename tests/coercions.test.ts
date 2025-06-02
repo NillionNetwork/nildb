@@ -178,6 +178,23 @@ describe("data operations", () => {
     expect(coercedData._created).toStrictEqual(expected);
   });
 
+  it("coerces eq date", async ({ expect }) => {
+    const _created = "2025-02-24T17:09:00.267Z";
+    const expected = new Date(_created);
+    const data: CoercibleMap = {
+      _created: {
+        $eq: _created,
+      },
+      $coerce: {
+        _created: "date",
+      },
+    };
+    const coercedData = pipe(applyCoercions(data), E.runSync) as CoercibleMap;
+    expect((coercedData._created as Record<string, unknown>).$eq).toStrictEqual(
+      expected,
+    );
+  });
+
   it("coerces multiple dates", async ({ expect }) => {
     const _created = ["2025-02-24T17:09:00.267Z", "2025-02-24T17:09:00.267Z"];
     const expected = _created.map((date) => new Date(date));

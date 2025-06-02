@@ -162,34 +162,33 @@ function applyCoercionToField(
   };
 
   if (coercibleValues[field]) {
-    if (Array.isArray(coercibleValues[field])) {
-      return applyCoercionToArrayItems(Array.from(coercibleValues[field])).pipe(
-        E.map((result) => {
-          coercibleValues[field] = result;
-          return coercibleValues;
-        }),
-      );
-    }
-    if (typeof coercibleValues[field] === "object") {
-      const value = coercibleValues[field] as Record<string, unknown>;
-      for (const op in value) {
-        if (op.startsWith("$") && Array.isArray(value[op])) {
-          return applyCoercionToArrayItems(Array.from(value[op])).pipe(
-            E.map((result) => {
-              value[op] = result;
-              return coercibleValues;
-            }),
-          );
+    let container = coercibleValues;
+    let coercibleField = field;
+    let value = container[coercibleField];
+    if (typeof value === "object") {
+      for (const key in value) {
+        if (key.startsWith("$")) {
+          container = container[coercibleField] as Record<string, unknown>;
+          coercibleField = key;
+          value = container[coercibleField];
+          break;
         }
       }
-    } else {
-      return coerceValue(coercibleValues[field], type).pipe(
+    }
+    if (Array.isArray(value)) {
+      return applyCoercionToArrayItems(Array.from(value)).pipe(
         E.map((result) => {
-          coercibleValues[field] = result;
+          container[coercibleField] = result;
           return coercibleValues;
         }),
       );
     }
+    return coerceValue(container[coercibleField], type).pipe(
+      E.map((result) => {
+        container[coercibleField] = result;
+        return coercibleValues;
+      }),
+    );
   }
   return E.succeed(coercibleValues);
 }
