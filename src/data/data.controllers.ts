@@ -207,7 +207,7 @@ export function upload(options: ControllerOptions): void {
             payload.userId,
             payload.schema,
             payload.data,
-            account._id,
+            payload.permissions,
           ),
         ),
         E.map((data) =>

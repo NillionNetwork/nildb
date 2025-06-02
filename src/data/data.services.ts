@@ -11,7 +11,7 @@ import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import * as SchemasRepository from "#/schemas/schemas.repository";
 import * as UserRepository from "#/user/user.repository";
-import { Permissions } from "#/user/user.types";
+import type { Permissions } from "#/user/user.types";
 import type { DataDocument, UploadResult } from "./data.repository";
 import * as DataRepository from "./data.repository";
 import type {
@@ -26,7 +26,7 @@ export function createRecords(
   owner: Did,
   schemaId: UUID,
   data: Record<string, unknown>[],
-  builder?: Did,
+  permissions?: Permissions,
 ): E.Effect<
   UploadResult,
   | DataValidationError
@@ -34,7 +34,6 @@ export function createRecords(
   | CollectionNotFoundError
   | DatabaseError
 > {
-  const permissions = builder ? new Permissions(builder) : undefined;
   return E.Do.pipe(
     E.bind("document", () =>
       SchemasRepository.findOne(ctx, {

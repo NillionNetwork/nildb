@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Keypair } from "@nillion/nuc";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/variables.array.query.json";
 import schemaJson from "./data/variables.array.schema.json";
 import {
@@ -35,6 +36,11 @@ describe("array variable queries", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
   });
 

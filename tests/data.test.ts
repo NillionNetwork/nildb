@@ -59,6 +59,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);
@@ -86,6 +91,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);
@@ -119,6 +129,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);
@@ -149,6 +164,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const cursor = c.bindings.db.data.collection(schema.id.toString()).find({});
@@ -173,6 +193,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const error = await expectErrorResponse(c, response);
@@ -286,7 +311,7 @@ describe("data operations", () => {
     const permissions = Array.isArray(result.data)
       ? (Array.from(result.data)[0] as PermissionsDto)
       : undefined;
-    expect(permissions?.perms).toBe(3);
+    expect(permissions?.perms).toBe(1);
   });
 
   const targetDid = Keypair.generate().toDidString();

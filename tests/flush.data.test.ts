@@ -3,6 +3,7 @@ import { Keypair } from "@nillion/nuc";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import {
@@ -36,6 +37,11 @@ describe("flush data collection", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(c.organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
   });
 

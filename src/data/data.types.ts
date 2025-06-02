@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DidSchema, Uuid, type UuidDto } from "#/common/types";
+import { PermissionsSchema } from "#/user/user.types";
 
 /**
  * Constants
@@ -19,6 +20,7 @@ export const UploadDataRequestSchema = z.object({
         elements.length > 0 && elements.length <= MAX_RECORDS_LENGTH,
       { message: `Length must be non zero and lte ${MAX_RECORDS_LENGTH}` },
     ),
+  permissions: PermissionsSchema,
 });
 export type UploadDataRequest = z.infer<typeof UploadDataRequestSchema>;
 export type PartialDataDocumentDto = UploadDataRequest["data"] & {

@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Keypair } from "@nillion/nuc";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/variables.wallet.query.json";
 import schemaJson from "./data/variables.wallet.schema.json";
 import {
@@ -47,6 +48,11 @@ describe("query variable validation", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(c.organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
   });
 

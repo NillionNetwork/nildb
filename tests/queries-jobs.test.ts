@@ -5,6 +5,7 @@ import { Temporal } from "temporal-polyfill";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import type { QueryJobDocument } from "#/queries/queries.types";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/variables.wallet.query.json";
 import schemaJson from "./data/variables.wallet.schema.json";
 import { expectSuccessResponse } from "./fixture/assertions";
@@ -42,6 +43,11 @@ describe("long running query job", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(c.organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
   });
 

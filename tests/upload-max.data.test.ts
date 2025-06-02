@@ -3,6 +3,7 @@ import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
 import { MAX_RECORDS_LENGTH } from "#/data/data.types";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import {
@@ -44,6 +45,11 @@ describe("upload.max.data.test", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectErrorResponse(c, response);
@@ -63,6 +69,11 @@ describe("upload.max.data.test", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);

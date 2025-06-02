@@ -8,6 +8,7 @@ import { createUuidDto, type UuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
 import type { SchemaMetadata } from "#/schemas/schemas.types";
+import { Permissions } from "#/user/user.types";
 import schemaJson from "./data/wallet.schema.json";
 import {
   assertDefined,
@@ -73,6 +74,11 @@ describe("schemas.test.ts", () => {
           age: 42,
         },
       ],
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);

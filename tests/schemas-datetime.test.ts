@@ -2,6 +2,7 @@ import { Keypair } from "@nillion/nuc";
 import { describe } from "vitest";
 import { createUuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/datetime.query.json";
 import schemaJson from "./data/datetime.schema.json";
 import {
@@ -35,6 +36,11 @@ describe("schemas.datetime.test", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);
@@ -61,6 +67,11 @@ describe("schemas.datetime.test", () => {
         userId,
         schema: schema.id,
         data: [invalid],
+        permissions: new Permissions(organization.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
       });
 
       const result = await expectErrorResponse(c, response);
