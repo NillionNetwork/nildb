@@ -17,8 +17,13 @@ import {
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
 import type { SchemaDocumentType } from "#/schemas/schemas.repository";
-// biome-ignore lint/nursery/noImportCycles: requires refactor to address
-import { TestOrganizationUserClient, TestRootUserClient } from "./test-client";
+// biome-ignore-start lint/nursery/noImportCycles: requires refactor to address
+import {
+  TestEndUserClient,
+  TestOrganizationUserClient,
+  TestRootUserClient,
+} from "./test-client";
+// biome-ignore-end lint/nursery/noImportCycles: requires refactor to address
 
 export type FixtureContext = {
   id: string;
@@ -27,6 +32,7 @@ export type FixtureContext = {
   bindings: AppBindingsWithNilcomm;
   root: TestRootUserClient;
   organization: TestOrganizationUserClient;
+  user: TestEndUserClient;
   expect: vitest.ExpectStatic;
 };
 
@@ -125,7 +131,15 @@ export async function buildFixture(
     node,
   });
 
-  const c = { id, log, app, bindings, root, organization };
+  const user = new TestEndUserClient({
+    app,
+    keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!),
+    payer: orgPayer,
+    nilauth: orgNilauthClient,
+    node,
+  });
+
+  const c = { id, log, app, bindings, root, organization, user };
 
   await organization.ensureSubscriptionActive();
   const createOrgResponse = await organization.request(

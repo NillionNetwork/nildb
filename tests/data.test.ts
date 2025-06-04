@@ -12,9 +12,9 @@ import {
 } from "./fixture/assertions";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
+import { TestEndUserClient } from "./fixture/test-client";
 
 describe("data operations", () => {
-  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -32,7 +32,7 @@ describe("data operations", () => {
   };
 
   it("can upload data", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, organization, user } = c;
 
     const data: Record[] = [
       {
@@ -56,7 +56,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
-      userId,
+      userId: user.did,
       schema: schema.id,
       data,
       permissions: new Permissions(organization.did, {
@@ -76,7 +76,7 @@ describe("data operations", () => {
 
   it("rejects primary key collisions", async ({ skip, c }) => {
     skip("TODO: depends on indexes, disable until index endpoint is ready");
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, organization, user } = c;
 
     const data = [
       {
@@ -88,7 +88,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
-      userId,
+      userId: user.did,
       schema: schema.id,
       data,
       permissions: new Permissions(organization.did, {
@@ -108,7 +108,7 @@ describe("data operations", () => {
 
   it("allows for partial success", async ({ skip, c }) => {
     skip("depends on indexes, disable until index endpoint is ready");
-    const { expect, organization } = c;
+    const { expect, organization, user } = c;
 
     const data: Record[] = [
       {
@@ -126,7 +126,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
-      userId,
+      userId: user.did,
       schema: schema.id,
       data,
       permissions: new Permissions(organization.did, {
@@ -143,7 +143,7 @@ describe("data operations", () => {
 
   it("rejects duplicates in data payload", async ({ skip, c }) => {
     skip("depends on indexes, disable until index endpoint is ready");
-    const { expect, organization } = c;
+    const { expect, organization, user } = c;
 
     const data: Record[] = [
       {
@@ -161,7 +161,7 @@ describe("data operations", () => {
     ];
 
     await organization.uploadData({
-      userId,
+      userId: user.did,
       schema: schema.id,
       data,
       permissions: new Permissions(organization.did, {
@@ -177,7 +177,7 @@ describe("data operations", () => {
   });
 
   it("rejects data that does not conform", async ({ c }) => {
-    const { expect, organization } = c;
+    const { expect, organization, user } = c;
 
     const data: Record[] = [
       {
@@ -190,7 +190,7 @@ describe("data operations", () => {
     ];
 
     const response = await organization.uploadData({
-      userId,
+      userId: user.did,
       schema: schema.id,
       data,
       permissions: new Permissions(organization.did, {
@@ -285,14 +285,14 @@ describe("data operations", () => {
   });
 
   it("can read user data", async ({ c }) => {
-    const { expect, organization } = c;
-    const response = await organization.readUserData({ userId });
+    const { expect, user } = c;
+    const response = await user.readUserData();
     const result = await expectSuccessResponse(c, response);
     expect(result.data).toHaveLength(2);
   });
 
   it("can read data permissions", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, user } = c;
 
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
@@ -302,7 +302,7 @@ describe("data operations", () => {
 
     const documentId = expected.map((document) => document._id.toString())[0];
 
-    const response = await organization.readPermissions({
+    const response = await user.readPermissions({
       schema: schema.id,
       documentId: Uuid.parse(documentId),
     });
@@ -316,9 +316,33 @@ describe("data operations", () => {
     expect(permissions?.perms?.execute).toBe(false);
   });
 
-  const targetDid = Keypair.generate().toDidString();
-  it("can add data permissions", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+  it("user cannot access data they are not the owner of", async ({ c }) => {
+    const { expect, bindings, organization, user } = c;
+    const otherUserOptions = {
+      app: user.app,
+      node: user._options.node,
+      nilauth: user._options.nilauth,
+      payer: user._options.payer,
+      keypair: Keypair.generate(),
+    };
+    const otherUser = new TestEndUserClient(otherUserOptions);
+
+    const data: Record[] = [
+      {
+        _id: createUuidDto(),
+        wallet: "0x4",
+        country: "GBR",
+        age: 30,
+      },
+    ];
+
+    // Enforce register user
+    await organization.uploadData({
+      userId: otherUser.did,
+      schema: schema.id,
+      data,
+      permissions: new Permissions(organization.did),
+    });
 
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
@@ -328,14 +352,34 @@ describe("data operations", () => {
 
     const documentId = expected.map((document) => document._id.toString())[0];
 
-    const addResponse = await organization.addPermissions({
+    const response = await otherUser.readPermissions({
+      schema: schema.id,
+      documentId: Uuid.parse(documentId),
+    });
+    const result = await expectErrorResponse(c, response);
+    expect(result.errors.includes("ResourceAccessDeniedError")).toBe(true);
+  });
+
+  const targetDid = Keypair.generate().toDidString();
+  it("can add data permissions", async ({ c }) => {
+    const { expect, bindings, user } = c;
+
+    const expected = await bindings.db.data
+      .collection<DataDocument>(schema.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    const documentId = expected.map((document) => document._id.toString())[0];
+
+    const addResponse = await user.addPermissions({
       schema: schema.id,
       documentId: Uuid.parse(documentId),
       permissions: new Permissions(targetDid),
     });
     await expectSuccessResponse(c, addResponse);
 
-    const response = await organization.readPermissions({
+    const response = await user.readPermissions({
       schema: schema.id,
       documentId: Uuid.parse(documentId),
     });
@@ -350,7 +394,7 @@ describe("data operations", () => {
   });
 
   it("can update data permissions", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, user } = c;
 
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
@@ -360,7 +404,7 @@ describe("data operations", () => {
 
     const documentId = expected.map((document) => document._id.toString())[0];
 
-    const updateResponse = await organization.updatePermissions({
+    const updateResponse = await user.updatePermissions({
       schema: schema.id,
       documentId: Uuid.parse(documentId),
       permissions: new Permissions(targetDid, {
@@ -371,7 +415,7 @@ describe("data operations", () => {
     });
     await expectSuccessResponse(c, updateResponse);
 
-    const response = await organization.readPermissions({
+    const response = await user.readPermissions({
       schema: schema.id,
       documentId: Uuid.parse(documentId),
     });
@@ -386,7 +430,7 @@ describe("data operations", () => {
   });
 
   it("can delete data permissions", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, user } = c;
 
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
@@ -396,14 +440,14 @@ describe("data operations", () => {
 
     const documentId = expected.map((document) => document._id.toString())[0];
 
-    const updateResponse = await organization.deletePermissions({
+    const updateResponse = await user.deletePermissions({
       schema: schema.id,
       documentId: Uuid.parse(documentId),
       did: targetDid,
     });
     await expectSuccessResponse(c, updateResponse);
 
-    const response = await organization.readPermissions({
+    const response = await user.readPermissions({
       schema: schema.id,
       documentId: Uuid.parse(documentId),
     });

@@ -31,7 +31,7 @@ export function add(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(AddQueryRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: AddQueryRequest }>({
       path,
       cmd: NucCmd.nil.db.queries,
@@ -62,7 +62,7 @@ export function remove(options: ControllerOptions): void {
   app.delete(
     path,
     payloadValidator(DeleteQueryRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: DeleteQueryRequest }>({
       path,
       cmd: NucCmd.nil.db.queries,
@@ -91,7 +91,7 @@ export function execute(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(ExecuteQueryRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: ExecuteQueryRequest }>({
       path,
       cmd: NucCmd.nil.db.queries,
@@ -119,7 +119,7 @@ export function list(options: ControllerOptions): void {
 
   app.get(
     path,
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.queries,
@@ -146,7 +146,7 @@ export function getQueryJob(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(QueryJobRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: QueryJobRequest }>({
       path,
       cmd: NucCmd.nil.db.queries,

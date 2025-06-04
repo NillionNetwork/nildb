@@ -34,7 +34,7 @@ export function remove(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(DeleteDataRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: DeleteDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
@@ -64,7 +64,7 @@ export function flush(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(FlushDataRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: FlushDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
@@ -97,7 +97,7 @@ export function read(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(ReadDataRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: ReadDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
@@ -126,7 +126,7 @@ export function tail(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(TailDataRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: TailDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
@@ -155,7 +155,7 @@ export function update(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(UpdateDataRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: UpdateDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
@@ -188,7 +188,7 @@ export function upload(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(UploadDataRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: UploadDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,

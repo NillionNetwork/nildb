@@ -7,6 +7,7 @@ import type { AccountDocument, RootAccountDocument } from "#/admin/admin.types";
 import { CACHE_FOREVER, Cache } from "#/common/cache";
 import { createLogger } from "#/common/logger";
 import type { Did } from "#/common/types";
+import type { UserDocument } from "#/user/user.repository";
 import { initAndCreateDbClients } from "./common/mongo";
 
 export const PRIVATE_KEY_LENGTH = 64;
@@ -105,6 +106,7 @@ declare global {
 export type AppVariables = {
   envelope: NucTokenEnvelope;
   account: AccountDocument;
+  user: UserDocument;
 };
 
 export async function loadBindings(

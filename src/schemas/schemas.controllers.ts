@@ -32,7 +32,7 @@ export function list(options: ControllerOptions): void {
 
   app.get(
     path,
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.schemas,
@@ -59,7 +59,7 @@ export function add(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(AddSchemaRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: AddSchemaRequest }>({
       path,
       cmd: NucCmd.nil.db.schemas,
@@ -90,7 +90,7 @@ export function remove(options: ControllerOptions): void {
   app.delete(
     path,
     payloadValidator(DeleteSchemaRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: DeleteSchemaRequest }>({
       path,
       cmd: NucCmd.nil.db.schemas,
@@ -123,7 +123,7 @@ export function metadata(options: ControllerOptions): void {
         id: Uuid,
       }),
     ),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ param: { id: UUID } }>({
       path,
       cmd: NucCmd.nil.db.schemas,
@@ -161,7 +161,7 @@ export function createIndex(options: ControllerOptions): void {
         id: Uuid,
       }),
     ),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: CreateSchemaIndexRequest; params: { id: UUID } }>(
       {
         path,
@@ -198,7 +198,7 @@ export function dropIndex(options: ControllerOptions): void {
         name: z.string().min(4),
       }),
     ),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ param: { id: UUID; name: string } }>({
       path,
       cmd: NucCmd.nil.db.schemas,
