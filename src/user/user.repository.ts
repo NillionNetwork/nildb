@@ -138,7 +138,7 @@ export function findById(
     checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
-      catch: (cause) => new DatabaseError({ cause, message: "findOneUser" }),
+      catch: (cause) => new DatabaseError({ cause, message: "findById" }),
     }),
     E.flatMap((result) =>
       result === null
@@ -204,7 +204,7 @@ export function updatePermissions(
     E.tryMapPromise({
       try: (collection) => collection.updateOne(documentFilter, documentUpdate),
       catch: (cause) =>
-        new DatabaseError({ cause, message: "upsertPermissions" }),
+        new DatabaseError({ cause, message: "updatePermissions" }),
     }),
   );
 }
@@ -231,7 +231,7 @@ export function deletePermissions(
     E.tryMapPromise({
       try: (collection) => collection.updateOne(documentFilter, documentUpdate),
       catch: (cause) =>
-        new DatabaseError({ cause, message: "upsertPermissions" }),
+        new DatabaseError({ cause, message: "deletePermissions" }),
     }),
   );
 }
