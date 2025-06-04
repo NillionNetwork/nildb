@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { StrictFilter, UUID } from "mongodb";
+import type { StrictFilter, UpdateResult, UUID } from "mongodb";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -12,13 +12,14 @@ import {
   type DocumentBase,
 } from "#/common/mongo";
 import type { Did } from "#/common/types";
-import type { Permissions, PermissionsDto } from "#/data/data.types";
+import type { DataDocumentBase } from "#/data/data.repository";
 import type { AppBindings } from "#/env";
+import type { Permissions } from "#/user/user.types";
 
 export type LogOperation =
   | { op: "write"; col: UUID }
   | { op: "delete"; col: UUID }
-  | { op: "auth"; col: UUID; perms: PermissionsDto };
+  | { op: "auth"; col: UUID; perms: Permissions };
 
 export type DataDocumentReference = {
   id: UUID;
@@ -68,7 +69,7 @@ export function upsert(
                           ({
                             op: "auth",
                             col,
-                            perms: perms.toJSON(),
+                            perms,
                           }) as LogOperation,
                       )
                     : []),
@@ -137,7 +138,7 @@ export function findById(
     checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
-      catch: (cause) => new DatabaseError({ cause, message: "findOneUser" }),
+      catch: (cause) => new DatabaseError({ cause, message: "findById" }),
     }),
     E.flatMap((result) =>
       result === null
@@ -149,5 +150,88 @@ export function findById(
           )
         : E.succeed(result),
     ),
+  );
+}
+
+export function addPermissions(
+  ctx: AppBindings,
+  schema: UUID,
+  documentId: UUID,
+  perms: Permissions,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  const documentFilter = {
+    _id: documentId,
+  };
+  const documentUpdate = {
+    $push: {
+      _perms: perms,
+    },
+  };
+  return pipe(
+    checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(documentFilter, documentUpdate, { upsert: true }),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "upsertPermissions" }),
+    }),
+  );
+}
+
+export function updatePermissions(
+  ctx: AppBindings,
+  schema: UUID,
+  documentId: UUID,
+  perms: Permissions,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  const documentFilter = {
+    _id: documentId,
+    "_perms.did": perms.did,
+  };
+  const documentUpdate = {
+    $set: {
+      "_perms.$": perms,
+    },
+  };
+  return pipe(
+    checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(documentFilter, documentUpdate),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "updatePermissions" }),
+    }),
+  );
+}
+
+export function deletePermissions(
+  ctx: AppBindings,
+  schema: UUID,
+  documentId: UUID,
+  did: Did,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  const documentFilter = {
+    _id: documentId,
+  };
+  const documentUpdate = {
+    $pull: {
+      _perms: { did },
+    },
+  };
+  return pipe(
+    checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(documentFilter, documentUpdate),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "deletePermissions" }),
+    }),
   );
 }

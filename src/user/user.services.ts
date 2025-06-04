@@ -1,5 +1,5 @@
 import { Effect as E } from "effect";
-import type { UUID } from "mongodb";
+import type { UpdateResult, UUID } from "mongodb";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -10,6 +10,14 @@ import { type Did, Uuid } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
+import {
+  type AddPermissionsRequest,
+  type DeletePermissionsRequest,
+  type Permissions,
+  PermissionsSchema,
+  type ReadPermissionsRequest,
+  type UpdatePermissionsRequest,
+} from "#/user/user.types";
 import type { UserDocument } from "./user.repository";
 import * as UserRepository from "./user.repository";
 
@@ -58,5 +66,68 @@ export function listUserData(
   return find(ctx, did).pipe(
     E.map((user) => groupBySchema(user)),
     E.flatMap((collections) => readAllDataCollections(collections)),
+  );
+}
+
+export function readPermissions(
+  ctx: AppBindings,
+  request: ReadPermissionsRequest,
+): E.Effect<
+  Permissions[],
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataRepository.findMany(ctx, request.schema, {
+    _id: request.documentId,
+  }).pipe(
+    E.map((documents) =>
+      documents.flatMap((document) =>
+        document._perms.map((perms) => PermissionsSchema.parse(perms)),
+      ),
+    ),
+  );
+}
+
+export function addPermissions(
+  ctx: AppBindings,
+  request: AddPermissionsRequest,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return UserRepository.addPermissions(
+    ctx,
+    request.schema,
+    request.documentId,
+    request.permissions,
+  );
+}
+
+export function updatePermissions(
+  ctx: AppBindings,
+  request: UpdatePermissionsRequest,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return UserRepository.updatePermissions(
+    ctx,
+    request.schema,
+    request.documentId,
+    request.permissions,
+  );
+}
+
+export function deletePermissions(
+  ctx: AppBindings,
+  request: DeletePermissionsRequest,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return UserRepository.deletePermissions(
+    ctx,
+    request.schema,
+    request.documentId,
+    request.did,
   );
 }

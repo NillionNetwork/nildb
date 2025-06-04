@@ -3,4 +3,9 @@ import * as UserController from "#/user/user.controllers";
 
 export function buildUserRouter(options: ControllerOptions): void {
   UserController.list(options);
+
+  UserController.readPermissions(options);
+  UserController.addPermissions(options);
+  UserController.updatePermissions(options);
+  UserController.deletePermissions(options);
 }

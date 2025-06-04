@@ -5,6 +5,7 @@ import { describe } from "vitest";
 import { applyCoercions } from "#/common/mongo";
 import { type CoercibleMap, createUuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
+import { Permissions } from "#/user/user.types";
 import schemaJson from "./data/coercions.schema.json";
 import {
   expectErrorResponse,
@@ -284,6 +285,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);
@@ -321,6 +327,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const errors = await expectErrorResponse(c, response);
@@ -351,6 +362,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const errors = await expectErrorResponse(c, response);
@@ -381,6 +397,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const errors = await expectErrorResponse(c, response);

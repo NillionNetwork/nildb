@@ -3,6 +3,7 @@ import { Keypair } from "@nillion/nuc";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import {
@@ -43,6 +44,11 @@ describe("schema data deletion", () => {
       userId,
       schema: schema.id,
       data: shuffledData,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
   });
 

@@ -4,6 +4,7 @@ import type { UpdateResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import { assertDefined, expectSuccessResponse } from "./fixture/assertions";
@@ -33,6 +34,11 @@ describe("update.data.test", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
   });
 

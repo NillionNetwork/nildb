@@ -4,6 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { PathsV1 } from "#/common/paths";
 import { createUuidDto } from "#/common/types";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import { expectErrorResponse } from "./fixture/assertions";
@@ -51,6 +52,11 @@ describe("restrict cross-organization operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const keypair = Keypair.generate();
@@ -69,7 +75,7 @@ describe("restrict cross-organization operations", () => {
     });
 
     await organizationB.ensureSubscriptionActive();
-    const _response = await organizationB.request(PathsV1.accounts.register, {
+    await organizationB.request(PathsV1.accounts.register, {
       method: "POST",
       body: {
         did: organizationB.did,
@@ -79,7 +85,7 @@ describe("restrict cross-organization operations", () => {
   });
 
   it("prevents data upload", async ({ c }) => {
-    const { expect } = c;
+    const { expect, organization } = c;
 
     const response = await organizationB.uploadData({
       userId,
@@ -90,6 +96,11 @@ describe("restrict cross-organization operations", () => {
           name: faker.person.fullName(),
         },
       ],
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const error = await expectErrorResponse(c, response);

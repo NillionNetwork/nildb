@@ -3,7 +3,7 @@ import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, Uuid, type UuidDto } from "#/common/types";
 import type { DataDocument, UploadResult } from "#/data/data.repository";
-import { Permissions, type PermissionsDto } from "#/data/data.types";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import {
@@ -59,6 +59,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);
@@ -86,6 +91,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);
@@ -119,6 +129,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);
@@ -149,6 +164,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const cursor = c.bindings.db.data.collection(schema.id.toString()).find({});
@@ -173,6 +193,11 @@ describe("data operations", () => {
       userId,
       schema: schema.id,
       data,
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const error = await expectErrorResponse(c, response);
@@ -284,9 +309,11 @@ describe("data operations", () => {
     const result = await expectSuccessResponse(c, response);
     expect(result.data).toHaveLength(1);
     const permissions = Array.isArray(result.data)
-      ? (Array.from(result.data)[0] as PermissionsDto)
+      ? (Array.from(result.data)[0] as Permissions)
       : undefined;
-    expect(permissions?.perms).toBe(3);
+    expect(permissions?.perms?.read).toBe(true);
+    expect(permissions?.perms?.write).toBe(false);
+    expect(permissions?.perms?.execute).toBe(false);
   });
 
   const targetDid = Keypair.generate().toDidString();
@@ -315,9 +342,11 @@ describe("data operations", () => {
     const result = await expectSuccessResponse(c, response);
     expect(result.data).toHaveLength(2);
     const permissions = Array.isArray(result.data)
-      ? (Array.from(result.data)[1] as PermissionsDto)
+      ? (Array.from(result.data)[1] as Permissions)
       : undefined;
-    expect(permissions?.perms).toBe(3);
+    expect(permissions?.perms?.read).toBe(false);
+    expect(permissions?.perms?.write).toBe(false);
+    expect(permissions?.perms?.execute).toBe(false);
   });
 
   it("can update data permissions", async ({ c }) => {
@@ -349,9 +378,11 @@ describe("data operations", () => {
     const result = await expectSuccessResponse(c, response);
     expect(result.data).toHaveLength(2);
     const permissions = Array.isArray(result.data)
-      ? (Array.from(result.data)[1] as PermissionsDto)
+      ? (Array.from(result.data)[1] as Permissions)
       : undefined;
-    expect(permissions?.perms).toBe(7);
+    expect(permissions?.perms?.read).toBe(true);
+    expect(permissions?.perms?.write).toBe(true);
+    expect(permissions?.perms?.execute).toBe(true);
   });
 
   it("can delete data permissions", async ({ c }) => {

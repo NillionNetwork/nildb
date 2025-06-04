@@ -24,15 +24,11 @@ import type { ApiErrorResponse } from "#/common/handler";
 import { PathsV1 } from "#/common/paths";
 import type { UuidDto } from "#/common/types";
 import type {
-  AddPermissionsRequest,
   DeleteDataRequest,
-  DeletePermissionsRequest,
   FlushDataRequest,
   ReadDataRequest,
-  ReadPermissionsRequest,
   TailDataRequest,
   UpdateDataRequest,
-  UpdatePermissionsRequest,
   UploadDataRequest,
 } from "#/data/data.types";
 import type {
@@ -46,7 +42,13 @@ import type {
   DeleteSchemaRequest,
 } from "#/schemas/schemas.types";
 import { SystemEndpoint } from "#/system/system.router";
-import type { UserDataRequest } from "#/user/user.types";
+import type {
+  AddPermissionsRequest,
+  DeletePermissionsRequest,
+  ReadPermissionsRequest,
+  UpdatePermissionsRequest,
+  UserDataRequest,
+} from "#/user/user.types";
 // biome-ignore lint/nursery/noImportCycles: requires refactor to address
 import type { FixtureContext } from "./fixture";
 
@@ -480,28 +482,28 @@ export class TestOrganizationUserClient extends TestClient {
   }
 
   async readPermissions(body: ReadPermissionsRequest): Promise<Response> {
-    return this.request(PathsV1.data.perms.read, {
+    return this.request(PathsV1.user.data.perms.read, {
       method: "POST",
       body,
     });
   }
 
   async addPermissions(body: AddPermissionsRequest): Promise<Response> {
-    return this.request(PathsV1.data.perms.add, {
+    return this.request(PathsV1.user.data.perms.add, {
       method: "POST",
       body,
     });
   }
 
   async updatePermissions(body: UpdatePermissionsRequest): Promise<Response> {
-    return this.request(PathsV1.data.perms.update, {
+    return this.request(PathsV1.user.data.perms.update, {
       method: "POST",
       body,
     });
   }
 
   async deletePermissions(body: DeletePermissionsRequest): Promise<Response> {
-    return this.request(PathsV1.data.perms.delete, {
+    return this.request(PathsV1.user.data.perms.delete, {
       method: "POST",
       body,
     });

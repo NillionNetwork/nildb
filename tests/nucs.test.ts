@@ -14,6 +14,7 @@ import { createUuidDto } from "#/common/types";
 import type { UploadResult } from "#/data/data.repository";
 import type { TailDataRequest } from "#/data/data.types";
 import type { ExecuteQueryRequest } from "#/queries/queries.types";
+import { Permissions } from "#/user/user.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import { expectSuccessResponse } from "./fixture/assertions";
@@ -57,6 +58,11 @@ describe("nuc-based access control", () => {
           age: 10,
         },
       ],
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     });
 
     const result = await expectSuccessResponse<UploadResult>(c, response);
@@ -97,6 +103,11 @@ describe("nuc-based access control", () => {
           age: 20,
         },
       ],
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     };
 
     // 4. Send the request to nilDB using the invocation NUC to write the organizations schemas
@@ -157,6 +168,11 @@ describe("nuc-based access control", () => {
           age: 30,
         },
       ],
+      permissions: new Permissions(organization.did, {
+        read: true,
+        write: false,
+        execute: false,
+      }),
     };
 
     // 4. Send the request to nilDB using the invocation NUC to write the organizations schemas

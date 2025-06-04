@@ -30,11 +30,8 @@ import type { Did, UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.repository";
-import type {
-  PartialDataDocumentDto,
-  Permissions,
-  PermissionsDto,
-} from "./data.types";
+import type { Permissions } from "#/user/user.types";
+import type { PartialDataDocumentDto } from "./data.types";
 
 export function createCollection(
   ctx: AppBindings,
@@ -143,7 +140,7 @@ export function flushCollection(
 
 export type DataDocumentBase = DocumentBase<UUID> & {
   _owner: Did;
-  _perms: PermissionsDto[];
+  _perms: Permissions[];
 };
 export type DataDocument<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -186,7 +183,7 @@ export function insert(
               _created: now,
               _updated: now,
               _owner: owner,
-              _perms: perms.map((perm) => perm.toJSON()),
+              _perms: perms,
               documentType: schema.documentType,
             }));
           batches.push(batch);
@@ -321,89 +318,6 @@ export function findMany(
       try: ([collection, documentFilter]) =>
         collection.find(documentFilter).sort({ _created: -1 }).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
-    }),
-  );
-}
-
-export function addPermissions(
-  ctx: AppBindings,
-  schema: UUID,
-  documentId: UUID,
-  permission: Permissions,
-): E.Effect<
-  UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
-  const documentFilter = {
-    _id: documentId,
-  };
-  const documentUpdate = {
-    $push: {
-      _perms: permission.toJSON(),
-    },
-  };
-  return pipe(
-    checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
-    E.tryMapPromise({
-      try: (collection) =>
-        collection.updateOne(documentFilter, documentUpdate, { upsert: true }),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "upsertPermissions" }),
-    }),
-  );
-}
-
-export function updatePermissions(
-  ctx: AppBindings,
-  schema: UUID,
-  documentId: UUID,
-  permission: Permissions,
-): E.Effect<
-  UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
-  const documentFilter = {
-    _id: documentId,
-    "_perms.did": permission.did,
-  };
-  const documentUpdate = {
-    $set: {
-      "_perms.$": permission.toJSON(),
-    },
-  };
-  return pipe(
-    checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
-    E.tryMapPromise({
-      try: (collection) => collection.updateOne(documentFilter, documentUpdate),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "upsertPermissions" }),
-    }),
-  );
-}
-
-export function deletePermissions(
-  ctx: AppBindings,
-  schema: UUID,
-  documentId: UUID,
-  did: Did,
-): E.Effect<
-  UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
-  const documentFilter = {
-    _id: documentId,
-  };
-  const documentUpdate = {
-    $pull: {
-      _perms: { did },
-    },
-  };
-  return pipe(
-    checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
-    E.tryMapPromise({
-      try: (collection) => collection.updateOne(documentFilter, documentUpdate),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "upsertPermissions" }),
     }),
   );
 }
