@@ -9,10 +9,10 @@ export class init_collections implements MigrationInterface {
   #dbNamePrimary: string;
 
   constructor() {
-    if (!process.env.APP_DB_NAME_PRIMARY) {
-      throw new Error("process.env.APP_DB_NAME_PRIMARY is undefined");
+    if (!process.env.APP_DB_NAME_BASE) {
+      throw new Error("process.env.APP_DB_NAME_BASE is undefined");
     }
-    this.#dbNamePrimary = process.env.APP_DB_NAME_PRIMARY;
+    this.#dbNamePrimary = process.env.APP_DB_NAME_BASE;
   }
 
   public async up(_db: Db, client: MongoClient): Promise<void> {

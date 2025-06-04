@@ -56,9 +56,7 @@ export async function buildFixture(
   const log = createTestLogger(id);
 
   // Use unique db names for each test
-  process.env.APP_DB_NAME_PRIMARY = `${process.env.APP_DB_NAME_PRIMARY}_${id}`;
-  process.env.APP_DB_NAME_DATA = `${process.env.APP_DB_NAME_DATA}_${id}`;
-  process.env.APP_DB_NAME_PERMISSIONS = `${process.env.APP_DB_NAME_PERMISSIONS}_${id}`;
+  process.env.APP_DB_NAME_BASE = `${process.env.APP_DB_NAME_BASE}_${id}`;
 
   // nilcomm should only be enabled via the test fixture params else consumers and producers conflict
   const currentFeatures = process.env.APP_ENABLED_FEATURES || "";

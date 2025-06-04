@@ -82,8 +82,7 @@ export type AppBindingsWithNilcomm = Omit<AppBindings, "mq" | "config"> & {
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
-      APP_DB_NAME_DATA: string;
-      APP_DB_NAME_PRIMARY: string;
+      APP_DB_NAME_BASE: string;
       APP_DB_URI: string;
       APP_ENABLED_FEATURES: string;
       APP_LOG_LEVEL: string;
@@ -156,9 +155,8 @@ export async function loadBindings(
 
 export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
   const config = EnvVarsSchema.parse({
-    dbNamePermissions: process.env.APP_DB_NAME_PERMISSIONS,
-    dbNameData: process.env.APP_DB_NAME_DATA,
-    dbNamePrimary: process.env.APP_DB_NAME_PRIMARY,
+    dbNameData: `${process.env.APP_DB_NAME_BASE}_data`,
+    dbNamePrimary: process.env.APP_DB_NAME_BASE,
     dbUri: process.env.APP_DB_URI,
     enabledFeatures: process.env.APP_ENABLED_FEATURES,
     logLevel: process.env.APP_LOG_LEVEL,
