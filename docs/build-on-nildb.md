@@ -15,7 +15,7 @@ An OpenAPI documentation site is available at [localhost:8080/api/v1/openapi/doc
 
 For simple development tasks, you can run a single node. However, note that secret sharing features require multiple nodes. To run a single node:
 
-- Follow the source build instructions in [CONTRIBUTING.md](./CONTRIBUTING.md), or
+- Follow the source build instructions in [CONTRIBUTING.md](../CONTRIBUTING.md), or
 - Modify [docker-compose.local.yaml](../docker-compose.local.yaml) to run a single node
 
 ### Run a local development cluster
