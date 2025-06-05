@@ -13,7 +13,6 @@ import type { Context, Env, Input, MiddlewareHandler } from "hono";
 import type { BlankInput } from "hono/types";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
-import { z } from "zod";
 import * as AccountsRepository from "#/accounts/accounts.repository";
 import type { AppBindings, AppEnv } from "#/env";
 import * as UserRepository from "#/user/user.repository";
@@ -232,9 +231,6 @@ export function loadSubjectAndVerifyAsUser<
     }
   };
 }
-
-export const RoleSchema = z.enum(["root", "admin", "organization", "user"]);
-export type Role = z.infer<typeof RoleSchema>;
 
 export type ValidatedOutput = Partial<{
   json: EmptyObject;
