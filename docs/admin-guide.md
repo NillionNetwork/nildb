@@ -137,7 +137,7 @@ Create a JWT for the admin account:
 tsx bin/credentials.ts --secret-key ${ADMIN_SECRET_KEY} --node-public-key ${APP_NODE_PUBLIC_KEY}
 ```
 
-All user-facing endpoints have an admin equivalent prefixed by `/api/v1/admin/*`. Inspect admin routes in the [src/admin/admin.router.ts](../src/admin/admin.router.ts). For user-facing operations, there is an openapi ui hosted at `${APP_NODE_PUBLIC_ENDPOINT}/api/v1/openapi/docs`.
+All user-facing endpoints have an admin equivalent prefixed by `/api/v1/admin/*`. Inspect admin routes in the [src/admin/admin.router.ts](../src/admin/admin.router.ts). For user-facing operations, there is an openapi ui hosted at `${APP_NODE_PUBLIC_ENDPOINT}/openapi.json`.
 
 ## Storage Retention
 
