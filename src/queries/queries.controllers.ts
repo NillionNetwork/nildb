@@ -11,8 +11,8 @@ import type { ControllerOptions } from "#/common/types";
 import { payloadValidator } from "#/common/zod-utils";
 import {
   enforceCapability,
-  RoleSchema,
-  verifyNucAndLoadSubject,
+  loadNucToken,
+  loadSubjectAndVerifyAsBuilder,
 } from "#/middleware/capability.middleware";
 import {
   AddQueryRequest,
@@ -47,11 +47,11 @@ export function add(options: ControllerOptions): void {
       },
     }),
     zValidator("json", AddQueryRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: AddQueryRequest }>({
       path,
       cmd: NucCmd.nil.db.queries,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -88,11 +88,11 @@ export function _delete(options: ControllerOptions): void {
       },
     }),
     zValidator("json", DeleteQueryRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: DeleteQueryRequest }>({
       path,
       cmd: NucCmd.nil.db.queries,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -136,11 +136,11 @@ export function execute(options: ControllerOptions): void {
       },
     }),
     zValidator("json", ExecuteQueryRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: ExecuteQueryRequest }>({
       path,
       cmd: NucCmd.nil.db.queries,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -184,11 +184,11 @@ export function list(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.queries,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -229,11 +229,11 @@ export function getQueryJob(options: ControllerOptions): void {
       },
     }),
     payloadValidator(QueryJobRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: QueryJobRequest }>({
       path,
       cmd: NucCmd.nil.db.queries,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {

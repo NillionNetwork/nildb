@@ -2,13 +2,15 @@ import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
 import { handleTaggedErrors } from "#/common/handler";
+import { NucCmd } from "#/common/nuc-cmd-tree";
 import { OpenApiSpecCommonErrorResponses } from "#/common/openapi";
 import { enforceDataOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
-  RoleSchema,
-  verifyNucAndLoadSubject,
+  enforceCapability,
+  loadNucToken,
+  loadSubjectAndVerifyAsUser,
 } from "#/middleware/capability.middleware";
 import {
   AddPermissionsRequest,
@@ -53,7 +55,13 @@ export function list(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.user),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsUser(bindings),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.user,
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const user = c.get("user");
       return pipe(
@@ -97,7 +105,13 @@ export function readPermissions(options: ControllerOptions): void {
       },
     }),
     zValidator("json", ReadPermissionsRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.user),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsUser(bindings),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.user,
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");
@@ -147,7 +161,13 @@ export function addPermissions(options: ControllerOptions): void {
       },
     }),
     zValidator("json", AddPermissionsRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.user),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsUser(bindings),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.user,
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");
@@ -195,7 +215,13 @@ export function updatePermissions(options: ControllerOptions): void {
       },
     }),
     zValidator("json", UpdatePermissionsRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.user),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsUser(bindings),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.user,
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");
@@ -243,7 +269,13 @@ export function deletePermissions(options: ControllerOptions): void {
       },
     }),
     zValidator("json", DeletePermissionsRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.user),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsUser(bindings),
+    enforceCapability({
+      path,
+      cmd: NucCmd.nil.db.user,
+      validate: (_c, _token) => true,
+    }),
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");

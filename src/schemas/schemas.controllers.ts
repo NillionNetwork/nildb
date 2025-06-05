@@ -16,8 +16,8 @@ import { PathsV1 } from "#/common/paths";
 import { type ControllerOptions, Uuid } from "#/common/types";
 import {
   enforceCapability,
-  RoleSchema,
-  verifyNucAndLoadSubject,
+  loadNucToken,
+  loadSubjectAndVerifyAsBuilder,
 } from "#/middleware/capability.middleware";
 import { SchemaDataMapper } from "#/schemas/schemas.mapper";
 import {
@@ -65,11 +65,11 @@ export function list(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.schemas,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -111,11 +111,11 @@ export function add(options: ControllerOptions): void {
       },
     }),
     zValidator("json", AddSchemaRequestSchema),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: AddSchemaRequest }>({
       path,
       cmd: NucCmd.nil.db.schemas,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -159,11 +159,11 @@ export function _delete(options: ControllerOptions): void {
       },
     }),
     zValidator("json", DeleteSchemaRequestSchema),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: DeleteSchemaRequest }>({
       path,
       cmd: NucCmd.nil.db.schemas,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -218,11 +218,11 @@ export function metadata(options: ControllerOptions): void {
       },
     }),
     zValidator("param", GetSchemaMetadataParams),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: { id: UUID } }>({
       path,
       cmd: NucCmd.nil.db.schemas,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -272,11 +272,12 @@ export function createIndex(options: ControllerOptions): void {
     }),
     zValidator("json", CreateSchemaIndexRequestSchema),
     zValidator("param", CreateIndexParams),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: CreateSchemaIndexRequest; param: { id: UUID } }>({
       path,
       cmd: NucCmd.nil.db.schemas,
-      roles: [RoleSchema.enum.organization],
+
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -327,11 +328,11 @@ export function dropIndex(options: ControllerOptions): void {
       },
     }),
     zValidator("param", DropIndexParams),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: { id: UUID; name: string } }>({
       path,
       cmd: NucCmd.nil.db.schemas,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {

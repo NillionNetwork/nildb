@@ -12,8 +12,8 @@ import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
   enforceCapability,
-  RoleSchema,
-  verifyNucAndLoadSubject,
+  loadNucToken,
+  loadSubjectAndVerifyAsAdmin,
 } from "#/middleware/capability.middleware";
 import {
   GetAboutNodeResponse,
@@ -116,11 +116,11 @@ export function startMaintenance(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.root),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsAdmin(bindings),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.admin,
-      roles: [RoleSchema.enum.root],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -160,11 +160,11 @@ export function stopMaintenance(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.root),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsAdmin(bindings),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.admin,
-      roles: [RoleSchema.enum.root],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -204,11 +204,11 @@ export function setLogLevel(options: ControllerOptions): void {
       },
     }),
     zValidator("json", SetLogLevelRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.root),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsAdmin(bindings),
     enforceCapability<{ json: SetLogLevelRequest }>({
       path,
       cmd: NucCmd.nil.db.admin,
-      roles: [RoleSchema.enum.root],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -255,11 +255,11 @@ export function getLogLevel(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.root),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsAdmin(bindings),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.admin,
-      roles: [RoleSchema.enum.root],
       validate: (_c, _token) => true,
     }),
     async (c) => {
