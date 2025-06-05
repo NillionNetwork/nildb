@@ -97,7 +97,7 @@ export function getProfile(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.accounts,
@@ -142,7 +142,7 @@ export function _delete(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.accounts,
@@ -190,7 +190,7 @@ export function updateProfile(options: ControllerOptions): void {
       },
     }),
     zValidator("json", UpdateProfileRequest),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: UpdateProfileRequest }>({
       path,
       cmd: NucCmd.nil.db.accounts,

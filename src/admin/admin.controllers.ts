@@ -26,7 +26,7 @@ export function setMaintenanceWindow(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(AdminSetMaintenanceWindowRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.root),
     enforceCapability<{ json: AdminSetMaintenanceWindowRequest }>({
       path,
       cmd: NucCmd.nil.db.admin,
@@ -51,7 +51,7 @@ export function deleteMaintenanceWindow(options: ControllerOptions): void {
 
   app.delete(
     path,
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.root),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.admin,
@@ -75,7 +75,7 @@ export function setLogLevel(options: ControllerOptions): void {
   app.post(
     path,
     payloadValidator(AdminSetLogLevelRequestSchema),
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.root),
     enforceCapability<{ json: AdminSetLogLevelRequest }>({
       path,
       cmd: NucCmd.nil.db.admin,
@@ -96,7 +96,7 @@ export function getLogLevel(options: ControllerOptions): void {
 
   app.get(
     path,
-    verifyNucAndLoadSubject(bindings),
+    verifyNucAndLoadSubject(bindings, RoleSchema.enum.root),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.admin,

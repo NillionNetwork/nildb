@@ -16,12 +16,13 @@ import type { EmptyObject } from "type-fest";
 import { z } from "zod";
 import * as AccountsRepository from "#/accounts/accounts.repository";
 import type { AppBindings, AppEnv } from "#/env";
+import * as UserRepository from "#/user/user.repository";
 
 export function verifyNucAndLoadSubject<
   P extends string = string,
   I extends Input = BlankInput,
   E extends AppEnv = AppEnv,
->(bindings: AppBindings): MiddlewareHandler<E, P, I> {
+>(bindings: AppBindings, role: Role): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
 
   const nilauthDid = Did.fromHex(config.nilauthPubKey);
@@ -53,52 +54,71 @@ export function verifyNucAndLoadSubject<
         );
       }
       const envelope = nucEnvelopeParseResult.data;
+      c.set("envelope", envelope);
+
       const { token } = envelope.token;
-
       const subject = token.subject.toString();
-      const account = await pipe(
-        AccountsRepository.findByIdWithCache(bindings, subject),
-        E.catchAll((_e) => E.succeed(null)),
-        E.runPromise,
-      );
+      if (role === RoleSchema.enum.user) {
+        // load user
+        const user = await pipe(
+          UserRepository.findById(bindings, subject),
+          E.catchAll((_e) => E.succeed(null)),
+          E.runPromise,
+        );
 
-      if (!account) {
-        c.env.log.debug("Unknown account: %s", subject);
-        return c.text(
-          getReasonPhrase(StatusCodes.UNAUTHORIZED),
-          StatusCodes.UNAUTHORIZED,
-        );
-      }
-
-      // both branches throw on validation failure
-      if (account._role === RoleSchema.enum.organization) {
-        validateNucWithSubscription.validate(
-          envelope,
-          defaultValidationParameters,
-        );
-        // check revocations last because it's costly (in terms of network RTT)
-        const { revoked } = await NilauthClient.findRevocationsInProofChain(
-          config.nilauthBaseUrl,
-          envelope,
-        );
-        if (revoked.length !== 0) {
-          const hashes = revoked.map((r) => r.tokenHash).join(",");
-          log.warn(
-            "Token revoked: revoked_hashes=(%s) auth_token=%O",
-            hashes,
-            envelope.token.token.toJson(),
-          );
+        if (!user) {
+          c.env.log.debug("Unknown user: %s", subject);
           return c.text(
             getReasonPhrase(StatusCodes.UNAUTHORIZED),
             StatusCodes.UNAUTHORIZED,
           );
         }
-      } else {
         envelope.validateSignatures();
-      }
+        c.set("user", user);
+      } else {
+        // load account
+        const account = await pipe(
+          AccountsRepository.findByIdWithCache(bindings, subject),
+          E.catchAll((_e) => E.succeed(null)),
+          E.runPromise,
+        );
 
-      c.set("envelope", envelope);
-      c.set("account", account);
+        if (!account) {
+          c.env.log.debug("Unknown account: %s", subject);
+          return c.text(
+            getReasonPhrase(StatusCodes.UNAUTHORIZED),
+            StatusCodes.UNAUTHORIZED,
+          );
+        }
+
+        // both branches throw on validation failure
+        if (account._role === RoleSchema.enum.organization) {
+          validateNucWithSubscription.validate(
+            envelope,
+            defaultValidationParameters,
+          );
+          // check revocations last because it's costly (in terms of network RTT)
+          const { revoked } = await NilauthClient.findRevocationsInProofChain(
+            config.nilauthBaseUrl,
+            envelope,
+          );
+          if (revoked.length !== 0) {
+            const hashes = revoked.map((r) => r.tokenHash).join(",");
+            log.warn(
+              "Token revoked: revoked_hashes=(%s) auth_token=%O",
+              hashes,
+              envelope.token.token.toJson(),
+            );
+            return c.text(
+              getReasonPhrase(StatusCodes.UNAUTHORIZED),
+              StatusCodes.UNAUTHORIZED,
+            );
+          }
+        } else {
+          envelope.validateSignatures();
+        }
+        c.set("account", account);
+      }
 
       return next();
     } catch (cause) {

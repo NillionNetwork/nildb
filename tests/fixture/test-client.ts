@@ -47,7 +47,6 @@ import type {
   DeletePermissionsRequest,
   ReadPermissionsRequest,
   UpdatePermissionsRequest,
-  UserDataRequest,
 } from "#/user/user.types";
 // biome-ignore lint/nursery/noImportCycles: requires refactor to address
 import type { FixtureContext } from "./fixture";
@@ -473,11 +472,51 @@ export class TestOrganizationUserClient extends TestClient {
       body,
     });
   }
+}
 
-  async readUserData(body: UserDataRequest): Promise<Response> {
+export class TestEndUserClient extends TestClient {
+  async createInvocationToken(): Promise<string> {
+    const response = await this._options.nilauth.requestToken();
+    const { token: rootToken } = response;
+    return NucTokenBuilder.extending(rootToken)
+      .proof(rootToken)
+      .audience(Did.fromHex(this._options.node.keypair.publicKey("hex")))
+      .subject(this.keypair.toDid())
+      .body(new InvocationBody({}))
+      .build(this.keypair.privateKey());
+  }
+
+  override async request<T>(
+    path: string,
+    options: {
+      method?: "GET" | "POST" | "DELETE";
+      body?: T;
+    } = {},
+  ): Promise<Response> {
+    const { method = "GET", body } = options;
+    const token = await this.createInvocationToken();
+
+    const init: RequestInit = {
+      method,
+    };
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    if (body) {
+      headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(body);
+    }
+
+    init.headers = headers;
+
+    return this.app.request(path, init);
+  }
+
+  async readUserData(): Promise<Response> {
     return this.request(PathsV1.user.data.root, {
-      method: "POST",
-      body,
+      method: "GET",
     });
   }
 
