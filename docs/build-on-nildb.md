@@ -4,7 +4,7 @@ This section outlines specific builder-related tasks and is deliberately utilita
 
 ## Documentation
 
-An OpenAPI documentation site is available at [localhost:8080/api/v1/openapi/docs/]({APP_NODE_PUBLIC_ENDPOINT}/openapi.json) when the node is running. The API specification is defined in [/src/docs/openapi.yaml](../src/docs/openapi.yaml).
+An OpenAPI documentation site is available at [localhost:8080/api/v1/openapi/docs/]({APP_NODE_PUBLIC_ENDPOINT}/openapi.json) when the node is running.
 
 > [!NOTE]
 > Admin routes are not included in the OpenAPI documentation. For admin endpoints, refer to [/src/admin/routes.ts](../src/admin/admin.router.ts).
