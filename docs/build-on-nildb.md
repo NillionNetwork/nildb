@@ -4,7 +4,7 @@ This section outlines specific builder-related tasks and is deliberately utilita
 
 ## Documentation
 
-An OpenAPI documentation site is available at [localhost:8080/api/v1/openapi/docs/](http://localhost:8080/api/v1/openapi/docs/) when the node is running. The API specification is defined in [/src/docs/openapi.yaml](../src/docs/openapi.yaml).
+An OpenAPI documentation site is available at [localhost:8080/api/v1/openapi/docs/]({APP_NODE_PUBLIC_ENDPOINT}/openapi.json) when the node is running.
 
 > [!NOTE]
 > Admin routes are not included in the OpenAPI documentation. For admin endpoints, refer to [/src/admin/routes.ts](../src/admin/admin.router.ts).
@@ -15,7 +15,7 @@ An OpenAPI documentation site is available at [localhost:8080/api/v1/openapi/doc
 
 For simple development tasks, you can run a single node. However, note that secret sharing features require multiple nodes. To run a single node:
 
-- Follow the source build instructions in [CONTRIBUTING.md](./CONTRIBUTING.md), or
+- Follow the source build instructions in [CONTRIBUTING.md](../CONTRIBUTING.md), or
 - Modify [docker-compose.local.yaml](../docker-compose.local.yaml) to run a single node
 
 ### Run a local development cluster
