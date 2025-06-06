@@ -48,6 +48,8 @@ export type UpdateProfileCommand = {
   accountId: Did;
   /** Profile updates to apply (only provided fields are updated) */
   updates: Partial<{
+    /** Timestamp for when this update was made **/
+    _updated: Date;
     /** New display name for the organization */
     name: string;
   }>;

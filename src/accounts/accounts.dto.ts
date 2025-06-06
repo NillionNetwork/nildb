@@ -72,12 +72,11 @@ export type DeleteAccountResponse = typeof DeleteAccountResponse;
  * Request schema for updating account profile.
  *
  * All fields are optional - only provided fields will be updated.
- * Empty requests are valid but will perform no updates.
+ * At least one field must be provided.
  */
 export const UpdateProfileRequest = z
   .object({
-    did: DidSchema.optional(),
-    name: z.string().min(1).max(255).optional(),
+    name: z.string().min(1).max(255),
   })
   .openapi({ ref: "UpdateProfileRequest" });
 export type UpdateProfileRequest = z.infer<typeof UpdateProfileRequest>;

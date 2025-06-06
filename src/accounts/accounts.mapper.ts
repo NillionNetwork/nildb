@@ -68,11 +68,14 @@ export const AccountDataMapper = {
     dto: UpdateProfileRequest,
     accountId: Did,
   ): UpdateProfileCommand {
+    const updates = {
+      _updated: new Date(),
+      name: dto.name,
+    };
+
     return {
       accountId,
-      updates: {
-        ...(dto.name !== undefined && { name: dto.name }),
-      },
+      updates,
     };
   },
 };
