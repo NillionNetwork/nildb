@@ -11,22 +11,17 @@ import { describe } from "vitest";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { PathsV1 } from "#/common/paths";
 import { createUuidDto } from "#/common/types";
+import type { TailDataRequest } from "#/data/data.dto";
 import type { UploadResult } from "#/data/data.repository";
-import type { TailDataRequest } from "#/data/data.types";
-import type { ExecuteQueryRequest } from "#/queries/queries.types";
+import type { ExecuteQueryRequest } from "#/queries/queries.dto";
 import { Permissions } from "#/user/user.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import { expectSuccessResponse } from "./fixture/assertions";
-import {
-  type QueryFixture,
-  registerSchemaAndQuery,
-  type SchemaFixture,
-} from "./fixture/fixture";
+import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("nuc-based access control", () => {
-  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   // don't create schema and query as part of fixture standup else the fixture activates the org account
@@ -36,48 +31,68 @@ describe("nuc-based access control", () => {
     kp: Keypair.generate(),
   };
 
-  beforeAll(async ({ organization }) => {
-    await organization.ensureSubscriptionActive();
+  beforeAll(async ({ builder }) => {
+    await builder.ensureSubscriptionActive();
   });
   afterAll(async (_c) => {});
 
   it("can setup schemas and queries", async ({ c }) => {
-    const { expect, organization } = c;
+    const { expect, builder, user } = c;
 
-    const promise = registerSchemaAndQuery({ c, organization, schema, query });
-    await expect(promise).resolves.not.toThrow();
+    schema.id = new UUID();
+    await builder
+      .addSchema(c, {
+        _id: schema.id,
+        name: schema.name,
+        schema: schema.schema,
+        documentType: schema.documentType,
+      })
+      .expectSuccess();
 
-    const response = await organization.uploadData({
-      userId,
-      schema: schema.id,
-      data: [
-        {
-          _id: createUuidDto(),
-          wallet: "0x1",
-          country: "GBR",
-          age: 10,
-        },
-      ],
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
+    query.id = new UUID();
+    query.schema = schema.id;
+    await builder
+      .addQuery(c, {
+        _id: query.id,
+        name: query.name,
+        schema: query.schema,
+        variables: query.variables,
+        pipeline: query.pipeline,
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse<UploadResult>(c, response);
+    const result = await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data: [
+          {
+            _id: createUuidDto(),
+            wallet: "0x1",
+            country: "GBR",
+            age: 10,
+          },
+        ],
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
+
     expect(result.data.created).toHaveLength(1);
   });
 
   it("allows for delegated access (cmd: /nil/db)", async ({ c }) => {
-    const { expect, app, root, bindings, organization } = c;
+    const { expect, app, admin, bindings, builder, user } = c;
 
     // 1. The org mints a delegation nuc address to the user
     const delegationFromBuilderRaw = NucTokenBuilder.extending(
-      await organization.getRootToken(),
+      await builder.getRootToken(),
     )
-      .audience(Did.fromHex(user.kp.publicKey("hex")))
-      .build(organization.keypair.privateKey());
+      .audience(Did.fromHex(user.keypair.publicKey("hex")))
+      .build(builder.keypair.privateKey());
 
     const delegationFromBuilderEnvelope = NucTokenEnvelopeSchema.parse(
       delegationFromBuilderRaw,
@@ -87,13 +102,13 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
       .body(new InvocationBody({}))
-      .build(user.kp.privateKey());
+      .audience(Did.fromHex(admin._options.nodePublicKey))
+      .build(user.keypair.privateKey());
 
     // 3. User creates an upload data request
     const body = {
-      userId,
+      userId: user.did,
       schema: schema.id,
       data: [
         {
@@ -103,7 +118,7 @@ describe("nuc-based access control", () => {
           age: 20,
         },
       ],
-      permissions: new Permissions(organization.did, {
+      permissions: new Permissions(builder.did, {
         read: true,
         write: false,
         execute: false,
@@ -135,15 +150,15 @@ describe("nuc-based access control", () => {
   });
 
   it("allows for delegated upload data (cmd: /nil/db/data)", async ({ c }) => {
-    const { expect, app, root, bindings, organization } = c;
+    const { expect, app, admin, bindings, builder, user } = c;
 
     // 1. The org mints a delegation nuc address to the user
     const delegationFromBuilderRaw = NucTokenBuilder.extending(
-      await organization.getRootToken(),
+      await builder.getRootToken(),
     )
-      .audience(Did.fromHex(user.kp.publicKey("hex")))
+      .audience(Did.fromHex(user.keypair.publicKey("hex")))
       .command(NucCmd.nil.db.data)
-      .build(organization.keypair.privateKey());
+      .build(builder.keypair.privateKey());
     const delegationFromBuilderEnvelope = NucTokenEnvelopeSchema.parse(
       delegationFromBuilderRaw,
     );
@@ -152,13 +167,13 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
+      .audience(Did.fromHex(admin._options.nodePublicKey))
       .body(new InvocationBody({}))
-      .build(user.kp.privateKey());
+      .build(user.keypair.privateKey());
 
     // 3. User creates an upload data request
     const body = {
-      userId,
+      userId: user.did,
       schema: schema.id,
       data: [
         {
@@ -168,7 +183,7 @@ describe("nuc-based access control", () => {
           age: 30,
         },
       ],
-      permissions: new Permissions(organization.did, {
+      permissions: new Permissions(builder.did, {
         read: true,
         write: false,
         execute: false,
@@ -208,15 +223,15 @@ describe("nuc-based access control", () => {
   });
 
   it("allows for delegated run query (cmd: /nil/db/queries)", async ({ c }) => {
-    const { expect, app, root, organization } = c;
+    const { expect, app, admin, builder, user } = c;
 
     // 1. The org mints a delegation nuc address to the user
     const delegationFromBuilderRaw = NucTokenBuilder.extending(
-      await organization.getRootToken(),
+      await builder.getRootToken(),
     )
-      .audience(Did.fromHex(user.kp.publicKey("hex")))
+      .audience(Did.fromHex(user.keypair.publicKey("hex")))
       .command(NucCmd.nil.db.queries)
-      .build(organization.keypair.privateKey());
+      .build(builder.keypair.privateKey());
     const delegationFromBuilderEnvelope = NucTokenEnvelopeSchema.parse(
       delegationFromBuilderRaw,
     );
@@ -225,9 +240,9 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
+      .audience(Did.fromHex(admin._options.nodePublicKey))
       .body(new InvocationBody({}))
-      .build(user.kp.privateKey());
+      .build(user.keypair.privateKey());
 
     // 3. User creates a query execution request (average age of wallets in GBR)
     const body: ExecuteQueryRequest = {
@@ -269,15 +284,15 @@ describe("nuc-based access control", () => {
   it("rejects namespace v path jumps: token.cmd=/nil/db/queries attempting to access /api/v1/data/tail)", async ({
     c,
   }) => {
-    const { expect, app, root, organization } = c;
+    const { expect, app, admin, builder } = c;
 
     // 1. The org mints a delegation nuc address to the user
     const delegationFromBuilderRaw = NucTokenBuilder.extending(
-      await organization.getRootToken(),
+      await builder.getRootToken(),
     )
       .audience(Did.fromHex(user.kp.publicKey("hex")))
       .command(NucCmd.nil.db.queries)
-      .build(organization.keypair.privateKey());
+      .build(builder.keypair.privateKey());
 
     // 2. The user receives the delegation nuc, mints an invocation addressed to the nildb node
 
@@ -287,7 +302,7 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
+      .audience(Did.fromHex(admin._options.nodePublicKey))
       .body(new InvocationBody({}))
       .build(user.kp.privateKey());
 
@@ -309,14 +324,14 @@ describe("nuc-based access control", () => {
   });
 
   it("enforces revocations", async ({ c }) => {
-    const { expect, app, root, organization } = c;
+    const { expect, app, admin, builder } = c;
 
     // 1. The org mints a delegation nuc addressed to the user
-    const rootNuc = await organization.getRootToken();
+    const rootNuc = await builder.getRootToken();
     const delegationFromBuilderRaw = NucTokenBuilder.extending(rootNuc)
       .audience(Did.fromHex(user.kp.publicKey("hex")))
       .command(NucCmd.nil.db.queries)
-      .build(organization.keypair.privateKey());
+      .build(builder.keypair.privateKey());
     const delegationFromBuilderEnvelope = NucTokenEnvelopeSchema.parse(
       delegationFromBuilderRaw,
     );
@@ -325,11 +340,11 @@ describe("nuc-based access control", () => {
     const invocationByUser = NucTokenBuilder.extending(
       delegationFromBuilderEnvelope,
     )
-      .audience(Did.fromHex(root._options.node.keypair.publicKey("hex")))
+      .audience(Did.fromHex(admin._options.nodePublicKey))
       .build(user.kp.privateKey());
 
     // 3. The org revokes the delegation nuc
-    await organization._options.nilauth.revokeToken(rootNuc);
+    await builder.nilauth.revokeToken(rootNuc);
 
     // 4. User creates a query execution request (average age of wallets in GBR)
     const body: ExecuteQueryRequest = {

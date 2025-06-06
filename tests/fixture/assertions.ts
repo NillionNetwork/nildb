@@ -1,8 +1,7 @@
 import type { UUID } from "mongodb";
-import type { AccountDocument } from "#/admin/admin.types";
 import type { ApiErrorResponse, ApiSuccessResponse } from "#/common/handler";
 import { CollectionName } from "#/common/mongo";
-import type { Did } from "#/common/types";
+import type { AccountDocument, Did } from "#/common/types";
 import type { FixtureContext } from "./fixture";
 
 export function assertDefined<T>(

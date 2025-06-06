@@ -1,13 +1,11 @@
-import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { CollectionName } from "#/common/mongo";
-import type { QueryDocument } from "#/queries/queries.types";
-import type { SchemaDocument } from "#/schemas/schemas.repository";
+import type { SchemaDocument } from "#/schemas/schemas.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
-import { expectAccount, expectSuccessResponse } from "./fixture/assertions";
+import { expectAccount } from "./fixture/assertions";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
@@ -24,45 +22,39 @@ describe("query.test.ts", () => {
   afterAll(async (_c) => {});
 
   it("can list queries (expect 0)", async ({ c }) => {
-    const { expect, organization } = c;
-    const response = await organization.listQueries();
-
-    const result = await expectSuccessResponse<QueryDocument[]>(c, response);
-    expect(result.data).toHaveLength(0);
+    const { expect, builder } = c;
+    const { data } = await builder.listQueries(c).expectSuccess();
+    expect(data).toHaveLength(0);
   });
 
   it("can add a query", async ({ c }) => {
-    const { expect, organization } = c;
-
+    const { builder } = c;
     query.id = new UUID();
-    const response = await organization.addQuery({
-      _id: query.id,
-      name: query.name,
-      schema: query.schema,
-      variables: query.variables,
-      pipeline: query.pipeline,
-    });
-
-    expect(response.status).toBe(StatusCodes.CREATED);
+    await builder
+      .addQuery(c, {
+        _id: query.id,
+        name: query.name,
+        schema: query.schema,
+        variables: query.variables,
+        pipeline: query.pipeline,
+      })
+      .expectSuccess();
   });
 
   it("can list queries (expect 1)", async ({ c }) => {
-    const { expect, organization } = c;
-
-    const response = await organization.listQueries();
-
-    const result = await expectSuccessResponse<QueryDocument[]>(c, response);
-    expect(result.data).toHaveLength(1);
+    const { expect, builder } = c;
+    const { data } = await builder.listQueries(c).expectSuccess();
+    expect(data).toHaveLength(1);
   });
 
   it("can delete a query", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, builder } = c;
 
-    const response = await organization.deleteQuery({
-      id: query.id,
-    });
-
-    expect(response.status).toBe(StatusCodes.NO_CONTENT);
+    await builder
+      .deleteQuery(c, {
+        id: query.id,
+      })
+      .expectSuccess();
 
     const queryDocument = await bindings.db.primary
       .collection<SchemaDocument>(CollectionName.Schemas)
@@ -72,7 +64,7 @@ describe("query.test.ts", () => {
 
     const account = await expectAccount<OrganizationAccountDocument>(
       c,
-      organization.did,
+      builder.did,
     );
     expect(account.queries).toHaveLength(0);
   });

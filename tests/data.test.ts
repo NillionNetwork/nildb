@@ -1,20 +1,17 @@
 import { Keypair } from "@nillion/nuc";
+import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
-import { createUuidDto, Uuid, type UuidDto } from "#/common/types";
-import type { DataDocument, UploadResult } from "#/data/data.repository";
+import { createUuidDto, type UuidDto } from "#/common/types";
+import type { DataDocument } from "#/data/data.repository";
 import { Permissions } from "#/user/user.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
-import {
-  expectErrorResponse,
-  expectSuccessResponse,
-} from "./fixture/assertions";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
-import { TestEndUserClient } from "./fixture/test-client";
+import { createUserTestClient } from "./fixture/test-client";
 
-describe("data operations", () => {
+describe("data", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -32,7 +29,7 @@ describe("data operations", () => {
   };
 
   it("can upload data", async ({ c }) => {
-    const { expect, bindings, organization, user } = c;
+    const { expect, bindings, builder, user } = c;
 
     const data: Record[] = [
       {
@@ -55,18 +52,19 @@ describe("data operations", () => {
       },
     ];
 
-    const response = await organization.uploadData({
-      userId: user.did,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
+    const result = await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.created).toHaveLength(3);
 
     const cursor = bindings.db.data.collection(schema.id.toString()).find({});
@@ -74,9 +72,9 @@ describe("data operations", () => {
     expect(records).toHaveLength(3);
   });
 
-  it("rejects primary key collisions", async ({ skip, c }) => {
+  it.skip("rejects primary key collisions", async ({ skip, c }) => {
     skip("TODO: depends on indexes, disable until index endpoint is ready");
-    const { expect, bindings, organization, user } = c;
+    const { expect, bindings, builder, user } = c;
 
     const data = [
       {
@@ -87,18 +85,19 @@ describe("data operations", () => {
       },
     ];
 
-    const response = await organization.uploadData({
-      userId: user.did,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
+    const result = await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.errors).toHaveLength(1);
 
     const cursor = bindings.db.data.collection(schema.id.toString()).find({});
@@ -106,9 +105,9 @@ describe("data operations", () => {
     expect(records).toHaveLength(3);
   });
 
-  it("allows for partial success", async ({ skip, c }) => {
+  it.skip("allows for partial success", async ({ skip, c }) => {
     skip("depends on indexes, disable until index endpoint is ready");
-    const { expect, organization, user } = c;
+    const { expect, builder, user } = c;
 
     const data: Record[] = [
       {
@@ -125,25 +124,26 @@ describe("data operations", () => {
       },
     ];
 
-    const response = await organization.uploadData({
-      userId: user.did,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
+    const result = await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.errors).toHaveLength(1);
     expect(result.data.created).toHaveLength(1);
   });
 
-  it("rejects duplicates in data payload", async ({ skip, c }) => {
+  it.skip("rejects duplicates in data payload", async ({ skip, c }) => {
     skip("depends on indexes, disable until index endpoint is ready");
-    const { expect, organization, user } = c;
+    const { expect, builder, user } = c;
 
     const data: Record[] = [
       {
@@ -160,16 +160,18 @@ describe("data operations", () => {
       },
     ];
 
-    await organization.uploadData({
-      userId: user.did,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
+    await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
 
     const cursor = c.bindings.db.data.collection(schema.id.toString()).find({});
     const records = await cursor.toArray();
@@ -177,7 +179,7 @@ describe("data operations", () => {
   });
 
   it("rejects data that does not conform", async ({ c }) => {
-    const { expect, organization, user } = c;
+    const { builder, user } = c;
 
     const data: Record[] = [
       {
@@ -189,32 +191,32 @@ describe("data operations", () => {
       },
     ];
 
-    const response = await organization.uploadData({
-      userId: user.did,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("DataValidationError");
+    await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
   });
 
-  it("can run a query", async ({ skip, c }) => {
+  it.skip("can run a query", async ({ skip, c }) => {
     skip("depends on indexes, disable until index endpoint is ready");
-    const { expect, organization } = c;
+    const { expect, builder } = c;
 
-    const response = await organization.executeQuery({
-      id: query.id,
-      variables: query.variables,
-    });
+    const { data } = await builder
+      .executeQuery(c, {
+        id: query.id,
+        variables: query.variables,
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse(c, response);
-    expect(result.data).toEqual([
+    expect(data).toEqual([
       {
         averageAge: 30,
         count: 3,
@@ -223,7 +225,7 @@ describe("data operations", () => {
   });
 
   it("can read data by a single id", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, builder } = c;
 
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
@@ -232,18 +234,19 @@ describe("data operations", () => {
     expect(expected).toBeDefined();
     const _id = expected!._id.toString();
 
-    const response = await organization.readData({
-      schema: schema.id,
-      filter: { _id },
-    });
+    const result = await builder
+      .readData(c, {
+        schema: schema.id,
+        filter: { _id },
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse<Record[]>(c, response);
     const actual = result.data[0];
     expect(actual._id).toBe(_id);
   });
 
   it("can read data from a list of ids", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, builder } = c;
 
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
@@ -254,17 +257,18 @@ describe("data operations", () => {
     expect(expected).toBeDefined();
     const ids = expected.map((document) => document._id.toString());
 
-    const response = await organization.readData({
-      schema: schema.id,
-      filter: { _id: { $in: ids } },
-    });
+    const result = await builder
+      .readData(c, {
+        schema: schema.id,
+        filter: { _id: { $in: ids } },
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse(c, response);
     expect(result.data).toHaveLength(3);
   });
 
   it("can delete data", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, builder } = c;
 
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
@@ -275,19 +279,19 @@ describe("data operations", () => {
     expect(expected).toBeDefined();
     const ids = expected.map((document) => document._id.toString());
 
-    const response = await organization.deleteData({
-      schema: schema.id,
-      filter: { _id: { $in: ids } },
-    });
+    const result = await builder
+      .deleteData(c, {
+        schema: schema.id,
+        filter: { _id: { $in: ids } },
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse(c, response);
     expect((result.data as DeleteResult).deletedCount).toEqual(1);
   });
 
   it("can read user data", async ({ c }) => {
     const { expect, user } = c;
-    const response = await user.readUserData();
-    const result = await expectSuccessResponse(c, response);
+    const result = await user.readUserData(c).expectSuccess();
     expect(result.data).toHaveLength(2);
   });
 
@@ -302,11 +306,13 @@ describe("data operations", () => {
 
     const documentId = expected.map((document) => document._id.toString())[0];
 
-    const response = await user.readPermissions({
-      schema: schema.id,
-      documentId: Uuid.parse(documentId),
-    });
-    const result = await expectSuccessResponse(c, response);
+    const result = await user
+      .readPermissions(c, {
+        schema: schema.id.toString(),
+        documentId: documentId.toString(),
+      })
+      .expectSuccess();
+
     expect(result.data).toHaveLength(1);
     const permissions = Array.isArray(result.data)
       ? (Array.from(result.data)[0] as Permissions)
@@ -317,15 +323,13 @@ describe("data operations", () => {
   });
 
   it("user cannot access data they are not the owner of", async ({ c }) => {
-    const { expect, bindings, organization, user } = c;
-    const otherUserOptions = {
+    const { bindings, builder, user } = c;
+
+    const otherUser = await createUserTestClient({
       app: user.app,
-      node: user._options.node,
-      nilauth: user._options.nilauth,
-      payer: user._options.payer,
       keypair: Keypair.generate(),
-    };
-    const otherUser = new TestEndUserClient(otherUserOptions);
+      nodePublicKey: user._options.nodePublicKey,
+    });
 
     const data: Record[] = [
       {
@@ -337,12 +341,14 @@ describe("data operations", () => {
     ];
 
     // Enforce register user
-    await organization.uploadData({
-      userId: otherUser.did,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did),
-    });
+    await builder
+      .uploadData(c, {
+        userId: otherUser.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did),
+      })
+      .expectSuccess();
 
     const expected = await bindings.db.data
       .collection<DataDocument>(schema.id.toString())
@@ -352,12 +358,12 @@ describe("data operations", () => {
 
     const documentId = expected.map((document) => document._id.toString())[0];
 
-    const response = await otherUser.readPermissions({
-      schema: schema.id,
-      documentId: Uuid.parse(documentId),
-    });
-    const result = await expectErrorResponse(c, response);
-    expect(result.errors.includes("ResourceAccessDeniedError")).toBe(true);
+    await otherUser
+      .readPermissions(c, {
+        schema: schema.id.toString(),
+        documentId: documentId.toString(),
+      })
+      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 
   const targetDid = Keypair.generate().toDidString();
@@ -372,18 +378,21 @@ describe("data operations", () => {
 
     const documentId = expected.map((document) => document._id.toString())[0];
 
-    const addResponse = await user.addPermissions({
-      schema: schema.id,
-      documentId: Uuid.parse(documentId),
-      permissions: new Permissions(targetDid),
-    });
-    await expectSuccessResponse(c, addResponse);
+    await user
+      .addPermissions(c, {
+        schema: schema.id.toString(),
+        documentId: documentId.toString(),
+        permissions: new Permissions(targetDid),
+      })
+      .expectSuccess();
 
-    const response = await user.readPermissions({
-      schema: schema.id,
-      documentId: Uuid.parse(documentId),
-    });
-    const result = await expectSuccessResponse(c, response);
+    const result = await user
+      .readPermissions(c, {
+        schema: schema.id.toString(),
+        documentId: documentId.toString(),
+      })
+      .expectSuccess();
+
     expect(result.data).toHaveLength(2);
     const permissions = Array.isArray(result.data)
       ? (Array.from(result.data)[1] as Permissions)
@@ -404,22 +413,25 @@ describe("data operations", () => {
 
     const documentId = expected.map((document) => document._id.toString())[0];
 
-    const updateResponse = await user.updatePermissions({
-      schema: schema.id,
-      documentId: Uuid.parse(documentId),
-      permissions: new Permissions(targetDid, {
-        read: true,
-        write: true,
-        execute: true,
-      }),
-    });
-    await expectSuccessResponse(c, updateResponse);
+    await user
+      .updatePermissions(c, {
+        schema: schema.id.toString(),
+        documentId: documentId.toString(),
+        permissions: new Permissions(targetDid, {
+          read: true,
+          write: true,
+          execute: true,
+        }),
+      })
+      .expectSuccess();
 
-    const response = await user.readPermissions({
-      schema: schema.id,
-      documentId: Uuid.parse(documentId),
-    });
-    const result = await expectSuccessResponse(c, response);
+    const result = await user
+      .readPermissions(c, {
+        schema: schema.id.toString(),
+        documentId: documentId.toString(),
+      })
+      .expectSuccess();
+
     expect(result.data).toHaveLength(2);
     const permissions = Array.isArray(result.data)
       ? (Array.from(result.data)[1] as Permissions)
@@ -440,18 +452,21 @@ describe("data operations", () => {
 
     const documentId = expected.map((document) => document._id.toString())[0];
 
-    const updateResponse = await user.deletePermissions({
-      schema: schema.id,
-      documentId: Uuid.parse(documentId),
-      did: targetDid,
-    });
-    await expectSuccessResponse(c, updateResponse);
+    await user
+      .deletePermissions(c, {
+        schema: schema.id.toString(),
+        documentId: documentId.toString(),
+        did: targetDid,
+      })
+      .expectSuccess();
 
-    const response = await user.readPermissions({
-      schema: schema.id,
-      documentId: Uuid.parse(documentId),
-    });
-    const result = await expectSuccessResponse(c, response);
+    const result = await user
+      .readPermissions(c, {
+        schema: schema.id.toString(),
+        documentId: documentId.toString(),
+      })
+      .expectSuccess();
+
     expect(result.data).toHaveLength(1);
   });
 });

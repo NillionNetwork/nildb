@@ -1,19 +1,15 @@
 import { faker } from "@faker-js/faker";
-import { Keypair } from "@nillion/nuc";
 import { UUID } from "mongodb";
 import { Temporal } from "temporal-polyfill";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import type { QueryJobDocument } from "#/queries/queries.types";
 import { Permissions } from "#/user/user.types";
 import queryJson from "./data/variables.wallet.query.json";
 import schemaJson from "./data/variables.wallet.schema.json";
-import { expectSuccessResponse } from "./fixture/assertions";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("long running query job", () => {
-  const userId = Keypair.generate().toDidString();
   let jobId: string;
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
@@ -39,22 +35,26 @@ describe("long running query job", () => {
       timestamp: faker.date.recent().toISOString(),
     }));
 
-    await c.organization.uploadData({
-      userId,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(c.organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
+    const { builder, user } = c;
+
+    await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
   });
 
   afterAll(async (_c) => {});
 
   it("can start a long-running job", async ({ c }) => {
-    const { expect, organization } = c;
+    const { expect, builder } = c;
 
     const variables = {
       minAmount: 500,
@@ -62,26 +62,27 @@ describe("long running query job", () => {
       startDate: Temporal.Now.instant().subtract({ hours: 24 }).toString(),
     };
 
-    const response = await organization.executeQuery({
-      id: query.id,
-      variables,
-      background: true,
-    });
-
-    const result = await expectSuccessResponse<{ jobId: string }>(c, response);
+    const result = (await builder
+      .executeQuery(c, {
+        id: query.id,
+        variables,
+        background: true,
+      })
+      .expectSuccess()) as { data: { jobId: string } };
 
     expect(result.data.jobId).toBeDefined();
     jobId = result.data.jobId;
   });
 
   it("can poll for a job result", async ({ c }) => {
-    const { expect, organization } = c;
+    const { expect, builder } = c;
 
     expect(jobId).toBeDefined();
     const jobIdUuid = new UUID(jobId);
 
-    const response = await organization.getQueryJob({ id: jobIdUuid });
-    let result = await expectSuccessResponse<QueryJobDocument>(c, response);
+    let result = await builder
+      .getQueryJob(c, { id: jobIdUuid })
+      .expectSuccess();
 
     for (let attempt = 0; attempt < 5; attempt++) {
       if (result.data.status === "complete") {
@@ -89,10 +90,11 @@ describe("long running query job", () => {
       }
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const pollResponse = await organization.getQueryJob({
-        id: jobIdUuid,
-      });
-      result = await expectSuccessResponse<QueryJobDocument>(c, pollResponse);
+      result = await builder
+        .getQueryJob(c, {
+          id: jobIdUuid,
+        })
+        .expectSuccess();
     }
 
     expect(result.data.status).toBe("complete");
