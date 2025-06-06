@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { describe } from "vitest";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("accounts.test.ts", () => {
+describe("builders.test.ts", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
 
   beforeAll(async (_c) => {});

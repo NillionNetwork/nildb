@@ -3,7 +3,7 @@ import * as amqp from "amqplib";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { BuilderDocument } from "#/builders/builders.types";
 import { Cache } from "#/common/cache";
 import { createLogger, LogLevel } from "#/common/logger";
 import type { Did } from "#/common/types";
@@ -54,7 +54,7 @@ export type AppBindings = {
     data: Db;
   };
   cache: {
-    accounts: Cache<Did, OrganizationAccountDocument>;
+    builders: Cache<Did, BuilderDocument>;
   };
   log: Logger;
   mq?: {
@@ -104,7 +104,7 @@ declare global {
 // the majority of routes, which require auth. So the risk is accepted here to avoid the type complexity cascade.
 export type AppVariables = {
   envelope: NucTokenEnvelope;
-  account: OrganizationAccountDocument;
+  builder: BuilderDocument;
   user: UserDocument;
 };
 
@@ -131,7 +131,7 @@ export async function loadBindings(
   return {
     config,
     cache: {
-      accounts: new Cache<Did, OrganizationAccountDocument>(),
+      builders: new Cache<Did, BuilderDocument>(),
     },
     db: await initAndCreateDbClients(config),
     log: createLogger(config.logLevel),

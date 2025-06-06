@@ -8,24 +8,24 @@ import {
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
-import type { OrganizationAccountDocument } from "./accounts.types";
+import type { BuilderDocument } from "./builders.types";
 
 /**
- * Inserts a new organisation account document into the database.
+ * Inserts a new organisation builder document into the database.
  *
  * @param ctx - Application context containing database connections
- * @param document - Complete account document to insert
+ * @param document - Complete builder document to insert
  * @returns Effect indicating success or database errors
  */
 export function insert(
   ctx: AppBindings,
-  document: OrganizationAccountDocument,
+  document: BuilderDocument,
 ): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<BuilderDocument>(
       ctx,
       "primary",
-      CollectionName.Accounts,
+      CollectionName.Builders,
     ),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
@@ -36,35 +36,35 @@ export function insert(
 }
 
 /**
- * Retrieves any account type by DID with caching.
+ * Retrieves any builder type by DID with caching.
  *
  * Checks the cache first, falls back to database if not found.
  * Caches the result for subsequent requests.
  *
  * @param ctx - Application context containing database connections and cache
- * @param _id - DID of the account to retrieve
- * @returns Effect containing the account document or relevant errors
+ * @param _id - DID of the builder to retrieve
+ * @returns Effect containing the builder document or relevant errors
  */
 export function findByIdWithCache(
   ctx: AppBindings,
   _id: Did,
 ): E.Effect<
-  OrganizationAccountDocument,
+  BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const cache = ctx.cache.accounts;
-  const account = cache.get(_id);
-  if (account) {
-    return E.succeed(account);
+  const cache = ctx.cache.builders;
+  const builder = cache.get(_id);
+  if (builder) {
+    return E.succeed(builder);
   }
 
   const filter = { _id };
 
   return pipe(
-    checkCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<BuilderDocument>(
       ctx,
       "primary",
-      CollectionName.Accounts,
+      CollectionName.Builders,
     ),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
@@ -75,7 +75,7 @@ export function findByIdWithCache(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Accounts,
+              collection: CollectionName.Builders,
               filter,
             }),
           )
@@ -86,10 +86,10 @@ export function findByIdWithCache(
 }
 
 /**
- * Retrieves an organisation account by DID.
+ * Retrieves an organisation builder by DID.
  *
  * Filters by both DID and organisation role to ensure
- * only organisation accounts are returned.
+ * only organisation builders are returned.
  *
  * @param ctx - Application context containing database connections
  * @param _id - DID of the organisation to retrieve
@@ -99,17 +99,17 @@ export function findOneOrganization(
   ctx: AppBindings,
   _id: Did,
 ): E.Effect<
-  OrganizationAccountDocument,
+  BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<OrganizationAccountDocument> = {
+  const filter: StrictFilter<BuilderDocument> = {
     _id,
   };
   return pipe(
-    checkCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<BuilderDocument>(
       ctx,
       "primary",
-      CollectionName.Accounts,
+      CollectionName.Builders,
     ),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
@@ -120,7 +120,7 @@ export function findOneOrganization(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Accounts,
+              collection: CollectionName.Builders,
               filter,
             }),
           )
@@ -130,9 +130,9 @@ export function findOneOrganization(
 }
 
 /**
- * Deletes an organisation account by DID.
+ * Deletes an organisation builder by DID.
  *
- * Removes the account from the database and invalidates
+ * Removes the builder from the database and invalidates
  * any cached entries for this DID.
  *
  * @param ctx - Application context containing database connections and cache
@@ -146,15 +146,15 @@ export function deleteOneById(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<OrganizationAccountDocument> = {
+  const filter: StrictFilter<BuilderDocument> = {
     _id,
   };
 
   return pipe(
-    checkCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<BuilderDocument>(
       ctx,
       "primary",
-      CollectionName.Accounts,
+      CollectionName.Builders,
     ),
     E.tryMapPromise({
       try: (collection) => collection.deleteOne(filter),
@@ -164,18 +164,18 @@ export function deleteOneById(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Accounts,
+              collection: CollectionName.Builders,
               filter,
             }),
           )
         : E.succeed(result),
     ),
-    E.tap(() => ctx.cache.accounts.delete(_id)),
+    E.tap(() => ctx.cache.builders.delete(_id)),
   );
 }
 
 /**
- * Updates an organisation account's fields.
+ * Updates an organisation builder's fields.
  *
  * Performs a partial update of allowed fields using MongoDB's
  * $set operator. Currently supports updating name only.
@@ -193,10 +193,10 @@ export function update(
   UpdateResult,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<OrganizationAccountDocument> = {
+  const filter: StrictFilter<BuilderDocument> = {
     _id,
   };
-  const update: StrictUpdateFilter<OrganizationAccountDocument> = {
+  const update: StrictUpdateFilter<BuilderDocument> = {
     $set: {
       ...(updates._id && { _id: updates._id }),
       ...(updates.name && { name: updates.name }),
@@ -204,10 +204,10 @@ export function update(
   };
 
   return pipe(
-    checkCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<BuilderDocument>(
       ctx,
       "primary",
-      CollectionName.Accounts,
+      CollectionName.Builders,
     ),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
@@ -217,7 +217,7 @@ export function update(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Accounts,
+              collection: CollectionName.Builders,
               filter,
             }),
           )

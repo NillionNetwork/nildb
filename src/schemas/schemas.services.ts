@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { CreateIndexesOptions, IndexSpecification, UUID } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { BuilderDocument } from "#/builders/builders.types";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -25,7 +25,7 @@ import * as SchemasRepository from "./schemas.repository";
 
 export function getOrganizationSchemas(
   ctx: AppBindings,
-  organization: OrganizationAccountDocument,
+  organization: BuilderDocument,
 ): E.Effect<
   SchemaDocument[],
   | DocumentNotFoundError
@@ -62,7 +62,7 @@ export function addSchema(
     () => SchemasRepository.insert(ctx, document),
     E.flatMap(() =>
       E.all([
-        E.succeed(ctx.cache.accounts.taint(document.owner)),
+        E.succeed(ctx.cache.builders.taint(document.owner)),
         OrganizationRepository.addSchema(ctx, command.owner, document._id),
         DataRepository.createCollection(ctx, document._id),
       ]),
@@ -85,7 +85,7 @@ export function deleteSchema(
     SchemasRepository.deleteOne(ctx, { _id: command.id }),
     E.flatMap((schema) =>
       E.all([
-        E.succeed(ctx.cache.accounts.taint(schema.owner)),
+        E.succeed(ctx.cache.builders.taint(schema.owner)),
         OrganizationRepository.removeSchema(ctx, schema.owner, command.id),
         DataRepository.deleteCollection(ctx, command.id),
       ]),

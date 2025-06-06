@@ -11,9 +11,9 @@ export const PathSchema = z
 export type Path = z.infer<typeof PathSchema>;
 
 export const PathsV1 = {
-  accounts: {
+  builders: {
     register: PathSchema.parse("/api/v1/register"),
-    me: PathSchema.parse("/api/v1/accounts/me"),
+    me: PathSchema.parse("/api/v1/builders/me"),
   },
   admin: {
     root: PathSchema.parse("/api/v1/admin"),

@@ -1,5 +1,5 @@
 import type { UUID } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { BuilderDocument } from "#/builders/builders.types";
 import type { ApiErrorResponse, ApiSuccessResponse } from "#/common/handler";
 import { CollectionName } from "#/common/mongo";
 import type { Did } from "#/common/types";
@@ -49,15 +49,15 @@ export async function expectErrorResponse(
   return body;
 }
 
-export async function expectAccount(
+export async function expectBuilder(
   c: FixtureContext,
   did: Did,
-): Promise<OrganizationAccountDocument> {
+): Promise<BuilderDocument> {
   const document = await c.bindings.db.primary
-    .collection<OrganizationAccountDocument>(CollectionName.Accounts)
+    .collection<BuilderDocument>(CollectionName.Builders)
     .findOne({ _id: did });
 
-  assertDefined(c, document, `Account does not exist: did=${did}`);
+  assertDefined(c, document, `Builder does not exist: did=${did}`);
   return document;
 }
 

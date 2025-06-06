@@ -50,7 +50,7 @@ export const DidSchema = z
   .transform((v) => v as Did)
   .openapi({
     description:
-      "The account's decentralised identifier following the form: `did:nil:<secp256k1_pub_key_as_hex>`",
+      "The builder's decentralised identifier following the form: `did:nil:<secp256k1_pub_key_as_hex>`",
     example:
       "did:nil:037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b",
     type: "string",

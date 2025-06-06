@@ -8,7 +8,7 @@ import schemaJson from "./data/wallet.schema.json";
 import {
   assertDefined,
   assertDocumentCount,
-  expectAccount,
+  expectBuilder,
 } from "./fixture/assertions";
 import type { SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
@@ -41,7 +41,7 @@ describe("schemas.test.ts", () => {
       .expectSuccess();
 
     const document = await bindings.db.primary
-      .collection(CollectionName.Accounts)
+      .collection(CollectionName.Builders)
       .findOne({
         schemas: { $elemMatch: { $in: [_id] } },
       });
@@ -114,8 +114,8 @@ describe("schemas.test.ts", () => {
 
     expect(schemaDocument).toBeNull();
 
-    const organizationDocument = await expectAccount(c, builder.did);
-    expect(organizationDocument.schemas).toHaveLength(0);
+    const builderDocument = await expectBuilder(c, builder.did);
+    expect(builderDocument.schemas).toHaveLength(0);
 
     await assertDocumentCount(c, id, 0);
   });

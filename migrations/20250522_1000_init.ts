@@ -21,7 +21,7 @@ export class init_collections implements MigrationInterface {
     try {
       await session.withTransaction(async () => {
         await Promise.all([
-          primary.createCollection(CollectionName.Accounts),
+          primary.createCollection(CollectionName.Builders),
           primary.createCollection(CollectionName.Queries),
           primary.createCollection(CollectionName.Schemas),
           primary.createCollection(CollectionName.Config),
@@ -48,7 +48,7 @@ export class init_collections implements MigrationInterface {
     const session = client.startSession();
     try {
       await Promise.all([
-        primary.dropCollection(CollectionName.Accounts),
+        primary.dropCollection(CollectionName.Builders),
         primary.dropCollection(CollectionName.Queries),
         primary.dropCollection(CollectionName.Schemas),
         primary.dropCollection(CollectionName.Config),

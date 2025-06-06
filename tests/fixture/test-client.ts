@@ -12,12 +12,12 @@ import {
 } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import z from "zod";
+import type { App } from "#/app";
 import {
   GetProfileResponse,
-  type RegisterAccountRequest,
+  type RegisterBuilderRequest,
   type UpdateProfileRequest,
-} from "#/accounts/accounts.dto";
-import type { App } from "#/app";
+} from "#/builders/builders.dto";
 import { PathsV1 } from "#/common/paths";
 import {
   type DeleteDataRequest,
@@ -98,7 +98,7 @@ type AdminTestClientOptions = BaseTestClientOptions & {
  *
  * Builder clients pay subscriptions for access and require nilauth services
  * for token generation. They have access to data, queries, schemas, and
- * account management endpoints.
+ * builder management endpoints.
  */
 type BuilderTestClientOptions = BaseTestClientOptions & {
   /** Discriminator for builder client type */
@@ -345,7 +345,7 @@ export class AdminTestClient extends BaseTestClient {
  *
  * Builder clients pay subscriptions for access to the node and require nilauth
  * services for token generation. They have access to data management, query
- * execution, schema definition, and account management endpoints. These clients
+ * execution, schema definition, and builder management endpoints. These clients
  * represent organizations that build applications on top of NilDB.
  */
 export class BuilderTestClient extends BaseTestClient {
@@ -421,22 +421,22 @@ export class BuilderTestClient extends BaseTestClient {
     return response.token;
   }
 
-  // Account Management API Methods
+  // Builder Management API Methods
 
   /**
-   * Registers a new organization account.
+   * Registers a new organization builder.
    *
-   * Note: This endpoint bypasses authentication for initial account creation.
+   * Note: This endpoint bypasses authentication for initial builder creation.
    *
    * @param c - Test fixture context
-   * @param body - Account registration request
-   * @returns Response handler for account registration
+   * @param body - Builder registration request
+   * @returns Response handler for builder registration
    */
-  register(c: FixtureContext, body: RegisterAccountRequest): ResponseHandler {
+  register(c: FixtureContext, body: RegisterBuilderRequest): ResponseHandler {
     return new ResponseHandler(
       c,
       () =>
-        this.app.request(PathsV1.accounts.register, {
+        this.app.request(PathsV1.builders.register, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
@@ -446,7 +446,7 @@ export class BuilderTestClient extends BaseTestClient {
   }
 
   /**
-   * Retrieves the authenticated account's profile information.
+   * Retrieves the authenticated builder's profile information.
    *
    * @param c - Test fixture context
    * @returns Response handler for profile retrieval
@@ -454,14 +454,14 @@ export class BuilderTestClient extends BaseTestClient {
   getProfile(c: FixtureContext): ResponseHandler<GetProfileResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.accounts.me),
+      () => this.request(PathsV1.builders.me),
       StatusCodes.OK,
       GetProfileResponse,
     );
   }
 
   /**
-   * Updates the authenticated account's profile information.
+   * Updates the authenticated builder's profile information.
    *
    * @param c - Test fixture context
    * @param body - Profile update request
@@ -473,21 +473,21 @@ export class BuilderTestClient extends BaseTestClient {
   ): ResponseHandler {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.accounts.me, { method: "POST", body }),
+      () => this.request(PathsV1.builders.me, { method: "POST", body }),
       StatusCodes.NO_CONTENT,
     );
   }
 
   /**
-   * Deletes the authenticated account and all associated resources.
+   * Deletes the authenticated builder and all associated resources.
    *
    * @param c - Test fixture context
-   * @returns Response handler for account deletion
+   * @returns Response handler for builder deletion
    */
-  deleteAccount(c: FixtureContext) {
+  deleteBuilder(c: FixtureContext) {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.accounts.me, { method: "DELETE" }),
+      () => this.request(PathsV1.builders.me, { method: "DELETE" }),
       StatusCodes.NO_CONTENT,
     );
   }

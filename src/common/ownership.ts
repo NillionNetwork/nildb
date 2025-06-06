@@ -1,15 +1,15 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { BuilderDocument } from "#/builders/builders.types";
 import { ResourceAccessDeniedError } from "#/common/errors";
 import type { UserDocument } from "#/user/user.types";
 
 export function enforceQueryOwnership(
-  account: OrganizationAccountDocument,
+  builder: BuilderDocument,
   query: UUID,
 ): E.Effect<void, ResourceAccessDeniedError> {
   return pipe(
-    E.succeed(account.queries.some((s) => s.toString() === query.toString())),
+    E.succeed(builder.queries.some((s) => s.toString() === query.toString())),
     E.flatMap((isAuthorized) => {
       return isAuthorized
         ? E.succeed(void 0)
@@ -17,7 +17,7 @@ export function enforceQueryOwnership(
             new ResourceAccessDeniedError({
               type: "query",
               id: query.toString(),
-              user: account._id,
+              user: builder._id,
             }),
           );
     }),
@@ -25,11 +25,11 @@ export function enforceQueryOwnership(
 }
 
 export function enforceSchemaOwnership(
-  account: OrganizationAccountDocument,
+  builder: BuilderDocument,
   schema: UUID,
 ): E.Effect<void, ResourceAccessDeniedError> {
   return pipe(
-    E.succeed(account.schemas.some((s) => s.toString() === schema.toString())),
+    E.succeed(builder.schemas.some((s) => s.toString() === schema.toString())),
     E.flatMap((isAuthorized) => {
       return isAuthorized
         ? E.succeed(void 0)
@@ -37,7 +37,7 @@ export function enforceSchemaOwnership(
             new ResourceAccessDeniedError({
               type: "schema",
               id: schema.toString(),
-              user: account._id,
+              user: builder._id,
             }),
           );
     }),

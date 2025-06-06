@@ -13,7 +13,7 @@ import type { Context, Env, Input, MiddlewareHandler } from "hono";
 import type { BlankInput } from "hono/types";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
-import * as AccountsRepository from "#/accounts/accounts.repository";
+import * as BuilderRepository from "#/builders/builders.repository";
 import type { AppBindings, AppEnv } from "#/env";
 import * as UserRepository from "#/user/user.repository";
 
@@ -107,15 +107,15 @@ export function loadSubjectAndVerifyAsBuilder<
       const token = envelope.token.token;
       const subject = token.subject.toString();
 
-      // load account
-      const account = await pipe(
-        AccountsRepository.findByIdWithCache(bindings, subject),
+      // load builder
+      const builder = await pipe(
+        BuilderRepository.findByIdWithCache(bindings, subject),
         E.catchAll((_e) => E.succeed(null)),
         E.runPromise,
       );
 
-      if (!account) {
-        c.env.log.debug("Unknown account: %s", subject);
+      if (!builder) {
+        c.env.log.debug("Unknown builder: %s", subject);
         return c.text(
           getReasonPhrase(StatusCodes.UNAUTHORIZED),
           StatusCodes.UNAUTHORIZED,
@@ -142,7 +142,7 @@ export function loadSubjectAndVerifyAsBuilder<
           StatusCodes.UNAUTHORIZED,
         );
       }
-      c.set("account", account);
+      c.set("builder", builder);
 
       return next();
     } catch (cause) {

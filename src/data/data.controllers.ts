@@ -1,7 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { BuilderDocument } from "#/builders/builders.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { OpenApiSpecCommonErrorResponses } from "#/common/openapi";
@@ -63,12 +63,12 @@ export function remove(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
       const command = DataMapper.toDeleteRecordsCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, command.schema),
+        enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.deleteRecords(c.env, command)),
         E.map((result) => DataMapper.toDeleteDataResponse(result)),
         E.map((response) => c.json<DeleteDataResponse>(response)),
@@ -112,12 +112,12 @@ export function flush(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
       const command = DataMapper.toFlushCollectionCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, command.schema),
+        enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.flushCollection(c.env, command)),
         E.map((result) => DataMapper.toFlushDataResponse(result)),
         E.map((response) => c.json<FlushDataResponse>(response)),
@@ -161,12 +161,12 @@ export function read(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
       const command = DataMapper.toReadRecordsCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, command.schema),
+        enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.readRecords(c.env, command)),
         E.map((documents) => DataMapper.toReadDataResponse(documents)),
         E.map((response) => c.json<ReadDataResponse>(response)),
@@ -210,12 +210,12 @@ export function tail(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
       const command = DataMapper.toTailDataCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, command.schema),
+        enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.tailData(c.env, command)),
         E.map((documents) => DataMapper.toTailDataResponse(documents)),
         E.map((response) => c.json<TailDataResponse>(response)),
@@ -259,12 +259,12 @@ export function update(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
       const command = DataMapper.toUpdateRecordsCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, command.schema),
+        enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.updateRecords(c.env, command)),
         E.map((result) => DataMapper.toUpdateDataResponse(result)),
         E.map((response) => c.json<UpdateDataResponse>(response)),
@@ -307,12 +307,12 @@ export function upload(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
       const command = DataMapper.toCreateRecordsCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, command.schemaId),
+        enforceSchemaOwnership(builder, command.schemaId),
         E.flatMap(() => DataService.createRecords(c.env, command)),
         E.map((result) => DataMapper.toUploadDataResponse(result)),
         E.map((response) => c.json<UploadDataResponse>(response)),
