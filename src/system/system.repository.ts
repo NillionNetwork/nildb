@@ -1,114 +1,96 @@
-import { Effect as E, Option as O, pipe } from "effect";
-import type { StrictFilter, StrictUpdateFilter } from "mongodb";
-import { Temporal } from "temporal-polyfill";
-import type { AdminSetMaintenanceWindowRequest } from "#/admin/admin.types";
-import {
-  type CollectionNotFoundError,
-  DatabaseError,
-  DocumentNotFoundError,
-} from "#/common/errors";
+import { Effect as E, pipe } from "effect";
+import type { StrictFilter, StrictUpdateFilter, UpdateOptions } from "mongodb";
+import { type CollectionNotFoundError, DatabaseError } from "#/common/errors";
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { AppBindings } from "#/env";
-import type { ConfigDocument, MaintenanceWindow } from "./system.types";
+import type { MaintenanceStatusDocument } from "#/system/system.types";
 
-export function setMaintenanceWindow(
+/**
+ * Maintenance state is managed as a singleton document in the config collection.
+ * The document uses `_type: "maintenance"` as its unique identifier.
+ *
+ * State model:
+ * - No document exists = maintenance is inactive
+ * - Document exists with `active: true` = maintenance is active
+ */
+export function startMaintenance(
   ctx: AppBindings,
-  data: AdminSetMaintenanceWindowRequest,
 ): E.Effect<void, CollectionNotFoundError | DatabaseError> {
-  const filter: StrictFilter<ConfigDocument> = { _type: "maintenance" };
-  const update: StrictUpdateFilter<ConfigDocument> = {
-    $set: { window: { start: data.start, end: data.end } },
+  // Filter targets the singleton maintenance state document
+  const filter: StrictFilter<MaintenanceStatusDocument> = {
+    _type: "maintenance",
   };
+  const update: StrictUpdateFilter<MaintenanceStatusDocument> = {
+    $set: {
+      _type: "maintenance",
+      active: true,
+      startedAt: new Date(),
+    },
+  };
+  const options: UpdateOptions = { upsert: true };
 
   return pipe(
-    checkCollectionExists<ConfigDocument>(
+    checkCollectionExists<MaintenanceStatusDocument>(
       ctx,
       "primary",
       CollectionName.Config,
     ),
     E.tryMapPromise({
-      try: (collection) =>
-        collection.updateOne(filter, update, {
-          upsert: true,
-        }),
+      // updateOne with upsert ensures exactly one maintenance document exists
+      try: (collection) => collection.updateOne(filter, update, options),
       catch: (cause) =>
-        new DatabaseError({ cause, message: "setMaintenanceWindow" }),
+        new DatabaseError({ cause, message: "startMaintenance" }),
     }),
     E.as(void 0),
   );
 }
 
-export function findMaintenanceWindow(
+export function stopMaintenance(
   ctx: AppBindings,
-): E.Effect<
-  O.Option<MaintenanceWindow>,
-  CollectionNotFoundError | DatabaseError | DocumentNotFoundError
-> {
-  const filter: StrictFilter<ConfigDocument> = {
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+  // Filter targets the singleton maintenance state document
+  const filter: StrictFilter<MaintenanceStatusDocument> = {
     _type: "maintenance",
   };
 
   return pipe(
-    checkCollectionExists<ConfigDocument>(
+    checkCollectionExists<MaintenanceStatusDocument>(
       ctx,
       "primary",
       CollectionName.Config,
     ),
     E.tryMapPromise({
-      try: (collection) => collection.findOne(filter),
+      // Delete the singleton document to indicate maintenance is inactive
+      try: (collection) => collection.deleteOne(filter),
       catch: (cause) =>
-        new DatabaseError({ cause, message: "findMaintenanceWindow" }),
+        new DatabaseError({ cause, message: "stopMaintenance" }),
     }),
-    E.flatMap((result) => {
-      if (!result || !result.window) {
-        return O.none();
-      }
-
-      const window = {
-        start: Temporal.Instant.from(result.window.start.toISOString()),
-        end: Temporal.Instant.from(result.window.end.toISOString()),
-      };
-      return E.succeed(O.some(window));
-    }),
-    E.mapError(
-      () =>
-        new DocumentNotFoundError({
-          collection: CollectionName.Config,
-          filter,
-        }),
-    ),
+    E.as(void 0),
   );
 }
 
-export function deleteMaintenanceWindow(
+export function findMaintenanceConfig(
   ctx: AppBindings,
 ): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DocumentNotFoundError
+  MaintenanceStatusDocument | null,
+  CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<ConfigDocument> = { _type: "maintenance" };
+  // Filter targets the singleton maintenance state document
+  const filter: StrictFilter<MaintenanceStatusDocument> = {
+    _type: "maintenance",
+  };
 
   return pipe(
-    checkCollectionExists<ConfigDocument>(
+    checkCollectionExists<MaintenanceStatusDocument>(
       ctx,
       "primary",
       CollectionName.Config,
     ),
     E.tryMapPromise({
-      try: (collection) =>
-        collection.updateOne(filter, {
-          $unset: { window: "" },
-        }),
+      // findOne returns the singleton document or null if inactive
+      try: (collection) => collection.findOne(filter),
       catch: (cause) =>
-        new DatabaseError({ cause, message: "deleteMaintenanceWindow" }),
+        new DatabaseError({ cause, message: "findMaintenanceConfig" }),
     }),
-    E.mapError(
-      () =>
-        new DocumentNotFoundError({
-          collection: CollectionName.Config,
-          filter,
-        }),
-    ),
-    E.as(void 0),
   );
 }

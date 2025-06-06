@@ -1,19 +1,14 @@
 import { faker } from "@faker-js/faker";
-import { Keypair } from "@nillion/nuc";
+import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import { Permissions } from "#/user/user.types";
 import queryJson from "./data/variables.wallet.query.json";
 import schemaJson from "./data/variables.wallet.schema.json";
-import {
-  expectErrorResponse,
-  expectSuccessResponse,
-} from "./fixture/assertions";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("query variable validation", () => {
-  const userId = Keypair.generate().toDidString();
+describe("queries variables", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -44,22 +39,26 @@ describe("query variable validation", () => {
       timestamp: faker.date.recent().toISOString(),
     }));
 
-    await c.organization.uploadData({
-      userId,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(c.organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
+    const { builder, user } = c;
+
+    await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
   });
 
   afterAll(async (_c) => {});
 
   it("can execute query with variables", async ({ c }) => {
-    const { expect, organization } = c;
+    const { expect, builder } = c;
 
     const variables = {
       minAmount: 500,
@@ -70,14 +69,17 @@ describe("query variable validation", () => {
       },
     };
 
-    const response = await organization.executeQuery({
-      id: query.id,
-      variables,
-    });
+    const result = await builder
+      .executeQuery(c, {
+        id: query.id,
+        variables,
+        background: false,
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse<QueryResult[]>(c, response);
+    const data = result.data as QueryResult[];
 
-    for (const record of result.data) {
+    for (const record of data) {
       expect(record._id).toBe("completed");
       expect(record.totalAmount).toBeGreaterThanOrEqual(500 * record.count);
       expect(record.count).toBeGreaterThan(0);
@@ -85,7 +87,7 @@ describe("query variable validation", () => {
   });
 
   it("rejects object as variable value", async ({ c }) => {
-    const { expect, organization } = c;
+    const { builder } = c;
 
     const variables = {
       minAmount: 500,
@@ -96,17 +98,17 @@ describe("query variable validation", () => {
       },
     };
 
-    const response = await organization.executeQuery({
-      id: query.id,
-      variables,
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("DataValidationError");
+    await builder
+      .executeQuery(c, {
+        id: query.id,
+        variables,
+        background: false,
+      })
+      .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
   });
 
   it("rejects null as variable value", async ({ c }) => {
-    const { expect, organization } = c;
+    const { builder } = c;
 
     const variables = {
       minAmount: 500,
@@ -117,17 +119,16 @@ describe("query variable validation", () => {
       },
     };
 
-    const response = await organization.executeQuery({
-      id: query.id,
-      variables,
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("DataValidationError");
+    await builder
+      .executeQuery(c, {
+        id: query.id,
+        variables,
+      })
+      .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
   });
 
   it("rejects undefined as variable value", async ({ c }) => {
-    const { expect, organization } = c;
+    const { builder } = c;
 
     const variables = {
       minAmount: 500,
@@ -138,17 +139,17 @@ describe("query variable validation", () => {
       },
     };
 
-    const response = await organization.executeQuery({
-      id: query.id,
-      variables,
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("DataValidationError");
+    await builder
+      .executeQuery(c, {
+        id: query.id,
+        variables,
+        background: false,
+      })
+      .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
   });
 
   it("rejects function as variable value", async ({ c }) => {
-    const { expect, organization } = c;
+    const { builder } = c;
 
     const variables = {
       minAmount: 500,
@@ -159,12 +160,12 @@ describe("query variable validation", () => {
       },
     };
 
-    const response = await organization.executeQuery({
-      id: query.id,
-      variables,
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("DataValidationError");
+    await builder
+      .executeQuery(c, {
+        id: query.id,
+        variables,
+        background: false,
+      })
+      .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
   });
 });

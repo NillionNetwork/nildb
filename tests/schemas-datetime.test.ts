@@ -1,19 +1,13 @@
-import { Keypair } from "@nillion/nuc";
+import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createUuidDto } from "#/common/types";
-import type { UploadResult } from "#/data/data.repository";
 import { Permissions } from "#/user/user.types";
 import queryJson from "./data/datetime.query.json";
 import schemaJson from "./data/datetime.schema.json";
-import {
-  expectErrorResponse,
-  expectSuccessResponse,
-} from "./fixture/assertions";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("schemas.datetime.test", () => {
-  const userId = Keypair.generate().toDidString();
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -24,7 +18,7 @@ describe("schemas.datetime.test", () => {
   afterAll(async (_c) => {});
 
   it("can upload date-times", async ({ c }) => {
-    const { expect, bindings, organization } = c;
+    const { expect, bindings, builder, user } = c;
 
     const data = [
       { _id: createUuidDto(), datetime: "2024-03-19T14:30:00Z" },
@@ -32,18 +26,19 @@ describe("schemas.datetime.test", () => {
       { _id: createUuidDto(), datetime: "2024-03-19T14:30:00+01:00" },
     ];
 
-    const response = await organization.uploadData({
-      userId,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
+    const result = await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse<UploadResult>(c, response);
     expect(result.data.created).toHaveLength(3);
 
     const cursor = bindings.db.data.collection(schema.id.toString()).find({});
@@ -52,7 +47,7 @@ describe("schemas.datetime.test", () => {
   });
 
   it("rejects invalid date-times", async ({ c }) => {
-    const { expect, organization } = c;
+    const { builder, user } = c;
 
     const data = [
       { _id: createUuidDto(), datetime: "2024-03-19" },
@@ -63,34 +58,30 @@ describe("schemas.datetime.test", () => {
     ];
 
     for (const invalid of data) {
-      const response = await organization.uploadData({
-        userId,
-        schema: schema.id,
-        data: [invalid],
-        permissions: new Permissions(organization.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
-      });
-
-      const result = await expectErrorResponse(c, response);
-      expect(result.errors).includes("DataValidationError");
+      await builder
+        .uploadData(c, {
+          userId: user.did,
+          schema: schema.id,
+          data: [invalid],
+          permissions: new Permissions(builder.did, {
+            read: true,
+            write: false,
+            execute: false,
+          }),
+        })
+        .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
     }
   });
 
   it("can run query with datetime data", async ({ c }) => {
-    const { expect, organization } = c;
+    const { expect, builder } = c;
 
-    const response = await organization.executeQuery({
-      id: query.id,
-      variables: query.variables,
-    });
-
-    const result = await expectSuccessResponse<Record<string, unknown>>(
-      c,
-      response,
-    );
+    const result = await builder
+      .executeQuery(c, {
+        id: query.id,
+        variables: query.variables,
+      })
+      .expectSuccess();
 
     expect(result.data).toEqual([
       {

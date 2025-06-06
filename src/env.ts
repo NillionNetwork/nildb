@@ -3,16 +3,14 @@ import * as amqp from "amqplib";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
-import type { AccountDocument, RootAccountDocument } from "#/admin/admin.types";
 import { CACHE_FOREVER, Cache } from "#/common/cache";
-import { createLogger } from "#/common/logger";
-import type { Did } from "#/common/types";
-import type { UserDocument } from "#/user/user.repository";
+import { createLogger, LogLevel } from "#/common/logger";
+import type { AccountDocument, Did, RootAccountDocument } from "#/common/types";
 import { initAndCreateDbClients } from "./common/mongo";
+import type { UserDocument } from "./user/user.types";
 
 export const PRIVATE_KEY_LENGTH = 64;
 export const PUBLIC_KEY_LENGTH = 66;
-export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
 
 export const FeatureFlag = {
   OPENAPI_SPEC: "openapi",
@@ -35,7 +33,7 @@ export const EnvVarsSchema = z.object({
   enabledFeatures: z
     .string()
     .transform((d) => d.split(",").map((e) => e.trim())),
-  logLevel: z.enum(LOG_LEVELS),
+  logLevel: LogLevel,
   nilauthBaseUrl: z.string().url(),
   nilauthPubKey: z.string().length(PUBLIC_KEY_LENGTH),
   nilcommPublicKey: z.string().length(PUBLIC_KEY_LENGTH).optional(),
@@ -89,6 +87,7 @@ declare global {
       APP_LOG_LEVEL: string;
       APP_NILAUTH_PUBLIC_KEY: string;
       APP_NILAUTH_BASE_URL: string;
+      APP_NILCHAIN_JSON_RPC: string;
       APP_NILCOMM_PUBLIC_KEY?: string;
       APP_METRICS_PORT?: number;
       APP_MQ_URI?: string;

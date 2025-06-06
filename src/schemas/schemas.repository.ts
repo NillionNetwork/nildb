@@ -20,22 +20,12 @@ import {
   applyCoercions,
   CollectionName,
   checkCollectionExists,
-  type DocumentBase,
   isMongoError,
   MongoErrorCode,
 } from "#/common/mongo";
-import type { CoercibleMap, Did } from "#/common/types";
+import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
-import type { SchemaMetadata } from "#/schemas/schemas.types";
-
-export type SchemaDocumentType = "standard" | "owned";
-export type SchemaDocumentBase = DocumentBase<UUID>;
-export type SchemaDocument = SchemaDocumentBase & {
-  owner: Did;
-  name: string;
-  schema: Record<string, unknown>;
-  documentType: SchemaDocumentType;
-};
+import type { SchemaDocument, SchemaMetadata } from "#/schemas/schemas.types";
 
 export function addSchemaDocumentCoercions(
   coercibleMap: CoercibleMap,

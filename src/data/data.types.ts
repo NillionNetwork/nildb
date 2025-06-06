@@ -1,64 +1,112 @@
-import { z } from "zod";
-import { DidSchema, Uuid, type UuidDto } from "#/common/types";
-import { PermissionsSchema } from "#/user/user.types";
+import type { UUID } from "mongodb";
+import type { Did, UuidDto } from "#/common/types";
+import type { Permissions } from "#/user/user.types";
 
 /**
- * Constants
+ * Domain types for data storage and management operations.
+ *
+ * These types define the structure for data documents and related
+ * operations within schema-validated collections in the NilDB system.
  */
-export const MAX_RECORDS_LENGTH = 10_000;
 
 /**
- * Controller types
+ * Partial data document structure for internal processing.
+ *
+ * Represents user-provided data records with system-generated identifiers.
+ * This intersection type combines an array of records with an ID field,
+ * used during the data validation and insertion pipeline.
+ *
+ * Note: This type uses intersection with arrays to maintain compatibility
+ * with existing validation logic while adding the ID requirement.
  */
-export const UploadDataRequestSchema = z.object({
-  userId: DidSchema,
-  schema: Uuid,
-  data: z
-    .array(z.record(z.string(), z.unknown()))
-    .refine(
-      (elements) =>
-        elements.length > 0 && elements.length <= MAX_RECORDS_LENGTH,
-      { message: `Length must be non zero and lte ${MAX_RECORDS_LENGTH}` },
-    ),
-  permissions: PermissionsSchema,
-});
-export type UploadDataRequest = z.infer<typeof UploadDataRequestSchema>;
-export type PartialDataDocumentDto = UploadDataRequest["data"] & {
+export type PartialDataDocumentDto = Record<string, unknown>[] & {
+  /** System-generated UUID for the data document */
   _id: UuidDto;
 };
 
-export const UpdateDataRequestSchema = z.object({
-  schema: Uuid,
-  filter: z.record(z.string(), z.unknown()),
-  update: z.record(z.string(), z.unknown()),
-});
-export type UpdateDataRequest = z.infer<typeof UpdateDataRequestSchema>;
-
-export const ReadDataRequestSchema = z.object({
-  schema: Uuid,
-  filter: z.record(z.string(), z.unknown()),
-});
-export type ReadDataRequest = z.infer<typeof ReadDataRequestSchema>;
-
-export const DeleteDataRequestSchema = z.object({
-  schema: Uuid,
-  filter: z
-    .record(z.string(), z.unknown())
-    .refine((obj) => Object.keys(obj).length > 0, {
-      message: "Filter cannot be empty",
-    }),
-});
-export type DeleteDataRequest = z.infer<typeof DeleteDataRequestSchema>;
-
-export const FlushDataRequestSchema = z.object({
-  schema: Uuid,
-});
-export type FlushDataRequest = z.infer<typeof FlushDataRequestSchema>;
-
-export const TailDataRequestSchema = z.object({
-  schema: Uuid,
-});
-export type TailDataRequest = z.infer<typeof TailDataRequestSchema>;
 /**
- * Repository types
+ * Domain command types for data operations.
+ *
+ * These types represent business operations that can be performed
+ * on data, converted from DTOs at the boundary layer.
  */
+
+/**
+ * Command for creating/uploading data records.
+ *
+ * Encapsulates the data needed to create new records in a schema collection
+ * with proper ownership and permissions.
+ */
+export type CreateRecordsCommand = {
+  /** DID of the data owner */
+  owner: Did;
+  /** UUID of the schema (collection) to store data in */
+  schemaId: UUID;
+  /** Array of data records to store */
+  data: Record<string, unknown>[];
+  /** Optional permissions for the data records */
+  permissions?: Permissions;
+};
+
+/**
+ * Command for updating data records.
+ *
+ * Encapsulates the filter and update operations for modifying
+ * existing records in a schema collection.
+ */
+export type UpdateRecordsCommand = {
+  /** UUID of the schema (collection) containing the data */
+  schema: UUID;
+  /** MongoDB filter to match records for update */
+  filter: Record<string, unknown>;
+  /** MongoDB update operations to apply */
+  update: Record<string, unknown>;
+};
+
+/**
+ * Command for reading data records.
+ *
+ * Encapsulates the schema and filter for retrieving records
+ * from a schema collection.
+ */
+export type ReadRecordsCommand = {
+  /** UUID of the schema (collection) to read from */
+  schema: UUID;
+  /** MongoDB filter to match records for retrieval */
+  filter: Record<string, unknown>;
+};
+
+/**
+ * Command for deleting data records.
+ *
+ * Encapsulates the schema and filter for removing records
+ * from a schema collection.
+ */
+export type DeleteRecordsCommand = {
+  /** UUID of the schema (collection) containing the data */
+  schema: UUID;
+  /** MongoDB filter to match records for deletion */
+  filter: Record<string, unknown>;
+};
+
+/**
+ * Command for flushing all data from a schema collection.
+ *
+ * Encapsulates the schema identifier for removing all records
+ * from a collection.
+ */
+export type FlushCollectionCommand = {
+  /** UUID of the schema (collection) to flush */
+  schema: UUID;
+};
+
+/**
+ * Command for tailing recent data from a schema collection.
+ *
+ * Encapsulates the schema identifier for retrieving the most
+ * recent records from a collection.
+ */
+export type TailDataCommand = {
+  /** UUID of the schema (collection) to tail */
+  schema: UUID;
+};

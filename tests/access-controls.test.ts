@@ -1,170 +1,135 @@
 import { faker } from "@faker-js/faker";
-import { Keypair, NilauthClient } from "@nillion/nuc";
+import { Keypair } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
-import { PathsV1 } from "#/common/paths";
 import { createUuidDto } from "#/common/types";
 import { Permissions } from "#/user/user.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
-import { expectErrorResponse } from "./fixture/assertions";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
-import { TestOrganizationUserClient } from "./fixture/test-client";
+import {
+  type BuilderTestClient,
+  createBuilderTestClient,
+} from "./fixture/test-client";
 
-describe("account access controls", () => {
+// TODO(tim): revisit once we start enforcing Nuc policies
+describe("access-controls", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
-  const { it, beforeAll, afterAll } = createTestFixtureExtension({
+  const { it, beforeAll } = createTestFixtureExtension({
     schema,
     query,
   });
-  beforeAll(async (_c) => {});
-  afterAll(async (_c) => {});
 
-  it("rejects unauthenticated requests", async ({ c }) => {
-    const { app, expect } = c;
-
-    const response = await app.request(PathsV1.accounts.me);
-    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
-  });
-});
-
-describe("restrict cross-organization operations", () => {
-  const userId = Keypair.generate().toDidString();
-  const schema = schemaJson as unknown as SchemaFixture;
-  const query = queryJson as unknown as QueryFixture;
-  const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
-    query,
-  });
-  afterAll(async (_c) => {});
-
-  let organizationB: TestOrganizationUserClient;
   const collectionSize = 10;
   const data = Array.from({ length: collectionSize }, () => ({
     _id: createUuidDto(),
     name: faker.person.fullName(),
   }));
 
-  beforeAll(async ({ organization, bindings, app }) => {
-    await organization.uploadData({
-      userId,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
+  let builderB: BuilderTestClient;
+
+  beforeAll(async (c) => {
+    const { builder, bindings, app, user } = c;
+
+    await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
+
+    builderB = await createBuilderTestClient({
+      app,
+      keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!),
+      chainUrl: process.env.APP_NILCHAIN_JSON_RPC!,
+      nilauthBaseUrl: bindings.config.nilauthBaseUrl,
+      nodePublicKey: builder._options.nodePublicKey,
     });
 
-    const keypair = Keypair.generate();
-    const nilauth = await NilauthClient.from({
-      keypair,
-      payer: organization._options.payer,
-      baseUrl: bindings.config.nilauthBaseUrl,
-    });
+    await builderB
+      .register(c, {
+        did: builderB.did,
+        name: "builderB",
+      })
+      .expectSuccess();
 
-    organizationB = new TestOrganizationUserClient({
-      app: app,
-      keypair,
-      payer: organization._options.payer,
-      nilauth,
-      node: bindings.node,
-    });
-
-    await organizationB.ensureSubscriptionActive();
-    await organizationB.request(PathsV1.accounts.register, {
-      method: "POST",
-      body: {
-        did: organizationB.did,
-        name: "organizationB",
-      },
-    });
+    await builderB.ensureSubscriptionActive();
   });
 
   it("prevents data upload", async ({ c }) => {
-    const { expect, organization } = c;
+    const { builder, user } = c;
 
-    const response = await organizationB.uploadData({
-      userId,
-      schema: schema.id,
-      data: [
-        {
-          _id: createUuidDto(),
-          name: faker.person.fullName(),
-        },
-      ],
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("ResourceAccessDeniedError");
+    await builderB
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data: [
+          {
+            _id: createUuidDto(),
+            name: faker.person.fullName(),
+          },
+        ],
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 
   it("prevents data reads", async ({ c }) => {
-    const { expect } = c;
-
-    const response = await organizationB.readData({
-      schema: schema.id,
-      filter: {},
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("ResourceAccessDeniedError");
+    await builderB
+      .readData(c, {
+        schema: schema.id,
+        filter: {},
+      })
+      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 
   it("prevents data updates", async ({ c }) => {
-    const { expect } = c;
-
     const record = data[Math.floor(Math.random() * collectionSize)];
-    const response = await organizationB.updateData({
-      schema: schema.id,
-      filter: { name: record.name },
-      update: { name: "foo" },
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("ResourceAccessDeniedError");
+    await builderB
+      .updateData(c, {
+        schema: schema.id,
+        filter: { name: record.name },
+        update: { name: "foo" },
+      })
+      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 
   it("prevents data deletes", async ({ c }) => {
-    const { expect } = c;
-
     const record = data[Math.floor(Math.random() * collectionSize)];
-    const response = await organizationB.deleteData({
-      schema: schema.id,
-      filter: { name: record.name },
-    });
 
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("ResourceAccessDeniedError");
+    await builderB
+      .deleteData(c, {
+        schema: schema.id,
+        filter: { name: record.name },
+      })
+      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 
   it("prevents data flush", async ({ c }) => {
-    const { expect } = c;
-
-    const response = await organizationB.flushData({
-      schema: schema.id,
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("ResourceAccessDeniedError");
+    await builderB
+      .flushData(c, {
+        schema: schema.id,
+      })
+      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 
   it("prevents data tail", async ({ c }) => {
-    const { expect } = c;
-
-    const response = await organizationB.tailData({
-      schema: schema.id,
-    });
-
-    const error = await expectErrorResponse(c, response);
-    expect(error.errors).includes("ResourceAccessDeniedError");
+    await builderB
+      .tailData(c, {
+        schema: schema.id,
+      })
+      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 });

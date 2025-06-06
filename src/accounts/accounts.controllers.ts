@@ -43,8 +43,7 @@ export function register(options: ControllerOptions): void {
     describeRoute({
       tags: ["Accounts"],
       summary: "Register a new account",
-      description:
-        "Creates a new account with the provided DID and name. Returns 201 with no content on success.",
+      description: "Creates a new account with the provided DID and name.",
       responses: {
         201: OpenApiSpecEmptySuccessResponses["201"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -54,10 +53,10 @@ export function register(options: ControllerOptions): void {
     zValidator("json", RegisterAccountRequest),
     async (c) => {
       const payload = c.req.valid("json");
+      const command = AccountDataMapper.toCreateAccountCommand(payload);
 
       return pipe(
-        AccountDataMapper.fromRegisterAccountRequest(payload),
-        (partial) => AccountService.createAccount(c.env, partial),
+        AccountService.createAccount(c.env, command),
         E.map(() => RegisterAccountResponse),
         handleTaggedErrors(c),
         E.runPromise,
@@ -109,7 +108,7 @@ export function getProfile(options: ControllerOptions): void {
       return pipe(
         AccountService.find(c.env, account._id),
         E.map((account) => AccountDataMapper.toGetProfileResponse(account)),
-        E.map((profile) => c.json<GetProfileResponse>(profile)),
+        E.map((response) => c.json<GetProfileResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -136,7 +135,7 @@ export function _delete(options: ControllerOptions): void {
       security: [{ bearerAuth: [] }],
       summary: "Delete your account",
       description:
-        "Permanently delete the authenticated user's account (cannot be undone)",
+        "Permanently deletes the authenticated user's account. This action cannot be undone.",
       responses: {
         204: OpenApiSpecEmptySuccessResponses["204"],
         ...OpenApiSpecCommonErrorResponses,
@@ -180,7 +179,8 @@ export function updateProfile(options: ControllerOptions): void {
       tags: ["Accounts"],
       security: [{ bearerAuth: [] }],
       summary: "Update your profile",
-      description: "Update your profile",
+      description:
+        "Updates the profile information for the authenticated user.",
       responses: {
         200: OpenApiSpecEmptySuccessResponses["200"],
         ...OpenApiSpecCommonErrorResponses,
@@ -199,10 +199,14 @@ export function updateProfile(options: ControllerOptions): void {
     }),
     async (c) => {
       const account = c.get("account");
+      const payload = c.req.valid("json");
+      const command = AccountDataMapper.toUpdateProfileCommand(
+        payload,
+        account._id,
+      );
 
       return pipe(
-        c.req.valid("json"),
-        (updates) => AccountService.updateProfile(c.env, account._id, updates),
+        AccountService.updateProfile(c.env, command),
         E.map(() => UpdateProfileResponse),
         handleTaggedErrors(c),
         E.runPromise,

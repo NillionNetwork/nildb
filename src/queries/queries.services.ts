@@ -21,8 +21,10 @@ import pipelineSchema from "./mongodb_pipeline.json";
 import * as QueriesJobsRepository from "./queries.jobs.repository";
 import * as QueriesRepository from "./queries.repository";
 import type {
-  AddQueryRequest,
-  ExecuteQueryRequest,
+  AddQueryCommand,
+  DeleteQueryCommand,
+  ExecuteQueryCommand,
+  GetQueryJobCommand,
   QueryDocument,
   QueryJobDocument,
   QueryJobStatus,
@@ -31,14 +33,19 @@ import type {
 
 export function addQuery(
   ctx: AppBindings,
-  request: AddQueryRequest & { owner: Did },
+  command: AddQueryCommand,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const now = new Date();
   const document: QueryDocument = {
-    ...request,
+    _id: command._id,
+    name: command.name,
+    schema: command.schema,
+    variables: command.variables,
+    pipeline: command.pipeline,
+    owner: command.owner,
     _created: now,
     _updated: now,
   };
@@ -59,20 +66,22 @@ export function addQuery(
 
 export function executeQuery(
   ctx: AppBindings,
-  request: ExecuteQueryRequest,
+  command: ExecuteQueryCommand,
 ): E.Effect<
-  JsonValue,
+  { jobId: string } | Record<string, unknown>[],
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
   | VariableInjectionError
 > {
-  if (request.background) {
+  if (command.background) {
     return pipe(
-      addQueryJob(ctx, request.id),
+      addQueryJob(ctx, command.id),
       E.flatMap((job) => {
-        E.runPromise(processQueryJob(ctx, job.insertedId, request.variables));
+        // TODO(tim): address this ignored promise
+        // TODO(tim): rename executeQuery -> que query? ... remove background: true?
+        E.runPromise(processQueryJob(ctx, job.insertedId, command.variables));
         return E.succeed({
           jobId: job.insertedId.toString(),
         });
@@ -81,9 +90,9 @@ export function executeQuery(
   }
 
   return E.Do.pipe(
-    E.bind("query", () => QueriesRepository.findOne(ctx, { _id: request.id })),
+    E.bind("query", () => QueriesRepository.findOne(ctx, { _id: command.id })),
     E.bind("variables", ({ query }) =>
-      validateVariables(query.variables, request.variables),
+      validateVariables(query.variables, command.variables),
     ),
     E.bind("pipeline", ({ query, variables }) =>
       injectVariablesIntoAggregation(
@@ -113,7 +122,7 @@ export function findQueries(
 
 export function removeQuery(
   ctx: AppBindings,
-  _id: UUID,
+  command: DeleteQueryCommand,
 ): E.Effect<
   void,
   | DocumentNotFoundError
@@ -122,13 +131,14 @@ export function removeQuery(
   | DataValidationError
 > {
   return pipe(
-    QueriesRepository.findOneAndDelete(ctx, { _id }),
+    QueriesRepository.findOneAndDelete(ctx, { _id: command.id }),
     E.flatMap((document) =>
       E.all([
         E.succeed(ctx.cache.accounts.taint(document.owner)),
-        OrganizationRepository.removeQuery(ctx, document.owner, _id),
+        OrganizationRepository.removeQuery(ctx, document.owner, command.id),
       ]),
     ),
+    E.as(void 0),
   );
 }
 
@@ -164,12 +174,12 @@ export function validateQuery(
 
 export function findQueryJob(
   ctx: AppBindings,
-  _id: UUID,
+  command: GetQueryJobCommand,
 ): E.Effect<
   QueryJobDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return pipe(QueriesJobsRepository.findOne(ctx, { _id }));
+  return pipe(QueriesJobsRepository.findOne(ctx, { _id: command.id }));
 }
 
 export function addQueryJob(
@@ -221,7 +231,7 @@ export function updateQueryJob(
 export function processQueryJob(
   ctx: AppBindings,
   jobId: UUID,
-  variables: ExecuteQueryRequest["variables"],
+  variables: Record<string, unknown>,
 ): E.Effect<
   void,
   | DocumentNotFoundError
@@ -231,7 +241,7 @@ export function processQueryJob(
   | VariableInjectionError
 > {
   return pipe(
-    findQueryJob(ctx, jobId),
+    findQueryJob(ctx, { id: jobId }),
     E.flatMap((job) =>
       E.all([
         updateQueryJob(ctx, {
@@ -257,7 +267,7 @@ export function processQueryJob(
     E.flatMap(([, result]) =>
       updateQueryJob(ctx, {
         jobId,
-        result,
+        result: result as JsonValue,
         status: "complete",
         endedAt: new Date(),
       }),
@@ -280,9 +290,20 @@ export type QueryRuntimeVariables = Record<
   QueryPrimitive | QueryPrimitive[]
 >;
 
+/**
+ * Validates query execution variables against template definitions.
+ *
+ * Ensures that all required variables are provided and no unexpected
+ * variables are included. Applies type coercions and validates data types
+ * for each variable according to the query template.
+ *
+ * @param template - Variable definitions from the query document
+ * @param provided - Variable values provided for query execution
+ * @returns Effect that succeeds with validated runtime variables or fails with validation error
+ */
 export function validateVariables(
   template: QueryDocument["variables"],
-  provided: ExecuteQueryRequest["variables"],
+  provided: Record<string, unknown>,
 ): E.Effect<QueryRuntimeVariables, DataValidationError> {
   const { $coerce: _$coerce, ...values } = provided;
   const providedKeys = Object.keys(values);
@@ -399,6 +420,18 @@ function getAggregationField(
   );
 }
 
+/**
+ * Injects runtime variable values into MongoDB aggregation pipeline.
+ *
+ * Replaces variable placeholders in the aggregation pipeline with actual
+ * values using JSONPath-style variable definitions. Supports deep object
+ * and array access for complex pipeline structures.
+ *
+ * @param queryVariables - Variable definitions with path specifications
+ * @param aggregation - MongoDB aggregation pipeline stages
+ * @param variables - Runtime variable values to inject
+ * @returns Effect that succeeds with modified pipeline or fails with injection error
+ */
 export function injectVariablesIntoAggregation(
   queryVariables: Record<string, QueryVariable>,
   aggregation: Record<string, unknown>[],

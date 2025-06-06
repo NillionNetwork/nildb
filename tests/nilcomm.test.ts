@@ -47,7 +47,7 @@ describe.skip("nilcomm.test.ts > blind auction", () => {
   }));
 
   beforeAll(async (c) => {
-    const connection = await amqp.connect(c.bindings.config.mqUri);
+    const connection = await amqp.connect(c.bindings.config.mqUri!);
     channel = await connection.createChannel();
     await bindQueues(channel);
   });

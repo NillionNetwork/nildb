@@ -1,15 +1,14 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UpdateResult } from "mongodb";
-import type { AccountDocument } from "#/admin/admin.types";
 import {
   type CollectionNotFoundError,
   DatabaseError,
   DocumentNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
-import type { Did } from "#/common/types";
+import type { AccountDocument, Did } from "#/common/types";
 import type { AppBindings } from "#/env";
-import type { OrganizationAccountDocument } from "./accounts.mapper";
+import type { OrganizationAccountDocument } from "./accounts.types";
 
 /**
  * Inserts a new organisation account document into the database.

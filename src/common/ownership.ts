@@ -1,8 +1,8 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { ResourceAccessDeniedError } from "#/common/errors";
-import type { UserDocument } from "#/user/user.repository";
+import type { UserDocument } from "#/user/user.types";
 
 export function enforceQueryOwnership(
   account: OrganizationAccountDocument,

@@ -1,15 +1,11 @@
 import * as vitest from "vitest";
-import {
-  buildFixture,
-  type FixtureContext,
-  type QueryFixture,
-  type SchemaFixture,
-} from "./fixture";
+import type { FixtureContext } from "./fixture";
+import { buildFixture, type QueryFixture, type SchemaFixture } from "./fixture";
 
 type TestFixtureExtension = {
   it: vitest.TestAPI<{ c: FixtureContext }>;
-  beforeAll: (fn: (c: Omit<FixtureContext, "expect">) => Promise<void>) => void;
-  afterAll: (fn: (c: Omit<FixtureContext, "expect">) => Promise<void>) => void;
+  beforeAll: (fn: (c: FixtureContext) => Promise<void>) => void;
+  afterAll: (fn: (c: FixtureContext) => Promise<void>) => void;
 };
 
 export function createTestFixtureExtension(
@@ -20,7 +16,7 @@ export function createTestFixtureExtension(
     enableNilcomm?: boolean;
   } = {},
 ): TestFixtureExtension {
-  let fixture: Omit<FixtureContext, "expect"> | null = null;
+  let fixture: FixtureContext | null = null;
 
   const it = vitest.test.extend<{ c: FixtureContext }>({
     c: async ({ expect }, use) => {
@@ -33,9 +29,7 @@ export function createTestFixtureExtension(
     },
   });
 
-  const beforeAll = (
-    fn: (c: Omit<FixtureContext, "expect">) => Promise<void>,
-  ) =>
+  const beforeAll = (fn: (c: FixtureContext) => Promise<void>) =>
     vitest.beforeAll(async () => {
       try {
         fixture = await buildFixture(opts);
@@ -54,7 +48,7 @@ export function createTestFixtureExtension(
       }
     });
 
-  const afterAll = (fn: (c: Omit<FixtureContext, "expect">) => Promise<void>) =>
+  const afterAll = (fn: (c: FixtureContext) => Promise<void>) =>
     vitest.afterAll(async () => {
       if (!fixture) {
         // Fallback to `process.stderr` to ensure fixture setup failures are logged during suite setup/teardown

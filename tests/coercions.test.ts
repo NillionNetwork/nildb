@@ -1,21 +1,15 @@
-import { Keypair } from "@nillion/nuc";
 import { Effect as E, Either, pipe } from "effect";
+import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
 import { applyCoercions } from "#/common/mongo";
 import { type CoercibleMap, createUuidDto } from "#/common/types";
-import type { UploadResult } from "#/data/data.repository";
 import { Permissions } from "#/user/user.types";
 import schemaJson from "./data/coercions.schema.json";
-import {
-  expectErrorResponse,
-  expectSuccessResponse,
-} from "./fixture/assertions";
 import type { SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("data operations", () => {
-  const userId = Keypair.generate().toDidString();
+describe("coercions", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
     schema,
@@ -267,7 +261,7 @@ describe("data operations", () => {
   });
 
   it("coerces valid data", async ({ c }) => {
-    const { expect, organization, bindings } = c;
+    const { expect, builder, bindings, user } = c;
 
     const testId = createUuidDto();
     const testDate = new Date().toISOString();
@@ -281,20 +275,21 @@ describe("data operations", () => {
       },
     ];
 
-    const response = await organization.uploadData({
-      userId,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
+    const response = await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectSuccess();
 
-    const result = await expectSuccessResponse<UploadResult>(c, response);
-    expect(result.data.created).toHaveLength(1);
-    expect(result.data.errors).toHaveLength(0);
+    expect(response.data.created).toHaveLength(1);
+    expect(response.data.errors).toHaveLength(0);
 
     const documents = await bindings.db.data
       .collection(schema.id.toString())
@@ -309,7 +304,7 @@ describe("data operations", () => {
   });
 
   it("rejects invalid date-time strings", async ({ c }) => {
-    const { expect, organization } = c;
+    const { builder, user } = c;
 
     const testId = createUuidDto();
     const notADate = new Date().toISOString().split("T")[0]; // just take date
@@ -323,28 +318,26 @@ describe("data operations", () => {
       },
     ];
 
-    const response = await organization.uploadData({
-      userId,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
-
-    const errors = await expectErrorResponse(c, response);
-
-    expect(errors.errors).toHaveLength(2);
-    expect(errors.errors[0]).toBe("DataValidationError");
-    expect(errors.errors[1]).toBe(
-      '/0/date_from_string: must match format "date-time"',
-    );
+    await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectFailure(
+        StatusCodes.BAD_REQUEST,
+        "DataValidationError",
+        '/0/date_from_string: must match format "date-time"',
+      );
   });
 
   it("rejects invalid numeric strings", async ({ c }) => {
-    const { expect, organization } = c;
+    const { builder, user } = c;
 
     const testId = createUuidDto();
     const notADate = new Date().toISOString();
@@ -358,28 +351,26 @@ describe("data operations", () => {
       },
     ];
 
-    const response = await organization.uploadData({
-      userId,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
-
-    const errors = await expectErrorResponse(c, response);
-
-    expect(errors.errors).toHaveLength(2);
-    expect(errors.errors[0]).toBe("DataValidationError");
-    expect(errors.errors[1]).toBe(
-      '/0/numeric_from_string: must match format "numeric"',
-    );
+    await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectFailure(
+        StatusCodes.BAD_REQUEST,
+        "DataValidationError",
+        '/0/numeric_from_string: must match format "numeric"',
+      );
   });
 
   it("rejects invalid uuid strings", async ({ c }) => {
-    const { expect, organization } = c;
+    const { builder, user } = c;
 
     const testId = "xxxx-xxxx";
     const notADate = new Date().toISOString();
@@ -393,21 +384,21 @@ describe("data operations", () => {
       },
     ];
 
-    const response = await organization.uploadData({
-      userId,
-      schema: schema.id,
-      data,
-      permissions: new Permissions(organization.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
-    });
-
-    const errors = await expectErrorResponse(c, response);
-
-    expect(errors.errors).toHaveLength(2);
-    expect(errors.errors[0]).toBe("DataValidationError");
-    expect(errors.errors[1]).toBe('/0/_id: must match format "uuid"');
+    await builder
+      .uploadData(c, {
+        userId: user.did,
+        schema: schema.id,
+        data,
+        permissions: new Permissions(builder.did, {
+          read: true,
+          write: false,
+          execute: false,
+        }),
+      })
+      .expectFailure(
+        StatusCodes.BAD_REQUEST,
+        "DataValidationError",
+        '/0/_id: must match format "uuid"',
+      );
   });
 });

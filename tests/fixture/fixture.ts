@@ -1,53 +1,63 @@
 import { faker } from "@faker-js/faker";
-import { Keypair, NilauthClient, PayerBuilder } from "@nillion/nuc";
+import { Keypair } from "@nillion/nuc";
 import dotenv from "dotenv";
-import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
-import { type Logger, pino } from "pino";
+import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
-import type * as vitest from "vitest";
+import * as vitest from "vitest";
 import { type App, buildApp } from "#/app";
 import { mongoMigrateUp } from "#/common/mongo";
-import { PathsV1 } from "#/common/paths";
 import {
+  type AppBindings,
   type AppBindingsWithNilcomm,
   FeatureFlag,
   hasFeatureFlag,
   loadBindings,
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
-import type { SchemaDocumentType } from "#/schemas/schemas.repository";
-// biome-ignore-start lint/nursery/noImportCycles: requires refactor to address
+import type { SchemaDocumentType } from "#/schemas/schemas.types";
+import { createTestLogger } from "./logger";
 import {
-  TestEndUserClient,
-  TestOrganizationUserClient,
-  TestRootUserClient,
+  type AdminTestClient,
+  type BuilderTestClient,
+  createAdminTestClient,
+  createBuilderTestClient,
+  createUserTestClient,
+  type UserTestClient,
+  // biome-ignore lint/nursery/noImportCycles: this cycle resolves correctly, is limited to testing, and avoids an overly large fixture file
 } from "./test-client";
-// biome-ignore-end lint/nursery/noImportCycles: requires refactor to address
 
 export type FixtureContext = {
   id: string;
   log: Logger;
   app: App;
-  bindings: AppBindingsWithNilcomm;
-  root: TestRootUserClient;
-  organization: TestOrganizationUserClient;
-  user: TestEndUserClient;
+  bindings: AppBindings & {
+    node: {
+      keypair: Keypair;
+      endpoint: string;
+    };
+  };
+  admin: AdminTestClient;
+  builder: BuilderTestClient;
+  user: UserTestClient;
   expect: vitest.ExpectStatic;
 };
 
-function createTestLogger(id: string): Logger {
-  return pino({
-    transport: {
-      target: "pino-pretty",
-      options: {
-        sync: true,
-        singleLine: true,
-        messageFormat: `${id} - {msg}`,
-      },
-    },
-  });
-}
+export type SchemaFixture = {
+  id: UUID;
+  name: string;
+  keys: string[];
+  schema: JsonObject;
+  documentType: SchemaDocumentType;
+};
+
+export type QueryFixture = {
+  id: UUID;
+  name: string;
+  schema: UUID;
+  variables: Record<string, QueryVariable>;
+  pipeline: JsonObject[];
+};
 
 export async function buildFixture(
   opts: {
@@ -56,7 +66,7 @@ export async function buildFixture(
     keepDbs?: boolean;
     enableNilcomm?: boolean;
   } = {},
-): Promise<Omit<FixtureContext, "expect">> {
+): Promise<FixtureContext> {
   dotenv.config({ path: [".env.test", ".env.test.nilauthclient"] });
   const id = faker.string.alphanumeric({ length: 4, casing: "lower" });
   const log = createTestLogger(id);
@@ -90,143 +100,90 @@ export async function buildFixture(
     endpoint: bindings.config.nodePublicEndpoint,
   };
 
-  const chainUrl = process.env.APP_NILCHAIN_JSON_RPC!;
-  const adminKeypair = Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_0!);
-  const adminPayer = await new PayerBuilder()
-    .keypair(adminKeypair)
-    .chainUrl(chainUrl)
-    .build();
+  const chainUrl = process.env.APP_NILCHAIN_JSON_RPC;
+  const nilauthBaseUrl = bindings.config.nilauthBaseUrl;
 
-  const adminNilauthClient = await NilauthClient.from({
-    keypair: node.keypair,
-    payer: adminPayer,
-    baseUrl: bindings.config.nilauthBaseUrl,
-  });
-
-  const root = new TestRootUserClient({
+  // Create admin client - uses node's keypair for system administration
+  const admin = await createAdminTestClient({
     app,
     keypair: node.keypair,
-    payer: adminPayer,
-    nilauth: adminNilauthClient,
-    node,
+    nodePublicKey: node.keypair.publicKey("hex"),
   });
 
-  const orgKeypair = Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!);
-  const orgPayer = await new PayerBuilder()
-    .keypair(orgKeypair)
-    .chainUrl(chainUrl)
-    .build();
-  const orgNilauthClient = await NilauthClient.from({
-    keypair: orgKeypair,
-    payer: orgPayer,
-    baseUrl: bindings.config.nilauthBaseUrl,
-  });
-  const organization = new TestOrganizationUserClient({
+  // Create builder client - organization with subscription and nilauth
+  const builder = await createBuilderTestClient({
     app,
-    keypair: orgKeypair,
-    payer: orgPayer,
-    nilauth: orgNilauthClient,
-    node,
+    keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_0!),
+    chainUrl,
+    nilauthBaseUrl,
+    nodePublicKey: node.keypair.publicKey("hex"),
   });
 
-  const user = new TestEndUserClient({
+  // Create user client - data owner with self-signed tokens
+  const user = await createUserTestClient({
     app,
     keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!),
-    payer: orgPayer,
-    nilauth: orgNilauthClient,
-    node,
+    nodePublicKey: node.keypair.publicKey("hex"),
   });
 
-  const c = { id, log, app, bindings, root, organization, user };
+  // this global expect gets replaced by the test effect
+  const expect = vitest.expect;
+  const c: FixtureContext = {
+    id,
+    log,
+    app,
+    bindings,
+    expect,
+    admin,
+    builder,
+    user,
+  };
 
-  await organization.ensureSubscriptionActive();
-  const createOrgResponse = await organization.request(
-    PathsV1.accounts.register,
-    {
-      method: "POST",
-      body: {
-        did: organization.keypair.toDidString(),
-        name: faker.person.fullName(),
-      },
-    },
-  );
+  // Register the builder account
+  await builder.ensureSubscriptionActive();
+  log.info({ did: builder.did }, "Builder subscription active");
 
-  if (!createOrgResponse.ok) {
-    throw new Error("Failed to create the organization", {
-      cause: createOrgResponse,
-    });
-  }
-  log.info({ did: organization.did }, "Created organization");
+  await builder
+    .register(c, {
+      did: builder.did,
+      name: faker.person.fullName(),
+    })
+    .expectSuccess();
+  log.info({ did: builder.did }, "Builder registered");
 
   if (opts.schema) {
-    await registerSchemaAndQuery({
-      c,
-      organization,
-      schema: opts.schema,
-      query: opts.query,
-    });
-  }
+    const { schema, query } = opts;
 
-  log.info("Test suite ready");
-  return c;
-}
+    schema.id = new UUID();
+    await builder
+      .addSchema(c, {
+        _id: schema.id,
+        name: schema.name,
+        schema: schema.schema,
+        documentType: schema.documentType,
+      })
+      .expectSuccess();
 
-export type SchemaFixture = {
-  id: UUID;
-  name: string;
-  keys: string[];
-  schema: JsonObject;
-  documentType: SchemaDocumentType;
-};
+    log.info({ id: schema.id }, "Schema registered");
 
-export type QueryFixture = {
-  id: UUID;
-  name: string;
-  schema: UUID;
-  variables: Record<string, QueryVariable>;
-  pipeline: JsonObject[];
-};
+    if (query) {
+      log.info("Registering query");
+      query.id = new UUID();
+      query.schema = schema.id;
+      await builder
+        .addQuery(c, {
+          _id: query.id,
+          name: query.name,
+          schema: query.schema,
+          variables: query.variables,
+          pipeline: query.pipeline,
+        })
+        .expectSuccess();
 
-export async function registerSchemaAndQuery(opts: {
-  c: Omit<FixtureContext, "expect">;
-  organization: TestOrganizationUserClient;
-  schema: SchemaFixture;
-  query?: QueryFixture;
-}): Promise<void> {
-  const { c, organization, schema, query } = opts;
-  const { log } = c;
-
-  await organization.ensureSubscriptionActive();
-  log.info({ did: organization.did }, "Organization subscription active");
-
-  schema.id = new UUID();
-  const response = await organization.addSchema({
-    _id: schema.id,
-    name: schema.name,
-    schema: schema.schema,
-    documentType: schema.documentType,
-  });
-
-  if (response.status !== StatusCodes.CREATED) {
-    throw new Error("Failed to register schema");
-  }
-  log.info({ id: schema.id }, "Schema registered");
-
-  if (query) {
-    log.info("Registering query");
-    query.id = new UUID();
-    query.schema = schema.id;
-    const queryResponse = await organization.addQuery({
-      _id: query.id,
-      name: query.name,
-      schema: query.schema,
-      variables: query.variables,
-      pipeline: query.pipeline,
-    });
-
-    if (queryResponse.status !== StatusCodes.CREATED) {
-      throw new Error("Failed to register the query");
+      log.info({ id: query.id }, "Query registered");
     }
-    log.info({ id: query.id }, "Query registered");
+
+    log.info("Test suite ready");
   }
+  return c;
 }
