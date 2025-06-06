@@ -43,17 +43,18 @@ Deployment typically includes:
 
 ### Clients
 
-nilDB uses a decentralized authentication model based on secp256k1 key pairs. Clients:
+nilDB uses a decentralized authentication model based on NUC (Nillion UCAN) tokens. Clients:
 
 1. Generate their own identities using secp256k1 private keys
 2. Derive public keys and DIDs ([Decentralised Identifier](https://www.w3.org/groups/wg/did/))
-3. Register with cluster nodes
-4. Create ES256K JWTs for authentication
+3. Pay for a subscription on nilchain
+4. Request NUC tokens from nilauth after payment verification
+5. Use NUC tokens for API authentication
 
-As RESTful APIs any modern HTTP client can be used to interact with a nilDB. Clients generate their own identities based on a secp256k1 private key. The derived public key and  are then used to register with nodes in the cluster and create authentication tokens.
+As RESTful APIs any modern HTTP client can be used to interact with nilDB. The `@nillion/nuc` library handles the complexity of payment, verification, and token management transparently.
 
 > ![NOTE]
-> Unlike traditional web2 systems where authentication is centrally controlled, nilDB clients generate and manage their own JWT tokens without central authority.
+> Unlike traditional JWT systems, NUC tokens are based on the UCAN specification and provide capability-based security with embedded proof chains.
 
 Example API interaction:
 
@@ -64,4 +65,4 @@ curl https://nildb-a50d.nillion.network/api/v1/data/create \
   -d @data.json
 ```
 
-> ![NOTE] Data encryption is applied using [nilQL-ts](github.com/nillionnetwork/nilql-ts) or [nilQL-py](https://github.com/nillionnetwork/nilql-py) before transmission. 
+> ![NOTE] Data encryption is applied using [nilQL-ts](https://github.com/nillionnetwork/nilql-ts) or [nilQL-py](https://github.com/nillionnetwork/nilql-py) before transmission. 

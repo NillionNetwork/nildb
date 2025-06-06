@@ -16,7 +16,7 @@ async function main() {
   const program = new Command();
 
   program
-    .name("@nillion/nildb-api")
+    .name("@nillion/nildb")
     .description("nilDB API server cli")
     .version(packageJson.version)
     .option("--env-file [path]", "Path to the env file (default .env)", ".env")

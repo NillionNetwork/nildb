@@ -11,26 +11,48 @@ This section provides task-oriented instructions for node administrators.
 - [Stop the node](#stop-the-node)
 - [Upgrades](#upgrades)
 - [Database migrations](#database-migrations)
-- [The admin api](#the-admin-api)
+- [Authentication](#authentication)
 - [Storage Retention](#storage-retention)
 
 ## Configuration
 
 The following environment variables are require:
 
-| Variable                 | Description                 | Example                       |
-|--------------------------|-----------------------------|-------------------------------|
-| APP_DB_NAME_DATA         | Database name for node data | datablocks_data               |
-| APP_DB_NAME_PRIMARY      | Primary database name       | datablocks                    |
-| APP_DB_URI               | MongoDB connection string   | mongodb://node-xxxx-db:27017  |
-| APP_ENV                  | Runtime environment         | testnet                       |
-| APP_LOG_LEVEL            | Logging verbosity           | debug                         |
-| APP_METRICS_PORT         | Prometheus metrics port     | 9091                          |
-| APP_NODE_SECRET_KEY      | Node's private key          | [hex encoded private key]     |
-| APP_NODE_PUBLIC_ENDPOINT | Public URL of node          | https://nildb-xxxx.domain.com |
-| APP_PORT                 | API service port            | 8080                          |
+| Variable                 | Description                                               | Example                             |
+|--------------------------|-----------------------------------------------------------|-------------------------------------|
+| APP_DB_NAME_BASE         | Database name prefix                                      | nildb_data                          |
+| APP_DB_URI               | MongoDB connection string                                 | mongodb://node-xxxx-db:27017        |
+| APP_ENABLED_FEATURES     | Enable features                                           | openapi-spec,metrics,migrations     |
+| APP_LOG_LEVEL            | Logging verbosity                                         | debug                               |
+| APP_METRICS_PORT         | Prometheus metrics port                                   | 9091                                |
+| APP_NILAUTH_BASE_URL     | The nilauth service url for subscriptions and revocations | http://127.0.0.1:30921              |
+| APP_NILAUTH_PUBLIC_KEY   | The nilauth service's secp256k1 public key                | [hex encoded secp256k1 public key]  |
+| APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                        | https://nildb-xxxx.domain.com       |
+| APP_NODE_SECRET_KEY      | Node's private key                                        | [hex encoded secp256k1 private key] |
+| APP_PORT                 | API service port                                          | 8080                                |
 
 ## Start the node
+
+### Local Development
+
+For local development and testing, use the pre-configured stack in the `local/` directory:
+
+```shell
+# Start the complete local development stack
+docker compose -f local/docker-compose.yaml up -d
+```
+
+This stack includes:
+- **nilDB**: The main API service (port 40080)
+- **MongoDB**: Database backend (port 40017)
+- **nilauth**: Authentication service for NUC tokens (port 40921)
+- **nilchain**: Local blockchain for testing payments (JSON-RPC port 40648)
+- **PostgreSQL**: Database for nilauth (port 40432)
+- **token-price-api**: Mock token pricing service (port 40923)
+
+The nilDB API will be available at `http://localhost:40080`.
+
+### Production Deployment
 
 A nilDB node consists of a MongoDB instance and a RESTful API service. Below is a basic Docker Compose configuration:
 
@@ -44,13 +66,15 @@ services:
     depends_on:
       - node-ucct-db
     environment:
-      - APP_DB_NAME_DATA=datablocks_data
-      - APP_DB_NAME_PRIMARY=datablocks
+      - APP_DB_NAME_BASE=nildb
       - APP_DB_URI=mongodb://node-xxxx-db:27017
+      - APP_ENABLED_FEATURES=openapi-spec,metrics,migrations
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
-      - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
+      - APP_NILAUTH_BASE_URL=http://127.0.0.1:30921
+      - APP_NILAUTH_PUBLIC_KEY=037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b
       - APP_NODE_PUBLIC_ENDPOINT=https://nildb-xxxx.domain.com
+      - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_PORT=8080
 
   node-xxxx-db:
@@ -103,41 +127,18 @@ docker compose -f ./docker-compose.yaml stop
 - Ensure the user defined in `APP_DB_URI` has access to run migrations.
 - Inspect migration status, or run them manually, using `tsx bin/migrate.ts --help`
 
-## The admin api
+## Authentication
 
-Create admin credentials:
+nilDB uses NUC (Nillion UCANs) tokens for authentication instead of traditional JWTs. The following flow is done transparently by the `@nillion/nuc` library:
 
- ```shell
- tsx bin/credentials.ts 
- ```
+1. **Payment**: Users must first pay for a subscription on nilchain
+2. **Verification**: Submit the transaction hash to the nilauth service
+3. **Token Request**: After verification, request a root access token from nilauth
+4. **API Access**: Use the NUC token in the Authorization header: `Bearer <nuc-token>`
 
-Create a node root JWT:
+For local development, the `local/docker-compose.yaml` stack includes a pre-configured nilauth service with test credentials.
 
- ```shell
- tsx bin/credentials.ts --secret-key ${APP_NODE_SECRET_KEY} --node-public-key ${APP_NODE_PUBLIC_KEY}
- ```
-
-Use the root jwt to create the admin account:
-
- ```shell
- curl ${NODE_URL}/api/v1/admin/accounts \
-   --header "Authorization: Bearer ${ROOT_JWT}" \
-   --header "Content-type: application/json" \
-   -d '{
-       "type": "admin",
-       "name": "${ADMIN_NAME}",
-       "did": "${ADMIN_DID}", 
-       "publicKey": "${ADMIN_PK}" 
-   }'
- ```
-
-Create a JWT for the admin account:
-
-```shell
-tsx bin/credentials.ts --secret-key ${ADMIN_SECRET_KEY} --node-public-key ${APP_NODE_PUBLIC_KEY}
-```
-
-All user-facing endpoints have an admin equivalent prefixed by `/api/v1/admin/*`. Inspect admin routes in the [src/admin/admin.router.ts](../src/admin/admin.router.ts). For user-facing operations, there is an openapi ui hosted at `${APP_NODE_PUBLIC_ENDPOINT}/openapi.json`.
+For user-facing operations, there is an OpenAPI documentation interface hosted at `${APP_NODE_PUBLIC_ENDPOINT}/api/v1/openapi/docs/`.
 
 ## Storage Retention
 

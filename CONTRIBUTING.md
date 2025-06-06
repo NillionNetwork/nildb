@@ -4,7 +4,7 @@ This guide explains how to set up your development environment and contribute co
 
 ## Prerequisites
 
-- Node.js >= 23
+- Node.js >= 24
 - pnpm >= 10
 - Docker
 
@@ -45,7 +45,7 @@ pnpm test   # run the test suite
 ```
 
 > [!NOTE]
-> - Tests use isolated collections (test_datablocks and test_datablocks_data)
+> - Tests use isolated collections (test_nildb and test_nildb_data)
 > - The test database is dropped at the start of each test run
 
 ## Contributing workflow

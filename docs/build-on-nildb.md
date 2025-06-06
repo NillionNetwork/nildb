@@ -4,51 +4,56 @@ This section outlines specific builder-related tasks and is deliberately utilita
 
 ## Documentation
 
-An OpenAPI documentation site is available at [localhost:8080/api/v1/openapi/docs/]({APP_NODE_PUBLIC_ENDPOINT}/openapi.json) when the node is running.
+An OpenAPI documentation site is available at `{APP_NODE_PUBLIC_ENDPOINT}/openapi.json` when the node is running and the `openapi-spec` feature is enabled.
 
-> [!NOTE]
-> Admin routes are not included in the OpenAPI documentation. For admin endpoints, refer to [/src/admin/routes.ts](../src/admin/admin.router.ts).
 
-## Development Options
+## Running nilDB Locally
 
-### Run a single nilDB node
+### Quick Start
 
-For simple development tasks, you can run a single node. However, note that secret sharing features require multiple nodes. To run a single node:
+Start the complete local development network:
 
-- Follow the source build instructions in [CONTRIBUTING.md](../CONTRIBUTING.md), or
-- Modify [docker-compose.local.yaml](../docker-compose.local.yaml) to run a single node
+```shell
+docker compose -f local/docker-compose.yaml up -d
+```
 
-### Run a local development cluster
+This starts a single nilDB node along with all required supporting services:
 
-1. Build the image:
-   ```shell
-   docker buildx build -f Dockerfile -t local/nildb-api:latest . 
-   ```
+- **nilDB API**: http://localhost:40080
+- **MongoDB**: localhost:40017  
+- **nilauth**: http://localhost:40921 (authentication service)
+- **nilchain**: http://localhost:40648 (local blockchain)
+- **PostgreSQL**: localhost:40432 (nilauth database)
+- **Token Price API**: http://localhost:40923 (mock pricing)
 
-2. Start the cluster:
-   ```shell
-   docker compose -p nildb-local -f docker-compose.local.yaml up -d
-   ```
+> [!CAUTION]
+> The keys and credentials in `local/docker-compose.yaml` are for development purposes only and must not be used in production.
 
-   > [!CAUTION]
-   > The three nodes in docker-compose.local.yaml are prepopulated with root and node secret keys. These keys are for development purposes only and must not be used in production.
+### Verify the Stack
 
-3. Verify the nodes are running:
-   ```shell
-   curl -s localhost:9181/about | jq
-   curl -s localhost:9182/about | jq
-   curl -s localhost:9183/about | jq
-   ```
+```shell
+# Check nilDB health
+curl http://localhost:40080/health
 
-4. Monitor cluster logs:
-   ```shell
-   docker compose -p nildb-local logs -f
-   ```
+# View node information
+curl http://localhost:40080/about | jq
+```
 
-5. Cleanup:
-   ```shell
-   docker compose -p nildb-local down -v --remove-orphans
-   ```
+### Monitor Logs
 
-   > [!WARNING]
-   > This command removes all containers, volumes, and networks associated with the cluster.
+```shell
+docker compose -f local/docker-compose.yaml logs -f
+```
+
+### Stop the Stack
+
+```shell
+docker compose -f local/docker-compose.yaml down -v
+```
+
+> [!WARNING]
+> The `-v` flag removes all volumes, including any data stored in MongoDB.
+
+### Building from Source
+
+Alternatively, you can build and run nilDB from source by following the instructions in [CONTRIBUTING.md](../CONTRIBUTING.md).
