@@ -1,31 +1,34 @@
 import { Effect as E, pipe } from "effect";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
+import { describeRoute } from "hono-openapi";
+import { resolver, validator as zValidator } from "hono-openapi/zod";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
+import { OpenApiSpecCommonErrorResponses } from "#/common/openapi";
 import { enforceSchemaOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
-import { payloadValidator } from "#/common/zod-utils";
 import {
   enforceCapability,
   RoleSchema,
   verifyNucAndLoadSubject,
 } from "#/middleware/capability.middleware";
-import * as DataService from "./data.services";
 import {
-  type DeleteDataRequest,
-  DeleteDataRequestSchema,
-  type FlushDataRequest,
-  FlushDataRequestSchema,
-  type ReadDataRequest,
-  ReadDataRequestSchema,
-  type TailDataRequest,
-  TailDataRequestSchema,
-  type UpdateDataRequest,
-  UpdateDataRequestSchema,
-  type UploadDataRequest,
-  UploadDataRequestSchema,
-} from "./data.types";
+  DeleteDataRequest,
+  DeleteDataResponse,
+  FlushDataRequest,
+  FlushDataResponse,
+  ReadDataRequest,
+  ReadDataResponse,
+  TailDataRequest,
+  TailDataResponse,
+  UpdateDataRequest,
+  UpdateDataResponse,
+  UploadDataRequest,
+  UploadDataResponse,
+} from "./data.dto";
+import { DataMapper } from "./data.mapper";
+import * as DataService from "./data.services";
 
 export function remove(options: ControllerOptions): void {
   const { app, bindings } = options;
@@ -33,7 +36,25 @@ export function remove(options: ControllerOptions): void {
 
   app.post(
     path,
-    payloadValidator(DeleteDataRequestSchema),
+    describeRoute({
+      tags: ["Data"],
+      security: [{ bearerAuth: [] }],
+      summary: "Delete data records",
+      description:
+        "Deletes data records matching the provided filter from a schema collection.",
+      responses: {
+        200: {
+          description: "Records deleted successfully",
+          content: {
+            "application/json": {
+              schema: resolver(DeleteDataResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", DeleteDataRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: DeleteDataRequest }>({
       path,
@@ -45,10 +66,12 @@ export function remove(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = DataMapper.toDeleteRecordsCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, payload.schema),
-        E.flatMap(() => DataService.deleteRecords(c.env, payload)),
-        E.map((data) => c.json({ data })),
+        enforceSchemaOwnership(account, command.schema),
+        E.flatMap(() => DataService.deleteRecords(c.env, command)),
+        E.map((result) => DataMapper.toDeleteDataResponse(result)),
+        E.map((response) => c.json<DeleteDataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -63,7 +86,24 @@ export function flush(options: ControllerOptions): void {
 
   app.post(
     path,
-    payloadValidator(FlushDataRequestSchema),
+    describeRoute({
+      tags: ["Data"],
+      security: [{ bearerAuth: [] }],
+      summary: "Flush all data from schema",
+      description: "Removes all data records from a schema collection.",
+      responses: {
+        200: {
+          description: "Collection flushed successfully",
+          content: {
+            "application/json": {
+              schema: resolver(FlushDataResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", FlushDataRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: FlushDataRequest }>({
       path,
@@ -75,14 +115,12 @@ export function flush(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = DataMapper.toFlushCollectionCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, payload.schema),
-        E.flatMap(() => DataService.flushCollection(c.env, payload.schema)),
-        E.map((data) =>
-          c.json({
-            data,
-          }),
-        ),
+        enforceSchemaOwnership(account, command.schema),
+        E.flatMap(() => DataService.flushCollection(c.env, command)),
+        E.map((result) => DataMapper.toFlushDataResponse(result)),
+        E.map((response) => c.json<FlushDataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -96,7 +134,25 @@ export function read(options: ControllerOptions): void {
 
   app.post(
     path,
-    payloadValidator(ReadDataRequestSchema),
+    describeRoute({
+      tags: ["Data"],
+      security: [{ bearerAuth: [] }],
+      summary: "Read data records",
+      description:
+        "Reads data records matching the provided filter from a schema collection.",
+      responses: {
+        200: {
+          description: "Records retrieved successfully",
+          content: {
+            "application/json": {
+              schema: resolver(ReadDataResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", ReadDataRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: ReadDataRequest }>({
       path,
@@ -108,10 +164,12 @@ export function read(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = DataMapper.toReadRecordsCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, payload.schema),
-        E.flatMap(() => DataService.readRecords(c.env, payload)),
-        E.map((data) => c.json({ data })),
+        enforceSchemaOwnership(account, command.schema),
+        E.flatMap(() => DataService.readRecords(c.env, command)),
+        E.map((documents) => DataMapper.toReadDataResponse(documents)),
+        E.map((response) => c.json<ReadDataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -125,7 +183,25 @@ export function tail(options: ControllerOptions): void {
 
   app.post(
     path,
-    payloadValidator(TailDataRequestSchema),
+    describeRoute({
+      tags: ["Data"],
+      security: [{ bearerAuth: [] }],
+      summary: "Tail recent data",
+      description:
+        "Retrieves the most recent data records from a schema collection.",
+      responses: {
+        200: {
+          description: "Recent records retrieved successfully",
+          content: {
+            "application/json": {
+              schema: resolver(TailDataResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", TailDataRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: TailDataRequest }>({
       path,
@@ -137,10 +213,12 @@ export function tail(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = DataMapper.toTailDataCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, payload.schema),
-        E.flatMap(() => DataService.tailData(c.env, payload.schema)),
-        E.map((data) => c.json({ data })),
+        enforceSchemaOwnership(account, command.schema),
+        E.flatMap(() => DataService.tailData(c.env, command)),
+        E.map((documents) => DataMapper.toTailDataResponse(documents)),
+        E.map((response) => c.json<TailDataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -154,7 +232,25 @@ export function update(options: ControllerOptions): void {
 
   app.post(
     path,
-    payloadValidator(UpdateDataRequestSchema),
+    describeRoute({
+      tags: ["Data"],
+      security: [{ bearerAuth: [] }],
+      summary: "Update data records",
+      description:
+        "Updates data records matching the provided filter in a schema collection.",
+      responses: {
+        200: {
+          description: "Records updated successfully",
+          content: {
+            "application/json": {
+              schema: resolver(UpdateDataResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", UpdateDataRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: UpdateDataRequest }>({
       path,
@@ -166,14 +262,12 @@ export function update(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = DataMapper.toUpdateRecordsCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, payload.schema),
-        E.flatMap(() => DataService.updateRecords(c.env, payload)),
-        E.map((data) =>
-          c.json({
-            data,
-          }),
-        ),
+        enforceSchemaOwnership(account, command.schema),
+        E.flatMap(() => DataService.updateRecords(c.env, command)),
+        E.map((result) => DataMapper.toUpdateDataResponse(result)),
+        E.map((response) => c.json<UpdateDataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -187,7 +281,24 @@ export function upload(options: ControllerOptions): void {
 
   app.post(
     path,
-    payloadValidator(UploadDataRequestSchema),
+    describeRoute({
+      tags: ["Data"],
+      security: [{ bearerAuth: [] }],
+      summary: "Upload data records",
+      description: "Uploads multiple data records to a schema collection.",
+      responses: {
+        200: {
+          description: "Records uploaded successfully",
+          content: {
+            "application/json": {
+              schema: resolver(UploadDataResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", UploadDataRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: UploadDataRequest }>({
       path,
@@ -199,22 +310,12 @@ export function upload(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = DataMapper.toCreateRecordsCommand(payload);
       return pipe(
-        enforceSchemaOwnership(account, payload.schema),
-        E.flatMap(() =>
-          DataService.createRecords(
-            c.env,
-            payload.userId,
-            payload.schema,
-            payload.data,
-            payload.permissions,
-          ),
-        ),
-        E.map((data) =>
-          c.json({
-            data,
-          }),
-        ),
+        enforceSchemaOwnership(account, command.schemaId),
+        E.flatMap(() => DataService.createRecords(c.env, command)),
+        E.map((result) => DataMapper.toUploadDataResponse(result)),
+        E.map((response) => c.json<UploadDataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );

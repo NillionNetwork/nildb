@@ -6,21 +6,28 @@ import type {
   DataValidationError,
   DocumentNotFoundError,
 } from "#/common/errors";
-import { type Did, Uuid } from "#/common/types";
+import type { Did } from "#/common/types";
+import { Uuid } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import {
-  type AddPermissionsRequest,
-  type DeletePermissionsRequest,
-  type Permissions,
-  PermissionsSchema,
-  type ReadPermissionsRequest,
-  type UpdatePermissionsRequest,
-} from "#/user/user.types";
-import type { UserDocument } from "./user.repository";
 import * as UserRepository from "./user.repository";
+import {
+  type AddPermissionsCommand,
+  type DeletePermissionsCommand,
+  Permissions,
+  type ReadPermissionsCommand,
+  type UpdatePermissionsCommand,
+  type UserDocument,
+} from "./user.types";
 
+/**
+ * Retrieves a user document by DID.
+ *
+ * @param ctx - Application context and bindings
+ * @param did - User's decentralized identifier
+ * @returns User document or appropriate error
+ */
 export function find(
   ctx: AppBindings,
   did: Did,
@@ -31,6 +38,16 @@ export function find(
   return UserRepository.findById(ctx, did);
 }
 
+/**
+ * Lists all data documents owned by a user.
+ *
+ * Aggregates data from multiple schema collections based on
+ * the user's data references.
+ *
+ * @param ctx - Application context and bindings
+ * @param did - User's decentralized identifier
+ * @returns Array of data documents owned by the user
+ */
 export function listUserData(
   ctx: AppBindings,
   did: Did,
@@ -69,65 +86,93 @@ export function listUserData(
   );
 }
 
+/**
+ * Reads permissions configured for a data document.
+ *
+ * @param ctx - Application context and bindings
+ * @param command - Permission read command with schema and document ID
+ * @returns Array of permissions for the document
+ */
 export function readPermissions(
   ctx: AppBindings,
-  request: ReadPermissionsRequest,
+  command: ReadPermissionsCommand,
 ): E.Effect<
   Permissions[],
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return DataRepository.findMany(ctx, request.schema, {
-    _id: request.documentId,
+  return DataRepository.findMany(ctx, command.schema, {
+    _id: command.documentId,
   }).pipe(
     E.map((documents) =>
       documents.flatMap((document) =>
-        document._perms.map((perms) => PermissionsSchema.parse(perms)),
+        document._perms.map((perm) => new Permissions(perm.did, perm.perms)),
       ),
     ),
   );
 }
 
+/**
+ * Adds new permissions to a data document.
+ *
+ * @param ctx - Application context and bindings
+ * @param command - Permission addition command
+ * @returns MongoDB update result
+ */
 export function addPermissions(
   ctx: AppBindings,
-  request: AddPermissionsRequest,
+  command: AddPermissionsCommand,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return UserRepository.addPermissions(
     ctx,
-    request.schema,
-    request.documentId,
-    request.permissions,
+    command.schema,
+    command.documentId,
+    command.permissions,
   );
 }
 
+/**
+ * Updates existing permissions for a data document.
+ *
+ * @param ctx - Application context and bindings
+ * @param command - Permission update command
+ * @returns MongoDB update result
+ */
 export function updatePermissions(
   ctx: AppBindings,
-  request: UpdatePermissionsRequest,
+  command: UpdatePermissionsCommand,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return UserRepository.updatePermissions(
     ctx,
-    request.schema,
-    request.documentId,
-    request.permissions,
+    command.schema,
+    command.documentId,
+    command.permissions,
   );
 }
 
+/**
+ * Deletes permissions from a data document.
+ *
+ * @param ctx - Application context and bindings
+ * @param command - Permission deletion command
+ * @returns MongoDB update result
+ */
 export function deletePermissions(
   ctx: AppBindings,
-  request: DeletePermissionsRequest,
+  command: DeletePermissionsCommand,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return UserRepository.deletePermissions(
     ctx,
-    request.schema,
-    request.documentId,
-    request.did,
+    command.schema,
+    command.documentId,
+    command.did,
   );
 }

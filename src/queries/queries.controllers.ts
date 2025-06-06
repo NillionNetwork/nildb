@@ -1,8 +1,10 @@
 import { Effect as E, pipe } from "effect";
-import { StatusCodes } from "http-status-codes";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
+import { describeRoute } from "hono-openapi";
+import { resolver, validator as zValidator } from "hono-openapi/zod";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
+import { OpenApiSpecCommonErrorResponses } from "#/common/openapi";
 import { enforceQueryOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
@@ -12,17 +14,19 @@ import {
   RoleSchema,
   verifyNucAndLoadSubject,
 } from "#/middleware/capability.middleware";
-import * as QueriesService from "./queries.services";
 import {
-  type AddQueryRequest,
-  AddQueryRequestSchema,
-  type DeleteQueryRequest,
-  DeleteQueryRequestSchema,
-  type ExecuteQueryRequest,
-  ExecuteQueryRequestSchema,
-  type QueryJobRequest,
-  QueryJobRequestSchema,
-} from "./queries.types";
+  AddQueryRequest,
+  AddQueryResponse,
+  DeleteQueryRequest,
+  DeleteQueryResponse,
+  ExecuteQueryRequest,
+  ExecuteQueryResponse,
+  GetQueriesResponse,
+  GetQueryJobResponse,
+  QueryJobRequest,
+} from "./queries.dto";
+import { QueriesDataMapper } from "./queries.mapper";
+import * as QueriesService from "./queries.services";
 
 export function add(options: ControllerOptions): void {
   const { app, bindings } = options;
@@ -30,7 +34,19 @@ export function add(options: ControllerOptions): void {
 
   app.post(
     path,
-    payloadValidator(AddQueryRequestSchema),
+    describeRoute({
+      tags: ["Queries"],
+      security: [{ bearerAuth: [] }],
+      summary: "Add a new query",
+      description: "Creates a new MongoDB aggregation query for a schema.",
+      responses: {
+        201: {
+          description: "Query created successfully",
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", AddQueryRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: AddQueryRequest }>({
       path,
@@ -42,12 +58,10 @@ export function add(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = QueriesDataMapper.toAddQueryCommand(payload, account._id);
       return pipe(
-        QueriesService.addQuery(c.env, {
-          ...payload,
-          owner: account._id,
-        }),
-        E.map(() => new Response(null, { status: StatusCodes.CREATED })),
+        QueriesService.addQuery(c.env, command),
+        E.map(() => AddQueryResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -55,13 +69,25 @@ export function add(options: ControllerOptions): void {
   );
 }
 
-export function remove(options: ControllerOptions): void {
+export function _delete(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.queries.root;
 
   app.delete(
     path,
-    payloadValidator(DeleteQueryRequestSchema),
+    describeRoute({
+      tags: ["Queries"],
+      security: [{ bearerAuth: [] }],
+      summary: "Delete a query",
+      description: "Deletes an existing query by ID.",
+      responses: {
+        204: {
+          description: "Query deleted successfully",
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", DeleteQueryRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: DeleteQueryRequest }>({
       path,
@@ -73,10 +99,11 @@ export function remove(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = QueriesDataMapper.toDeleteQueryCommand(payload);
       return pipe(
-        enforceQueryOwnership(account, payload.id),
-        E.flatMap(() => QueriesService.removeQuery(c.env, payload.id)),
-        E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
+        enforceQueryOwnership(account, command.id),
+        E.flatMap(() => QueriesService.removeQuery(c.env, command)),
+        E.map(() => DeleteQueryResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -90,7 +117,25 @@ export function execute(options: ControllerOptions): void {
 
   app.post(
     path,
-    payloadValidator(ExecuteQueryRequestSchema),
+    describeRoute({
+      tags: ["Queries"],
+      security: [{ bearerAuth: [] }],
+      summary: "Execute a query",
+      description:
+        "Executes a query with provided variables, either synchronously or as a background job.",
+      responses: {
+        200: {
+          description: "Query executed successfully",
+          content: {
+            "application/json": {
+              schema: resolver(ExecuteQueryResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", ExecuteQueryRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: ExecuteQueryRequest }>({
       path,
@@ -102,10 +147,12 @@ export function execute(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = QueriesDataMapper.toExecuteQueryCommand(payload);
       return pipe(
-        enforceQueryOwnership(account, payload.id),
-        E.flatMap(() => QueriesService.executeQuery(c.env, payload)),
-        E.map((data) => c.json({ data })),
+        enforceQueryOwnership(account, command.id),
+        E.flatMap(() => QueriesService.executeQuery(c.env, command)),
+        E.map((result) => QueriesDataMapper.toExecuteQueryResponse(result)),
+        E.map((response) => c.json<ExecuteQueryResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -119,6 +166,24 @@ export function list(options: ControllerOptions): void {
 
   app.get(
     path,
+    describeRoute({
+      tags: ["Queries"],
+      security: [{ bearerAuth: [] }],
+      summary: "List queries",
+      description:
+        "Retrieves all queries owned by the authenticated organization.",
+      responses: {
+        200: {
+          description: "Queries retrieved successfully",
+          content: {
+            "application/json": {
+              schema: resolver(GetQueriesResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability({
       path,
@@ -131,7 +196,8 @@ export function list(options: ControllerOptions): void {
 
       return pipe(
         QueriesService.findQueries(c.env, account._id),
-        E.map((data) => c.json({ data })),
+        E.map((documents) => QueriesDataMapper.toGetQueriesResponse(documents)),
+        E.map((response) => c.json<GetQueriesResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -145,7 +211,24 @@ export function getQueryJob(options: ControllerOptions): void {
 
   app.post(
     path,
-    payloadValidator(QueryJobRequestSchema),
+    describeRoute({
+      tags: ["Queries"],
+      security: [{ bearerAuth: [] }],
+      summary: "Get query job status",
+      description: "Retrieves the status and result of a query background job.",
+      responses: {
+        200: {
+          description: "Job status retrieved successfully",
+          content: {
+            "application/json": {
+              schema: resolver(GetQueryJobResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    payloadValidator(QueryJobRequest),
     verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
     enforceCapability<{ json: QueryJobRequest }>({
       path,
@@ -157,15 +240,17 @@ export function getQueryJob(options: ControllerOptions): void {
       const account = c.get("account") as OrganizationAccountDocument;
       const payload = c.req.valid("json");
 
+      const command = QueriesDataMapper.toGetQueryJobCommand(payload);
       return pipe(
-        QueriesService.findQueryJob(c.env, payload.id),
+        QueriesService.findQueryJob(c.env, command),
         E.flatMap((data) =>
           E.all([
             E.succeed(data),
             enforceQueryOwnership(account, data.queryId),
           ]),
         ),
-        E.map(([data]) => c.json({ data })),
+        E.map(([document]) => QueriesDataMapper.toQueryJobResponse(document)),
+        E.map((response) => c.json<GetQueryJobResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );

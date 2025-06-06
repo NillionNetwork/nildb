@@ -17,8 +17,6 @@ export const PathsV1 = {
   },
   admin: {
     root: PathSchema.parse("/api/v1/admin"),
-    maintenance: PathSchema.parse("/api/v1/admin/maintenance"),
-    logLevel: PathSchema.parse("/api/v1/admin/log_level"),
   },
   data: {
     root: PathSchema.parse("/api/v1/data"),
@@ -29,7 +27,7 @@ export const PathsV1 = {
     update: PathSchema.parse("/api/v1/data/update"),
     upload: PathSchema.parse("/api/v1/data/create"),
   },
-  docs: PathSchema.parse("/api/v1/openapi/docs"),
+  docs: PathSchema.parse("/openapi.json"),
   queries: {
     root: PathSchema.parse("/api/v1/queries"),
     execute: PathSchema.parse("/api/v1/queries/execute"),
@@ -45,6 +43,9 @@ export const PathsV1 = {
     about: PathSchema.parse("/about"),
     health: PathSchema.parse("/health"),
     metrics: PathSchema.parse("/metrics"),
+    maintenanceStart: PathSchema.parse("/api/v1/system/maintenance/start"),
+    maintenanceStop: PathSchema.parse("/api/v1/system/maintenance/stop"),
+    logLevel: PathSchema.parse("/api/v1/system/log-level"),
   },
   user: {
     data: {

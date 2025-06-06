@@ -7,8 +7,12 @@ import {
 } from "#/common/errors";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
-import type { OrganizationAccountDocument } from "./accounts.mapper";
 import * as AccountRepository from "./accounts.repository";
+import type {
+  CreateAccountCommand,
+  OrganizationAccountDocument,
+  UpdateProfileCommand,
+} from "./accounts.types";
 
 /**
  * Retrieves an organisation account by DID.
@@ -28,31 +32,44 @@ export function find(
 }
 
 /**
- * Creates a new organisation account.
+ * Creates a new organisation account based on the provided command.
  *
  * Validates that the account's DID differs from the node's own DID
- * before persisting to the database.
+ * before persisting to the database. Constructs the complete document
+ * from the command data.
  *
  * @param ctx - Application context containing configuration and dependencies
- * @param account - Complete account document to create
+ * @param command - Create account command with DID and name
  * @returns Effect indicating success or relevant errors
  */
 export function createAccount(
   ctx: AppBindings,
-  account: OrganizationAccountDocument,
+  command: CreateAccountCommand,
 ): E.Effect<
   void,
   DuplicateEntryError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(
-    E.succeed(account),
+    E.succeed(command),
     E.filterOrFail(
-      (document) => document._id !== ctx.node.keypair.toDidString(),
-      (document) =>
+      (cmd) => cmd.did !== ctx.node.keypair.toDidString(),
+      (cmd) =>
         new DuplicateEntryError({
-          document: { name: document.name, did: document._id },
+          document: { name: cmd.name, did: cmd.did },
         }),
     ),
+    E.map((cmd) => {
+      const now = new Date();
+      return {
+        _id: cmd.did,
+        _role: "organization" as const,
+        _created: now,
+        _updated: now,
+        name: cmd.name,
+        schemas: [],
+        queries: [],
+      };
+    }),
     E.flatMap((document) => AccountRepository.insert(ctx, document)),
   );
 }
@@ -75,20 +92,18 @@ export function remove(
 }
 
 /**
- * Updates an organisation's profile fields.
+ * Updates an organisation's profile fields based on the provided command.
  *
  * @param ctx - Application context containing configuration and dependencies
- * @param id - DID of the account to update
- * @param updates - Partial object containing fields to update
+ * @param command - Update profile command with account ID and updates
  * @returns Effect indicating success or relevant errors
  */
 export function updateProfile(
   ctx: AppBindings,
-  id: Did,
-  updates: Partial<{ _id: Did; name: string }>,
+  command: UpdateProfileCommand,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return AccountRepository.update(ctx, id, updates);
+  return AccountRepository.update(ctx, command.accountId, command.updates);
 }

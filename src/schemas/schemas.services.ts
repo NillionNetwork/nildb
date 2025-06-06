@@ -1,7 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { CreateIndexesOptions, IndexSpecification, UUID } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.mapper";
-import type { CreateSchemaIndexRequest } from "#/admin/admin.types";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -10,13 +9,18 @@ import type {
   IndexNotFoundError,
   InvalidIndexOptionsError,
 } from "#/common/errors";
-import type { Did } from "#/common/types";
 import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import * as OrganizationRepository from "#/organizations/organizations.repository";
-import type { AddSchemaRequest, SchemaMetadata } from "#/schemas/schemas.types";
-import type { SchemaDocument, SchemaDocumentType } from "./schemas.repository";
+import type {
+  AddSchemaCommand,
+  CreateIndexCommand,
+  DeleteSchemaCommand,
+  DropIndexCommand,
+  SchemaDocument,
+  SchemaMetadata,
+} from "#/schemas/schemas.types";
 import * as SchemasRepository from "./schemas.repository";
 
 export function getOrganizationSchemas(
@@ -34,7 +38,7 @@ export function getOrganizationSchemas(
 
 export function addSchema(
   ctx: AppBindings,
-  request: AddSchemaRequest & { owner: Did; documentType: SchemaDocumentType },
+  command: AddSchemaCommand,
 ): E.Effect<
   void,
   | DocumentNotFoundError
@@ -44,27 +48,32 @@ export function addSchema(
 > {
   const now = new Date();
   const document: SchemaDocument = {
-    ...request,
+    _id: command._id,
+    name: command.name,
+    schema: command.schema,
+    documentType: command.documentType,
+    owner: command.owner,
     _created: now,
     _updated: now,
   };
 
   return pipe(
-    validateSchema(request.schema),
+    validateSchema(command.schema),
     () => SchemasRepository.insert(ctx, document),
     E.flatMap(() =>
       E.all([
         E.succeed(ctx.cache.accounts.taint(document.owner)),
-        OrganizationRepository.addSchema(ctx, request.owner, document._id),
+        OrganizationRepository.addSchema(ctx, command.owner, document._id),
         DataRepository.createCollection(ctx, document._id),
       ]),
     ),
+    E.as(void 0),
   );
 }
 
 export function deleteSchema(
   ctx: AppBindings,
-  schemaId: UUID,
+  command: DeleteSchemaCommand,
 ): E.Effect<
   void,
   | DocumentNotFoundError
@@ -73,12 +82,12 @@ export function deleteSchema(
   | DataValidationError
 > {
   return pipe(
-    SchemasRepository.deleteOne(ctx, { _id: schemaId }),
+    SchemasRepository.deleteOne(ctx, { _id: command.id }),
     E.flatMap((schema) =>
       E.all([
         E.succeed(ctx.cache.accounts.taint(schema.owner)),
-        OrganizationRepository.removeSchema(ctx, schema.owner, schemaId),
-        DataRepository.deleteCollection(ctx, schemaId),
+        OrganizationRepository.removeSchema(ctx, schema.owner, command.id),
+        DataRepository.deleteCollection(ctx, command.id),
       ]),
     ),
     E.as(void 0),
@@ -94,35 +103,36 @@ export function getSchemaMetadata(
 
 export function createIndex(
   ctx: AppBindings,
-  schema: UUID,
-  request: CreateSchemaIndexRequest,
+  command: CreateIndexCommand,
 ): E.Effect<
   void,
   InvalidIndexOptionsError | CollectionNotFoundError | DatabaseError
 > {
-  const specification: IndexSpecification = request.keys;
+  const specification: IndexSpecification = command.keys;
   const options: CreateIndexesOptions = {
-    name: request.name,
-    unique: request.unique,
+    name: command.name,
+    unique: command.unique,
   };
 
-  if (request.ttl) {
-    options.expireAfterSeconds = request.ttl;
+  if (command.ttl) {
+    options.expireAfterSeconds = command.ttl;
   }
 
   return pipe(
-    SchemasRepository.createIndex(ctx, schema, specification, options),
+    SchemasRepository.createIndex(ctx, command.schema, specification, options),
     E.as(void 0),
   );
 }
 
 export function dropIndex(
   ctx: AppBindings,
-  schema: UUID,
-  name: string,
+  command: DropIndexCommand,
 ): E.Effect<
   void,
   IndexNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return pipe(SchemasRepository.dropIndex(ctx, schema, name), E.as(void 0));
+  return pipe(
+    SchemasRepository.dropIndex(ctx, command.schema, command.name),
+    E.as(void 0),
+  );
 }

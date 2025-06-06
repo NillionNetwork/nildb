@@ -124,6 +124,16 @@ export function verifyNucAndLoadSubject<
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
         log.error({ cause: cause.message }, "Auth error");
+
+        // This isn't an elegant approach, but we want to return PAYMENT_REQUIRED
+        // to communicate when invocation NUC's chain is missing authority from nilauth
+        const message = cause.message as string;
+        if (message.includes("not signed by root")) {
+          return c.text(
+            getReasonPhrase(StatusCodes.PAYMENT_REQUIRED),
+            StatusCodes.PAYMENT_REQUIRED,
+          );
+        }
       } else {
         log.error({ cause: "unknown" }, "Auth error");
       }

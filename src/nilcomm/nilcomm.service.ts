@@ -18,10 +18,10 @@ import type {
   DappCommandStartQueryExecution,
   DappCommandStoreSecret,
 } from "#/nilcomm/nilcomm.types";
+import { AddQueryRequest } from "#/queries/queries.dto";
 import * as QueryService from "#/queries/queries.services";
-import { AddQueryRequestSchema } from "#/queries/queries.types";
+import { AddSchemaRequest } from "#/schemas/schemas.dto";
 import * as SchemaService from "#/schemas/schemas.services";
-import { AddSchemaRequestSchema } from "#/schemas/schemas.types";
 import * as NilCommMqService from "./nilcomm.mq";
 import { emitQueryExecutionCompletedEvent } from "./nilcomm.mq";
 import * as NilCommRepositoryService from "./nilcomm.repository";
@@ -59,9 +59,11 @@ export function processDappStoreSecret(
       catch: (cause) => Error("Share decryption failed", { cause }),
     }),
     E.flatMap((data) =>
-      DataService.createRecords(ctx, ctx.node.keypair.toDidString(), schemaId, [
-        data,
-      ]),
+      DataService.createRecords(ctx, {
+        owner: ctx.node.keypair.toDidString(),
+        schemaId,
+        data: [data],
+      }),
     ),
     E.flatMap((_record) =>
       NilCommMqService.emitSecretStoredEvent(ctx, payload.mappingId),
@@ -157,13 +159,13 @@ export async function ensureNilcommAccount(
         name: "nilcomm",
       });
 
-      const schemaRequest = AddSchemaRequestSchema.parse(commitRevealSchema);
-      const queryRequest = AddQueryRequestSchema.parse(commitRevealQuery);
+      const schemaRequest = AddSchemaRequest.parse(commitRevealSchema);
+      const queryRequest = AddQueryRequest.parse(commitRevealQuery);
 
       return pipe(
         AccountService.createAccount(
           ctx,
-          AccountDataMapper.fromRegisterAccountRequest(registerRequest),
+          AccountDataMapper.toCreateAccountCommand(registerRequest),
         ),
         E.flatMap(() =>
           SchemaService.addSchema(ctx, {

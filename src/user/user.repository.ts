@@ -6,30 +6,15 @@ import {
   type DataValidationError,
   DocumentNotFoundError,
 } from "#/common/errors";
-import {
-  CollectionName,
-  checkCollectionExists,
-  type DocumentBase,
-} from "#/common/mongo";
+import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import type { DataDocumentBase } from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import type { Permissions } from "#/user/user.types";
-
-export type LogOperation =
-  | { op: "write"; col: UUID }
-  | { op: "delete"; col: UUID }
-  | { op: "auth"; col: UUID; perms: Permissions };
-
-export type DataDocumentReference = {
-  id: UUID;
-  schema: UUID;
-};
-
-export type UserDocument = DocumentBase<Did> & {
-  data: DataDocumentReference[];
-  log: LogOperation[];
-};
+import type {
+  LogOperation,
+  Permissions,
+  UserDocument,
+} from "#/user/user.types";
 
 export function upsert(
   ctx: AppBindings,
