@@ -1,6 +1,5 @@
 import { UUID } from "mongodb";
 import { describe } from "vitest";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { CollectionName } from "#/common/mongo";
 import { createUuidDto } from "#/common/types";
 import type { SchemaDocument } from "#/schemas/schemas.types";
@@ -115,8 +114,7 @@ describe("schemas.test.ts", () => {
 
     expect(schemaDocument).toBeNull();
 
-    const organizationDocument =
-      await expectAccount<OrganizationAccountDocument>(c, builder.did);
+    const organizationDocument = await expectAccount(c, builder.did);
     expect(organizationDocument.schemas).toHaveLength(0);
 
     await assertDocumentCount(c, id, 0);

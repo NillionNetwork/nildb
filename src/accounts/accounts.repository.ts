@@ -6,7 +6,7 @@ import {
   DocumentNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
-import type { AccountDocument, Did } from "#/common/types";
+import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { OrganizationAccountDocument } from "./accounts.types";
 
@@ -49,7 +49,7 @@ export function findByIdWithCache(
   ctx: AppBindings,
   _id: Did,
 ): E.Effect<
-  AccountDocument,
+  OrganizationAccountDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const cache = ctx.cache.accounts;
@@ -61,7 +61,7 @@ export function findByIdWithCache(
   const filter = { _id };
 
   return pipe(
-    checkCollectionExists<AccountDocument>(
+    checkCollectionExists<OrganizationAccountDocument>(
       ctx,
       "primary",
       CollectionName.Accounts,
@@ -104,7 +104,6 @@ export function findOneOrganization(
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = {
     _id,
-    _role: "organization",
   };
   return pipe(
     checkCollectionExists<OrganizationAccountDocument>(
@@ -149,7 +148,6 @@ export function deleteOneById(
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = {
     _id,
-    _role: "organization",
   };
 
   return pipe(
@@ -197,7 +195,6 @@ export function update(
 > {
   const filter: StrictFilter<OrganizationAccountDocument> = {
     _id,
-    _role: "organization",
   };
   const update: StrictUpdateFilter<OrganizationAccountDocument> = {
     $set: {

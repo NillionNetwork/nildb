@@ -69,28 +69,8 @@ export function loadSubjectAndVerifyAsAdmin<
   const { log } = bindings;
   return async (c, next) => {
     try {
-      const envelope = c.get("envelope");
-      const token = envelope.token.token;
-      const subject = token.subject.toString();
-
-      // load account
-      const account = await pipe(
-        AccountsRepository.findByIdWithCache(bindings, subject),
-        E.catchAll((_e) => E.succeed(null)),
-        E.runPromise,
-      );
-
-      if (!account) {
-        c.env.log.debug("Unknown account: %s", subject);
-        return c.text(
-          getReasonPhrase(StatusCodes.UNAUTHORIZED),
-          StatusCodes.UNAUTHORIZED,
-        );
-      }
-
-      envelope.validateSignatures();
-      c.set("account", account);
-
+      // TODO check that node has delegated admin permissions
+      c.get("envelope").validateSignatures();
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {

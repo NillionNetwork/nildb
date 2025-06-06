@@ -1,6 +1,5 @@
 import { UUID } from "mongodb";
 import { describe } from "vitest";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import { CollectionName } from "#/common/mongo";
 import type { SchemaDocument } from "#/schemas/schemas.types";
 import queryJson from "./data/simple.query.json";
@@ -62,10 +61,7 @@ describe("query.test.ts", () => {
 
     expect(queryDocument).toBeNull();
 
-    const account = await expectAccount<OrganizationAccountDocument>(
-      c,
-      builder.did,
-    );
+    const account = await expectAccount(c, builder.did);
     expect(account.queries).toHaveLength(0);
   });
 });

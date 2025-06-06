@@ -1,7 +1,8 @@
 import type { UUID } from "mongodb";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type { ApiErrorResponse, ApiSuccessResponse } from "#/common/handler";
 import { CollectionName } from "#/common/mongo";
-import type { AccountDocument, Did } from "#/common/types";
+import type { Did } from "#/common/types";
 import type { FixtureContext } from "./fixture";
 
 export function assertDefined<T>(
@@ -48,15 +49,16 @@ export async function expectErrorResponse(
   return body;
 }
 
-export async function expectAccount<
-  T extends AccountDocument = AccountDocument,
->(c: FixtureContext, did: Did): Promise<T> {
+export async function expectAccount(
+  c: FixtureContext,
+  did: Did,
+): Promise<OrganizationAccountDocument> {
   const document = await c.bindings.db.primary
-    .collection<AccountDocument>(CollectionName.Accounts)
+    .collection<OrganizationAccountDocument>(CollectionName.Accounts)
     .findOne({ _id: did });
 
   assertDefined(c, document, `Account does not exist: did=${did}`);
-  return document as T;
+  return document;
 }
 
 export async function assertDocumentCount(
