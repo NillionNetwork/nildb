@@ -4,7 +4,6 @@
   "compilerOptions": {
     "noEmit": true,
 
-    // language and module features
     "lib": ["esnext", "es2024"],
     "target": "esnext",
     "module": "esnext",
@@ -13,7 +12,6 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
 
-    // type checking
     "skipLibCheck": true,
     "strict": true,
     "allowUnusedLabels": false,
@@ -23,7 +21,6 @@
     "noImplicitReturns": true,
     "isolatedModules": true,
 
-    // import aliases
     "baseUrl": ".",
     "paths": {
       "#/*": ["src/*"]
