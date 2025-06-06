@@ -4,7 +4,7 @@ import { ApiSuccessResponse } from "#/common/handler";
 import { DidSchema } from "#/common/types";
 
 /**
- * Request schema for registering a new organisation account.
+ * Request schema for registering a new organisation builder.
  *
  * @example
  * {
@@ -12,29 +12,29 @@ import { DidSchema } from "#/common/types";
  *   "name": "My Organisation"
  * }
  */
-export const RegisterAccountRequest = z
+export const RegisterBuilderRequest = z
   .object({
     did: DidSchema,
     name: z.string().min(1).max(255),
   })
-  .openapi({ ref: "RegisterAccountRequest" });
-export type RegisterAccountRequest = z.infer<typeof RegisterAccountRequest>;
+  .openapi({ ref: "RegisterBuilderRequest" });
+export type RegisterBuilderRequest = z.infer<typeof RegisterBuilderRequest>;
 
 /**
- * Response for successful account registration.
+ * Response for successful builder registration.
  *
  * Returns HTTP 201 Created with empty body to indicate
  * the resource was created successfully.
  */
-export const RegisterAccountResponse = new Response(null, {
+export const RegisterBuilderResponse = new Response(null, {
   status: StatusCodes.CREATED,
 });
-export type RegisterAccountResponse = typeof RegisterAccountResponse;
+export type RegisterBuilderResponse = typeof RegisterBuilderResponse;
 
 /**
  * Profile schema for API responses.
  *
- * Represents an organisation's account data with dates
+ * Represents an organisation's builder data with dates
  * serialised as ISO strings for JSON compatibility.
  */
 const Profile = z.object({
@@ -58,18 +58,18 @@ export const GetProfileResponse = ApiSuccessResponse(Profile).openapi({
 export type GetProfileResponse = z.infer<typeof GetProfileResponse>;
 
 /**
- * Response for successful account deletion.
+ * Response for successful builder deletion.
  *
  * Returns HTTP 204 No Content to indicate the resource
  * was deleted successfully with no response body.
  */
-export const DeleteAccountResponse = new Response(null, {
+export const DeleteBuilderResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,
 });
-export type DeleteAccountResponse = typeof DeleteAccountResponse;
+export type DeleteBuilderResponse = typeof DeleteBuilderResponse;
 
 /**
- * Request schema for updating account profile.
+ * Request schema for updating builder profile.
  *
  * All fields are optional - only provided fields will be updated.
  * At least one field must be provided.

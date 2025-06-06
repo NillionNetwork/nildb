@@ -139,7 +139,7 @@ export async function buildFixture(
     user,
   };
 
-  // Register the builder account
+  // Register the builder
   await builder.ensureSubscriptionActive();
   log.info({ did: builder.did }, "Builder subscription active");
 

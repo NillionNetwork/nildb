@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UUID } from "mongodb";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { BuilderDocument } from "#/builders/builders.types";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -18,16 +18,16 @@ export function addSchema(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<OrganizationAccountDocument> = { _id: owner };
-  const update: StrictUpdateFilter<OrganizationAccountDocument> = {
+  const filter: StrictFilter<BuilderDocument> = { _id: owner };
+  const update: StrictUpdateFilter<BuilderDocument> = {
     $addToSet: { schemas: schemaId },
   };
 
   return pipe(
-    checkCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<BuilderDocument>(
       ctx,
       "primary",
-      CollectionName.Accounts,
+      CollectionName.Builders,
     ),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
@@ -38,7 +38,7 @@ export function addSchema(
         ? E.succeed(void 0)
         : E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Accounts,
+              collection: CollectionName.Builders,
               filter,
             }),
           ),
@@ -54,16 +54,16 @@ export function removeSchema(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgDid };
-  const update: StrictUpdateFilter<OrganizationAccountDocument> = {
+  const filter: StrictFilter<BuilderDocument> = { _id: orgDid };
+  const update: StrictUpdateFilter<BuilderDocument> = {
     $pull: { schemas: schemaId },
   };
 
   return pipe(
-    checkCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<BuilderDocument>(
       ctx,
       "primary",
-      CollectionName.Accounts,
+      CollectionName.Builders,
     ),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
@@ -74,7 +74,7 @@ export function removeSchema(
         ? E.succeed(void 0)
         : E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Accounts,
+              collection: CollectionName.Builders,
               filter,
             }),
           ),
@@ -90,16 +90,16 @@ export function addQuery(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgId };
-  const update: StrictUpdateFilter<OrganizationAccountDocument> = {
+  const filter: StrictFilter<BuilderDocument> = { _id: orgId };
+  const update: StrictUpdateFilter<BuilderDocument> = {
     $addToSet: { queries: queryId },
   };
 
   return pipe(
-    checkCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<BuilderDocument>(
       ctx,
       "primary",
-      CollectionName.Accounts,
+      CollectionName.Builders,
     ),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
@@ -110,7 +110,7 @@ export function addQuery(
         ? E.succeed(void 0)
         : E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Accounts,
+              collection: CollectionName.Builders,
               filter,
             }),
           ),
@@ -126,16 +126,16 @@ export function removeQuery(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<OrganizationAccountDocument> = { _id: orgId };
-  const update: StrictUpdateFilter<OrganizationAccountDocument> = {
+  const filter: StrictFilter<BuilderDocument> = { _id: orgId };
+  const update: StrictUpdateFilter<BuilderDocument> = {
     $pull: { queries: queryId },
   };
 
   return pipe(
-    checkCollectionExists<OrganizationAccountDocument>(
+    checkCollectionExists<BuilderDocument>(
       ctx,
       "primary",
-      CollectionName.Accounts,
+      CollectionName.Builders,
     ),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
@@ -146,7 +146,7 @@ export function removeQuery(
         ? E.succeed(void 0)
         : E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Accounts,
+              collection: CollectionName.Builders,
               filter,
             }),
           ),

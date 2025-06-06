@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { timeout } from "hono/timeout";
 import { Temporal } from "temporal-polyfill";
-import { buildAccountsRouter } from "#/accounts/accounts.router";
+import { buildBuildersRouter } from "#/builders/builders.router";
 import { buildDataRouter } from "#/data/data.router";
 import { corsMiddleware } from "#/middleware/cors.middleware";
 import { useLoggerMiddleware } from "#/middleware/logger.middleware";
@@ -57,7 +57,7 @@ export async function buildApp(
 
   const limit = Temporal.Duration.from({ minutes: 5 }).total("milliseconds");
   app.use("*", timeout(limit));
-  buildAccountsRouter({ app, bindings });
+  buildBuildersRouter({ app, bindings });
   buildSchemasRouter({ app, bindings });
 
   buildQueriesRouter({ app, bindings });

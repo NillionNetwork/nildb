@@ -2,12 +2,12 @@ import type { UUID } from "mongodb";
 import type { Did } from "#/common/types";
 
 /**
- * Represents an organisation account document in the database.
+ * Represents an organisation builder document in the database.
  *
  * This type serves as the common data model across all layers,
  * maintaining consistency between service and repository operations.
  */
-export type OrganizationAccountDocument = {
+export type BuilderDocument = {
   _id: Did;
   _created: Date;
   _updated: Date;
@@ -17,19 +17,19 @@ export type OrganizationAccountDocument = {
 };
 
 /**
- * Domain command types for account operations.
+ * Domain command types for builder operations.
  *
  * These types represent business operations that can be performed
- * on accounts, converted from DTOs at the boundary layer.
+ * on builders, converted from DTOs at the boundary layer.
  */
 
 /**
- * Command for creating a new organization account.
+ * Command for creating a new organization builder.
  *
  * Encapsulates the data needed to register a new organization
  * in the system.
  */
-export type CreateAccountCommand = {
+export type CreateBuilderCommand = {
   /** Decentralized identifier for the organization */
   did: Did;
   /** Display name for the organization */
@@ -37,14 +37,14 @@ export type CreateAccountCommand = {
 };
 
 /**
- * Command for updating an existing account profile.
+ * Command for updating an existing builder profile.
  *
- * Contains the account identifier and the fields to update.
+ * Contains the builder identifier and the fields to update.
  * Only provided fields will be updated.
  */
 export type UpdateProfileCommand = {
-  /** Account identifier to update */
-  accountId: Did;
+  /** Builder identifier to update */
+  builderId: Did;
   /** Profile updates to apply (only provided fields are updated) */
   updates: Partial<{
     /** Timestamp for when this update was made **/

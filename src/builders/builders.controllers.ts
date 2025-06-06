@@ -16,48 +16,48 @@ import {
   loadSubjectAndVerifyAsBuilder,
 } from "#/middleware/capability.middleware";
 import {
-  DeleteAccountResponse,
+  DeleteBuilderResponse,
   GetProfileResponse,
-  RegisterAccountRequest,
-  RegisterAccountResponse,
+  RegisterBuilderRequest,
+  RegisterBuilderResponse,
   UpdateProfileRequest,
   UpdateProfileResponse,
-} from "./accounts.dto";
-import { AccountDataMapper } from "./accounts.mapper";
-import * as AccountService from "./accounts.services";
+} from "./builders.dto";
+import { BuilderDataMapper } from "./builders.mapper";
+import * as BuilderService from "./builders.services";
 
 /**
- * Registers the account registration endpoint.
+ * Registers the builder registration endpoint.
  *
  * Accepts a DID and name, validates the request, converts DTO to domain model,
- * and delegates to the service layer for account creation.
+ * and delegates to the service layer for builder creation.
  *
  * @param options - Controller configuration including app instance
  */
 export function register(options: ControllerOptions): void {
   const { app } = options;
-  const path = PathsV1.accounts.register;
+  const path = PathsV1.builders.register;
 
   app.post(
     path,
     describeRoute({
-      tags: ["Accounts"],
-      summary: "Register a new account",
-      description: "Creates a new account with the provided DID and name.",
+      tags: ["Builders"],
+      summary: "Register a new builder",
+      description: "Creates a new builder with the provided DID and name.",
       responses: {
         201: OpenApiSpecEmptySuccessResponses["201"],
         400: OpenApiSpecCommonErrorResponses["400"],
         500: OpenApiSpecCommonErrorResponses["500"],
       },
     }),
-    zValidator("json", RegisterAccountRequest),
+    zValidator("json", RegisterBuilderRequest),
     async (c) => {
       const payload = c.req.valid("json");
-      const command = AccountDataMapper.toCreateAccountCommand(payload);
+      const command = BuilderDataMapper.toCreateBuilderCommand(payload);
 
       return pipe(
-        AccountService.createAccount(c.env, command),
-        E.map(() => RegisterAccountResponse),
+        BuilderService.createBuilder(c.env, command),
+        E.map(() => RegisterBuilderResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -68,19 +68,19 @@ export function register(options: ControllerOptions): void {
 /**
  * Registers the profile retrieval endpoint.
  *
- * Authenticates the user, validates their capability, retrieves account data
+ * Authenticates the user, validates their capability, retrieves builder data
  * from the service layer, and converts the domain model to a DTO response.
  *
  * @param options - Controller configuration including app instance and bindings
  */
 export function getProfile(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.accounts.me;
+  const path = PathsV1.builders.me;
 
   app.get(
     path,
     describeRoute({
-      tags: ["Accounts"],
+      tags: ["Builders"],
       security: [{ bearerAuth: [] }],
       summary: "Get your profile",
       description: "Retrieves the profile for the authenticated user.",
@@ -100,14 +100,14 @@ export function getProfile(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.accounts,
+      cmd: NucCmd.nil.db.builders,
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account");
+      const builder = c.get("builder");
       return pipe(
-        AccountService.find(c.env, account._id),
-        E.map((account) => AccountDataMapper.toGetProfileResponse(account)),
+        BuilderService.find(c.env, builder._id),
+        E.map((builder) => BuilderDataMapper.toGetProfileResponse(builder)),
         E.map((response) => c.json<GetProfileResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
@@ -117,25 +117,25 @@ export function getProfile(options: ControllerOptions): void {
 }
 
 /**
- * Registers the account deletion endpoint.
+ * Registers the builder deletion endpoint.
  *
  * Authenticates the user, validates their capability, and delegates
- * to the service layer for permanent account removal.
+ * to the service layer for permanent builder removal.
  *
  * @param options - Controller configuration including app instance and bindings
  */
 export function _delete(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.accounts.me;
+  const path = PathsV1.builders.me;
 
   app.delete(
     path,
     describeRoute({
-      tags: ["Accounts"],
+      tags: ["Builders"],
       security: [{ bearerAuth: [] }],
-      summary: "Delete your account",
+      summary: "Delete your builder",
       description:
-        "Permanently deletes the authenticated user's account. This action cannot be undone.",
+        "Permanently deletes the authenticated user's builder. This action cannot be undone.",
       responses: {
         204: OpenApiSpecEmptySuccessResponses["204"],
         ...OpenApiSpecCommonErrorResponses,
@@ -145,15 +145,15 @@ export function _delete(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.accounts,
+      cmd: NucCmd.nil.db.builders,
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account");
+      const builder = c.get("builder");
 
       return pipe(
-        AccountService.remove(c.env, account._id),
-        E.map(() => DeleteAccountResponse),
+        BuilderService.remove(c.env, builder._id),
+        E.map(() => DeleteBuilderResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -171,12 +171,12 @@ export function _delete(options: ControllerOptions): void {
  */
 export function updateProfile(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.accounts.me;
+  const path = PathsV1.builders.me;
 
   app.post(
     path,
     describeRoute({
-      tags: ["Accounts"],
+      tags: ["Builders"],
       security: [{ bearerAuth: [] }],
       summary: "Update your profile",
       description:
@@ -194,19 +194,19 @@ export function updateProfile(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: UpdateProfileRequest }>({
       path,
-      cmd: NucCmd.nil.db.accounts,
+      cmd: NucCmd.nil.db.builders,
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account");
+      const builder = c.get("builder");
       const payload = c.req.valid("json");
-      const command = AccountDataMapper.toUpdateProfileCommand(
+      const command = BuilderDataMapper.toUpdateProfileCommand(
         payload,
-        account._id,
+        builder._id,
       );
 
       return pipe(
-        AccountService.updateProfile(c.env, command),
+        BuilderService.updateProfile(c.env, command),
         E.map(() => UpdateProfileResponse),
         handleTaggedErrors(c),
         E.runPromise,

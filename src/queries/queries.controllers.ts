@@ -1,7 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { BuilderDocument } from "#/builders/builders.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { OpenApiSpecCommonErrorResponses } from "#/common/openapi";
@@ -55,10 +55,10 @@ export function add(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
-      const command = QueriesDataMapper.toAddQueryCommand(payload, account._id);
+      const command = QueriesDataMapper.toAddQueryCommand(payload, builder._id);
       return pipe(
         QueriesService.addQuery(c.env, command),
         E.map(() => AddQueryResponse),
@@ -96,12 +96,12 @@ export function _delete(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
       const command = QueriesDataMapper.toDeleteQueryCommand(payload);
       return pipe(
-        enforceQueryOwnership(account, command.id),
+        enforceQueryOwnership(builder, command.id),
         E.flatMap(() => QueriesService.removeQuery(c.env, command)),
         E.map(() => DeleteQueryResponse),
         handleTaggedErrors(c),
@@ -144,12 +144,12 @@ export function execute(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
       const command = QueriesDataMapper.toExecuteQueryCommand(payload);
       return pipe(
-        enforceQueryOwnership(account, command.id),
+        enforceQueryOwnership(builder, command.id),
         E.flatMap(() => QueriesService.executeQuery(c.env, command)),
         E.map((result) => QueriesDataMapper.toExecuteQueryResponse(result)),
         E.map((response) => c.json<ExecuteQueryResponse>(response)),
@@ -192,10 +192,10 @@ export function list(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
 
       return pipe(
-        QueriesService.findQueries(c.env, account._id),
+        QueriesService.findQueries(c.env, builder._id),
         E.map((documents) => QueriesDataMapper.toGetQueriesResponse(documents)),
         E.map((response) => c.json<GetQueriesResponse>(response)),
         handleTaggedErrors(c),
@@ -237,7 +237,7 @@ export function getQueryJob(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
       const command = QueriesDataMapper.toGetQueryJobCommand(payload);
@@ -246,7 +246,7 @@ export function getQueryJob(options: ControllerOptions): void {
         E.flatMap((data) =>
           E.all([
             E.succeed(data),
-            enforceQueryOwnership(account, data.queryId),
+            enforceQueryOwnership(builder, data.queryId),
           ]),
         ),
         E.map(([document]) => QueriesDataMapper.toQueryJobResponse(document)),

@@ -4,7 +4,7 @@ import { resolver, validator as zValidator } from "hono-openapi/zod";
 import { StatusCodes } from "http-status-codes";
 import type { UUID } from "mongodb";
 import { z } from "zod";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import type { BuilderDocument } from "#/builders/builders.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import {
@@ -73,10 +73,10 @@ export function list(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
 
       return pipe(
-        SchemasService.getOrganizationSchemas(c.env, account),
+        SchemasService.getOrganizationSchemas(c.env, builder),
         E.map((schemas) => SchemaDataMapper.toListSchemasResponse(schemas)),
         E.map((response) => c.json<ListSchemasResponse>(response)),
         handleTaggedErrors(c),
@@ -119,9 +119,9 @@ export function add(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = SchemaDataMapper.toAddSchemaCommand(payload, account._id);
+      const command = SchemaDataMapper.toAddSchemaCommand(payload, builder._id);
 
       return pipe(
         SchemasService.addSchema(c.env, command),
@@ -167,12 +167,12 @@ export function _delete(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
       const command = SchemaDataMapper.toDeleteSchemaCommand(payload);
 
       return pipe(
-        enforceSchemaOwnership(account, command.id),
+        enforceSchemaOwnership(builder, command.id),
         E.flatMap(() => SchemasService.deleteSchema(c.env, command)),
         E.map(() => DeleteSchemaResponse),
         handleTaggedErrors(c),
@@ -226,11 +226,11 @@ export function metadata(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("param");
 
       return pipe(
-        enforceSchemaOwnership(account, payload.id),
+        enforceSchemaOwnership(builder, payload.id),
         E.flatMap(() => SchemasService.getSchemaMetadata(c.env, payload.id)),
         E.map((metadata) => SchemaDataMapper.toReadMetadataResponse(metadata)),
         E.map((response) => c.json<ReadSchemaMetadataResponse>(response)),
@@ -281,13 +281,13 @@ export function createIndex(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
       const { id } = c.req.valid("param");
       const command = SchemaDataMapper.toCreateIndexCommand(payload, id);
 
       return pipe(
-        enforceSchemaOwnership(account, id),
+        enforceSchemaOwnership(builder, id),
         E.flatMap(() => SchemasService.createIndex(c.env, command)),
         E.map(() => new Response(null, { status: StatusCodes.CREATED })),
         handleTaggedErrors(c),
@@ -336,12 +336,12 @@ export function dropIndex(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const account = c.get("account") as OrganizationAccountDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const { id, name } = c.req.valid("param");
       const command = SchemaDataMapper.toDropIndexCommand(name, id);
 
       return pipe(
-        enforceSchemaOwnership(account, id),
+        enforceSchemaOwnership(builder, id),
         E.flatMap(() => SchemasService.dropIndex(c.env, command)),
         E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
         handleTaggedErrors(c),

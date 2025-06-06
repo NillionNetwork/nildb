@@ -24,7 +24,7 @@ import { createTestFixtureExtension } from "./fixture/it";
 describe("nuc-based access control", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
-  // don't create schema and query as part of fixture standup else the fixture activates the org account
+  // don't create schema and query as part of fixture standup else the fixture activates the builder
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
 
   const user = {
@@ -214,7 +214,7 @@ describe("nuc-based access control", () => {
     expect(documents[0]._id.toString()).toBe(body.data[0]._id);
 
     // 7. Confirm delegation is limited to /nil/db/data by trying to access the org's profile
-    const forbiddenResponse = await app.request(PathsV1.accounts.me, {
+    const forbiddenResponse = await app.request(PathsV1.builders.me, {
       headers: {
         Authorization: `Bearer ${invocationByUser}`,
       },
@@ -273,7 +273,7 @@ describe("nuc-based access control", () => {
     expect(result.data[0].count).toBe(1);
 
     // 7. Confirm delegation is limited to /nil/db/queries by trying to access the org's profile
-    const forbiddenResponse = await app.request(PathsV1.accounts.me, {
+    const forbiddenResponse = await app.request(PathsV1.builders.me, {
       headers: {
         Authorization: `Bearer ${invocationByUser}`,
       },

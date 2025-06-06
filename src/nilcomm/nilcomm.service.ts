@@ -1,8 +1,8 @@
 import { Effect as E, pipe } from "effect";
 import { UUID } from "mongodb";
-import { RegisterAccountRequest } from "#/accounts/accounts.dto";
-import { AccountDataMapper } from "#/accounts/accounts.mapper";
-import * as AccountService from "#/accounts/accounts.services";
+import { RegisterBuilderRequest } from "#/builders/builders.dto";
+import { BuilderDataMapper } from "#/builders/builders.mapper";
+import * as BuilderService from "#/builders/builders.services";
 import type { AmqpPublishMessageError } from "#/common/amqp";
 import {
   type CollectionNotFoundError,
@@ -99,8 +99,8 @@ export function processDappStartQueryExecution(
   // TODO: Helper method / class?
   const nilcommPk = DidSchema.parse(`did:nil:${payload.ownerPk}`);
   return pipe(
-    AccountService.find(ctx, nilcommPk as Did),
-    E.flatMap((account) => QueryService.findQueries(ctx, account._id)),
+    BuilderService.find(ctx, nilcommPk as Did),
+    E.flatMap((builder) => QueryService.findQueries(ctx, builder._id)),
     E.flatMap((queries) => {
       const query = queries.find((q) => q._id.equals(queryId));
       if (query) {
@@ -148,13 +148,13 @@ export async function ensureNilcommAccount(
   const did = DidSchema.parse(`did:nil:${ctx.config.nilcommPublicKey}`) as Did;
 
   return pipe(
-    AccountService.find(ctx, did),
+    BuilderService.find(ctx, did),
     E.tap(() => {
       log.info("Nilcomm account exists");
     }),
     E.catchTag("DocumentNotFoundError", () => {
       log.info("Nilcomm account not found");
-      const registerRequest = RegisterAccountRequest.parse({
+      const registerRequest = RegisterBuilderRequest.parse({
         did,
         name: "nilcomm",
       });
@@ -163,9 +163,9 @@ export async function ensureNilcommAccount(
       const queryRequest = AddQueryRequest.parse(commitRevealQuery);
 
       return pipe(
-        AccountService.createAccount(
+        BuilderService.createBuilder(
           ctx,
-          AccountDataMapper.toCreateAccountCommand(registerRequest),
+          BuilderDataMapper.toCreateBuilderCommand(registerRequest),
         ),
         E.flatMap(() =>
           SchemaService.addSchema(ctx, {

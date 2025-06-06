@@ -4,7 +4,7 @@ import { CollectionName } from "#/common/mongo";
 import type { SchemaDocument } from "#/schemas/schemas.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
-import { expectAccount } from "./fixture/assertions";
+import { expectBuilder } from "./fixture/assertions";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
@@ -61,7 +61,7 @@ describe("query.test.ts", () => {
 
     expect(queryDocument).toBeNull();
 
-    const account = await expectAccount(c, builder.did);
-    expect(account.queries).toHaveLength(0);
+    const builderDocument = await expectBuilder(c, builder.did);
+    expect(builderDocument.queries).toHaveLength(0);
   });
 });

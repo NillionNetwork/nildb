@@ -1,14 +1,14 @@
 import type { Did } from "#/common/types";
 import type {
   GetProfileResponse,
-  RegisterAccountRequest,
+  RegisterBuilderRequest,
   UpdateProfileRequest,
-} from "./accounts.dto";
+} from "./builders.dto";
 import type {
-  CreateAccountCommand,
-  OrganizationAccountDocument,
+  BuilderDocument,
+  CreateBuilderCommand,
   UpdateProfileCommand,
-} from "./accounts.types";
+} from "./builders.types";
 
 /**
  * Transforms data between HTTP DTOs and domain models.
@@ -17,17 +17,17 @@ import type {
  * Higher layers (controllers) use these functions to convert DTOs to domain
  * models before passing them to lower layers (services).
  */
-export const AccountDataMapper = {
+export const BuilderDataMapper = {
   /**
-   * Converts a domain account document to an API response DTO.
+   * Converts a domain builder document to an API response DTO.
    *
    * Transforms dates to ISO strings and UUIDs to strings for
    * JSON serialisation compatibility.
    *
-   * @param data - Organisation account document from domain layer
+   * @param data - Organisation builder document from domain layer
    * @returns Profile response DTO for HTTP layer
    */
-  toGetProfileResponse(data: OrganizationAccountDocument): GetProfileResponse {
+  toGetProfileResponse(data: BuilderDocument): GetProfileResponse {
     return {
       data: {
         _id: data._id,
@@ -46,9 +46,9 @@ export const AccountDataMapper = {
    * Handles DTO to domain command conversion at the boundary layer.
    *
    * @param dto - Registration request DTO
-   * @returns Create account domain command
+   * @returns Create builder domain command
    */
-  toCreateAccountCommand(dto: RegisterAccountRequest): CreateAccountCommand {
+  toCreateBuilderCommand(dto: RegisterBuilderRequest): CreateBuilderCommand {
     return {
       did: dto.did,
       name: dto.name,
@@ -58,24 +58,22 @@ export const AccountDataMapper = {
   /**
    * Converts update profile request DTO to domain command.
    *
-   * Handles DTO to domain command conversion with account ID at the boundary layer.
+   * Handles DTO to domain command conversion with builder ID at the boundary layer.
    *
    * @param dto - Update profile request DTO
-   * @param accountId - Account identifier to update
+   * @param builderId - Builder identifier to update
    * @returns Update profile domain command
    */
   toUpdateProfileCommand(
     dto: UpdateProfileRequest,
-    accountId: Did,
+    builderId: Did,
   ): UpdateProfileCommand {
-    const updates = {
-      _updated: new Date(),
-      name: dto.name,
-    };
-
     return {
-      accountId,
-      updates,
+      builderId,
+      updates: {
+        _updated: new Date(),
+        name: dto.name,
+      },
     };
   },
 };

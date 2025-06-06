@@ -56,7 +56,7 @@ export function addQuery(
     () => QueriesRepository.insert(ctx, document),
     E.flatMap(() =>
       E.all([
-        E.succeed(ctx.cache.accounts.taint(document.owner)),
+        E.succeed(ctx.cache.builders.taint(document.owner)),
         OrganizationRepository.addQuery(ctx, document.owner, document._id),
       ]),
     ),
@@ -134,7 +134,7 @@ export function removeQuery(
     QueriesRepository.findOneAndDelete(ctx, { _id: command.id }),
     E.flatMap((document) =>
       E.all([
-        E.succeed(ctx.cache.accounts.taint(document.owner)),
+        E.succeed(ctx.cache.builders.taint(document.owner)),
         OrganizationRepository.removeQuery(ctx, document.owner, command.id),
       ]),
     ),
