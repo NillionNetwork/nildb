@@ -12,8 +12,8 @@ import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
   enforceCapability,
-  RoleSchema,
-  verifyNucAndLoadSubject,
+  loadNucToken,
+  loadSubjectAndVerifyAsBuilder,
 } from "#/middleware/capability.middleware";
 import {
   DeleteAccountResponse,
@@ -96,11 +96,11 @@ export function getProfile(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.accounts,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -141,11 +141,11 @@ export function _delete(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
       path,
       cmd: NucCmd.nil.db.accounts,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -190,11 +190,11 @@ export function updateProfile(options: ControllerOptions): void {
       },
     }),
     zValidator("json", UpdateProfileRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: UpdateProfileRequest }>({
       path,
       cmd: NucCmd.nil.db.accounts,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {

@@ -3,9 +3,10 @@ import * as amqp from "amqplib";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
-import { CACHE_FOREVER, Cache } from "#/common/cache";
+import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
+import { Cache } from "#/common/cache";
 import { createLogger, LogLevel } from "#/common/logger";
-import type { AccountDocument, Did, RootAccountDocument } from "#/common/types";
+import type { Did } from "#/common/types";
 import { initAndCreateDbClients } from "./common/mongo";
 import type { UserDocument } from "./user/user.types";
 
@@ -53,7 +54,7 @@ export type AppBindings = {
     data: Db;
   };
   cache: {
-    accounts: Cache<Did, AccountDocument>;
+    accounts: Cache<Did, OrganizationAccountDocument>;
   };
   log: Logger;
   mq?: {
@@ -103,7 +104,7 @@ declare global {
 // the majority of routes, which require auth. So the risk is accepted here to avoid the type complexity cascade.
 export type AppVariables = {
   envelope: NucTokenEnvelope;
-  account: AccountDocument;
+  account: OrganizationAccountDocument;
   user: UserDocument;
 };
 
@@ -127,30 +128,18 @@ export async function loadBindings(
     };
   }
 
-  const keypair = Keypair.from(config.nodeSecretKey);
-
-  const node = {
-    keypair,
-    endpoint: config.nodePublicEndpoint,
-  };
-
-  // Hydrate with non-expiring root account
-  const accounts = new Cache<Did, AccountDocument>();
-  const rootDocument: RootAccountDocument = {
-    _id: keypair.toDidString(),
-    _role: "root",
-  };
-  accounts.set(rootDocument._id, rootDocument, CACHE_FOREVER);
-
   return {
     config,
     cache: {
-      accounts,
+      accounts: new Cache<Did, OrganizationAccountDocument>(),
     },
     db: await initAndCreateDbClients(config),
     log: createLogger(config.logLevel),
     mq,
-    node,
+    node: {
+      keypair: Keypair.from(config.nodeSecretKey),
+      endpoint: config.nodePublicEndpoint,
+    },
   };
 }
 

@@ -9,7 +9,6 @@ import type { Did } from "#/common/types";
  */
 export type OrganizationAccountDocument = {
   _id: Did;
-  _role: "organization";
   _created: Date;
   _updated: Date;
   name: string;

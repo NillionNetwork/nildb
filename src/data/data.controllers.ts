@@ -10,8 +10,8 @@ import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
   enforceCapability,
-  RoleSchema,
-  verifyNucAndLoadSubject,
+  loadNucToken,
+  loadSubjectAndVerifyAsBuilder,
 } from "#/middleware/capability.middleware";
 import {
   DeleteDataRequest,
@@ -55,11 +55,11 @@ export function remove(options: ControllerOptions): void {
       },
     }),
     zValidator("json", DeleteDataRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: DeleteDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -104,11 +104,11 @@ export function flush(options: ControllerOptions): void {
       },
     }),
     zValidator("json", FlushDataRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: FlushDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -153,11 +153,11 @@ export function read(options: ControllerOptions): void {
       },
     }),
     zValidator("json", ReadDataRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: ReadDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -202,11 +202,11 @@ export function tail(options: ControllerOptions): void {
       },
     }),
     zValidator("json", TailDataRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: TailDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -251,11 +251,11 @@ export function update(options: ControllerOptions): void {
       },
     }),
     zValidator("json", UpdateDataRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: UpdateDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -299,11 +299,11 @@ export function upload(options: ControllerOptions): void {
       },
     }),
     zValidator("json", UploadDataRequest),
-    verifyNucAndLoadSubject(bindings, RoleSchema.enum.organization),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: UploadDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
-      roles: [RoleSchema.enum.organization],
       validate: (_c, _token) => true,
     }),
     async (c) => {

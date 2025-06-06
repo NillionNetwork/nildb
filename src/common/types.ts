@@ -1,6 +1,5 @@
 import { UUID } from "mongodb";
 import { z } from "zod";
-import type { OrganizationAccountDocument } from "#/accounts/accounts.types";
 import type { App } from "#/app";
 import type { AppBindings } from "#/env";
 
@@ -61,24 +60,3 @@ export type ControllerOptions = {
   app: App;
   bindings: AppBindings;
 };
-
-/**
- * Account document types
- */
-export type RootAccountDocument = {
-  _id: Did;
-  _role: "root";
-};
-
-export type AdminAccountDocument = {
-  _id: Did;
-  _role: "admin";
-  _created: Date;
-  _updated: Date;
-  name: string;
-};
-
-export type AccountDocument =
-  | RootAccountDocument
-  | AdminAccountDocument
-  | OrganizationAccountDocument;
