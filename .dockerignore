@@ -6,3 +6,4 @@ README.md
 tests
 **/.terragrunt-cache
 **/.terraform
+.env
