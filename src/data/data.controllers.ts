@@ -24,8 +24,9 @@ import {
   TailDataResponse,
   UpdateDataRequest,
   UpdateDataResponse,
-  UploadDataRequest,
   UploadDataResponse,
+  UploadOwnedDataRequest,
+  UploadStandardDataRequest,
 } from "./data.dto";
 import { DataMapper } from "./data.mapper";
 import * as DataService from "./data.services";
@@ -275,17 +276,18 @@ export function update(options: ControllerOptions): void {
   );
 }
 
-export function upload(options: ControllerOptions): void {
+export function uploadOwnedData(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.data.upload;
+  const path = PathsV1.data.uploadOwned;
 
   app.post(
     path,
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Upload data records",
-      description: "Uploads multiple data records to a schema collection.",
+      summary: "Upload owned data records",
+      description:
+        "Uploads multiple owned data records to a schema collection.",
       responses: {
         200: {
           description: "Records uploaded successfully",
@@ -298,10 +300,10 @@ export function upload(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    zValidator("json", UploadDataRequest),
+    zValidator("json", UploadOwnedDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: UploadDataRequest }>({
+    enforceCapability<{ json: UploadOwnedDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
       validate: (_c, _token) => true,
@@ -310,10 +312,59 @@ export function upload(options: ControllerOptions): void {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
 
-      const command = DataMapper.toCreateRecordsCommand(payload);
+      const command = DataMapper.toCreateOwnedRecordsCommand(payload);
       return pipe(
         enforceSchemaOwnership(builder, command.schemaId),
-        E.flatMap(() => DataService.createRecords(c.env, command)),
+        E.flatMap(() => DataService.createOwnedRecords(c.env, command)),
+        E.map((result) => DataMapper.toUploadDataResponse(result)),
+        E.map((response) => c.json<UploadDataResponse>(response)),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+export function uploadStandardData(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.data.uploadStandard;
+
+  app.post(
+    path,
+    describeRoute({
+      tags: ["Data"],
+      security: [{ bearerAuth: [] }],
+      summary: "Upload standard data records",
+      description:
+        "Uploads multiple standard data records to a schema collection.",
+      responses: {
+        200: {
+          description: "Records uploaded successfully",
+          content: {
+            "application/json": {
+              schema: resolver(UploadDataResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", UploadStandardDataRequest),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
+    enforceCapability<{ json: UploadStandardDataRequest }>({
+      path,
+      cmd: NucCmd.nil.db.data,
+      validate: (_c, _token) => true,
+    }),
+    async (c) => {
+      const builder = c.get("builder") as BuilderDocument;
+      const payload = c.req.valid("json");
+
+      const command = DataMapper.toCreateStandardRecordsCommand(payload);
+      return pipe(
+        enforceSchemaOwnership(builder, command.schemaId),
+        E.flatMap(() => DataService.createStandardRecords(c.env, command)),
         E.map((result) => DataMapper.toUploadDataResponse(result)),
         E.map((response) => c.json<UploadDataResponse>(response)),
         handleTaggedErrors(c),

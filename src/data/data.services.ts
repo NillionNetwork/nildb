@@ -14,7 +14,8 @@ import * as UserRepository from "#/user/user.repository";
 import type { DataDocument, UploadResult } from "./data.repository";
 import * as DataRepository from "./data.repository";
 import type {
-  CreateRecordsCommand,
+  CreateOwnedRecordsCommand,
+  CreateStandardRecordsCommand,
   DeleteRecordsCommand,
   FlushCollectionCommand,
   PartialDataDocumentDto,
@@ -24,7 +25,7 @@ import type {
 } from "./data.types";
 
 /**
- * Creates data records in a schema-validated collection.
+ * Creates owned data records in a schema-validated collection.
  *
  * Validates data against the schema, inserts records with ownership tracking,
  * and manages user permissions for owned document types. Handles both shared
@@ -34,9 +35,9 @@ import type {
  * @param command - Create records command with data and ownership information
  * @returns Effect that succeeds with upload result or fails with validation/database errors
  */
-export function createRecords(
+export function createOwnedRecords(
   ctx: AppBindings,
-  command: CreateRecordsCommand,
+  command: CreateOwnedRecordsCommand,
 ): E.Effect<
   UploadResult,
   | DataValidationError
@@ -49,13 +50,14 @@ export function createRecords(
     E.bind("document", () =>
       SchemasRepository.findOne(ctx, {
         _id: command.schemaId,
+        documentType: "owned",
       }),
     ),
     E.bind("data", ({ document }) =>
       validateData<PartialDataDocumentDto[]>(document.schema, command.data),
     ),
     E.bind("result", ({ document, data }) =>
-      DataRepository.insert(
+      DataRepository.insertOwnedData(
         ctx,
         document,
         data,
@@ -63,18 +65,53 @@ export function createRecords(
         command.permissions ? [command.permissions] : [],
       ),
     ),
-    E.flatMap(({ document, result }) => {
-      if (document.documentType === "owned") {
-        return UserRepository.upsert(
-          ctx,
-          command.owner,
-          command.schemaId,
-          result.created.map((id) => Uuid.parse(id)),
-          command.permissions,
-        ).pipe(E.flatMap(() => E.succeed(result)));
-      }
-      return E.succeed(result);
+    E.flatMap(({ result }) => {
+      return UserRepository.upsert(
+        ctx,
+        command.owner,
+        command.schemaId,
+        result.created.map((id) => Uuid.parse(id)),
+        command.permissions,
+      ).pipe(E.flatMap(() => E.succeed(result)));
     }),
+  );
+}
+
+/**
+ * Creates data records in a schema-validated collection.
+ *
+ * Validates data against the schema, inserts records with ownership tracking,
+ * and manages user permissions for owned document types. Handles both shared
+ * and user-owned data collections based on schema configuration.
+ *
+ * @param ctx - Application bindings with database and logging context
+ * @param command - Create records command with data and ownership information
+ * @returns Effect that succeeds with upload result or fails with validation/database errors
+ */
+export function createStandardRecords(
+  ctx: AppBindings,
+  command: CreateStandardRecordsCommand,
+): E.Effect<
+  UploadResult,
+  | DataValidationError
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+> {
+  return pipe(
+    E.Do,
+    E.bind("document", () =>
+      SchemasRepository.findOne(ctx, {
+        _id: command.schemaId,
+        documentType: "standard",
+      }),
+    ),
+    E.bind("data", ({ document }) =>
+      validateData<PartialDataDocumentDto[]>(document.schema, command.data),
+    ),
+    E.flatMap(({ document, data }) =>
+      DataRepository.insertStandardData(ctx, document, data),
+    ),
   );
 }
 
@@ -114,10 +151,12 @@ export function deleteRecords(
   const groupByOwner = (documents: DataDocument[]): Record<string, UUID[]> => {
     return documents.reduce<Record<string, UUID[]>>((acc, data) => {
       const owner = data._owner;
-      if (!acc[owner]) {
-        acc[owner] = [];
+      if (owner) {
+        if (!acc[owner]) {
+          acc[owner] = [];
+        }
+        acc[owner].push(data._id);
       }
-      acc[owner].push(data._id);
       return acc;
     }, {});
   };

@@ -27,7 +27,7 @@ describe("schemas.datetime.test", () => {
     ];
 
     const result = await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -59,7 +59,7 @@ describe("schemas.datetime.test", () => {
 
     for (const invalid of data) {
       await builder
-        .uploadData(c, {
+        .uploadOwnedData(c, {
           userId: user.did,
           schema: schema.id,
           data: [invalid],

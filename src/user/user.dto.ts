@@ -42,7 +42,7 @@ const DataDocumentReference = z.object({
   _id: z.string().uuid(),
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
-  _owner: z.string(),
+  _owner: z.string().optional(),
 });
 
 /**

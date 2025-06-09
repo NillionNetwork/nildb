@@ -25,7 +25,8 @@ export const PathsV1 = {
     read: PathSchema.parse("/api/v1/data/read"),
     tail: PathSchema.parse("/api/v1/data/tail"),
     update: PathSchema.parse("/api/v1/data/update"),
-    upload: PathSchema.parse("/api/v1/data/create"),
+    uploadOwned: PathSchema.parse("/api/v1/data/owned/create"),
+    uploadStandard: PathSchema.parse("/api/v1/data/standard/create"),
   },
   docs: PathSchema.parse("/openapi.json"),
   queries: {

@@ -32,12 +32,12 @@ export type PartialDataDocumentDto = Record<string, unknown>[] & {
  */
 
 /**
- * Command for creating/uploading data records.
+ * Command for creating/uploading owned data records.
  *
  * Encapsulates the data needed to create new records in a schema collection
  * with proper ownership and permissions.
  */
-export type CreateRecordsCommand = {
+export type CreateOwnedRecordsCommand = {
   /** DID of the data owner */
   owner: Did;
   /** UUID of the schema (collection) to store data in */
@@ -46,6 +46,19 @@ export type CreateRecordsCommand = {
   data: Record<string, unknown>[];
   /** Optional permissions for the data records */
   permissions?: Permissions;
+};
+
+/**
+ * Command for creating/uploading standard data records.
+ *
+ * Encapsulates the data needed to create new records in a schema collection
+ * with proper ownership and permissions.
+ */
+export type CreateStandardRecordsCommand = {
+  /** UUID of the schema (collection) to store data in */
+  schemaId: UUID;
+  /** Array of data records to store */
+  data: Record<string, unknown>[];
 };
 
 /**

@@ -42,7 +42,7 @@ describe("queries variables", () => {
     const { builder, user } = c;
 
     await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,

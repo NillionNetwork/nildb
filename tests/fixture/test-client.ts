@@ -29,8 +29,9 @@ import {
   TailDataResponse,
   type UpdateDataRequest,
   UpdateDataResponse,
-  type UploadDataRequest,
   UploadDataResponse,
+  type UploadOwnedDataRequest,
+  type UploadStandardDataRequest,
 } from "#/data/data.dto";
 import {
   type AddQueryRequest,
@@ -645,19 +646,38 @@ export class BuilderTestClient extends BaseTestClient {
   }
 
   /**
-   * Uploads data records to a schema-validated collection.
+   * Uploads owned data records to a schema-validated collection.
    *
    * @param c - Test fixture context
    * @param body - Data upload request with records and permissions
    * @returns Response handler for data upload
    */
-  uploadData(
+  uploadOwnedData(
     c: FixtureContext,
-    body: UploadDataRequest,
+    body: UploadOwnedDataRequest,
   ): ResponseHandler<UploadDataResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.data.upload, { method: "POST", body }),
+      () => this.request(PathsV1.data.uploadOwned, { method: "POST", body }),
+      StatusCodes.OK,
+      UploadDataResponse,
+    );
+  }
+
+  /**
+   * Uploads standard data records to a schema-validated collection.
+   *
+   * @param c - Test fixture context
+   * @param body - Data upload request with records and permissions
+   * @returns Response handler for data upload
+   */
+  uploadStandardData(
+    c: FixtureContext,
+    body: UploadStandardDataRequest,
+  ): ResponseHandler<UploadDataResponse> {
+    return new ResponseHandler(
+      c,
+      () => this.request(PathsV1.data.uploadStandard, { method: "POST", body }),
       StatusCodes.OK,
       UploadDataResponse,
     );

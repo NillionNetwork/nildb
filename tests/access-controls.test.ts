@@ -34,7 +34,7 @@ describe("access-controls", () => {
     const { builder, bindings, app, user } = c;
 
     await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -68,7 +68,7 @@ describe("access-controls", () => {
     const { builder, user } = c;
 
     await builderB
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data: [

@@ -139,8 +139,8 @@ export function flushCollection(
 }
 
 export type DataDocumentBase = DocumentBase<UUID> & {
-  _owner: Did;
-  _perms: Permissions[];
+  _owner?: Did;
+  _perms?: Permissions[];
 };
 export type DataDocument<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -156,7 +156,7 @@ export type UploadResult = {
   errors: CreateFailure[];
 };
 
-export function insert(
+export function insertOwnedData(
   ctx: AppBindings,
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
@@ -184,6 +184,76 @@ export function insert(
               _updated: now,
               _owner: owner,
               _perms: perms,
+              documentType: schema.documentType,
+            }));
+          batches.push(batch);
+        }
+
+        // Insert each batch of documents into the collection
+        for (const batch of batches) {
+          try {
+            const result = await collection.insertMany(batch, {
+              ordered: false,
+            });
+            for (const id of Object.values(result.insertedIds)) {
+              created.add(id.toString() as UuidDto);
+            }
+          } catch (e) {
+            if (e instanceof MongoBulkWriteError) {
+              const result = e.result;
+
+              for (const id of Object.values(result.insertedIds)) {
+                created.add(id.toString() as UuidDto);
+              }
+
+              result.getWriteErrors().map((writeError) => {
+                const document = batch[writeError.index];
+                created.delete(document._id.toString() as UuidDto);
+                errors.push({
+                  error: writeError.errmsg ?? "Unknown bulk operation error",
+                  document,
+                });
+              });
+            } else {
+              console.error("An unhandled error occurred: %O", e);
+              throw e;
+            }
+          }
+        }
+
+        return {
+          created: Array.from(created),
+          errors,
+        };
+      },
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
+  );
+}
+export function insertStandardData(
+  ctx: AppBindings,
+  schema: SchemaDocument,
+  data: PartialDataDocumentDto[],
+): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<DataDocument>(ctx, "data", schema._id.toString()),
+    E.tryMapPromise({
+      try: async (collection) => {
+        const created = new Set<UuidDto>();
+        const errors: CreateFailure[] = [];
+
+        const batchSize = 1000;
+        const batches: DataDocument[][] = [];
+        const now = new Date();
+
+        for (let i = 0; i < data.length; i += batchSize) {
+          const batch: DataDocument[] = data
+            .slice(i, i + batchSize)
+            .map((partial) => ({
+              ...partial,
+              _id: new UUID(partial._id),
+              _created: now,
+              _updated: now,
               documentType: schema.documentType,
             }));
           batches.push(batch);

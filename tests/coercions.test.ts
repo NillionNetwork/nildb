@@ -276,7 +276,7 @@ describe("coercions", () => {
     ];
 
     const response = await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -319,7 +319,7 @@ describe("coercions", () => {
     ];
 
     await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -352,7 +352,7 @@ describe("coercions", () => {
     ];
 
     await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -385,7 +385,7 @@ describe("coercions", () => {
     ];
 
     await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,

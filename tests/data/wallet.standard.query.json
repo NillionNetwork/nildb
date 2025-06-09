@@ -1,0 +1,27 @@
+{
+  "id": "",
+  "name": "wallet.standard.query.json",
+  "schema": "",
+  "variables": {},
+  "pipeline": [
+    {
+      "$match": {
+        "country": "GBR"
+      }
+    },
+    {
+      "$group": {
+        "_id": null,
+        "averageAge": { "$avg": "$age" },
+        "count": { "$sum": 1 }
+      }
+    },
+    {
+      "$project": {
+        "_id": 0,
+        "averageAge": 1,
+        "count": 1
+      }
+    }
+  ]
+}

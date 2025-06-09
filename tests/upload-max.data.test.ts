@@ -36,7 +36,7 @@ describe("upload max data", () => {
     );
 
     await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -61,7 +61,7 @@ describe("upload max data", () => {
     );
 
     const response = await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
