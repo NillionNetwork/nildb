@@ -147,7 +147,7 @@ export function loadSubjectAndVerifyAsBuilder<
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
-        log.error({ cause: cause.message }, "Auth error");
+        log.error({ cause: JSON.stringify(cause) }, "Auth error");
 
         // This isn't an elegant approach, but we want to return PAYMENT_REQUIRED
         // to communicate when invocation NUC's chain is missing authority from nilauth
