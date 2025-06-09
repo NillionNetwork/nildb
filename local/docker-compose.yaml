@@ -8,7 +8,7 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=openapi-spec,metrics,migrations
+      - APP_ENABLED_FEATURES=openapi,metrics,migrations
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_BASE_URL=http://nilauth:40921
@@ -22,20 +22,6 @@ services:
     ports:
       - "40017:27017"
 
-  postgres:
-    image: postgres:17
-    environment:
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "40432:5432"
-
-  nilchain:
-    image: ghcr.io/nillionnetwork/nilchain-devnet:v0.1.0
-    volumes:
-      - ./nilchaind/config/genesis.json:/opt/nilchain/config/genesis.json
-    ports:
-      - "40648:26648" # JSON RPC
-
   nilauth:
     image: public.ecr.aws/k5d9x2g2/nilauth:latest
     depends_on:
@@ -48,9 +34,23 @@ services:
       - "40921:8080" # main server
       - "40922:9091" # metrics server
 
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "40432:5432"
+
   token-price-api:
     image: caddy:2
     ports:
       - "40923:80"
     command: |
       caddy respond --listen :80 --body '{"nillion":{"usd":1}}' --header "Content-Type: application/json" 
+
+  nilchain:
+    image: ghcr.io/nillionnetwork/nilchain-devnet:v0.1.0
+    volumes:
+      - ./nilchaind/config/genesis.json:/opt/nilchain/config/genesis.json
+    ports:
+      - "40648:26648" # JSON RPC
