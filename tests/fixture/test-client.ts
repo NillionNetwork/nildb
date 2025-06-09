@@ -342,12 +342,12 @@ export class AdminTestClient extends BaseTestClient {
 }
 
 /**
- * Builder test client for organization operations.
+ * Test client for builder operations.
  *
  * Builder clients pay subscriptions for access to the node and require nilauth
  * services for token generation. They have access to data management, query
  * execution, schema definition, and builder management endpoints. These clients
- * represent organizations that build applications on top of NilDB.
+ * represent builder that build applications on top of NilDB.
  */
 export class BuilderTestClient extends BaseTestClient {
   constructor(private options: BuilderTestClientOptions) {
@@ -425,7 +425,7 @@ export class BuilderTestClient extends BaseTestClient {
   // Builder Management API Methods
 
   /**
-   * Registers a new organization builder.
+   * Registers a new builder.
    *
    * Note: This endpoint bypasses authentication for initial builder creation.
    *
@@ -511,7 +511,7 @@ export class BuilderTestClient extends BaseTestClient {
   }
 
   /**
-   * Lists all schemas owned by the authenticated organization.
+   * Lists all schemas owned by the authenticated builder.
    *
    * @param c - Test fixture context
    * @returns Response handler for schema listing
@@ -560,7 +560,7 @@ export class BuilderTestClient extends BaseTestClient {
   }
 
   /**
-   * Lists all queries owned by the authenticated organization.
+   * Lists all queries owned by the authenticated builder.
    *
    * @param c - Test fixture context
    * @returns Response handler for query listing
@@ -960,7 +960,7 @@ export async function createAdminTestClient(opts: {
 }
 
 /**
- * Creates a builder test client for organization operations.
+ * Creates a test client for builder operations.
  *
  * Builder clients require subscription management and use nilauth for
  * token generation. They automatically handle payment and validation

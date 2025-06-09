@@ -79,7 +79,7 @@ export const SchemaDataMapper = {
    * Handles DTO to domain command conversion at the boundary layer.
    *
    * @param dto - Add schema request DTO
-   * @param owner - Organization DID that owns the schema
+   * @param owner - Builder DID that owns the schema
    * @returns Add schema domain command
    */
   toAddSchemaCommand(dto: AddSchemaRequest, owner: Did): AddSchemaCommand {

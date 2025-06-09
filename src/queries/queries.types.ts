@@ -51,7 +51,7 @@ export type QueryDocumentBase = DocumentBase<UUID>;
  * and pipeline stages for data processing and analysis.
  */
 export type QueryDocument = QueryDocumentBase & {
-  /** DID of the organization that owns this query */
+  /** DID of the builder that owns this query */
   owner: DidString;
   /** Human-readable name for the query */
   name: string;
@@ -108,7 +108,7 @@ export type AddQueryCommand = {
   variables: Record<string, QueryVariable>;
   /** MongoDB aggregation pipeline stages */
   pipeline: Record<string, unknown>[];
-  /** DID of the organization that owns this query */
+  /** DID of the builder that owns this query */
   owner: DidString;
 };
 

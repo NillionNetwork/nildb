@@ -22,7 +22,7 @@ export const SchemaDocumentDto = z.object({
 export const SchemaDocuments = z.array(SchemaDocumentDto);
 
 /**
- * Response schema for listing organization schemas.
+ * Response schema for listing builder schemas.
  *
  * @example
  * {

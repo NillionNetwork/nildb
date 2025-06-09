@@ -28,7 +28,7 @@ export function find(
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return BuilderRepository.findOneOrganization(ctx, did);
+  return BuilderRepository.findOne(ctx, did);
 }
 
 /**
@@ -62,7 +62,6 @@ export function createBuilder(
       const now = new Date();
       return {
         _id: cmd.did,
-        _role: "organization" as const,
         _created: now,
         _updated: now,
         name: cmd.name,

@@ -170,8 +170,7 @@ export function list(options: ControllerOptions): void {
       tags: ["Queries"],
       security: [{ bearerAuth: [] }],
       summary: "List queries",
-      description:
-        "Retrieves all queries owned by the authenticated organization.",
+      description: "Retrieves all queries owned by the authenticated builder.",
       responses: {
         200: {
           description: "Queries retrieved successfully",

@@ -14,7 +14,7 @@ import type { Did } from "#/common/types";
  * Schema document type enumeration.
  *
  * Defines the access control model for data stored under a schema:
- * - "standard": Data is publicly accessible within the organization
+ * - "standard": Builder is the data owner
  * - "owned": Data access is restricted to the data owner
  */
 export type SchemaDocumentType = "standard" | "owned";
@@ -34,7 +34,7 @@ export type SchemaDocumentBase = DocumentBase<UUID>;
  * including ownership information, validation rules, and access control.
  */
 export type SchemaDocument = SchemaDocumentBase & {
-  /** DID of the organization that owns this schema */
+  /** DID of the builder that owns this schema */
   owner: Did;
   /** Human-readable name for the schema */
   name: string;
@@ -104,7 +104,7 @@ export type AddSchemaCommand = {
   schema: Record<string, unknown>;
   /** Access control type for data stored under this schema */
   documentType: SchemaDocumentType;
-  /** DID of the organization that owns this schema */
+  /** DID of the builder that owns this schema */
   owner: Did;
 };
 

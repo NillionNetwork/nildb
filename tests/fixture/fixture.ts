@@ -110,7 +110,7 @@ export async function buildFixture(
     nodePublicKey: node.keypair.publicKey("hex"),
   });
 
-  // Create builder client - organization with subscription and nilauth
+  // Create builder client with subscription and nilauth
   const builder = await createBuilderTestClient({
     app,
     keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_0!),

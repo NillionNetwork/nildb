@@ -1,5 +1,10 @@
 import { Effect as E, pipe } from "effect";
-import type { StrictFilter, StrictUpdateFilter, UpdateResult } from "mongodb";
+import type {
+  StrictFilter,
+  StrictUpdateFilter,
+  UpdateResult,
+  UUID,
+} from "mongodb";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -95,7 +100,7 @@ export function findByIdWithCache(
  * @param _id - DID of the organisation to retrieve
  * @returns Effect containing the organisation document or relevant errors
  */
-export function findOneOrganization(
+export function findOne(
   ctx: AppBindings,
   _id: Did,
 ): E.Effect<
@@ -113,8 +118,7 @@ export function findOneOrganization(
     ),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "findOneOrganization" }),
+      catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
     }),
     E.flatMap((result) =>
       result === null
@@ -222,6 +226,150 @@ export function update(
             }),
           )
         : E.succeed(result),
+    ),
+  );
+}
+
+export function addSchema(
+  ctx: AppBindings,
+  owner: Did,
+  schemaId: UUID,
+): E.Effect<
+  void,
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  const filter: StrictFilter<BuilderDocument> = { _id: owner };
+  const update: StrictUpdateFilter<BuilderDocument> = {
+    $addToSet: { schemas: schemaId },
+  };
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(
+      ctx,
+      "primary",
+      CollectionName.Builders,
+    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
+    E.flatMap((result) =>
+      result.modifiedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          ),
+    ),
+  );
+}
+
+export function removeSchema(
+  ctx: AppBindings,
+  orgDid: Did,
+  schemaId: UUID,
+): E.Effect<
+  void,
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  const filter: StrictFilter<BuilderDocument> = { _id: orgDid };
+  const update: StrictUpdateFilter<BuilderDocument> = {
+    $pull: { schemas: schemaId },
+  };
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(
+      ctx,
+      "primary",
+      CollectionName.Builders,
+    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
+    E.flatMap((result) =>
+      result.modifiedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          ),
+    ),
+  );
+}
+
+export function addQuery(
+  ctx: AppBindings,
+  orgId: Did,
+  queryId: UUID,
+): E.Effect<
+  void,
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  const filter: StrictFilter<BuilderDocument> = { _id: orgId };
+  const update: StrictUpdateFilter<BuilderDocument> = {
+    $addToSet: { queries: queryId },
+  };
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(
+      ctx,
+      "primary",
+      CollectionName.Builders,
+    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
+    E.flatMap((result) =>
+      result.modifiedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          ),
+    ),
+  );
+}
+
+export function removeQuery(
+  ctx: AppBindings,
+  orgId: Did,
+  queryId: UUID,
+): E.Effect<
+  void,
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  const filter: StrictFilter<BuilderDocument> = { _id: orgId };
+  const update: StrictUpdateFilter<BuilderDocument> = {
+    $pull: { queries: queryId },
+  };
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(
+      ctx,
+      "primary",
+      CollectionName.Builders,
+    ),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "removeQuery" }),
+    }),
+    E.flatMap((result) =>
+      result.modifiedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          ),
     ),
   );
 }

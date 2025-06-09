@@ -82,7 +82,7 @@ const QueryDocumentResponse = z.object({
 });
 
 /**
- * Response schema for listing organization queries.
+ * Response schema for listing builder queries.
  *
  * @example
  * {

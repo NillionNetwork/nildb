@@ -37,7 +37,7 @@ import * as SchemasService from "./schemas.services";
 /**
  * Registers the schema listing endpoint.
  *
- * Retrieves all schemas owned by the authenticated organization.
+ * Retrieves all schemas owned by the authenticated builder.
  *
  * @param options - Controller configuration including app instance and bindings
  */
@@ -50,9 +50,8 @@ export function list(options: ControllerOptions): void {
     describeRoute({
       tags: ["Schemas"],
       security: [{ bearerAuth: [] }],
-      summary: "List organization schemas",
-      description:
-        "Retrieves all schemas owned by the authenticated organization.",
+      summary: "List builder schemas",
+      description: "Retrieves all schemas owned by the authenticated builder.",
       responses: {
         200: {
           description: "List of schemas",
@@ -76,7 +75,7 @@ export function list(options: ControllerOptions): void {
       const builder = c.get("builder") as BuilderDocument;
 
       return pipe(
-        SchemasService.getOrganizationSchemas(c.env, builder),
+        SchemasService.getBuilderSchemas(c.env, builder),
         E.map((schemas) => SchemaDataMapper.toListSchemasResponse(schemas)),
         E.map((response) => c.json<ListSchemasResponse>(response)),
         handleTaggedErrors(c),

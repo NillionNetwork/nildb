@@ -125,7 +125,7 @@ describe("nuc-based access control", () => {
       }),
     };
 
-    // 4. Send the request to nilDB using the invocation NUC to write the organizations schemas
+    // 4. Send the request to nilDB using the invocation NUC to write the builder schemas
     const response = await app.request(PathsV1.data.uploadOwned, {
       method: "POST",
       headers: {
@@ -190,7 +190,7 @@ describe("nuc-based access control", () => {
       }),
     };
 
-    // 4. Send the request to nilDB using the invocation NUC to write the organizations schemas
+    // 4. Send the request to nilDB using the invocation NUC to write the builder's schemas
     const response = await app.request(PathsV1.data.uploadOwned, {
       method: "POST",
       headers: {
@@ -250,7 +250,7 @@ describe("nuc-based access control", () => {
       variables: {},
     };
 
-    // 4. Send the request to nilDB using the invocation NUC to run the organization's query
+    // 4. Send the request to nilDB using the invocation NUC to run the builder's query
     const response = await app.request(PathsV1.queries.execute, {
       method: "POST",
       headers: {

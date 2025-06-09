@@ -1,5 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { CreateIndexesOptions, IndexSpecification, UUID } from "mongodb";
+import * as BuildersRepository from "#/builders/builders.repository";
 import type { BuilderDocument } from "#/builders/builders.types";
 import type {
   CollectionNotFoundError,
@@ -12,7 +13,6 @@ import type {
 import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import * as OrganizationRepository from "#/organizations/organizations.repository";
 import type {
   AddSchemaCommand,
   CreateIndexCommand,
@@ -23,9 +23,9 @@ import type {
 } from "#/schemas/schemas.types";
 import * as SchemasRepository from "./schemas.repository";
 
-export function getOrganizationSchemas(
+export function getBuilderSchemas(
   ctx: AppBindings,
-  organization: BuilderDocument,
+  builder: BuilderDocument,
 ): E.Effect<
   SchemaDocument[],
   | DocumentNotFoundError
@@ -33,7 +33,7 @@ export function getOrganizationSchemas(
   | DatabaseError
   | DataValidationError
 > {
-  return SchemasRepository.findMany(ctx, { owner: organization._id });
+  return SchemasRepository.findMany(ctx, { owner: builder._id });
 }
 
 export function addSchema(
@@ -63,7 +63,7 @@ export function addSchema(
     E.flatMap(() =>
       E.all([
         E.succeed(ctx.cache.builders.taint(document.owner)),
-        OrganizationRepository.addSchema(ctx, command.owner, document._id),
+        BuildersRepository.addSchema(ctx, command.owner, document._id),
         DataRepository.createCollection(ctx, document._id),
       ]),
     ),
@@ -86,7 +86,7 @@ export function deleteSchema(
     E.flatMap((schema) =>
       E.all([
         E.succeed(ctx.cache.builders.taint(schema.owner)),
-        OrganizationRepository.removeSchema(ctx, schema.owner, command.id),
+        BuildersRepository.removeSchema(ctx, schema.owner, command.id),
         DataRepository.deleteCollection(ctx, command.id),
       ]),
     ),

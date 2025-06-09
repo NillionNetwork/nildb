@@ -2,6 +2,7 @@ import { Effect as E, pipe } from "effect";
 import type { Document, InsertOneResult, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { z } from "zod";
+import * as BuildersRepository from "#/builders/builders.repository";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
@@ -16,7 +17,6 @@ import type { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import * as OrganizationRepository from "#/organizations/organizations.repository";
 import pipelineSchema from "./mongodb_pipeline.json";
 import * as QueriesJobsRepository from "./queries.jobs.repository";
 import * as QueriesRepository from "./queries.repository";
@@ -57,7 +57,7 @@ export function addQuery(
     E.flatMap(() =>
       E.all([
         E.succeed(ctx.cache.builders.taint(document.owner)),
-        OrganizationRepository.addQuery(ctx, document.owner, document._id),
+        BuildersRepository.addQuery(ctx, document.owner, document._id),
       ]),
     ),
     E.as(void 0),
@@ -135,7 +135,7 @@ export function removeQuery(
     E.flatMap((document) =>
       E.all([
         E.succeed(ctx.cache.builders.taint(document.owner)),
-        OrganizationRepository.removeQuery(ctx, document.owner, command.id),
+        BuildersRepository.removeQuery(ctx, document.owner, command.id),
       ]),
     ),
     E.as(void 0),

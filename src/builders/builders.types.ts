@@ -2,7 +2,7 @@ import type { UUID } from "mongodb";
 import type { Did } from "#/common/types";
 
 /**
- * Represents an organisation builder document in the database.
+ * Represents a builder document in the database.
  *
  * This type serves as the common data model across all layers,
  * maintaining consistency between service and repository operations.
@@ -24,15 +24,15 @@ export type BuilderDocument = {
  */
 
 /**
- * Command for creating a new organization builder.
+ * Command for creating a new builder.
  *
- * Encapsulates the data needed to register a new organization
+ * Encapsulates the data needed to register a new builder
  * in the system.
  */
 export type CreateBuilderCommand = {
-  /** Decentralized identifier for the organization */
+  /** Decentralized identifier for the builder */
   did: Did;
-  /** Display name for the organization */
+  /** Display name for the builder */
   name: string;
 };
 
@@ -49,7 +49,7 @@ export type UpdateProfileCommand = {
   updates: Partial<{
     /** Timestamp for when this update was made **/
     _updated: Date;
-    /** New display name for the organization */
+    /** New display name for the builder */
     name: string;
   }>;
 };
