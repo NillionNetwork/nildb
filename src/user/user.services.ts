@@ -104,9 +104,14 @@ export function readPermissions(
     _id: command.documentId,
   }).pipe(
     E.map((documents) =>
-      documents.flatMap((document) =>
-        document._perms.map((perm) => new Permissions(perm.did, perm.perms)),
-      ),
+      documents.flatMap((document) => {
+        if (!document._perms) {
+          return []; // No permissions set
+        }
+        return document._perms.map(
+          (perm) => new Permissions(perm.did, perm.perms),
+        );
+      }),
     ),
   );
 }

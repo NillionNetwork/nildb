@@ -54,7 +54,7 @@ describe("schemas.test.ts", () => {
     const { expect, bindings, builder, user } = c;
 
     const result = await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data: [

@@ -7,5 +7,6 @@ export function buildDataRouter(options: ControllerOptions): void {
   DataController.read(options);
   DataController.tail(options);
   DataController.update(options);
-  DataController.upload(options);
+  DataController.uploadOwnedData(options);
+  DataController.uploadStandardData(options);
 }

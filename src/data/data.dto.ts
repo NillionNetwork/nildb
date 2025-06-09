@@ -9,10 +9,11 @@ import { PermissionsDto } from "#/user/user.dto";
 export const MAX_RECORDS_LENGTH = 10_000;
 
 /**
- * Request schema for uploading data records.
+ * Request schema for uploading owned data records.
  *
  * @example
  * {
+ *   "userId": "did:nil:123456789abcdef",
  *   "schema": "123e4567-e89b-12d3-a456-426614174000",
  *   "data": [
  *     { "name": "Alice", "age": 30 },
@@ -20,7 +21,7 @@ export const MAX_RECORDS_LENGTH = 10_000;
  *   ]
  * }
  */
-export const UploadDataRequest = z
+export const UploadOwnedDataRequest = z
   .object({
     userId: DidSchema,
     schema: Uuid,
@@ -33,8 +34,36 @@ export const UploadDataRequest = z
       ),
     permissions: PermissionsDto,
   })
-  .openapi({ ref: "UploadDataRequest" });
-export type UploadDataRequest = z.infer<typeof UploadDataRequest>;
+  .openapi({ ref: "UploadOwnedDataRequest" });
+export type UploadOwnedDataRequest = z.infer<typeof UploadOwnedDataRequest>;
+
+/**
+ * Request schema for uploading standard data records.
+ *
+ * @example
+ * {
+ *   "schema": "123e4567-e89b-12d3-a456-426614174000",
+ *   "data": [
+ *     { "name": "Alice", "age": 30 },
+ *     { "name": "Bob", "age": 25 }
+ *   ]
+ * }
+ */
+export const UploadStandardDataRequest = z
+  .object({
+    schema: Uuid,
+    data: z
+      .array(z.record(z.string(), z.unknown()))
+      .refine(
+        (elements) =>
+          elements.length > 0 && elements.length <= MAX_RECORDS_LENGTH,
+        { message: `Length must be non zero and lte ${MAX_RECORDS_LENGTH}` },
+      ),
+  })
+  .openapi({ ref: "UploadStandardDataRequest" });
+export type UploadStandardDataRequest = z.infer<
+  typeof UploadStandardDataRequest
+>;
 
 /**
  * Response for successful data upload.
@@ -145,7 +174,7 @@ export const ReadDataResponse = ApiSuccessResponse(
         _id: z.string().uuid(),
         _created: z.string().datetime(),
         _updated: z.string().datetime(),
-        _owner: z.string(),
+        _owner: z.string().optional(),
       })
       .passthrough(),
   ),
@@ -266,7 +295,7 @@ export const TailDataResponse = ApiSuccessResponse(
         _id: z.string().uuid(),
         _created: z.string().datetime(),
         _updated: z.string().datetime(),
-        _owner: z.string(),
+        _owner: z.string().optional(),
       })
       .passthrough(),
   ),

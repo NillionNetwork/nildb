@@ -62,7 +62,7 @@ describe("nuc-based access control", () => {
       .expectSuccess();
 
     const result = await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data: [
@@ -126,7 +126,7 @@ describe("nuc-based access control", () => {
     };
 
     // 4. Send the request to nilDB using the invocation NUC to write the organizations schemas
-    const response = await app.request(PathsV1.data.upload, {
+    const response = await app.request(PathsV1.data.uploadOwned, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${invocationByUser}`,
@@ -191,7 +191,7 @@ describe("nuc-based access control", () => {
     };
 
     // 4. Send the request to nilDB using the invocation NUC to write the organizations schemas
-    const response = await app.request(PathsV1.data.upload, {
+    const response = await app.request(PathsV1.data.uploadOwned, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${invocationByUser}`,

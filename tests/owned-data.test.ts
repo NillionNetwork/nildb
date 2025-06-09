@@ -53,7 +53,7 @@ describe("data", () => {
     ];
 
     const result = await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -86,7 +86,7 @@ describe("data", () => {
     ];
 
     const result = await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -125,7 +125,7 @@ describe("data", () => {
     ];
 
     const result = await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -161,7 +161,7 @@ describe("data", () => {
     ];
 
     await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -192,7 +192,7 @@ describe("data", () => {
     ];
 
     await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: user.did,
         schema: schema.id,
         data,
@@ -342,7 +342,7 @@ describe("data", () => {
 
     // Enforce register user
     await builder
-      .uploadData(c, {
+      .uploadOwnedData(c, {
         userId: otherUser.did,
         schema: schema.id,
         data,

@@ -11,12 +11,14 @@ import type {
   TailDataResponse,
   UpdateDataRequest,
   UpdateDataResponse,
-  UploadDataRequest,
   UploadDataResponse,
+  UploadOwnedDataRequest,
+  UploadStandardDataRequest,
 } from "./data.dto";
 import type { DataDocument, UploadResult } from "./data.repository";
 import type {
-  CreateRecordsCommand,
+  CreateOwnedRecordsCommand,
+  CreateStandardRecordsCommand,
   DeleteRecordsCommand,
   FlushCollectionCommand,
   ReadRecordsCommand,
@@ -134,19 +136,38 @@ export const DataMapper = {
   },
 
   /**
-   * Converts upload data request DTO to domain command.
+   * Converts upload owned data request DTO to domain command.
    *
    * Handles DTO to domain command conversion at the boundary layer.
    *
    * @param dto - Upload data request DTO
    * @returns Create records domain command
    */
-  toCreateRecordsCommand(dto: UploadDataRequest): CreateRecordsCommand {
+  toCreateOwnedRecordsCommand(
+    dto: UploadOwnedDataRequest,
+  ): CreateOwnedRecordsCommand {
     return {
       owner: dto.userId,
       schemaId: new UUID(dto.schema),
       data: dto.data,
       permissions: dto.permissions,
+    };
+  },
+
+  /**
+   * Converts upload standard data request DTO to domain command.
+   *
+   * Handles DTO to domain command conversion at the boundary layer.
+   *
+   * @param dto - Upload data request DTO
+   * @returns Create records domain command
+   */
+  toCreateStandardRecordsCommand(
+    dto: UploadStandardDataRequest,
+  ): CreateStandardRecordsCommand {
+    return {
+      schemaId: new UUID(dto.schema),
+      data: dto.data,
     };
   },
 

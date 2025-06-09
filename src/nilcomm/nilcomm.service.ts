@@ -59,7 +59,7 @@ export function processDappStoreSecret(
       catch: (cause) => Error("Share decryption failed", { cause }),
     }),
     E.flatMap((data) =>
-      DataService.createRecords(ctx, {
+      DataService.createOwnedRecords(ctx, {
         owner: ctx.node.keypair.toDidString(),
         schemaId,
         data: [data],
