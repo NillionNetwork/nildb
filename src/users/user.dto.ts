@@ -3,7 +3,7 @@ import { ApiSuccessResponse } from "#/common/handler";
 import { DidSchema } from "#/common/types";
 
 /**
- * Permission configuration schema for data access control.
+ * Permission for user-owned data.
  *
  * Defines read, write, and execute permissions for a specific DID
  * on data documents.

@@ -13,7 +13,7 @@ export const MAX_RECORDS_LENGTH = 10_000;
  *
  * @example
  * {
- *   "userId": "did:nil:123456789abcdef",
+ *   "userId": "did:nil:037a53808c8a27cef18e706301127d792664d73fa889b94c08eeb8dc9d6a01cb97",
  *   "schema": "123e4567-e89b-12d3-a456-426614174000",
  *   "data": [
  *     { "name": "Alice", "age": 30 },
