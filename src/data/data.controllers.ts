@@ -276,9 +276,9 @@ export function update(options: ControllerOptions): void {
   );
 }
 
-export function uploadOwnedData(options: ControllerOptions): void {
+export function createOwnedData(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.data.uploadOwned;
+  const path = PathsV1.data.createOwned;
 
   app.post(
     path,
@@ -286,8 +286,7 @@ export function uploadOwnedData(options: ControllerOptions): void {
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
       summary: "Upload owned data records",
-      description:
-        "Uploads multiple owned data records to a schema collection.",
+      description: "Uploads one or more owned data records to a collection.",
       responses: {
         200: {
           description: "Records uploaded successfully",
@@ -327,7 +326,7 @@ export function uploadOwnedData(options: ControllerOptions): void {
 
 export function uploadStandardData(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.data.uploadStandard;
+  const path = PathsV1.data.createStandard;
 
   app.post(
     path,

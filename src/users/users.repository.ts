@@ -14,7 +14,7 @@ import type {
   LogOperation,
   Permissions,
   UserDocument,
-} from "#/user/user.types";
+} from "#/users/users.types";
 
 export function upsert(
   ctx: AppBindings,

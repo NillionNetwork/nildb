@@ -4,7 +4,7 @@ import { UUID } from "mongodb";
 import { describe } from "vitest";
 import { applyCoercions } from "#/common/mongo";
 import { type CoercibleMap, createUuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
+import { Permissions } from "#/users/users.types";
 import schemaJson from "./data/coercions.schema.json";
 import type { SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";

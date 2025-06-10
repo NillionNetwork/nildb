@@ -20,13 +20,13 @@ export const PathsV1 = {
   },
   data: {
     root: PathSchema.parse("/api/v1/data"),
-    delete: PathSchema.parse("/api/v1/data/delete"),
     flush: PathSchema.parse("/api/v1/data/flush"),
-    read: PathSchema.parse("/api/v1/data/read"),
     tail: PathSchema.parse("/api/v1/data/tail"),
+    delete: PathSchema.parse("/api/v1/data/delete"),
+    read: PathSchema.parse("/api/v1/data/read"),
     update: PathSchema.parse("/api/v1/data/update"),
-    uploadOwned: PathSchema.parse("/api/v1/data/owned/create"),
-    uploadStandard: PathSchema.parse("/api/v1/data/standard/create"),
+    createOwned: PathSchema.parse("/api/v1/data/owned/create"),
+    createStandard: PathSchema.parse("/api/v1/data/standard/create"),
   },
   docs: PathSchema.parse("/openapi.json"),
   queries: {
@@ -48,14 +48,14 @@ export const PathsV1 = {
     maintenanceStop: PathSchema.parse("/api/v1/system/maintenance/stop"),
     logLevel: PathSchema.parse("/api/v1/system/log-level"),
   },
-  user: {
+  users: {
     data: {
-      root: PathSchema.parse("/api/v1/user/data"),
+      root: PathSchema.parse("/api/v1/users/data"),
       perms: {
-        read: PathSchema.parse("/api/v1/user/perms/read"),
-        add: PathSchema.parse("/api/v1/user/perms/add"),
-        update: PathSchema.parse("/api/v1/user/perms/update"),
-        delete: PathSchema.parse("/api/v1/user/perms/delete"),
+        read: PathSchema.parse("/api/v1/users/perms/read"),
+        add: PathSchema.parse("/api/v1/users/perms/add"),
+        update: PathSchema.parse("/api/v1/users/perms/update"),
+        delete: PathSchema.parse("/api/v1/users/perms/delete"),
       },
     },
   },

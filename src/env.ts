@@ -8,7 +8,7 @@ import { Cache } from "#/common/cache";
 import { createLogger, LogLevel } from "#/common/logger";
 import type { Did } from "#/common/types";
 import { initAndCreateDbClients } from "./common/mongo";
-import type { UserDocument } from "./user/user.types";
+import type { UserDocument } from "./users/users.types";
 
 export const PRIVATE_KEY_LENGTH = 64;
 export const PUBLIC_KEY_LENGTH = 66;

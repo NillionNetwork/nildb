@@ -11,7 +11,7 @@ import { Uuid } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import * as UserRepository from "./user.repository";
+import * as UserRepository from "./users.repository";
 import {
   type AddPermissionsCommand,
   type DeletePermissionsCommand,
@@ -19,7 +19,7 @@ import {
   type ReadPermissionsCommand,
   type UpdatePermissionsCommand,
   type UserDocument,
-} from "./user.types";
+} from "./users.types";
 
 /**
  * Retrieves a user document by DID.

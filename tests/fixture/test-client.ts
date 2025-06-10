@@ -62,7 +62,7 @@ import {
   ReadPermissionsResponse,
   type UpdatePermissionsRequest,
   UpdatePermissionsResponse,
-} from "#/user/user.dto";
+} from "#/users/users.dto";
 // biome-ignore lint/nursery/noImportCycles: this cycle resolves correctly, is limited to testing, and avoids an overly large fixture file
 import type { FixtureContext } from "./fixture";
 // biome-ignore lint/nursery/noImportCycles: this cycle resolves correctly, is limited to testing, and avoids an overly large fixture file
@@ -658,7 +658,7 @@ export class BuilderTestClient extends BaseTestClient {
   ): ResponseHandler<UploadDataResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.data.uploadOwned, { method: "POST", body }),
+      () => this.request(PathsV1.data.createOwned, { method: "POST", body }),
       StatusCodes.OK,
       UploadDataResponse,
     );
@@ -677,7 +677,7 @@ export class BuilderTestClient extends BaseTestClient {
   ): ResponseHandler<UploadDataResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.data.uploadStandard, { method: "POST", body }),
+      () => this.request(PathsV1.data.createStandard, { method: "POST", body }),
       StatusCodes.OK,
       UploadDataResponse,
     );
@@ -838,7 +838,7 @@ export class UserTestClient extends BaseTestClient {
   readUserData(c: FixtureContext): ResponseHandler<ListUserDataResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.user.data.root, { method: "GET" }),
+      () => this.request(PathsV1.users.data.root, { method: "GET" }),
       StatusCodes.OK,
       ListUserDataResponse,
     );
@@ -861,7 +861,7 @@ export class UserTestClient extends BaseTestClient {
     return new ResponseHandler(
       c,
       () =>
-        this.request(PathsV1.user.data.perms.read, { method: "POST", body }),
+        this.request(PathsV1.users.data.perms.read, { method: "POST", body }),
       StatusCodes.OK,
       ReadPermissionsResponse,
     );
@@ -883,7 +883,8 @@ export class UserTestClient extends BaseTestClient {
   ): ResponseHandler<AddPermissionsResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.user.data.perms.add, { method: "POST", body }),
+      () =>
+        this.request(PathsV1.users.data.perms.add, { method: "POST", body }),
       StatusCodes.OK,
       AddPermissionsResponse,
     );
@@ -906,7 +907,7 @@ export class UserTestClient extends BaseTestClient {
     return new ResponseHandler(
       c,
       () =>
-        this.request(PathsV1.user.data.perms.update, { method: "POST", body }),
+        this.request(PathsV1.users.data.perms.update, { method: "POST", body }),
       StatusCodes.OK,
       UpdatePermissionsResponse,
     );
@@ -929,7 +930,7 @@ export class UserTestClient extends BaseTestClient {
     return new ResponseHandler(
       c,
       () =>
-        this.request(PathsV1.user.data.perms.delete, { method: "POST", body }),
+        this.request(PathsV1.users.data.perms.delete, { method: "POST", body }),
       StatusCodes.OK,
       z.unknown(),
     );

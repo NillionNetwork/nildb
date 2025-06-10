@@ -3,7 +3,7 @@ import { describe } from "vitest";
 import { CollectionName } from "#/common/mongo";
 import { createUuidDto } from "#/common/types";
 import type { SchemaDocument } from "#/schemas/schemas.types";
-import { Permissions } from "#/user/user.types";
+import { Permissions } from "#/users/users.types";
 import schemaJson from "./data/wallet.schema.json";
 import {
   assertDefined,

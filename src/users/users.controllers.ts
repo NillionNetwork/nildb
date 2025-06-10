@@ -22,9 +22,9 @@ import {
   ReadPermissionsResponse,
   UpdatePermissionsRequest,
   UpdatePermissionsResponse,
-} from "#/user/user.dto";
-import { UserDataMapper } from "#/user/user.mapper";
-import * as UserService from "#/user/user.services";
+} from "#/users/users.dto";
+import { UserDataMapper } from "#/users/users.mapper";
+import * as UserService from "#/users/users.services";
 
 /**
  * Lists all data documents owned by the authenticated user.
@@ -33,7 +33,7 @@ import * as UserService from "#/user/user.services";
  */
 export function list(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.user.data.root;
+  const path = PathsV1.users.data.root;
 
   app.get(
     path,
@@ -82,7 +82,7 @@ export function list(options: ControllerOptions): void {
  */
 export function readPermissions(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.user.data.perms.read;
+  const path = PathsV1.users.data.perms.read;
 
   app.post(
     path,
@@ -138,7 +138,7 @@ export function readPermissions(options: ControllerOptions): void {
  */
 export function addPermissions(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.user.data.perms.add;
+  const path = PathsV1.users.data.perms.add;
 
   app.post(
     path,
@@ -192,7 +192,7 @@ export function addPermissions(options: ControllerOptions): void {
  */
 export function updatePermissions(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.user.data.perms.update;
+  const path = PathsV1.users.data.perms.update;
 
   app.post(
     path,
@@ -246,7 +246,7 @@ export function updatePermissions(options: ControllerOptions): void {
  */
 export function deletePermissions(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.user.data.perms.delete;
+  const path = PathsV1.users.data.perms.delete;
 
   app.post(
     path,

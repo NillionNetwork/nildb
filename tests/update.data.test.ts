@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
-import { Permissions } from "#/user/user.types";
+import { Permissions } from "#/users/users.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import { assertDefined } from "./fixture/assertions";

@@ -10,7 +10,7 @@ import { DidSchema, Uuid } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import * as SchemasRepository from "#/schemas/schemas.repository";
-import * as UserRepository from "#/user/user.repository";
+import * as UserRepository from "#/users/users.repository";
 import type { DataDocument, UploadResult } from "./data.repository";
 import * as DataRepository from "./data.repository";
 import type {

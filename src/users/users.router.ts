@@ -1,5 +1,5 @@
 import type { ControllerOptions } from "#/common/types";
-import * as UserController from "./user.controllers";
+import * as UserController from "./users.controllers";
 
 export function buildUserRouter(options: ControllerOptions): void {
   UserController.list(options);

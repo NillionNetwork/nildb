@@ -1,6 +1,6 @@
 import type { UUID } from "mongodb";
 import type { Did, UuidDto } from "#/common/types";
-import type { Permissions } from "#/user/user.types";
+import type { Permissions } from "#/users/users.types";
 
 /**
  * Domain types for data storage and management operations.

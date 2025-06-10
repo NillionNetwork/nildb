@@ -2,7 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import { MAX_RECORDS_LENGTH } from "#/data/data.dto";
-import { Permissions } from "#/user/user.types";
+import { Permissions } from "#/users/users.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";

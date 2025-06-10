@@ -3,7 +3,7 @@ import { UUID } from "mongodb";
 import { Temporal } from "temporal-polyfill";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
+import { Permissions } from "#/users/users.types";
 import queryJson from "./data/variables.wallet.query.json";
 import schemaJson from "./data/variables.wallet.schema.json";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";

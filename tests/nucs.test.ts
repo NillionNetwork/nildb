@@ -14,7 +14,7 @@ import { createUuidDto } from "#/common/types";
 import type { TailDataRequest } from "#/data/data.dto";
 import type { UploadResult } from "#/data/data.repository";
 import type { ExecuteQueryRequest } from "#/queries/queries.dto";
-import { Permissions } from "#/user/user.types";
+import { Permissions } from "#/users/users.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import { expectSuccessResponse } from "./fixture/assertions";
@@ -126,7 +126,7 @@ describe("nuc-based access control", () => {
     };
 
     // 4. Send the request to nilDB using the invocation NUC to write the builder schemas
-    const response = await app.request(PathsV1.data.uploadOwned, {
+    const response = await app.request(PathsV1.data.createOwned, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${invocationByUser}`,
@@ -191,7 +191,7 @@ describe("nuc-based access control", () => {
     };
 
     // 4. Send the request to nilDB using the invocation NUC to write the builder's schemas
-    const response = await app.request(PathsV1.data.uploadOwned, {
+    const response = await app.request(PathsV1.data.createOwned, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${invocationByUser}`,

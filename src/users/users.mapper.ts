@@ -11,14 +11,14 @@ import type {
   ReadPermissionsResponse,
   UpdatePermissionsRequest,
   UpdatePermissionsResponse,
-} from "./user.dto";
+} from "./users.dto";
 import {
   type AddPermissionsCommand,
   type DeletePermissionsCommand,
   Permissions,
   type ReadPermissionsCommand,
   type UpdatePermissionsCommand,
-} from "./user.types";
+} from "./users.types";
 
 /**
  * Transforms data between HTTP DTOs and domain models for user operations.

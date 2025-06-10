@@ -30,7 +30,7 @@ import type { Did, UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.types";
-import type { Permissions } from "#/user/user.types";
+import type { Permissions } from "#/users/users.types";
 import type { PartialDataDocumentDto } from "./data.types";
 
 export function createCollection(

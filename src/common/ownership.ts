@@ -2,7 +2,7 @@ import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { ResourceAccessDeniedError } from "#/common/errors";
-import type { UserDocument } from "#/user/user.types";
+import type { UserDocument } from "#/users/users.types";
 
 export function enforceQueryOwnership(
   builder: BuilderDocument,

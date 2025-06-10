@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
 import { DidSchema, Uuid } from "#/common/types";
-import { PermissionsDto } from "#/user/user.dto";
+import { PermissionsDto } from "#/users/users.dto";
 
 /**
  * Constants

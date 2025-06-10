@@ -4,7 +4,7 @@ import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
-import { Permissions } from "#/user/user.types";
+import { Permissions } from "#/users/users.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";

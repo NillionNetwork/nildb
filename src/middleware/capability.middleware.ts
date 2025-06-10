@@ -15,7 +15,7 @@ import { getReasonPhrase, StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
 import * as BuilderRepository from "#/builders/builders.repository";
 import type { AppBindings, AppEnv } from "#/env";
-import * as UserRepository from "#/user/user.repository";
+import * as UserRepository from "#/users/users.repository";
 
 export function loadNucToken<
   P extends string = string,
