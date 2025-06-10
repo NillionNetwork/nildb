@@ -1,5 +1,4 @@
 import type { ObjectId } from "mongodb";
-import type { Did } from "#/common/types";
 
 /**
  * Domain types for system configuration and node management.
@@ -51,9 +50,7 @@ export type AboutNode = {
   started: Date;
   /** Build and version information */
   build: BuildInfo;
-  /** Node's decentralized identifier */
-  did: Did;
-  /** Node's public key for cryptographic operations */
+  /** Node's public key for cryptographic and identity operations */
   publicKey: string;
   /** Public URL endpoint for the node */
   url: string;

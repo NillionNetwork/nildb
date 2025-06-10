@@ -15,10 +15,8 @@ describe("system.test.ts", () => {
   it("reports app version", async ({ c }) => {
     const { expect, bindings, admin } = c;
 
-    const { build, did, public_key } = await admin.about(c).expectSuccess();
-
+    const { build, public_key } = await admin.about(c).expectSuccess();
     expect(build.version).toBe("0.0.0");
-    expect(did).toBe(bindings.node.keypair.toDidString());
     expect(public_key).toBe(bindings.node.keypair.publicKey("hex"));
   });
 

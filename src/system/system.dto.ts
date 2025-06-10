@@ -2,7 +2,6 @@ import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
 import { LogLevel } from "#/common/logger";
-import { DidSchema } from "#/common/types";
 
 /**
  * Request schema for updating the node's log level.
@@ -75,7 +74,6 @@ export const StopMaintenanceResponse = new Response(null, {
  *     "version": "1.0.0"
  *   },
  *   "public_key": "030923f2e7120c50e42905b857ddd2947f6ecced6bb02aab64e63b28e9e2e06d10",
- *   "did": "did:nil:030923f2e7120c50e42905b857ddd2947f6ecced6bb02aab64e63b28e9e2e06d10",
  *   "url": "https://api.nillion.com",
  *   "maintenance": {
  *     "active": false,
@@ -92,7 +90,6 @@ export const GetAboutNodeResponse = z
       version: z.string(),
     }),
     public_key: z.string(),
-    did: DidSchema,
     url: z.string().url(),
     maintenance: z.object({
       active: z.boolean(),

@@ -69,7 +69,6 @@ export const SystemDataMapper = {
     return {
       started: about.started.toISOString(),
       build: about.build,
-      did: about.did,
       public_key: about.publicKey,
       url: about.url,
       maintenance: {

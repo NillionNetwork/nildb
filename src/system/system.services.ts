@@ -27,7 +27,6 @@ export function getNodeInfo(
     E.map((maintenance) => ({
       started,
       build: getBuildInfo(ctx),
-      did: node.keypair.toDidString(),
       publicKey: node.keypair.publicKey("hex"),
       url: node.endpoint,
       maintenance,
