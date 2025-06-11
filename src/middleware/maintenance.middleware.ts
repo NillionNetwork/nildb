@@ -4,20 +4,26 @@ import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
 import { type ApiErrorResponse, handleTaggedErrors } from "#/common/handler";
 import { PathsV1 } from "#/common/paths";
-import type { AppBindings, AppEnv } from "#/env";
+import type { ControllerOptions } from "#/common/types";
+import type { AppEnv } from "#/env";
 import * as SystemService from "#/system/system.services";
 
 const MAINTENANCE_EXCLUDED_PATHS: string[] = [
+  PathsV1.system.about,
+  PathsV1.system.health,
   PathsV1.system.maintenanceStart,
   PathsV1.system.maintenanceStop,
-  PathsV1.system.health,
-  PathsV1.system.about,
   PathsV1.system.metrics,
-  PathsV1.docs,
+  PathsV1.system.openApiJson,
 ];
 
-export function useMaintenanceMiddleware(ctx: AppBindings): MiddlewareHandler {
-  return async (c: Context<AppEnv>, next: Next) => {
+export function maintenanceMiddleware(options: ControllerOptions): void {
+  const { app } = options;
+
+  const middleware: MiddlewareHandler = async (
+    c: Context<AppEnv>,
+    next: Next,
+  ) => {
     const isPathExcludedFromMaintenance = MAINTENANCE_EXCLUDED_PATHS.some(
       (path) => c.req.path.startsWith(path),
     );
@@ -27,7 +33,7 @@ export function useMaintenanceMiddleware(ctx: AppBindings): MiddlewareHandler {
     }
 
     return pipe(
-      SystemService.getMaintenanceStatus(ctx),
+      SystemService.getMaintenanceStatus(options.bindings),
       // @ts-expect-error if maintenance is active then we manually short circuit the request
       // and disable typescript's complaint about the return value being `Response | Promise<void>`
       E.map((maintenance) => {
@@ -44,4 +50,6 @@ export function useMaintenanceMiddleware(ctx: AppBindings): MiddlewareHandler {
       E.runPromise,
     );
   };
+
+  app.use(middleware);
 }

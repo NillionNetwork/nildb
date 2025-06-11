@@ -1,15 +1,18 @@
-import type { MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
-import type { AppBindings } from "#/env";
+import type { ControllerOptions } from "#/common/types";
 
-export function corsMiddleware(_bindings: AppBindings): MiddlewareHandler {
-  return cors({
-    // This will enable cors with credentials for any URL which is desired. The 2nd layer for security are NUCs (auth
-    // tokens) which are processed after CORS.
-    origin: (origin) => origin,
-    allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["GET", "POST", "DELETE"],
-    maxAge: 3600,
-    credentials: true,
-  });
+export function corsMiddleware(options: ControllerOptions): void {
+  const { app } = options;
+
+  // This enables cors with credentials for any URL deliberately.
+  // Access controls are enforced by NUCs in capability.middleware.ts.
+  app.use(
+    cors({
+      origin: (origin) => origin,
+      allowHeaders: ["Content-Type", "Authorization"],
+      allowMethods: ["GET", "POST", "DELETE"],
+      maxAge: 3600,
+      credentials: true,
+    }),
+  );
 }

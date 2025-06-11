@@ -1,3 +1,4 @@
+import type { Hono } from "hono";
 import type { ControllerOptions } from "#/common/types";
 import * as SystemController from "./system.controllers";
 
@@ -21,13 +22,18 @@ export const SystemEndpoint = {
  *
  * @param options - Controller configuration including app instance and bindings
  */
-export function buildSystemRouter(options: ControllerOptions): void {
+export function buildSystemRouter(options: ControllerOptions): {
+  metrics: Hono | undefined;
+} {
   SystemController.aboutNode(options);
   SystemController.healthCheck(options);
   SystemController.getOpenApiJson(options);
+  const metricsResult = SystemController.getMetrics(options);
 
   SystemController.startMaintenance(options);
   SystemController.stopMaintenance(options);
   SystemController.getLogLevel(options);
   SystemController.setLogLevel(options);
+
+  return metricsResult;
 }

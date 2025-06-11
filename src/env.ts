@@ -14,8 +14,8 @@ export const PRIVATE_KEY_LENGTH = 64;
 export const PUBLIC_KEY_LENGTH = 66;
 
 export const FeatureFlag = {
-  OPENAPI_SPEC: "openapi",
-  PROMETHEUS_METRICS: "metrics",
+  OPENAPI: "openapi",
+  METRICS: "metrics",
   MIGRATIONS: "migrations",
   NILCOMM: "nilcomm",
 } as const;

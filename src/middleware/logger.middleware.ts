@@ -1,8 +1,11 @@
 import type { MiddlewareHandler } from "hono";
-import type { Logger } from "pino";
+import type { ControllerOptions } from "#/common/types";
 
-export function useLoggerMiddleware(logger: Logger): MiddlewareHandler {
-  return async (c, next) => {
+export function loggerMiddleware(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const { log } = bindings;
+
+  const middleware: MiddlewareHandler = async (c, next) => {
     const start = performance.now();
     const { method, url } = c.req;
 
@@ -22,7 +25,7 @@ export function useLoggerMiddleware(logger: Logger): MiddlewareHandler {
               : "debug";
 
       if (logLevel !== "silent") {
-        logger[logLevel]({
+        log[logLevel]({
           method,
           url,
           status,
@@ -30,7 +33,7 @@ export function useLoggerMiddleware(logger: Logger): MiddlewareHandler {
         });
       }
     } catch (err) {
-      logger.error({
+      log.error({
         err,
         method,
         url,
@@ -39,4 +42,6 @@ export function useLoggerMiddleware(logger: Logger): MiddlewareHandler {
       throw err;
     }
   };
+
+  app.use(middleware);
 }

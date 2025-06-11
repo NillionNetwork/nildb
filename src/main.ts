@@ -1,6 +1,6 @@
 import "./effects";
 
-import { serve } from "@hono/node-server";
+import { type ServerType, serve } from "@hono/node-server";
 import { Command } from "commander";
 import dotenv from "dotenv";
 import { mongoMigrateUp } from "#/common/mongo";
@@ -52,15 +52,18 @@ async function main() {
     },
   );
 
-  const metricsServer = serve(
-    {
-      fetch: metrics.fetch,
-      port: bindings.config.metricsPort,
-    },
-    () => {
-      bindings.log.info(`Metrics on :${bindings.config.metricsPort}`);
-    },
-  );
+  let metricsServer: ServerType | undefined;
+  if (metrics) {
+    metricsServer = serve(
+      {
+        fetch: metrics.fetch,
+        port: bindings.config.metricsPort,
+      },
+      () => {
+        bindings.log.info(`Metrics on :${bindings.config.metricsPort}`);
+      },
+    );
+  }
 
   const shutdown = async (): Promise<void> => {
     bindings.log.info(
@@ -70,9 +73,11 @@ async function main() {
     try {
       const promises = [
         new Promise((resolve) => appServer.close(resolve)),
-        new Promise((resolve) => metricsServer.close(resolve)),
         await bindings.db.client.close(),
       ];
+      if (metricsServer) {
+        new Promise((resolve) => metricsServer.close(resolve));
+      }
 
       if (bindings.mq) {
         promises.push(bindings.mq.channel.close());

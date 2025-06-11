@@ -28,7 +28,6 @@ export const PathsV1 = {
     createOwned: PathSchema.parse("/api/v1/data/owned/create"),
     createStandard: PathSchema.parse("/api/v1/data/standard/create"),
   },
-  docs: PathSchema.parse("/openapi.json"),
   queries: {
     root: PathSchema.parse("/api/v1/queries"),
     execute: PathSchema.parse("/api/v1/queries/execute"),

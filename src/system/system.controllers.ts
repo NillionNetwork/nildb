@@ -1,4 +1,6 @@
+import { prometheus } from "@hono/prometheus";
 import { Effect as E, pipe } from "effect";
+import { Hono } from "hono";
 import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
 import { handleTaggedErrors } from "#/common/handler";
@@ -289,7 +291,7 @@ export function getOpenApiJson(options: ControllerOptions): void {
 
   const enabled = hasFeatureFlag(
     options.bindings.config.enabledFeatures,
-    FeatureFlag.OPENAPI_SPEC,
+    FeatureFlag.OPENAPI,
   );
 
   if (!enabled) {
@@ -309,4 +311,30 @@ export function getOpenApiJson(options: ControllerOptions): void {
       },
     }),
   );
+}
+
+export function getMetrics(options: ControllerOptions): {
+  metrics: Hono | undefined;
+} {
+  const {
+    app,
+    bindings: { log },
+  } = options;
+
+  const enabled = hasFeatureFlag(
+    options.bindings.config.enabledFeatures,
+    FeatureFlag.METRICS,
+  );
+
+  if (!enabled) {
+    log.info("The openapi feature is disabled");
+    return { metrics: undefined };
+  }
+
+  const metrics = new Hono();
+  const { printMetrics, registerMetrics } = prometheus();
+  app.use("*", registerMetrics);
+  metrics.get("/metrics", printMetrics);
+
+  return { metrics };
 }
