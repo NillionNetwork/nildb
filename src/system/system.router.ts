@@ -23,9 +23,11 @@ export const SystemEndpoint = {
  */
 export function buildSystemRouter(options: ControllerOptions): void {
   SystemController.aboutNode(options);
+  SystemController.healthCheck(options);
+  SystemController.getOpenApiJson(options);
+
   SystemController.startMaintenance(options);
   SystemController.stopMaintenance(options);
   SystemController.getLogLevel(options);
-  SystemController.healthCheck(options);
   SystemController.setLogLevel(options);
 }

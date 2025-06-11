@@ -44,6 +44,7 @@ export const PathsV1 = {
     about: PathSchema.parse("/about"),
     health: PathSchema.parse("/health"),
     metrics: PathSchema.parse("/metrics"),
+    openApiJson: PathSchema.parse("/openapi.json"),
     maintenanceStart: PathSchema.parse("/api/v1/system/maintenance/start"),
     maintenanceStop: PathSchema.parse("/api/v1/system/maintenance/stop"),
     logLevel: PathSchema.parse("/api/v1/system/log-level"),

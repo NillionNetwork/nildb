@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import { describeRoute } from "hono-openapi";
+import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
 import { handleTaggedErrors } from "#/common/handler";
 import type { LogLevel } from "#/common/logger";
@@ -10,6 +10,7 @@ import {
 } from "#/common/openapi";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
+import { FeatureFlag, hasFeatureFlag } from "#/env";
 import {
   enforceCapability,
   loadNucToken,
@@ -269,5 +270,43 @@ export function getLogLevel(options: ControllerOptions): void {
         SystemDataMapper.toGetLogLevelResponse(level),
       );
     },
+  );
+}
+
+/**
+ * Registers the /openapi.json endpoint.
+ *
+ * Returns a openapi compatible nildb API specification which can be rendered
+ * in a swagger UI.
+ *
+ * @param options - Controller configuration including app instance and bindings
+ */
+export function getOpenApiJson(options: ControllerOptions): void {
+  const {
+    app,
+    bindings: { log },
+  } = options;
+
+  const enabled = hasFeatureFlag(
+    options.bindings.config.enabledFeatures,
+    FeatureFlag.OPENAPI_SPEC,
+  );
+
+  if (!enabled) {
+    log.info("The openapi feature is disabled");
+    return;
+  }
+
+  app.get(
+    PathsV1.system.openApiJson,
+    openAPISpecs(app, {
+      documentation: {
+        info: {
+          title: "nildb",
+          version: "1.0.0-beta.1",
+          description: "API",
+        },
+      },
+    }),
   );
 }
