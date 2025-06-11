@@ -30,7 +30,7 @@ import type { Did, UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.types";
-import type { Permissions } from "#/user/user.types";
+import type { GrantedAccess } from "#/user/user.dto";
 import type { PartialDataDocumentDto } from "./data.types";
 
 export function createCollection(
@@ -140,7 +140,7 @@ export function flushCollection(
 
 export type DataDocumentBase = DocumentBase<UUID> & {
   _owner?: Did;
-  _perms?: Permissions[];
+  _grantedAccess?: GrantedAccess[];
 };
 export type DataDocument<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -161,7 +161,7 @@ export function insertOwnedData(
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
   owner: Did,
-  perms: Permissions[],
+  grantAccess: GrantedAccess[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
     checkCollectionExists<DataDocument>(ctx, "data", schema._id.toString()),
@@ -183,7 +183,7 @@ export function insertOwnedData(
               _created: now,
               _updated: now,
               _owner: owner,
-              _perms: perms,
+              _grantedAccess: grantAccess,
               documentType: schema.documentType,
             }));
           batches.push(batch);

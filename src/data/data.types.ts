@@ -1,6 +1,6 @@
 import type { UUID } from "mongodb";
 import type { Did, UuidDto } from "#/common/types";
-import type { Permissions } from "#/user/user.types";
+import type { GrantedAccess } from "#/user/user.dto";
 
 /**
  * Domain types for data storage and management operations.
@@ -45,7 +45,7 @@ export type CreateOwnedRecordsCommand = {
   /** Array of data records to store */
   data: Record<string, unknown>[];
   /** Optional permissions for the data records */
-  permissions?: Permissions;
+  grantAccess?: GrantedAccess;
 };
 
 /**

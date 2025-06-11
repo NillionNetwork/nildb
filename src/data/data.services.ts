@@ -10,6 +10,7 @@ import { DidSchema, Uuid } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import * as SchemasRepository from "#/schemas/schemas.repository";
+import { LoggerOperationMapper } from "#/user/user.mapper";
 import * as UserRepository from "#/user/user.repository";
 import type { DataDocument, UploadResult } from "./data.repository";
 import * as DataRepository from "./data.repository";
@@ -62,17 +63,26 @@ export function createOwnedRecords(
         document,
         data,
         command.owner,
-        command.permissions ? [command.permissions] : [],
+        command.grantAccess ? [command.grantAccess] : [],
       ),
     ),
     E.flatMap(({ result }) => {
-      return UserRepository.upsert(
+      const documentIds = result.created.map((id) => Uuid.parse(id));
+      const logOperations =
+        LoggerOperationMapper.toMultipleGrantAccessLogOperation(
+          documentIds,
+          command.grantAccess,
+        );
+      return UserRepository.updateData(
         ctx,
         command.owner,
-        command.schemaId,
-        result.created.map((id) => Uuid.parse(id)),
-        command.permissions,
-      ).pipe(E.flatMap(() => E.succeed(result)));
+        documentIds.map((id) => ({ id, schema: command.schemaId })),
+      ).pipe(
+        E.flatMap(() =>
+          UserRepository.pushLogs(ctx, command.owner, logOperations),
+        ),
+        E.flatMap(() => E.succeed(result)),
+      );
     }),
   );
 }

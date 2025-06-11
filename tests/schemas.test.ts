@@ -3,7 +3,6 @@ import { describe } from "vitest";
 import { CollectionName } from "#/common/mongo";
 import { createUuidDto } from "#/common/types";
 import type { SchemaDocument } from "#/schemas/schemas.types";
-import { Permissions } from "#/user/user.types";
 import schemaJson from "./data/wallet.schema.json";
 import {
   assertDefined,
@@ -65,11 +64,14 @@ describe("schemas.test.ts", () => {
             age: 42,
           },
         ],
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 

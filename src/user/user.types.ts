@@ -1,6 +1,7 @@
 import type { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
 import type { Did } from "#/common/types";
+import type { GrantedAccess, Permissions } from "#/user/user.dto";
 
 /**
  * Domain types for user data management and permissions.
@@ -8,32 +9,6 @@ import type { Did } from "#/common/types";
  * These types define the structure for user documents that track
  * data ownership and access control across the NilDB system.
  */
-
-/**
- * Permission configuration for data access control.
- *
- * Encapsulates the access rights granted to a specific DID
- * for operations on data documents.
- */
-export class Permissions {
-  /**
-   * Creates a new permission configuration.
-   *
-   * @param did - The decentralized identifier granted permissions
-   * @param perms - The permission flags for read, write, and execute operations
-   */
-  constructor(
-    public readonly did: Did,
-    public readonly perms: {
-      /** Whether the DID can read the data */
-      read: boolean;
-      /** Whether the DID can modify the data */
-      write: boolean;
-      /** Whether the DID can execute queries on the data */
-      execute: boolean;
-    } = { read: false, write: false, execute: false }, // Default permissions
-  ) {}
-}
 
 /**
  * User operation log entry types.
@@ -44,9 +19,12 @@ export class Permissions {
  * - "auth": Permission changes for data access control
  */
 export type LogOperation =
-  | { op: "write"; col: UUID }
-  | { op: "delete"; col: UUID }
-  | { op: "auth"; col: UUID; perms: Permissions };
+  | { op: "create-data"; document: UUID }
+  | { op: "update-data"; document: UUID }
+  | { op: "delete-data"; document: UUID }
+  | { op: "grant-access"; document: UUID; did: Did; perms: Permissions }
+  | { op: "update-access"; document: UUID; did: Did; perms: Permissions }
+  | { op: "revoke-access"; document: UUID; did: Did };
 
 /**
  * Reference to a data document owned by a user.
@@ -87,7 +65,7 @@ export type ReadPermissionsCommand = {
 export type AddPermissionsCommand = {
   schema: UUID;
   documentId: UUID;
-  permissions: Permissions;
+  grantAccess: GrantedAccess;
 };
 
 /**
@@ -96,7 +74,7 @@ export type AddPermissionsCommand = {
 export type UpdatePermissionsCommand = {
   schema: UUID;
   documentId: UUID;
-  permissions: Permissions;
+  grantAccess: GrantedAccess;
 };
 
 /**

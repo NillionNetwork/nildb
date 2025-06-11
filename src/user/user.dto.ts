@@ -3,12 +3,22 @@ import { ApiSuccessResponse } from "#/common/handler";
 import { DidSchema } from "#/common/types";
 
 /**
+ * Permissions flags for data access control.
+ */
+export const Permissions = z.object({
+  read: z.boolean().default(false),
+  write: z.boolean().default(false),
+  execute: z.boolean().default(false),
+});
+export type Permissions = z.infer<typeof Permissions>;
+
+/**
  * Permission configuration schema for data access control.
  *
  * Defines read, write, and execute permissions for a specific DID
  * on data documents.
  */
-export const PermissionsDto = z.object({
+export const GrantedAccess = z.object({
   did: DidSchema,
   perms: z.object({
     read: z.boolean(),
@@ -16,7 +26,7 @@ export const PermissionsDto = z.object({
     execute: z.boolean(),
   }),
 });
-export type PermissionsDto = z.infer<typeof PermissionsDto>;
+export type GrantedAccess = z.infer<typeof GrantedAccess>;
 
 /**
  * Request schema for listing user data references.
@@ -100,7 +110,7 @@ export type ReadPermissionsRequest = z.infer<typeof ReadPermissionsRequest>;
  * }
  */
 export const ReadPermissionsResponse = ApiSuccessResponse(
-  z.array(PermissionsDto),
+  z.array(GrantedAccess),
 ).openapi({
   ref: "ReadPermissionsResponse",
 });
@@ -127,7 +137,7 @@ export const AddPermissionsRequest = z
   .object({
     schema: z.string().uuid(),
     documentId: z.string().uuid(),
-    permissions: PermissionsDto,
+    grantAccess: GrantedAccess,
   })
   .openapi({ ref: "AddPermissionsRequest" });
 export type AddPermissionsRequest = z.infer<typeof AddPermissionsRequest>;
@@ -169,7 +179,7 @@ export const UpdatePermissionsRequest = z
   .object({
     schema: z.string().uuid(),
     documentId: z.string().uuid(),
-    permissions: PermissionsDto,
+    grantAccess: GrantedAccess,
   })
   .openapi({ ref: "UpdatePermissionsRequest" });
 export type UpdatePermissionsRequest = z.infer<typeof UpdatePermissionsRequest>;

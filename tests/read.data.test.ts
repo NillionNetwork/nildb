@@ -2,7 +2,6 @@ import { faker } from "@faker-js/faker";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import { TAIL_DATA_LIMIT } from "#/data/data.repository";
-import { Permissions } from "#/user/user.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
@@ -35,11 +34,14 @@ describe("read data", () => {
         userId: user.did,
         schema: schema.id,
         data: testData,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
   });

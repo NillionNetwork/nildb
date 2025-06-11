@@ -1,23 +1,24 @@
 import { type UpdateResult, UUID } from "mongodb";
+import type { Did } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
 import type {
   AddPermissionsRequest,
   AddPermissionsResponse,
   DeletePermissionsRequest,
   DeletePermissionsResponse,
+  GrantedAccess,
   ListUserDataResponse,
-  PermissionsDto,
   ReadPermissionsRequest,
   ReadPermissionsResponse,
   UpdatePermissionsRequest,
   UpdatePermissionsResponse,
 } from "./user.dto";
-import {
-  type AddPermissionsCommand,
-  type DeletePermissionsCommand,
-  Permissions,
-  type ReadPermissionsCommand,
-  type UpdatePermissionsCommand,
+import type {
+  AddPermissionsCommand,
+  DeletePermissionsCommand,
+  LogOperation,
+  ReadPermissionsCommand,
+  UpdatePermissionsCommand,
 } from "./user.types";
 
 /**
@@ -108,7 +109,7 @@ export const UserDataMapper = {
                 "_updated",
                 "_owner",
                 "_tokens",
-                "_perms",
+                "_grantedAccess",
               ].includes(key),
           ),
         ),
@@ -119,32 +120,15 @@ export const UserDataMapper = {
   /**
    * Converts array of permissions to read permissions response DTO.
    *
-   * @param permissions - Array of permission objects
+   * @param grantedAccess - Array of permission objects
    * @returns Read permissions response DTO
    */
   toReadPermissionsResponse(
-    permissions: Permissions[],
+    grantedAccess: GrantedAccess[],
   ): ReadPermissionsResponse {
     return {
-      data: permissions.map((perm) => ({
-        did: perm.did,
-        perms: {
-          read: perm.perms.read,
-          write: perm.perms.write,
-          execute: perm.perms.execute,
-        },
-      })),
+      data: grantedAccess,
     };
-  },
-
-  /**
-   * Converts permission DTO to domain model.
-   *
-   * @param dto - Permission DTO from request
-   * @returns Permission domain model
-   */
-  fromPermissionsDto(dto: PermissionsDto): Permissions {
-    return new Permissions(dto.did, dto.perms);
   },
 
   /**
@@ -176,7 +160,7 @@ export const UserDataMapper = {
     return {
       schema: new UUID(dto.schema),
       documentId: new UUID(dto.documentId),
-      permissions: this.fromPermissionsDto(dto.permissions),
+      grantAccess: dto.grantAccess,
     };
   },
 
@@ -194,7 +178,7 @@ export const UserDataMapper = {
     return {
       schema: new UUID(dto.schema),
       documentId: new UUID(dto.documentId),
-      permissions: this.fromPermissionsDto(dto.permissions),
+      grantAccess: dto.grantAccess,
     };
   },
 
@@ -213,6 +197,71 @@ export const UserDataMapper = {
       schema: new UUID(dto.schema),
       documentId: new UUID(dto.documentId),
       did: dto.did,
+    };
+  },
+} as const;
+
+/**
+ * Transforms data between HTTP DTOs and domain models for user log operations.
+ *
+ * Centralizes all data transformations to maintain clean layer boundaries.
+ */
+export const LoggerOperationMapper = {
+  toMultipleCreateDataLogOperation(documents: UUID[]): LogOperation[] {
+    return documents.map(this.toCreateDataLogOperation);
+  },
+
+  toCreateDataLogOperation(document: UUID): LogOperation {
+    return { op: "create-data", document };
+  },
+
+  toMultipleDeleteDataLogOperation(documents: UUID[]): LogOperation[] {
+    return documents.map(this.toDeleteDataLogOperation);
+  },
+
+  toDeleteDataLogOperation(document: UUID): LogOperation {
+    return { op: "delete-data", document };
+  },
+
+  toMultipleGrantAccessLogOperation(
+    documents: UUID[],
+    grantAccess?: GrantedAccess,
+  ): LogOperation[] {
+    if (!grantAccess) {
+      return [];
+    }
+    return documents.map((d) => this.toGrantAccessLogOperation(d, grantAccess));
+  },
+
+  toGrantAccessLogOperation(
+    document: UUID,
+    grantAccess: GrantedAccess,
+  ): LogOperation {
+    return {
+      op: "grant-access",
+      document,
+      did: grantAccess.did,
+      perms: grantAccess.perms,
+    };
+  },
+
+  toUpdateAccessLogOperation(
+    document: UUID,
+    grantAccess: GrantedAccess,
+  ): LogOperation {
+    return {
+      op: "update-access",
+      document,
+      did: grantAccess.did,
+      perms: grantAccess.perms,
+    };
+  },
+
+  toRevokeAccessLogOperation(document: UUID, did: Did): LogOperation {
+    return {
+      op: "revoke-access",
+      document,
+      did,
     };
   },
 } as const;
