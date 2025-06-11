@@ -4,7 +4,6 @@ import { UUID } from "mongodb";
 import { describe } from "vitest";
 import { applyCoercions } from "#/common/mongo";
 import { type CoercibleMap, createUuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
 import schemaJson from "./data/coercions.schema.json";
 import type { SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
@@ -280,11 +279,14 @@ describe("coercions", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 
@@ -323,11 +325,14 @@ describe("coercions", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,
@@ -356,11 +361,14 @@ describe("coercions", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,
@@ -389,11 +397,14 @@ describe("coercions", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,

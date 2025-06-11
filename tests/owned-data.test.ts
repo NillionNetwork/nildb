@@ -4,14 +4,14 @@ import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
-import { Permissions } from "#/user/user.types";
+import type { GrantedAccess } from "#/user/user.dto";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 import { createUserTestClient } from "./fixture/test-client";
 
-describe("data", () => {
+describe("owned data", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
@@ -57,11 +57,14 @@ describe("data", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 
@@ -90,11 +93,14 @@ describe("data", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 
@@ -129,11 +135,14 @@ describe("data", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 
@@ -165,11 +174,14 @@ describe("data", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 
@@ -196,11 +208,14 @@ describe("data", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
   });
@@ -315,7 +330,7 @@ describe("data", () => {
 
     expect(result.data).toHaveLength(1);
     const permissions = Array.isArray(result.data)
-      ? (Array.from(result.data)[0] as Permissions)
+      ? (Array.from(result.data)[0] as GrantedAccess)
       : undefined;
     expect(permissions?.perms?.read).toBe(true);
     expect(permissions?.perms?.write).toBe(false);
@@ -346,7 +361,14 @@ describe("data", () => {
         userId: otherUser.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: false,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 
@@ -382,7 +404,14 @@ describe("data", () => {
       .addPermissions(c, {
         schema: schema.id.toString(),
         documentId: documentId.toString(),
-        permissions: new Permissions(targetDid),
+        grantAccess: {
+          did: targetDid,
+          perms: {
+            read: false,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 
@@ -395,7 +424,7 @@ describe("data", () => {
 
     expect(result.data).toHaveLength(2);
     const permissions = Array.isArray(result.data)
-      ? (Array.from(result.data)[1] as Permissions)
+      ? (Array.from(result.data)[1] as GrantedAccess)
       : undefined;
     expect(permissions?.perms?.read).toBe(false);
     expect(permissions?.perms?.write).toBe(false);
@@ -417,11 +446,14 @@ describe("data", () => {
       .updatePermissions(c, {
         schema: schema.id.toString(),
         documentId: documentId.toString(),
-        permissions: new Permissions(targetDid, {
-          read: true,
-          write: true,
-          execute: true,
-        }),
+        grantAccess: {
+          did: targetDid,
+          perms: {
+            read: true,
+            write: true,
+            execute: true,
+          },
+        },
       })
       .expectSuccess();
 
@@ -434,7 +466,7 @@ describe("data", () => {
 
     expect(result.data).toHaveLength(2);
     const permissions = Array.isArray(result.data)
-      ? (Array.from(result.data)[1] as Permissions)
+      ? (Array.from(result.data)[1] as GrantedAccess)
       : undefined;
     expect(permissions?.perms?.read).toBe(true);
     expect(permissions?.perms?.write).toBe(true);

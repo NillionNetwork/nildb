@@ -150,7 +150,7 @@ export const DataMapper = {
       owner: dto.userId,
       schemaId: new UUID(dto.schema),
       data: dto.data,
-      permissions: dto.permissions,
+      grantAccess: dto.grantAccess,
     };
   },
 

@@ -1,7 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import { assertDocumentCount } from "./fixture/assertions";
@@ -34,11 +33,14 @@ describe("flush data collection", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
   });

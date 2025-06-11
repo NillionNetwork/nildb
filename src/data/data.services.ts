@@ -62,16 +62,17 @@ export function createOwnedRecords(
         document,
         data,
         command.owner,
-        command.permissions ? [command.permissions] : [],
+        command.grantAccess ? [command.grantAccess] : [],
       ),
     ),
     E.flatMap(({ result }) => {
-      return UserRepository.upsert(
+      return UserRepository.updateData(
         ctx,
         command.owner,
-        command.schemaId,
-        result.created.map((id) => Uuid.parse(id)),
-        command.permissions,
+        result.created.map((id) => ({
+          id: Uuid.parse(id),
+          schema: command.schemaId,
+        })),
       ).pipe(E.flatMap(() => E.succeed(result)));
     }),
   );

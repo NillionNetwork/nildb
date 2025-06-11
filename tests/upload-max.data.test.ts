@@ -2,7 +2,6 @@ import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import { MAX_RECORDS_LENGTH } from "#/data/data.dto";
-import { Permissions } from "#/user/user.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
@@ -40,11 +39,14 @@ describe("upload max data", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,
@@ -65,11 +67,14 @@ describe("upload max data", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 

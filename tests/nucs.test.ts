@@ -14,7 +14,6 @@ import { createUuidDto } from "#/common/types";
 import type { TailDataRequest } from "#/data/data.dto";
 import type { UploadResult } from "#/data/data.repository";
 import type { ExecuteQueryRequest } from "#/queries/queries.dto";
-import { Permissions } from "#/user/user.types";
 import queryJson from "./data/wallet.query.json";
 import schemaJson from "./data/wallet.schema.json";
 import { expectSuccessResponse } from "./fixture/assertions";
@@ -73,11 +72,14 @@ describe("nuc-based access control", () => {
             age: 10,
           },
         ],
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 
@@ -118,11 +120,14 @@ describe("nuc-based access control", () => {
           age: 20,
         },
       ],
-      permissions: new Permissions(builder.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
+      grantAccess: {
+        did: builder.did,
+        perms: {
+          read: true,
+          write: false,
+          execute: false,
+        },
+      },
     };
 
     // 4. Send the request to nilDB using the invocation NUC to write the organizations schemas
@@ -183,11 +188,14 @@ describe("nuc-based access control", () => {
           age: 30,
         },
       ],
-      permissions: new Permissions(builder.did, {
-        read: true,
-        write: false,
-        execute: false,
-      }),
+      grantAccess: {
+        did: builder.did,
+        perms: {
+          read: true,
+          write: false,
+          execute: false,
+        },
+      },
     };
 
     // 4. Send the request to nilDB using the invocation NUC to write the organizations schemas

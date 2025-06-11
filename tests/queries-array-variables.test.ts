@@ -2,7 +2,6 @@ import { faker } from "@faker-js/faker";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
 import queryJson from "./data/variables.array.query.json";
 import schemaJson from "./data/variables.array.schema.json";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
@@ -34,11 +33,14 @@ describe("array variable queries", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
   });

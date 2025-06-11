@@ -11,14 +11,14 @@ import { Uuid } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
+import type { GrantedAccess } from "#/user/user.dto";
 import * as UserRepository from "./user.repository";
-import {
-  type AddPermissionsCommand,
-  type DeletePermissionsCommand,
-  Permissions,
-  type ReadPermissionsCommand,
-  type UpdatePermissionsCommand,
-  type UserDocument,
+import type {
+  AddPermissionsCommand,
+  DeletePermissionsCommand,
+  ReadPermissionsCommand,
+  UpdatePermissionsCommand,
+  UserDocument,
 } from "./user.types";
 
 /**
@@ -97,7 +97,7 @@ export function readPermissions(
   ctx: AppBindings,
   command: ReadPermissionsCommand,
 ): E.Effect<
-  Permissions[],
+  GrantedAccess[],
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return DataRepository.findMany(ctx, command.schema, {
@@ -105,12 +105,7 @@ export function readPermissions(
   }).pipe(
     E.map((documents) =>
       documents.flatMap((document) => {
-        if (!document._perms) {
-          return []; // No permissions set
-        }
-        return document._perms.map(
-          (perm) => new Permissions(perm.did, perm.perms),
-        );
+        return document._grantedAccess ?? [];
       }),
     ),
   );
@@ -134,7 +129,7 @@ export function addPermissions(
     ctx,
     command.schema,
     command.documentId,
-    command.permissions,
+    command.grantAccess,
   );
 }
 
@@ -156,7 +151,7 @@ export function updatePermissions(
     ctx,
     command.schema,
     command.documentId,
-    command.permissions,
+    command.grantAccess,
   );
 }
 

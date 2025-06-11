@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
 import { DidSchema, Uuid } from "#/common/types";
-import { PermissionsDto } from "#/user/user.dto";
+import { GrantedAccess } from "#/user/user.dto";
 
 /**
  * Constants
@@ -32,7 +32,7 @@ export const UploadOwnedDataRequest = z
           elements.length > 0 && elements.length <= MAX_RECORDS_LENGTH,
         { message: `Length must be non zero and lte ${MAX_RECORDS_LENGTH}` },
       ),
-    permissions: PermissionsDto,
+    grantAccess: GrantedAccess,
   })
   .openapi({ ref: "UploadOwnedDataRequest" });
 export type UploadOwnedDataRequest = z.infer<typeof UploadOwnedDataRequest>;

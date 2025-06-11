@@ -1,7 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createUuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
 import queryJson from "./data/datetime.query.json";
 import schemaJson from "./data/datetime.schema.json";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
@@ -31,11 +30,14 @@ describe("schemas.datetime.test", () => {
         userId: user.did,
         schema: schema.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        grantAccess: {
+          did: builder.did,
+          perms: {
+            read: true,
+            write: false,
+            execute: false,
+          },
+        },
       })
       .expectSuccess();
 
@@ -63,11 +65,14 @@ describe("schemas.datetime.test", () => {
           userId: user.did,
           schema: schema.id,
           data: [invalid],
-          permissions: new Permissions(builder.did, {
-            read: true,
-            write: false,
-            execute: false,
-          }),
+          grantAccess: {
+            did: builder.did,
+            perms: {
+              read: true,
+              write: false,
+              execute: false,
+            },
+          },
         })
         .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
     }

@@ -8,7 +8,7 @@ import schemaJson from "./data/wallet.standard.schema.json";
 import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("data", () => {
+describe("standard data", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
