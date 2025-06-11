@@ -175,7 +175,7 @@ export function addPermissions(options: ControllerOptions): void {
 
       return pipe(
         enforceDataOwnership(user, command.documentId, command.schema),
-        E.flatMap(() => UserService.addPermissions(c.env, command)),
+        E.flatMap(() => UserService.addPermissions(c.env, user._id, command)),
         E.map((result) => UserDataMapper.toAddPermissionsResponse(result)),
         E.map((response) => c.json<AddPermissionsResponse>(response)),
         handleTaggedErrors(c),
@@ -229,7 +229,9 @@ export function updatePermissions(options: ControllerOptions): void {
 
       return pipe(
         enforceDataOwnership(user, command.documentId, command.schema),
-        E.flatMap(() => UserService.updatePermissions(c.env, command)),
+        E.flatMap(() =>
+          UserService.updatePermissions(c.env, user._id, command),
+        ),
         E.map((result) => UserDataMapper.toUpdatePermissionsResponse(result)),
         E.map((response) => c.json<UpdatePermissionsResponse>(response)),
         handleTaggedErrors(c),
@@ -283,7 +285,9 @@ export function deletePermissions(options: ControllerOptions): void {
 
       return pipe(
         enforceDataOwnership(user, command.documentId, command.schema),
-        E.flatMap(() => UserService.deletePermissions(c.env, command)),
+        E.flatMap(() =>
+          UserService.deletePermissions(c.env, user._id, command),
+        ),
         E.map((result) => UserDataMapper.toDeletePermissionsResponse(result)),
         E.map((response) => c.json<DeletePermissionsResponse>(response)),
         handleTaggedErrors(c),

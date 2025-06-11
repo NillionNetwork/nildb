@@ -1,4 +1,5 @@
 import { type UpdateResult, UUID } from "mongodb";
+import type { Did } from "#/common/types";
 import type { DataDocument } from "#/data/data.repository";
 import type {
   AddPermissionsRequest,
@@ -222,18 +223,45 @@ export const LoggerOperationMapper = {
     return { op: "delete-data", document };
   },
 
-  toGrantedAccessLogOperation(
+  toMultipleGrantAccessLogOperation(
     documents: UUID[],
-    grantedAccess?: GrantedAccess,
+    grantAccess?: GrantedAccess,
   ): LogOperation[] {
-    if (!grantedAccess) {
+    if (!grantAccess) {
       return [];
     }
-    return documents.map((document) => ({
+    return documents.map((d) => this.toGrantAccessLogOperation(d, grantAccess));
+  },
+
+  toGrantAccessLogOperation(
+    document: UUID,
+    grantAccess: GrantedAccess,
+  ): LogOperation {
+    return {
       op: "grant-access",
       document,
-      did: grantedAccess.did,
-      perms: grantedAccess.perms,
-    }));
+      did: grantAccess.did,
+      perms: grantAccess.perms,
+    };
+  },
+
+  toUpdateAccessLogOperation(
+    document: UUID,
+    grantAccess: GrantedAccess,
+  ): LogOperation {
+    return {
+      op: "update-access",
+      document,
+      did: grantAccess.did,
+      perms: grantAccess.perms,
+    };
+  },
+
+  toRevokeAccessLogOperation(document: UUID, did: Did): LogOperation {
+    return {
+      op: "revoke-access",
+      document,
+      did,
+    };
   },
 } as const;

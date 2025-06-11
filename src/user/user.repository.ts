@@ -55,7 +55,7 @@ export function updateData(
   );
 }
 
-export function insertLogOperations(
+export function pushLogs(
   ctx: AppBindings,
   userId: Did,
   logOperations: LogOperation[],

@@ -12,6 +12,7 @@ import type { DataDocument } from "#/data/data.repository";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import type { GrantedAccess } from "#/user/user.dto";
+import { LoggerOperationMapper } from "#/user/user.mapper";
 import * as UserRepository from "./user.repository";
 import type {
   AddPermissionsCommand,
@@ -115,11 +116,13 @@ export function readPermissions(
  * Adds new permissions to a data document.
  *
  * @param ctx - Application context and bindings
+ * @param owner - Data owner identifier
  * @param command - Permission addition command
  * @returns MongoDB update result
  */
 export function addPermissions(
   ctx: AppBindings,
+  owner: Did,
   command: AddPermissionsCommand,
 ): E.Effect<
   UpdateResult,
@@ -130,6 +133,15 @@ export function addPermissions(
     command.schema,
     command.documentId,
     command.grantAccess,
+  ).pipe(
+    E.flatMap((result) => {
+      return UserRepository.pushLogs(ctx, owner, [
+        LoggerOperationMapper.toGrantAccessLogOperation(
+          command.documentId,
+          command.grantAccess,
+        ),
+      ]).pipe(E.flatMap(() => E.succeed(result)));
+    }),
   );
 }
 
@@ -137,11 +149,13 @@ export function addPermissions(
  * Updates existing permissions for a data document.
  *
  * @param ctx - Application context and bindings
+ * @param owner - Data owner identifier
  * @param command - Permission update command
  * @returns MongoDB update result
  */
 export function updatePermissions(
   ctx: AppBindings,
+  owner: Did,
   command: UpdatePermissionsCommand,
 ): E.Effect<
   UpdateResult,
@@ -152,6 +166,15 @@ export function updatePermissions(
     command.schema,
     command.documentId,
     command.grantAccess,
+  ).pipe(
+    E.flatMap((result) => {
+      return UserRepository.pushLogs(ctx, owner, [
+        LoggerOperationMapper.toUpdateAccessLogOperation(
+          command.documentId,
+          command.grantAccess,
+        ),
+      ]).pipe(E.flatMap(() => E.succeed(result)));
+    }),
   );
 }
 
@@ -159,11 +182,13 @@ export function updatePermissions(
  * Deletes permissions from a data document.
  *
  * @param ctx - Application context and bindings
+ * @param owner - Data owner identifier
  * @param command - Permission deletion command
  * @returns MongoDB update result
  */
 export function deletePermissions(
   ctx: AppBindings,
+  owner: Did,
   command: DeletePermissionsCommand,
 ): E.Effect<
   UpdateResult,
@@ -174,5 +199,14 @@ export function deletePermissions(
     command.schema,
     command.documentId,
     command.did,
+  ).pipe(
+    E.flatMap((result) => {
+      return UserRepository.pushLogs(ctx, owner, [
+        LoggerOperationMapper.toRevokeAccessLogOperation(
+          command.documentId,
+          command.did,
+        ),
+      ]).pipe(E.flatMap(() => E.succeed(result)));
+    }),
   );
 }
