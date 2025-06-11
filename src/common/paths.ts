@@ -15,9 +15,6 @@ export const PathsV1 = {
     register: PathSchema.parse("/v1/register"),
     me: PathSchema.parse("/v1/builders/me"),
   },
-  admin: {
-    root: PathSchema.parse("/v1/admin"),
-  },
   data: {
     root: PathSchema.parse("/v1/data"),
     flush: PathSchema.parse("/v1/data/flush"),
