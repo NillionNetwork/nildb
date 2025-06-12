@@ -82,7 +82,7 @@ export function runQueryInBackground(
       // Run query is always done in the background to avoid blocking and request timeouts
       const _result = pipe(
         RunQueryJobsRepository.findOne(ctx, { id: jobId }),
-        E.flatMap((job) =>
+        E.flatMap((_job) =>
           E.all([
             RunQueryJobsRepository.updateOne(ctx, runId, {
               status: "running",
@@ -91,7 +91,7 @@ export function runQueryInBackground(
             pipe(
               E.Do,
               E.bind("query", () =>
-                QueriesRepository.findOne(ctx, { _id: jobId }),
+                QueriesRepository.findOne(ctx, { id: jobId }),
               ),
               E.bind("variables", ({ query }) =>
                 validateVariables(query.variables, command.variables),
@@ -146,7 +146,7 @@ export function getRunQueryJob(
   RunQueryJobDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return RunQueryJobsRepository.findOne(ctx, { _id: command.id });
+  return RunQueryJobsRepository.findOne(ctx, { id: command.id });
 }
 
 export function findQueries(
@@ -173,7 +173,7 @@ export function removeQuery(
   | DataValidationError
 > {
   return pipe(
-    QueriesRepository.findOneAndDelete(ctx, { _id: command.id }),
+    QueriesRepository.findOneAndDelete(ctx, { id: command.id }),
     E.tap((document) => ctx.cache.builders.taint(document.owner)),
     E.flatMap((document) =>
       BuildersRepository.removeQuery(ctx, document.owner, command.id),

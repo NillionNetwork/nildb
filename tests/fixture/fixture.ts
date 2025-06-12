@@ -6,6 +6,7 @@ import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
 import * as vitest from "vitest";
 import { type App, buildApp } from "#/app";
+import type { CollectionType } from "#/collections/collections.types";
 import { mongoMigrateUp } from "#/common/mongo";
 import {
   type AppBindings,
@@ -14,7 +15,6 @@ import {
   loadBindings,
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
-import type { SchemaDocumentType } from "#/schemas/schemas.types";
 import { createTestLogger } from "./logger";
 import {
   type AdminTestClient,
@@ -47,7 +47,7 @@ export type SchemaFixture = {
   name: string;
   keys: string[];
   schema: JsonObject;
-  documentType: SchemaDocumentType;
+  documentType: CollectionType;
 };
 
 export type QueryFixture = {
@@ -153,7 +153,7 @@ export async function buildFixture(
       .addSchema(c, {
         _id: schema.id,
         name: schema.name,
-        schema: schema.schema,
+        collection: schema.schema,
         documentType: schema.documentType,
       })
       .expectSuccess();
@@ -168,7 +168,7 @@ export async function buildFixture(
         .addQuery(c, {
           _id: query.id,
           name: query.name,
-          schema: query.schema,
+          collection: query.schema,
           variables: query.variables,
           pipeline: query.pipeline,
         })

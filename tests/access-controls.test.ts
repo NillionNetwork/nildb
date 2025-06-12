@@ -18,7 +18,7 @@ describe("access-controls", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll } = createTestFixtureExtension({
-    schema,
+    collection: schema,
     query,
   });
 
@@ -36,7 +36,7 @@ describe("access-controls", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -70,7 +70,7 @@ describe("access-controls", () => {
     await builderB
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data: [
           {
             _id: createUuidDto(),
@@ -99,7 +99,7 @@ describe("access-controls", () => {
     const record = data[Math.floor(Math.random() * collectionSize)];
     await builderB
       .updateData(c, {
-        schema: schema.id,
+        collection: schema.id,
         filter: { name: record.name },
         update: { name: "foo" },
       })
@@ -111,7 +111,7 @@ describe("access-controls", () => {
 
     await builderB
       .deleteData(c, {
-        schema: schema.id,
+        collection: schema.id,
         filter: { name: record.name },
       })
       .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");

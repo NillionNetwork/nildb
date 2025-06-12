@@ -16,10 +16,6 @@ import type {
 
 /**
  * Retrieves an organisation builder by DID.
- *
- * @param ctx - Application context containing configuration and dependencies
- * @param did - Decentralised identifier of the builder to retrieve
- * @returns Effect containing the builder document or relevant errors
  */
 export function find(
   ctx: AppBindings,
@@ -33,14 +29,6 @@ export function find(
 
 /**
  * Creates a new organisation builder based on the provided command.
- *
- * Validates that the builder's DID differs from the node's own DID
- * before persisting to the database. Constructs the complete document
- * from the command data.
- *
- * @param ctx - Application context containing configuration and dependencies
- * @param command - Create builder command with DID and name
- * @returns Effect indicating success or relevant errors
  */
 export function createBuilder(
   ctx: AppBindings,
@@ -65,7 +53,7 @@ export function createBuilder(
         _created: now,
         _updated: now,
         name: cmd.name,
-        schemas: [],
+        collections: [],
         queries: [],
       };
     }),
@@ -75,10 +63,6 @@ export function createBuilder(
 
 /**
  * Removes an organisation builder permanently.
- *
- * @param ctx - Application context containing configuration and dependencies
- * @param id - DID of the builder to delete
- * @returns Effect indicating success or relevant errors
  */
 export function remove(
   ctx: AppBindings,
@@ -92,10 +76,6 @@ export function remove(
 
 /**
  * Updates an organisation's profile fields based on the provided command.
- *
- * @param ctx - Application context containing configuration and dependencies
- * @param command - Update profile command with builder ID and updates
- * @returns Effect indicating success or relevant errors
  */
 export function updateProfile(
   ctx: AppBindings,

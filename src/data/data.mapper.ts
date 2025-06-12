@@ -103,7 +103,7 @@ export const DataMapper = {
   ): CreateOwnedDataCommand {
     return {
       owner: body.owner,
-      schema: new UUID(body.schema),
+      collection: new UUID(body.schema),
       data: body.data,
       acl: body.acl,
     };
@@ -116,7 +116,7 @@ export const DataMapper = {
     body: CreateStandardDataRequest,
   ): CreateStandardDataCommand {
     return {
-      schema: new UUID(body.schema),
+      collection: new UUID(body.schema),
       data: body.data,
     };
   },
@@ -126,7 +126,7 @@ export const DataMapper = {
    */
   toUpdateDataCommand(dto: UpdateDataRequest): UpdateDataCommand {
     return {
-      schema: new UUID(dto.schema),
+      collection: new UUID(dto.schema),
       filter: dto.filter,
       update: dto.update,
     };
@@ -137,7 +137,7 @@ export const DataMapper = {
    */
   toFindDataCommand(dto: FindDataRequest): FindDataCommand {
     return {
-      schema: new UUID(dto.schema),
+      collection: new UUID(dto.schema),
       filter: dto.filter,
     };
   },
@@ -147,7 +147,7 @@ export const DataMapper = {
    */
   toDeleteDataCommand(dto: DeleteDataRequest): DeleteDataCommand {
     return {
-      schema: new UUID(dto.schema),
+      collection: new UUID(dto.schema),
       filter: dto.filter,
     };
   },
@@ -157,7 +157,7 @@ export const DataMapper = {
    */
   toFlushCollectionCommand(params: FlushDataRequest): FlushDataCommand {
     return {
-      schema: new UUID(params.schema),
+      collection: new UUID(params.schema),
     };
   },
 
@@ -166,7 +166,7 @@ export const DataMapper = {
    */
   toFlushDataCommand(params: DataSchemaByIdRequestParams): FlushDataCommand {
     return {
-      schema: new UUID(params.id),
+      collection: new UUID(params.id),
     };
   },
 
@@ -178,7 +178,7 @@ export const DataMapper = {
     query: TailDataRequestQuery,
   ): RecentDataCommand {
     return {
-      schema: new UUID(params.id),
+      collection: new UUID(params.id),
       limit: query.limit,
     };
   },

@@ -7,6 +7,10 @@ import type {
   UUID,
 } from "mongodb";
 import type { Filter } from "mongodb/lib/beta";
+import type {
+  CollectionDocument,
+  CollectionMetadata,
+} from "#/collections/collections.types";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -25,9 +29,8 @@ import {
 } from "#/common/mongo";
 import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
-import type { SchemaDocument, SchemaMetadata } from "#/schemas/schemas.types";
 
-export function addSchemaDocumentCoercions(
+export function addCollectionDocumentCoercions(
   coercibleMap: CoercibleMap,
 ): CoercibleMap {
   return addDocumentBaseCoercions(coercibleMap);
@@ -35,17 +38,17 @@ export function addSchemaDocumentCoercions(
 
 export function insert(
   ctx: AppBindings,
-  document: SchemaDocument,
+  document: CollectionDocument,
 ): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<SchemaDocument>(
+    checkCollectionExists<CollectionDocument>(
       ctx,
       "primary",
-      CollectionName.Schemas,
+      CollectionName.Collections,
     ),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
-      catch: (cause) => new DatabaseError({ cause, message: "" }),
+      catch: (cause) => new DatabaseError({ cause, message: "insert" }),
     }),
     E.as(void 0),
   );
@@ -53,35 +56,35 @@ export function insert(
 
 export function findMany(
   ctx: AppBindings,
-  filter: StrictFilter<SchemaDocument>,
+  filter: StrictFilter<CollectionDocument>,
 ): E.Effect<
-  SchemaDocument[],
+  CollectionDocument[],
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.all([
-      checkCollectionExists<SchemaDocument>(
+      checkCollectionExists<CollectionDocument>(
         ctx,
         "primary",
-        CollectionName.Schemas,
+        CollectionName.Collections,
       ),
-      applyCoercions<Filter<SchemaDocument>>(
-        addSchemaDocumentCoercions(filter),
+      applyCoercions<Filter<CollectionDocument>>(
+        addCollectionDocumentCoercions(filter),
       ),
     ]),
     E.tryMapPromise({
       try: ([collection, documentFilter]) =>
         collection.find(documentFilter).toArray(),
-      catch: (cause) => new DatabaseError({ cause, message: "" }),
+      catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
     }),
   );
 }
 
 export function findOne(
   ctx: AppBindings,
-  filter: StrictFilter<SchemaDocument>,
+  filter: StrictFilter<CollectionDocument>,
 ): E.Effect<
-  SchemaDocument,
+  CollectionDocument,
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
@@ -89,24 +92,24 @@ export function findOne(
 > {
   return pipe(
     E.all([
-      checkCollectionExists<SchemaDocument>(
+      checkCollectionExists<CollectionDocument>(
         ctx,
         "primary",
-        CollectionName.Schemas,
+        CollectionName.Collections,
       ),
-      applyCoercions<Filter<SchemaDocument>>(
-        addSchemaDocumentCoercions(filter),
+      applyCoercions<Filter<CollectionDocument>>(
+        addCollectionDocumentCoercions(filter),
       ),
     ]),
     E.tryMapPromise({
       try: ([collection, documentFilter]) => collection.findOne(documentFilter),
-      catch: (cause) => new DatabaseError({ cause, message: "" }),
+      catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
     }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Schemas,
+              collection: CollectionName.Collections,
               filter,
             }),
           )
@@ -117,9 +120,9 @@ export function findOne(
 
 export function deleteOne(
   ctx: AppBindings,
-  filter: StrictFilter<SchemaDocument>,
+  filter: StrictFilter<CollectionDocument>,
 ): E.Effect<
-  SchemaDocument,
+  CollectionDocument,
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
@@ -127,13 +130,13 @@ export function deleteOne(
 > {
   return pipe(
     E.all([
-      checkCollectionExists<SchemaDocument>(
+      checkCollectionExists<CollectionDocument>(
         ctx,
         "primary",
-        CollectionName.Schemas,
+        CollectionName.Collections,
       ),
-      applyCoercions<Filter<SchemaDocument>>(
-        addSchemaDocumentCoercions(filter),
+      applyCoercions<Filter<CollectionDocument>>(
+        addCollectionDocumentCoercions(filter),
       ),
     ]),
     E.tryMapPromise({
@@ -145,7 +148,7 @@ export function deleteOne(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Schemas,
+              collection: CollectionName.Collections,
               filter,
             }),
           )
@@ -157,7 +160,7 @@ export function deleteOne(
 export function getCollectionStats(
   ctx: AppBindings,
   id: UUID,
-): E.Effect<SchemaMetadata, CollectionNotFoundError | DatabaseError> {
+): E.Effect<CollectionMetadata, CollectionNotFoundError | DatabaseError> {
   return pipe(
     checkCollectionExists(ctx, "data", id.toString()),
     E.flatMap((collection) =>
@@ -255,7 +258,7 @@ export function getCollectionStats(
 
 export function createIndex(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
   specification: IndexSpecification,
   options: CreateIndexesOptions,
 ): E.Effect<
@@ -263,7 +266,7 @@ export function createIndex(
   CollectionNotFoundError | InvalidIndexOptionsError | DatabaseError
 > {
   return pipe(
-    checkCollectionExists(ctx, "primary", schema.toString()),
+    checkCollectionExists(ctx, "primary", collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.createIndex(specification, options),
       catch: (cause) => {
@@ -272,7 +275,7 @@ export function createIndex(
           cause.code === MongoErrorCode.CannotCreateIndex
         ) {
           return new InvalidIndexOptionsError({
-            collection: schema.toString(),
+            collection: collection.toString(),
             message: cause.message,
           });
         }
@@ -284,14 +287,14 @@ export function createIndex(
 
 export function dropIndex(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
   name: string,
 ): E.Effect<
   Document,
   CollectionNotFoundError | IndexNotFoundError | DatabaseError
 > {
   return pipe(
-    checkCollectionExists(ctx, "primary", schema.toString()),
+    checkCollectionExists(ctx, "primary", collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.dropIndex(name),
       catch: (cause) => {
@@ -300,7 +303,7 @@ export function dropIndex(
           cause.code === MongoErrorCode.IndexNotFound
         ) {
           return new IndexNotFoundError({
-            collection: schema.toString(),
+            collection: collection.toString(),
             index: name,
           });
         }

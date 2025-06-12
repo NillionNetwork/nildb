@@ -12,7 +12,7 @@ describe("flush data collection", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection: schema,
     query,
   });
 
@@ -32,7 +32,7 @@ describe("flush data collection", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,

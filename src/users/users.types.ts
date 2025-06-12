@@ -11,7 +11,7 @@ export type Acl = {
 
 export type DeleteDataCommand = {
   owner: Did;
-  schema: UUID;
+  collection: UUID;
   document: UUID;
 };
 
@@ -28,7 +28,7 @@ export type LogOperation =
  */
 export type DataDocumentReference = {
   builder: Did;
-  schema: UUID;
+  collection: UUID;
   document: UUID;
 };
 
@@ -45,7 +45,7 @@ export type UserDocument = DocumentBase<Did> & {
  */
 export type ReadDataAclCommand = {
   owner: Did;
-  schema: UUID;
+  collection: UUID;
   document: UUID;
 };
 
@@ -53,7 +53,7 @@ export type ReadDataAclCommand = {
  *
  */
 export type GrantAccessToDataCommand = {
-  schema: UUID;
+  collection: UUID;
   document: UUID;
   owner: Did;
   acl: Acl;
@@ -63,7 +63,7 @@ export type GrantAccessToDataCommand = {
  *
  */
 export type RevokeAccessToDataCommand = {
-  schema: UUID;
+  collection: UUID;
   document: UUID;
   grantee: Did;
   owner: Did;

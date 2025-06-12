@@ -23,7 +23,7 @@ export class init_collections implements MigrationInterface {
         await Promise.all([
           primary.createCollection(CollectionName.Builders),
           primary.createCollection(CollectionName.Queries),
-          primary.createCollection(CollectionName.Schemas),
+          primary.createCollection(CollectionName.Collections),
           primary.createCollection(CollectionName.Config),
           primary.createCollection(CollectionName.QueryRuns),
           primary.createCollection(CollectionName.User),
@@ -50,7 +50,7 @@ export class init_collections implements MigrationInterface {
       await Promise.all([
         primary.dropCollection(CollectionName.Builders),
         primary.dropCollection(CollectionName.Queries),
-        primary.dropCollection(CollectionName.Schemas),
+        primary.dropCollection(CollectionName.Collections),
         primary.dropCollection(CollectionName.Config),
         primary.dropCollection(CollectionName.QueryRuns),
         primary.dropCollection(CollectionName.User),

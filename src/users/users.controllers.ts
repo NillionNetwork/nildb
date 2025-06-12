@@ -208,7 +208,7 @@ export function deleteData(options: ControllerOptions): void {
       const command = UserDataMapper.toDeleteDataCommand(user, params);
 
       return pipe(
-        enforceDataOwnership(user, command.document, command.schema),
+        enforceDataOwnership(user, command.document, command.collection),
         // E.map(() => DeleteDocumentResponse),
         E.map(() =>
           c.text(
@@ -255,7 +255,7 @@ export function grantAccess(options: ControllerOptions): void {
       const command = UserDataMapper.toGrantDataAccessCommand(user, payload);
 
       return pipe(
-        enforceDataOwnership(user, command.document, command.schema),
+        enforceDataOwnership(user, command.document, command.collection),
         E.flatMap(() => UserService.grantAccess(c.env, command)),
         E.map((_result) => GrantAccessToDataResponse),
         handleTaggedErrors(c),
@@ -300,7 +300,7 @@ export function revokeAccess(options: ControllerOptions): void {
       // TODO: What should happen if the user revokes permissions for the schema owner?
 
       return pipe(
-        enforceDataOwnership(user, command.document, command.schema),
+        enforceDataOwnership(user, command.document, command.collection),
         E.flatMap(() => UserService.revokeAccess(c.env, command)),
         E.map((_response) => RevokeAccessToDataResponse),
         handleTaggedErrors(c),

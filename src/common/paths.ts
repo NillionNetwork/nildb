@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const PathSchema = z
+export const Path = z
   .string()
   .startsWith("/")
   .regex(/^(\/[a-z0-9_:.-]+)+$/i, {
@@ -8,54 +8,54 @@ export const PathSchema = z
   })
   .brand<"path">();
 
-export type Path = z.infer<typeof PathSchema>;
+export type Path = z.infer<typeof Path>;
 
 export const PathsV1 = {
   builders: {
-    register: PathSchema.parse("/v1/builders/register"),
-    me: PathSchema.parse("/v1/builders/me"),
+    register: Path.parse("/v1/builders/register"),
+    me: Path.parse("/v1/builders/me"),
   },
   data: {
-    root: PathSchema.parse("/v1/data"),
-    search: PathSchema.parse("/v1/data/search"),
-    update: PathSchema.parse("/v1/data/update"),
-    delete: PathSchema.parse("/v1/data/delete"),
-    flushById: PathSchema.parse("/v1/data/:id/flush"),
-    tailById: PathSchema.parse("/v1/data/:id/tail"),
-    createOwned: PathSchema.parse("/v1/data/owned"),
-    createStandard: PathSchema.parse("/v1/data/standard"),
+    root: Path.parse("/v1/data"),
+    search: Path.parse("/v1/data/search"),
+    update: Path.parse("/v1/data/update"),
+    delete: Path.parse("/v1/data/delete"),
+    flushById: Path.parse("/v1/data/:id/flush"),
+    tailById: Path.parse("/v1/data/:id/tail"),
+    createOwned: Path.parse("/v1/data/owned"),
+    createStandard: Path.parse("/v1/data/standard"),
   },
   queries: {
-    root: PathSchema.parse("/v1/queries"),
-    byId: PathSchema.parse("/v1/queries/:id"),
-    run: PathSchema.parse("/v1/queries/run"),
-    runById: PathSchema.parse("/v1/queries/run/:id"),
+    root: Path.parse("/v1/queries"),
+    byId: Path.parse("/v1/queries/:id"),
+    run: Path.parse("/v1/queries/run"),
+    runById: Path.parse("/v1/queries/run/:id"),
   },
-  schemas: {
-    root: PathSchema.parse("/v1/schemas"),
-    byId: PathSchema.parse("/v1/schemas/:id"),
-    indexesById: PathSchema.parse("/v1/schemas/:id/indexes"),
-    indexesByNameById: PathSchema.parse("/v1/schemas/:id/indexes/:name"),
+  collections: {
+    root: Path.parse("/v1/collections"),
+    byId: Path.parse("/v1/collections/:id"),
+    indexesById: Path.parse("/v1/collections/:id/indexes"),
+    indexesByNameById: Path.parse("/v1/collections/:id/indexes/:name"),
   },
   system: {
-    about: PathSchema.parse("/about"),
-    health: PathSchema.parse("/health"),
-    metrics: PathSchema.parse("/metrics"),
-    openApiJson: PathSchema.parse("/openapi.json"),
-    maintenanceStart: PathSchema.parse("/v1/system/maintenance/start"),
-    maintenanceStop: PathSchema.parse("/v1/system/maintenance/stop"),
-    logLevel: PathSchema.parse("/v1/system/log-level"),
+    about: Path.parse("/about"),
+    health: Path.parse("/health"),
+    metrics: Path.parse("/metrics"),
+    openApiJson: Path.parse("/openapi.json"),
+    maintenanceStart: Path.parse("/v1/system/maintenance/start"),
+    maintenanceStop: Path.parse("/v1/system/maintenance/stop"),
+    logLevel: Path.parse("/v1/system/log-level"),
   },
   users: {
-    me: PathSchema.parse("/v1/users/me"),
+    me: Path.parse("/v1/users/me"),
     data: {
-      root: PathSchema.parse("/v1/users/data"),
-      byId: PathSchema.parse("/v1/users/data/:schema/:document"),
-      aclById: PathSchema.parse("/v1/users/data/:schema/:document/acl"),
+      root: Path.parse("/v1/users/data"),
+      byId: Path.parse("/v1/users/data/:collection/:document"),
+      aclById: Path.parse("/v1/users/data/:collection/:document/acl"),
       acl: {
-        grant: PathSchema.parse("/v1/users/data/acl/grant"),
-        update: PathSchema.parse("/v1/users/data/acl/update"),
-        revoke: PathSchema.parse("/v1/users/data/acl/revoke"),
+        grant: Path.parse("/v1/users/data/acl/grant"),
+        update: Path.parse("/v1/users/data/acl/update"),
+        revoke: Path.parse("/v1/users/data/acl/revoke"),
       },
     },
   },

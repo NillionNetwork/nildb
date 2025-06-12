@@ -21,7 +21,7 @@ import type { Acl, LogOperation, UserDocument } from "#/users/users.types";
 
 type UpsertOptions = {
   builder: Did;
-  schema: UUID;
+  collection: UUID;
   user: Did;
   data: UUID[];
   acl?: Acl;
@@ -34,8 +34,8 @@ export function upsert(
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  const { builder, schema, user, data, acl } = options;
-  const filter: StrictFilter<UserDocument> = { _id: user };
+  const { builder, collection, user, data, acl } = options;
+  const filter: StrictFilter<UserDocument> = { id: user };
 
   const logOperations: LogOperation[] = [];
   // TODO: Clarify why these are distinct ... eg why is acl both a write + auth operation?
@@ -62,7 +62,7 @@ export function upsert(
     },
     $addToSet: {
       data: {
-        $each: data.map((document) => ({ builder, schema, document })),
+        $each: data.map((document) => ({ builder, collection, document })),
       },
       log: {
         $each: logOperations,
@@ -90,7 +90,7 @@ export function removeData(
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  const filter: StrictFilter<UserDocument> = { _id: user };
+  const filter: StrictFilter<UserDocument> = { id: user };
 
   const logOperations: LogOperation[] = data.map((col) => ({
     op: "delete",
@@ -134,7 +134,7 @@ export function findById(
   UserDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<UserDocument> = { _id: userId };
+  const filter: StrictFilter<UserDocument> = { id: userId };
 
   return pipe(
     checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
@@ -166,7 +166,7 @@ export function addAclEntry(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   const filter: StrictFilter<OwnedDocumentBase> = {
-    _id: document,
+    id: document,
     owner,
   };
 
@@ -196,7 +196,7 @@ export function removeAclEntry(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   const filter: StrictFilter<OwnedDocumentBase> = {
-    _id: document,
+    id: document,
     _owner: owner,
   };
 

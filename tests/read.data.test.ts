@@ -12,7 +12,7 @@ describe("read data", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection: schema,
     query,
   });
 
@@ -33,7 +33,7 @@ describe("read data", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data: testData,
         permissions: new Permissions(builder.did, {
           read: true,

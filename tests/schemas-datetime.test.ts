@@ -11,7 +11,7 @@ describe("schemas.datetime.test", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection: schema,
     query,
   });
   beforeAll(async (_c) => {});
@@ -29,7 +29,7 @@ describe("schemas.datetime.test", () => {
     const result = await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -61,7 +61,7 @@ describe("schemas.datetime.test", () => {
       await builder
         .uploadOwnedData(c, {
           userId: user.did,
-          schema: schema.id,
+          collection: schema.id,
           data: [invalid],
           permissions: new Permissions(builder.did, {
             read: true,

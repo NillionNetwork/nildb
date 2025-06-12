@@ -185,12 +185,12 @@ function buildQuery(
   pipeline: Record<string, unknown>[],
 ): QueryDocument {
   return {
-    _id: new UUID(),
+    id: new UUID(),
     _created: new Date(),
     _updated: new Date(),
     owner: new Did(Uint8Array.from(Array(33).fill(0xaa))).toString(),
     name: "variables.wallet.query.json",
-    schema: new UUID(),
+    collection: new UUID(),
     variables,
     pipeline,
   };

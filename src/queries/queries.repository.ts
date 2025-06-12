@@ -63,7 +63,7 @@ export function findMany(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Schemas,
+              collection: CollectionName.Collections,
               filter,
             }),
           )
@@ -99,7 +99,7 @@ export function findOne(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Schemas,
+              collection: CollectionName.Collections,
               filter,
             }),
           )
@@ -137,7 +137,7 @@ export function findOneAndDelete(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Schemas,
+              collection: CollectionName.Collections,
               filter,
             }),
           )

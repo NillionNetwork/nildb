@@ -29,7 +29,7 @@ export const UserDataMapper = {
   ): DeleteDataCommand {
     return {
       owner: Did.parse(user._id),
-      schema: new UUID(params.schema),
+      collection: new UUID(params.collection),
       document: new UUID(params.document),
     };
   },
@@ -41,9 +41,9 @@ export const UserDataMapper = {
         _created: user._created.toISOString(),
         _updated: user._updated.toISOString(),
         // TODO: if op = "auth" then acl should be returned
-        log: user.log.map((l) => ({ schema: l.col.toString(), op: l.op })),
+        log: user.log.map((l) => ({ col: l.col.toString(), op: l.op })),
         data: user.data.map((d) => ({
-          schema: d.schema.toString(),
+          collection: d.collection.toString(),
           id: d.document.toString(),
         })),
       },
@@ -59,7 +59,7 @@ export const UserDataMapper = {
     return {
       data: references.map((r) => ({
         builder: r.builder,
-        schema: r.schema.toString(),
+        collection: r.collection.toString(),
         document: r.document.toString(),
       })),
     };
@@ -88,7 +88,7 @@ export const UserDataMapper = {
   ): ReadDataAclCommand {
     return {
       owner: user._id,
-      schema: new UUID(dto.schema),
+      collection: new UUID(dto.collection),
       document: new UUID(dto.document),
     };
   },
@@ -101,7 +101,7 @@ export const UserDataMapper = {
     body: GrantAccessToDataRequest,
   ): GrantAccessToDataCommand {
     return {
-      schema: new UUID(body.schema),
+      collection: new UUID(body.collection),
       document: new UUID(body.document),
       owner: user._id,
       acl: {
@@ -121,7 +121,7 @@ export const UserDataMapper = {
     body: RevokeAccessToDataRequest,
   ): RevokeAccessToDataCommand {
     return {
-      schema: new UUID(body.schema),
+      collection: new UUID(body.collection),
       document: new UUID(body.document),
       grantee: body.builder,
       owner: user._id as Did,
@@ -136,7 +136,7 @@ export const UserDataMapper = {
     body: ReadDataRequestParams,
   ): FindDataCommand {
     return {
-      schema: new UUID(body.schema),
+      collection: new UUID(body.collection),
       filter: {
         _id: new UUID(body.document),
         _owner: user._id,

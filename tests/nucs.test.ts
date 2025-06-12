@@ -44,7 +44,7 @@ describe("nuc-based access control", () => {
       .addSchema(c, {
         _id: schema.id,
         name: schema.name,
-        schema: schema.schema,
+        collection: schema.schema,
         documentType: schema.documentType,
       })
       .expectSuccess();
@@ -52,10 +52,10 @@ describe("nuc-based access control", () => {
     query.id = new UUID();
     query.schema = schema.id;
     await builder
-      .addQuery(c, {
-        _id: query.id,
+      .createQuery(c, {
+        id: query.id,
         name: query.name,
-        schema: query.schema,
+        collection: query.schema,
         variables: query.variables,
         pipeline: query.pipeline,
       })
@@ -64,7 +64,7 @@ describe("nuc-based access control", () => {
     const result = await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data: [
           {
             _id: createUuidDto(),
@@ -142,7 +142,7 @@ describe("nuc-based access control", () => {
     // 6. Check the organisations schema to confirm the data upload
     const documents = await bindings.db.data
       .collection<{ _id: UUID }>(schema.id.toString())
-      .find({ _id: new UUID(body.data[0]._id) })
+      .find({ id: new UUID(body.data[0]._id) })
       .toArray();
 
     expect(documents).toHaveLength(1);
@@ -207,7 +207,7 @@ describe("nuc-based access control", () => {
     // 6. Check the organisations schema to confirm the data upload
     const documents = await bindings.db.data
       .collection<{ _id: UUID }>(schema.id.toString())
-      .find({ _id: new UUID(body.data[0]._id) })
+      .find({ id: new UUID(body.data[0]._id) })
       .toArray();
 
     expect(documents).toHaveLength(1);

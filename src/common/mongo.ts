@@ -63,7 +63,7 @@ export async function initAndCreateDbClients(
 
 export enum CollectionName {
   Builders = "builders",
-  Schemas = "schemas",
+  Collections = "collections",
   Queries = "queries",
   QueryRuns = "query_runs",
   Config = "config",

@@ -55,7 +55,7 @@ export async function expectBuilder(
 ): Promise<BuilderDocument> {
   const document = await c.bindings.db.primary
     .collection<BuilderDocument>(CollectionName.Builders)
-    .findOne({ _id: did });
+    .findOne({ id: did });
 
   assertDefined(c, document, `Builder does not exist: did=${did}`);
   return document;

@@ -71,7 +71,7 @@ export function deleteData(options: ControllerOptions): void {
       const command = DataMapper.toDeleteDataCommand(payload);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.schema),
+        enforceSchemaOwnership(builder, command.collection),
         E.flatMap(() => DataService.deleteData(c.env, command)),
         E.map((result) => DataMapper.toDeleteDataResponse(result)),
         E.map((response) => c.json<DeleteDataResponse>(response)),
@@ -118,7 +118,7 @@ export function flushData(options: ControllerOptions): void {
       const command = DataMapper.toFlushDataCommand(params);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.schema),
+        enforceSchemaOwnership(builder, command.collection),
         E.flatMap(() => DataService.flushCollection(c.env, command)),
         E.map(() => new Response(null, { status: 204 })),
         handleTaggedErrors(c),
@@ -169,7 +169,7 @@ export function findData(options: ControllerOptions): void {
       const command = DataMapper.toFindDataCommand(payload);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.schema),
+        enforceSchemaOwnership(builder, command.collection),
         E.flatMap(() => DataService.readRecords(c.env, command)),
         E.map((documents) => DataMapper.toFindDataResponse(documents)),
         E.map((response) => c.json<FindDataResponse>(response)),
@@ -222,7 +222,7 @@ export function tailData(options: ControllerOptions): void {
       const command = DataMapper.toRecentDataCommand(param, query);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.schema),
+        enforceSchemaOwnership(builder, command.collection),
         E.flatMap(() => DataService.tailData(c.env, command)),
         E.map((documents) => DataMapper.toTailDataResponse(documents)),
         E.map((response) => c.json<TailDataResponse>(response)),
@@ -274,7 +274,7 @@ export function updateData(options: ControllerOptions): void {
       const command = DataMapper.toUpdateDataCommand(payload);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.schema),
+        enforceSchemaOwnership(builder, command.collection),
         E.flatMap(() => DataService.updateRecords(c.env, command)),
         E.map((result) => DataMapper.toUpdateDataResponse(result)),
         E.map((response) => c.json<UpdateDataResponse>(response)),
@@ -325,7 +325,7 @@ export function createOwnedData(options: ControllerOptions): void {
       const command = DataMapper.toCreateOwnedRecordsCommand(payload);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.schema),
+        enforceSchemaOwnership(builder, command.collection),
         E.flatMap(() => DataService.createOwnedRecords(c.env, command)),
         E.map((result) => DataMapper.toCreateDataResponse(result)),
         E.map((response) => c.json<CreateDataResponse>(response)),
@@ -377,7 +377,7 @@ export function createStandardData(options: ControllerOptions): void {
       const command = DataMapper.toCreateStandardRecordsCommand(payload);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.schema),
+        enforceSchemaOwnership(builder, command.collection),
         E.flatMap(() => DataService.createStandardRecords(c.env, command)),
         E.map((result) => DataMapper.toCreateDataResponse(result)),
         E.map((response) => c.json<CreateDataResponse>(response)),

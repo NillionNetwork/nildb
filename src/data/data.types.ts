@@ -36,8 +36,8 @@ export type PartialDataDocumentDto = Record<string, unknown>[] & {
  * Command for creating/uploading owned data records.
  */
 export type CreateOwnedDataCommand = {
-  /** UUID of the schema (collection) to store data in */
-  schema: UUID;
+  /** Id of the collection to store data in */
+  collection: UUID;
   /** DID of the data owner */
   owner: Did;
   /** Permissions for the data records */
@@ -50,8 +50,8 @@ export type CreateOwnedDataCommand = {
  * Command for creating/uploading standard data records.
  */
 export type CreateStandardDataCommand = {
-  /** UUID of the schema (collection) to store data in */
-  schema: UUID;
+  /** Id of the collection to store data in */
+  collection: UUID;
   /** Array of data records to store */
   data: Record<string, unknown>[];
 };
@@ -60,8 +60,8 @@ export type CreateStandardDataCommand = {
  * Command for updating data records.
  */
 export type UpdateDataCommand = {
-  /** UUID of the schema (collection) containing the data */
-  schema: UUID;
+  /** Id of the collection containing the data */
+  collection: UUID;
   /** MongoDB filter to match records for update */
   filter: Record<string, unknown>;
   /** MongoDB update operations to apply */
@@ -72,8 +72,8 @@ export type UpdateDataCommand = {
  * Command for reading data records.
  */
 export type FindDataCommand = {
-  /** UUID of the schema (collection) to read from */
-  schema: UUID;
+  /** Id of the collection to read from */
+  collection: UUID;
   /** MongoDB filter to match records for retrieval */
   filter: Record<string, unknown>;
 };
@@ -82,8 +82,8 @@ export type FindDataCommand = {
  * Command for deleting data records.
  */
 export type DeleteDataCommand = {
-  /** UUID of the schema (collection) containing the data */
-  schema: UUID;
+  /** Id of the collection containing the data */
+  collection: UUID;
   /** MongoDB filter to match records for deletion */
   filter: Record<string, unknown>;
 };
@@ -92,16 +92,16 @@ export type DeleteDataCommand = {
  * Command for flushing all data from a schema collection.
  */
 export type FlushDataCommand = {
-  /** UUID of the schema (collection) to flush */
-  schema: UUID;
+  /** Id of the collection to flush */
+  collection: UUID;
 };
 
 /**
  * Command for tailing recent data from a schema collection.
  */
 export type RecentDataCommand = {
-  /** UUID of the schema (collection) to tail */
-  schema: UUID;
+  /** Id of the collection to tail */
+  collection: UUID;
   /** The max number of documents to return */
   limit: number;
 };

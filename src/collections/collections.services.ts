@@ -3,6 +3,14 @@ import type { CreateIndexesOptions, IndexSpecification, UUID } from "mongodb";
 import * as BuildersRepository from "#/builders/builders.repository";
 import type { BuilderDocument } from "#/builders/builders.types";
 import type {
+  CollectionDocument,
+  CollectionMetadata,
+  CreateCollectionCommand,
+  CreateIndexCommand,
+  DeleteCollectionCommand,
+  DropIndexCommand,
+} from "#/collections/collections.types";
+import type {
   CollectionNotFoundError,
   DatabaseError,
   DataValidationError,
@@ -13,32 +21,24 @@ import type {
 import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import type {
-  CreateIndexCommand,
-  CreateSchemaCommand,
-  DeleteSchemaCommand,
-  DropIndexCommand,
-  SchemaDocument,
-  SchemaMetadata,
-} from "#/schemas/schemas.types";
-import * as SchemasRepository from "./schemas.repository";
+import * as CollectionsRepository from "./collections.repository";
 
-export function getBuilderSchemas(
+export function getBuilderCollections(
   ctx: AppBindings,
   builder: BuilderDocument,
 ): E.Effect<
-  SchemaDocument[],
+  CollectionDocument[],
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
-  return SchemasRepository.findMany(ctx, { owner: builder._id });
+  return CollectionsRepository.findMany(ctx, { owner: builder._id });
 }
 
-export function addSchema(
+export function addCollection(
   ctx: AppBindings,
-  command: CreateSchemaCommand,
+  command: CreateCollectionCommand,
 ): E.Effect<
   void,
   | DocumentNotFoundError
@@ -47,23 +47,23 @@ export function addSchema(
   | DatabaseError
 > {
   const now = new Date();
-  const document: SchemaDocument = {
-    _id: command._id,
-    name: command.name,
-    schema: command.schema,
-    documentType: command.documentType,
-    owner: command.owner,
+  const document: CollectionDocument = {
+    _id: command.id,
     _created: now,
     _updated: now,
+    name: command.name,
+    schema: command.schema,
+    type: command.type,
+    owner: command.owner,
   };
 
   return pipe(
     validateSchema(command.schema),
-    () => SchemasRepository.insert(ctx, document),
+    () => CollectionsRepository.insert(ctx, document),
     E.flatMap(() =>
       E.all([
         E.succeed(ctx.cache.builders.taint(document.owner)),
-        BuildersRepository.addSchema(ctx, command.owner, document._id),
+        BuildersRepository.addCollection(ctx, command.owner, document._id),
         DataRepository.createCollection(ctx, document._id),
       ]),
     ),
@@ -71,9 +71,9 @@ export function addSchema(
   );
 }
 
-export function deleteSchema(
+export function deleteCollection(
   ctx: AppBindings,
-  command: DeleteSchemaCommand,
+  command: DeleteCollectionCommand,
 ): E.Effect<
   void,
   | DocumentNotFoundError
@@ -82,11 +82,11 @@ export function deleteSchema(
   | DataValidationError
 > {
   return pipe(
-    SchemasRepository.deleteOne(ctx, { _id: command.id }),
-    E.flatMap((schema) =>
+    CollectionsRepository.deleteOne(ctx, { id: command.id }),
+    E.flatMap((collection) =>
       E.all([
-        E.succeed(ctx.cache.builders.taint(schema.owner)),
-        BuildersRepository.removeSchema(ctx, schema.owner, command.id),
+        E.succeed(ctx.cache.builders.taint(collection.owner)),
+        BuildersRepository.removeCollection(ctx, collection.owner, command.id),
         DataRepository.deleteCollection(ctx, command.id),
       ]),
     ),
@@ -94,11 +94,11 @@ export function deleteSchema(
   );
 }
 
-export function getSchemaMetadata(
+export function getCollectionMetadata(
   ctx: AppBindings,
-  _id: UUID,
-): E.Effect<SchemaMetadata, CollectionNotFoundError | DatabaseError> {
-  return pipe(SchemasRepository.getCollectionStats(ctx, _id));
+  collection: UUID,
+): E.Effect<CollectionMetadata, CollectionNotFoundError | DatabaseError> {
+  return pipe(CollectionsRepository.getCollectionStats(ctx, collection));
 }
 
 export function createIndex(
@@ -119,7 +119,12 @@ export function createIndex(
   }
 
   return pipe(
-    SchemasRepository.createIndex(ctx, command.schema, specification, options),
+    CollectionsRepository.createIndex(
+      ctx,
+      command.collection,
+      specification,
+      options,
+    ),
     E.as(void 0),
   );
 }
@@ -132,7 +137,7 @@ export function dropIndex(
   IndexNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(
-    SchemasRepository.dropIndex(ctx, command.schema, command.name),
+    CollectionsRepository.dropIndex(ctx, command.collection, command.name),
     E.as(void 0),
   );
 }

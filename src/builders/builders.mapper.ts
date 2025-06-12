@@ -24,7 +24,7 @@ export const BuilderDataMapper = {
         _created: data._created.toISOString(),
         _updated: data._updated.toISOString(),
         name: data.name,
-        schemas: data.schemas.map((s) => s.toString()),
+        collections: data.collections.map((s) => s.toString()),
         queries: data.queries.map((q) => q.toString()),
       },
     };

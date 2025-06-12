@@ -29,7 +29,9 @@ export function enforceSchemaOwnership(
   schema: UUID,
 ): E.Effect<void, ResourceAccessDeniedError> {
   return pipe(
-    E.succeed(builder.schemas.some((s) => s.toString() === schema.toString())),
+    E.succeed(
+      builder.collections.some((s) => s.toString() === schema.toString()),
+    ),
     E.flatMap((isAuthorized) => {
       return isAuthorized
         ? E.succeed(void 0)
@@ -54,7 +56,7 @@ export function enforceDataOwnership(
       user.data.some(
         (s) =>
           s.document.toString() === document.toString() &&
-          s.schema.toString() === schema.toString(),
+          s.collection.toString() === schema.toString(),
       ),
     ),
     E.flatMap((isAuthorized) => {

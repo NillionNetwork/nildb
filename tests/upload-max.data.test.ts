@@ -12,7 +12,7 @@ describe("upload max data", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection: schema,
     query,
   });
   beforeAll(async (_c) => {});
@@ -23,7 +23,7 @@ describe("upload max data", () => {
     name: string;
   };
   const nextDocument: () => Record = () => ({
-    _id: createUuidDto(),
+    id: createUuidDto(),
     // insufficient unique full names in faker so using uuids
     name: createUuidDto(),
   });
@@ -38,7 +38,7 @@ describe("upload max data", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -63,7 +63,7 @@ describe("upload max data", () => {
     const response = await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,

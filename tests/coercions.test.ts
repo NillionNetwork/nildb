@@ -12,7 +12,7 @@ import { createTestFixtureExtension } from "./fixture/it";
 describe("coercions", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection: schema,
   });
   beforeAll(async (_c) => {});
   afterAll(async (_c) => {});
@@ -278,7 +278,7 @@ describe("coercions", () => {
     const response = await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -321,7 +321,7 @@ describe("coercions", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -354,7 +354,7 @@ describe("coercions", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -387,7 +387,7 @@ describe("coercions", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,

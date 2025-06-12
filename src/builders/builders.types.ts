@@ -9,7 +9,7 @@ export type BuilderDocument = {
   _created: Date;
   _updated: Date;
   name: string;
-  schemas: UUID[];
+  collections: UUID[];
   queries: UUID[];
 };
 

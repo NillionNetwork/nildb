@@ -1,7 +1,7 @@
 import { UUID } from "mongodb";
 import { describe } from "vitest";
+import type { CollectionDocument } from "#/collections/collections.types";
 import { CollectionName } from "#/common/mongo";
-import type { SchemaDocument } from "#/schemas/schemas.types";
 import queryJson from "./data/simple.query.json";
 import schemaJson from "./data/simple.schema.json";
 import { expectBuilder } from "./fixture/assertions";
@@ -13,7 +13,9 @@ describe("query.test.ts", () => {
   const query = queryJson as unknown as QueryFixture;
 
   // don't pass in query since this suite is testing query creation
-  const { it, beforeAll, afterAll } = createTestFixtureExtension({ schema });
+  const { it, beforeAll, afterAll } = createTestFixtureExtension({
+    collection: schema,
+  });
   beforeAll(async (_ctx) => {
     query.schema = schema.id;
   });
@@ -33,7 +35,7 @@ describe("query.test.ts", () => {
       .addQuery(c, {
         _id: query.id,
         name: query.name,
-        schema: query.schema,
+        collection: query.schema,
         variables: query.variables,
         pipeline: query.pipeline,
       })
@@ -56,8 +58,8 @@ describe("query.test.ts", () => {
       .expectSuccess();
 
     const queryDocument = await bindings.db.primary
-      .collection<SchemaDocument>(CollectionName.Schemas)
-      .findOne({ _id: query.id });
+      .collection<CollectionDocument>(CollectionName.Collections)
+      .findOne({ id: query.id });
 
     expect(queryDocument).toBeNull();
 

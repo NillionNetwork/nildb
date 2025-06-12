@@ -75,7 +75,7 @@ export function grantAccess(
 > {
   return UserRepository.addAclEntry(
     ctx,
-    command.schema,
+    command.collection,
     command.document,
     command.owner,
     command.acl,
@@ -98,7 +98,7 @@ export function revokeAccess(
 > {
   return UserRepository.removeAclEntry(
     ctx,
-    command.schema,
+    command.collection,
     command.document,
     command.grantee,
     command.owner,

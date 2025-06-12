@@ -30,7 +30,7 @@ const ProfileDto = z.object({
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
   name: z.string(),
-  schemas: z.array(z.string().uuid()),
+  collections: z.array(z.string().uuid()),
   queries: z.array(z.string().uuid()),
 });
 

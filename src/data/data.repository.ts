@@ -12,6 +12,7 @@ import {
   type UpdateFilter,
 } from "mongodb/lib/beta";
 import type { JsonObject } from "type-fest";
+import type { CollectionDocument } from "#/collections/collections.types";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -29,7 +30,6 @@ import {
 import type { Did, UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
-import type { SchemaDocument } from "#/schemas/schemas.types";
 import type { Acl } from "#/users/users.types";
 import type {
   CreateFailure,
@@ -139,7 +139,7 @@ export function flushCollection(
 
 export function insertOwnedData(
   ctx: AppBindings,
-  schema: SchemaDocument,
+  schema: CollectionDocument,
   data: PartialDataDocumentDto[],
   owner: Did,
   acl: Acl[],
@@ -165,7 +165,7 @@ export function insertOwnedData(
               _updated: now,
               _owner: owner,
               _perms: acl,
-              documentType: schema.documentType,
+              documentType: schema.type,
             }));
           batches.push(batch);
         }
@@ -213,7 +213,7 @@ export function insertOwnedData(
 }
 export function insertStandardData(
   ctx: AppBindings,
-  schema: SchemaDocument,
+  schema: CollectionDocument,
   data: PartialDataDocumentDto[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
@@ -235,7 +235,7 @@ export function insertStandardData(
               _id: new UUID(partial._id),
               _created: now,
               _updated: now,
-              documentType: schema.documentType,
+              documentType: schema.type,
             }));
           batches.push(batch);
         }

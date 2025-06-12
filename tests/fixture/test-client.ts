@@ -43,11 +43,12 @@ import {
   type QueryJobRequest,
 } from "#/queries/queries.dto";
 import {
-  type AddSchemaRequest,
-  type DeleteSchemaRequest,
-  ListSchemasResponse,
-  ReadSchemaMetadataResponse,
-} from "#/schemas/schemas.dto";
+  type CreateQueryRequest,
+  GetQueriesResponse,
+  GetQueryJobResponse,
+  type RunQueryRequest,
+  RunQueryResultResponse,
+} from "#/queries/queries.dto";
 import {
   GetAboutNodeResponse,
   GetLogLevelResponse,
@@ -505,7 +506,7 @@ export class BuilderTestClient extends BaseTestClient {
   addSchema(c: FixtureContext, body: AddSchemaRequest): ResponseHandler {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.schemas.root, { method: "POST", body }),
+      () => this.request(PathsV1.collections.root, { method: "POST", body }),
       StatusCodes.CREATED,
     );
   }
@@ -519,9 +520,9 @@ export class BuilderTestClient extends BaseTestClient {
   listSchemas(c: FixtureContext): ResponseHandler<ListSchemasResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.schemas.root),
+      () => this.request(PathsV1.collections.root),
       StatusCodes.OK,
-      ListSchemasResponse,
+      ListCollectionsResponse,
     );
   }
 
@@ -555,7 +556,7 @@ export class BuilderTestClient extends BaseTestClient {
       c,
       () => this.request(PathsV1.schemas.byIdMeta.replace(":id", id)),
       StatusCodes.OK,
-      ReadSchemaMetadataResponse,
+      ReadCollectionMetadataResponse,
     );
   }
 

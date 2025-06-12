@@ -1,5 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { DeleteResult, UpdateResult, UUID } from "mongodb";
+import * as SchemasRepository from "#/collections/collections.repository";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -10,7 +11,6 @@ import type { DocumentBase } from "#/common/mongo";
 import { Did, Uuid } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
-import * as SchemasRepository from "#/schemas/schemas.repository";
 import * as UserRepository from "#/users/users.repository";
 import * as DataRepository from "./data.repository";
 import type {
@@ -44,8 +44,8 @@ export function createOwnedRecords(
     E.Do,
     E.bind("document", () =>
       SchemasRepository.findOne(ctx, {
-        _id: command.schema,
-        documentType: "owned",
+        id: command.collection,
+        type: "owned",
       }),
     ),
     E.bind("data", ({ document }) =>
@@ -59,7 +59,7 @@ export function createOwnedRecords(
     E.flatMap(({ result, document }) => {
       return UserRepository.upsert(ctx, {
         builder: document.owner,
-        schema: command.schema,
+        collection: command.collection,
         user: command.owner,
         data: result.created.map((id) => Uuid.parse(id)),
         acl: command.acl,
@@ -85,8 +85,8 @@ export function createStandardRecords(
     E.Do,
     E.bind("document", () =>
       SchemasRepository.findOne(ctx, {
-        _id: command.schema,
-        documentType: "standard",
+        id: command.collection,
+        type: "standard",
       }),
     ),
     E.bind("data", ({ document }) =>
@@ -107,7 +107,7 @@ export function updateRecords(
 > {
   return DataRepository.updateMany(
     ctx,
-    command.schema,
+    command.collection,
     command.filter,
     command.update,
   );
@@ -120,7 +120,7 @@ export function readRecords(
   DocumentBase[],
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return DataRepository.findMany(ctx, command.schema, command.filter);
+  return DataRepository.findMany(ctx, command.collection, command.filter);
 }
 
 export function deleteData(
@@ -169,11 +169,11 @@ export function deleteData(
 
   // TODO: only invoke the owned check if its an owned collection
   return pipe(
-    DataRepository.findMany(ctx, command.schema, command.filter),
+    DataRepository.findMany(ctx, command.collection, command.filter),
     E.map((documents) => groupByOwner(documents)),
     E.flatMap((documents) => deleteAllUserDataReferences(documents)),
     E.flatMap(() =>
-      DataRepository.deleteMany(ctx, command.schema, command.filter),
+      DataRepository.deleteMany(ctx, command.collection, command.filter),
     ),
   );
 }
@@ -182,7 +182,7 @@ export function flushCollection(
   ctx: AppBindings,
   command: FlushDataCommand,
 ): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError, never> {
-  return pipe(DataRepository.flushCollection(ctx, command.schema));
+  return pipe(DataRepository.flushCollection(ctx, command.collection));
 }
 
 export function tailData(
@@ -190,6 +190,6 @@ export function tailData(
   command: RecentDataCommand,
 ): E.Effect<DocumentBase[], CollectionNotFoundError | DatabaseError, never> {
   return pipe(
-    DataRepository.tailCollection(ctx, command.schema, command.limit),
+    DataRepository.tailCollection(ctx, command.collection, command.limit),
   );
 }

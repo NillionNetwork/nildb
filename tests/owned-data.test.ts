@@ -15,7 +15,7 @@ describe("data", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection: schema,
     query,
   });
   beforeAll(async (_c) => {});
@@ -33,19 +33,19 @@ describe("data", () => {
 
     const data: Record[] = [
       {
-        _id: createUuidDto(),
+        id: createUuidDto(),
         wallet: "0x1",
         country: "GBR",
         age: 20,
       },
       {
-        _id: createUuidDto(),
+        id: createUuidDto(),
         wallet: "0x2",
         country: "CAN",
         age: 30,
       },
       {
-        _id: createUuidDto(),
+        id: createUuidDto(),
         wallet: "0x3",
         country: "GBR",
         age: 40,
@@ -55,7 +55,7 @@ describe("data", () => {
     const result = await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -88,7 +88,7 @@ describe("data", () => {
     const result = await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -111,13 +111,13 @@ describe("data", () => {
 
     const data: Record[] = [
       {
-        _id: createUuidDto(),
+        id: createUuidDto(),
         wallet: "0x1", // collides expect failure
         country: "GBR",
         age: 30,
       },
       {
-        _id: createUuidDto(),
+        id: createUuidDto(),
         wallet: "0x4", // unique expect success
         country: "GBR",
         age: 30,
@@ -127,7 +127,7 @@ describe("data", () => {
     const result = await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -147,13 +147,13 @@ describe("data", () => {
 
     const data: Record[] = [
       {
-        _id: createUuidDto(),
+        id: createUuidDto(),
         wallet: "0x4",
         country: "GBR",
         age: 30,
       },
       {
-        _id: createUuidDto(),
+        id: createUuidDto(),
         wallet: "0x4",
         country: "GBR",
         age: 30,
@@ -163,7 +163,7 @@ describe("data", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -183,7 +183,7 @@ describe("data", () => {
 
     const data: Record[] = [
       {
-        _id: createUuidDto(),
+        id: createUuidDto(),
         // @ts-expect-error should be string but want to check rejection
         wallet: true,
         country: "GBR",
@@ -194,7 +194,7 @@ describe("data", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -281,7 +281,7 @@ describe("data", () => {
 
     const result = await builder
       .deleteData(c, {
-        schema: schema.id,
+        collection: schema.id,
         filter: { _id: { $in: ids } },
       })
       .expectSuccess();
@@ -333,7 +333,7 @@ describe("data", () => {
 
     const data: Record[] = [
       {
-        _id: createUuidDto(),
+        id: createUuidDto(),
         wallet: "0x4",
         country: "GBR",
         age: 30,
@@ -344,7 +344,7 @@ describe("data", () => {
     await builder
       .uploadOwnedData(c, {
         userId: otherUser.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did),
       })

@@ -4,6 +4,7 @@ import { resolver, validator as zValidator } from "hono-openapi/zod";
 import { StatusCodes } from "http-status-codes";
 import type { UUID } from "mongodb";
 import type { BuilderDocument } from "#/builders/builders.types";
+import { CollectionsDataMapper } from "#/collections/collections.mapper";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import {
@@ -18,40 +19,39 @@ import {
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
 } from "#/middleware/capability.middleware";
-import { SchemaDataMapper } from "#/schemas/schemas.mapper";
 import {
-  CreateSchemaIndexRequest,
-  CreateSchemaRequest,
-  CreateSchemaResponse,
-  DeleteSchemaRequestParams,
-  DeleteSchemaResponse,
-  DropSchemaIndexParams,
-  DropSchemaIndexResponse,
-  ListSchemasResponse,
-  ReadSchemaMetadataRequestParams,
-  ReadSchemaMetadataResponse,
-} from "./schemas.dto";
-import * as SchemasService from "./schemas.services";
+  CreateCollectionIndexRequest,
+  CreateCollectionRequest,
+  CreateCollectionResponse,
+  DeleteCollectionRequestParams,
+  DeleteCollectionResponse,
+  DropCollectionIndexParams,
+  DropCollectionIndexResponse,
+  ListCollectionsResponse,
+  ReadCollectionMetadataRequestParams,
+  ReadCollectionMetadataResponse,
+} from "./collections.dto";
+import * as CollectionsService from "./collections.services";
 
 /**
- * Handle GET /v1/schemas
+ * Handle GET /v1/collections
  */
-export function readSchemas(options: ControllerOptions): void {
+export function readCollections(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.root;
+  const path = PathsV1.collections.root;
 
   app.get(
     path,
     describeRoute({
-      tags: ["Schemas"],
+      tags: ["Collections"],
       security: [{ bearerAuth: [] }],
-      summary: "Lists all of the builder's schemas",
+      summary: "Lists all of the builder's collections",
       responses: {
         200: {
           description: "OK",
           content: {
             "application/json": {
-              schema: resolver(ListSchemasResponse),
+              schema: resolver(ListCollectionsResponse),
             },
           },
         },
@@ -68,11 +68,13 @@ export function readSchemas(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
 
-      // TODO: include schema metadata with response
+      // TODO: include collection metadata with response
       return pipe(
-        SchemasService.getBuilderSchemas(c.env, builder),
-        E.map((schemas) => SchemaDataMapper.toListSchemasResponse(schemas)),
-        E.map((response) => c.json<ListSchemasResponse>(response)),
+        CollectionsService.getBuilderCollections(c.env, builder),
+        E.map((schemas) =>
+          CollectionsDataMapper.toListCollectionsResponse(schemas),
+        ),
+        E.map((response) => c.json<ListCollectionsResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -81,16 +83,16 @@ export function readSchemas(options: ControllerOptions): void {
 }
 
 /**
- * Handle POST /v1/schemas
+ * Handle POST /v1/collections
  */
-export function createSchema(options: ControllerOptions): void {
+export function createCollection(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.root;
+  const path = PathsV1.collections.root;
 
   app.post(
     path,
     describeRoute({
-      tags: ["Schemas"],
+      tags: ["Collections"],
       security: [{ bearerAuth: [] }],
       summary: "Create new schema-validated data collection",
       responses: {
@@ -99,10 +101,10 @@ export function createSchema(options: ControllerOptions): void {
         500: OpenApiSpecCommonErrorResponses["500"],
       },
     }),
-    zValidator("json", CreateSchemaRequest),
+    zValidator("json", CreateCollectionRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: CreateSchemaRequest }>({
+    enforceCapability<{ json: CreateCollectionRequest }>({
       path,
       cmd: NucCmd.nil.db.schemas,
       validate: (_c, _token) => true,
@@ -110,14 +112,14 @@ export function createSchema(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = SchemaDataMapper.toCreateSchemaCommand(
+      const command = CollectionsDataMapper.toCreateCollectionCommand(
         payload,
         builder._id,
       );
 
       return pipe(
-        SchemasService.addSchema(c.env, command),
-        E.map(() => CreateSchemaResponse),
+        CollectionsService.addCollection(c.env, command),
+        E.map(() => CreateCollectionResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -126,16 +128,16 @@ export function createSchema(options: ControllerOptions): void {
 }
 
 /**
- * Handle DELETE /v1/schemas/:id
+ * Handle DELETE /v1/collections/:id
  */
-export function deleteSchemaById(options: ControllerOptions): void {
+export function deleteCollectionById(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.byId;
+  const path = PathsV1.collections.byId;
 
   app.delete(
     path,
     describeRoute({
-      tags: ["Schemas"],
+      tags: ["Collections"],
       security: [{ bearerAuth: [] }],
       summary: "Deletes a collection and all of its data",
       responses: {
@@ -145,7 +147,7 @@ export function deleteSchemaById(options: ControllerOptions): void {
         500: OpenApiSpecCommonErrorResponses["500"],
       },
     }),
-    zValidator("param", DeleteSchemaRequestParams),
+    zValidator("param", DeleteCollectionRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: { id: UUID } }>({
@@ -156,12 +158,12 @@ export function deleteSchemaById(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const { id } = c.req.valid("param");
-      const command = SchemaDataMapper.toDeleteSchemaCommand({ id });
+      const command = CollectionsDataMapper.toDeleteCollectionCommand({ id });
 
       return pipe(
         enforceSchemaOwnership(builder, command.id),
-        E.flatMap(() => SchemasService.deleteSchema(c.env, command)),
-        E.map(() => DeleteSchemaResponse),
+        E.flatMap(() => CollectionsService.deleteCollection(c.env, command)),
+        E.map(() => DeleteCollectionResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -170,31 +172,31 @@ export function deleteSchemaById(options: ControllerOptions): void {
 }
 
 /**
- * Handle GET /v1/schemas/:id
+ * Handle GET /v1/collections/:id
  */
-export function readSchemaById(options: ControllerOptions): void {
+export function readCollectionById(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.byId;
+  const path = PathsV1.collections.byId;
 
   app.get(
     path,
     describeRoute({
-      tags: ["Schemas"],
+      tags: ["Collections"],
       security: [{ bearerAuth: [] }],
-      summary: "Retrieve a schema's information",
+      summary: "Retrieve collection information",
       responses: {
         200: {
           description: "OK",
           content: {
             "application/json": {
-              schema: resolver(ReadSchemaMetadataResponse),
+              schema: resolver(ReadCollectionMetadataResponse),
             },
           },
         },
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    zValidator("param", ReadSchemaMetadataRequestParams),
+    zValidator("param", ReadCollectionMetadataRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: { id: UUID } }>({
@@ -210,9 +212,13 @@ export function readSchemaById(options: ControllerOptions): void {
 
       return pipe(
         enforceSchemaOwnership(builder, payload.id),
-        E.flatMap(() => SchemasService.getSchemaMetadata(c.env, payload.id)),
-        E.map((metadata) => SchemaDataMapper.toReadMetadataResponse(metadata)),
-        E.map((response) => c.json<ReadSchemaMetadataResponse>(response)),
+        E.flatMap(() =>
+          CollectionsService.getCollectionMetadata(c.env, payload.id),
+        ),
+        E.map((metadata) =>
+          CollectionsDataMapper.toReadMetadataResponse(metadata),
+        ),
+        E.map((response) => c.json<ReadCollectionMetadataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -221,16 +227,16 @@ export function readSchemaById(options: ControllerOptions): void {
 }
 
 /**
- * Handle POST /v1/schemas/:id/indexes
+ * Handle POST /v1/collections/:id/indexes
  */
-export function createIndex(options: ControllerOptions): void {
+export function createCollectionIndex(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.indexesById;
+  const path = PathsV1.collections.indexesById;
 
   app.post(
     path,
     describeRoute({
-      tags: ["Schemas"],
+      tags: ["Collections"],
       security: [{ bearerAuth: [] }],
       summary: "Create a collection index",
       responses: {
@@ -240,10 +246,13 @@ export function createIndex(options: ControllerOptions): void {
         500: OpenApiSpecCommonErrorResponses["500"],
       },
     }),
-    zValidator("json", CreateSchemaIndexRequest),
+    zValidator("json", CreateCollectionIndexRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: CreateSchemaIndexRequest; param: { id: UUID } }>({
+    enforceCapability<{
+      json: CreateCollectionIndexRequest;
+      param: { id: UUID };
+    }>({
       path,
       cmd: NucCmd.nil.db.schemas,
 
@@ -252,11 +261,11 @@ export function createIndex(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = SchemaDataMapper.toCreateIndexCommand(payload);
+      const command = CollectionsDataMapper.toCreateIndexCommand(payload);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.schema),
-        E.flatMap(() => SchemasService.createIndex(c.env, command)),
+        enforceSchemaOwnership(builder, command.collection),
+        E.flatMap(() => CollectionsService.createIndex(c.env, command)),
         E.map(() => new Response(null, { status: StatusCodes.CREATED })),
         handleTaggedErrors(c),
         E.runPromise,
@@ -266,20 +275,18 @@ export function createIndex(options: ControllerOptions): void {
 }
 
 /**
- * Handle DELETE /v1/schemas/:id/indexes/:name
+ * Handle DELETE /v1/collections/:id/indexes/:name
  */
-export function dropIndex(options: ControllerOptions): void {
+export function dropCollectionIndex(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.indexesByNameById;
+  const path = PathsV1.collections.indexesByNameById;
 
   app.delete(
     path,
     describeRoute({
-      tags: ["Schemas"],
+      tags: ["Collections"],
       security: [{ bearerAuth: [] }],
-      summary: "Delete an index by name",
-      description:
-        "Removes a database index from the schema collection. This may impact query performance but does not affect stored data. Only the builder who created the schema can drop indexes. Requires authentication with builder capabilities.",
+      summary: "Delete an collection index by it's name",
       responses: {
         204: OpenApiSpecEmptySuccessResponses["204"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -287,10 +294,10 @@ export function dropIndex(options: ControllerOptions): void {
         500: OpenApiSpecCommonErrorResponses["500"],
       },
     }),
-    zValidator("param", DropSchemaIndexParams),
+    zValidator("param", DropCollectionIndexParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: DropSchemaIndexParams }>({
+    enforceCapability<{ param: DropCollectionIndexParams }>({
       path,
       cmd: NucCmd.nil.db.schemas,
       validate: (_c, _token) => true,
@@ -298,12 +305,12 @@ export function dropIndex(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const { id, name } = c.req.valid("param");
-      const command = SchemaDataMapper.toDropIndexCommand(name, id);
+      const command = CollectionsDataMapper.toDropIndexCommand(name, id);
 
       return pipe(
         enforceSchemaOwnership(builder, id),
-        E.flatMap(() => SchemasService.dropIndex(c.env, command)),
-        E.map(() => DropSchemaIndexResponse),
+        E.flatMap(() => CollectionsService.dropIndex(c.env, command)),
+        E.map(() => DropCollectionIndexResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );

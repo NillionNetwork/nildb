@@ -13,7 +13,7 @@ describe("delete by filter data", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection: schema,
     query,
   });
 
@@ -28,9 +28,9 @@ describe("delete by filter data", () => {
   }));
 
   beforeAll(async (c) => {
-    data.push({ _id: createUuidDto(), name: "foo" });
-    data.push({ _id: createUuidDto(), name: "bar" });
-    data.push({ _id: createUuidDto(), name: "bar" });
+    data.push({ id: createUuidDto(), name: "foo" });
+    data.push({ id: createUuidDto(), name: "bar" });
+    data.push({ id: createUuidDto(), name: "bar" });
 
     const shuffledData = [...data].sort(() => Math.random() - 0.5);
 
@@ -39,7 +39,7 @@ describe("delete by filter data", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data: shuffledData,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -57,7 +57,7 @@ describe("delete by filter data", () => {
 
     await builder
       .deleteData(c, {
-        schema: schema.id,
+        collection: schema.id,
         filter: {},
       })
       .expectFailure(
@@ -72,7 +72,7 @@ describe("delete by filter data", () => {
 
     const result = await builder
       .deleteData(c, {
-        schema: schema.id,
+        collection: schema.id,
         filter: { name: "foo" },
       })
       .expectSuccess();
@@ -86,7 +86,7 @@ describe("delete by filter data", () => {
 
     const result = await builder
       .deleteData(c, {
-        schema: schema.id,
+        collection: schema.id,
         filter: { name: "bar" },
       })
       .expectSuccess();

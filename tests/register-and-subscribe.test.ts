@@ -88,7 +88,7 @@ describe("bootstrap.test.ts", () => {
     expect,
   }) => {
     c.expect = expect;
-    const response = await c.app.request(PathsV1.schemas.root);
+    const response = await c.app.request(PathsV1.collections.root);
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
@@ -113,7 +113,7 @@ describe("bootstrap.test.ts", () => {
       .subject(Did.fromHex(builder.keypair.publicKey("hex")))
       .build(builder.keypair.privateKey());
 
-    const response = await builder.app.request(PathsV1.schemas.root, {
+    const response = await builder.app.request(PathsV1.collections.root, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${selfSignedToken}`,

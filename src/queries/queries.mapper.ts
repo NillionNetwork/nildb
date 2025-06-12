@@ -18,20 +18,9 @@ import type {
   RunQueryJobDocument,
 } from "./queries.types";
 
-/**
- * Transforms data between HTTP DTOs and domain models.
- *
- * Centralizes all data transformations to maintain clean layer boundaries.
- * Higher layers (controllers) use these functions to convert domain
- * models to DTOs for API responses.
- */
 export const QueriesDataMapper = {
   /**
    * Converts a query document to response DTO.
-   * Serializes dates to ISO strings for JSON compatibility.
-   *
-   * @param document - Query document from repository
-   * @returns Query response DTO
    */
   toQueryDocumentResponse(
     document: QueryDocument,
@@ -50,9 +39,6 @@ export const QueriesDataMapper = {
 
   /**
    * Converts array of query documents to list response DTO.
-   *
-   * @param documents - Array of query documents
-   * @returns List queries response DTO
    */
   toGetQueriesResponse(documents: QueryDocument[]): GetQueriesResponse {
     return {
@@ -62,11 +48,6 @@ export const QueriesDataMapper = {
 
   /**
    * Converts execute query request DTO to domain command.
-   *
-   * Handles string to UUID conversion at the boundary layer.
-   *
-   * @param dto - Execute query request DTO
-   * @returns Execute query domain command
    */
   toRunQueryCommand(dto: RunQueryRequest): RunQueryCommand {
     return {
@@ -77,9 +58,6 @@ export const QueriesDataMapper = {
 
   /**
    * Converts query id to response DTO.
-   *
-   * @param runId - The query run id used to fetch the result
-   * @returns Execute query response DTO
    */
   toRunQueryResponse(runId: UUID): RunQueryResponse {
     return {
@@ -89,11 +67,6 @@ export const QueriesDataMapper = {
 
   /**
    * Converts params to get query run results by id command.
-   *
-   * Handles path parameter to UUID conversion at the boundary layer.
-   *
-   * @param params - Job ID params from path parameter
-   * @returns Get query job domain command
    */
   toGetQueryRunResultByIdCommand(
     params: ByIdRequestParams,
@@ -105,10 +78,6 @@ export const QueriesDataMapper = {
 
   /**
    * Converts a query job document to response DTO.
-   * Serializes dates to ISO strings for JSON compatibility.
-   *
-   * @param document - Query job document from repository
-   * @returns Query job response DTO
    */
   toGetQueryRunResultByResponse(
     document: RunQueryJobDocument,
@@ -128,11 +97,6 @@ export const QueriesDataMapper = {
 
   /**
    * Converts add query request DTO to domain model.
-   * Adds system fields and converts UUIDs.
-   *
-   * @param request - Add query request DTO
-   * @param owner - Query owner DID
-   * @returns Complete query document for repository
    */
   fromCreateQueryRequest(
     request: CreateQueryRequest,
@@ -149,34 +113,23 @@ export const QueriesDataMapper = {
 
   /**
    * Converts add query request DTO to domain command.
-   *
-   * Handles DTO to domain command conversion at the boundary layer.
-   *
-   * @param dto - Add query request DTO
-   * @param owner - Query owner DID
-   * @returns Add query domain command
    */
   toCreateQueryCommand(
-    dto: CreateQueryRequest,
+    body: CreateQueryRequest,
     owner: DidString,
   ): AddQueryCommand {
     return {
-      _id: new UUID(dto._id),
-      name: dto.name,
-      schema: new UUID(dto.schema),
-      variables: dto.variables,
-      pipeline: dto.pipeline,
+      _id: new UUID(body._id),
+      name: body.name,
+      schema: new UUID(body.schema),
+      variables: body.variables,
+      pipeline: body.pipeline,
       owner,
     };
   },
 
   /**
    * Converts delete query request DTO to domain command.
-   *
-   * Handles string to UUID conversion at the boundary layer.
-   *
-   * @param dto - Delete query request DTO
-   * @returns Delete query domain command
    */
   toDeleteQueryCommand(dto: DeleteQueryRequest): DeleteQueryCommand {
     return {
@@ -186,11 +139,6 @@ export const QueriesDataMapper = {
 
   /**
    * Converts query ID params to delete command.
-   *
-   * Handles path parameter to UUID conversion at the boundary layer.
-   *
-   * @param params - Query ID params from path parameter
-   * @returns Delete query domain command
    */
   toDeleteQueryByIdCommand(params: ByIdRequestParams): DeleteQueryCommand {
     return {

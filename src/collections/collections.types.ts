@@ -3,34 +3,29 @@ import type { DocumentBase } from "#/common/mongo";
 import type { Did } from "#/common/types";
 
 /**
- * Schema document type enumeration.
+ * Collection types.
  */
-export type SchemaDocumentType = "standard" | "owned";
+export type CollectionType = "standard" | "owned";
 
 /**
- * Base schema document structure.
+ * Collection document.
  */
-export type SchemaDocumentBase = DocumentBase<UUID>;
-
-/**
- * Complete schema document structure.
- */
-export type SchemaDocument = SchemaDocumentBase & {
-  /** DID of the builder that owns this schema */
+export type CollectionDocument = DocumentBase & {
+  /** The collection owner's Did */
   owner: Did;
-  /** Human-readable name for the schema */
+  /** Human-readable name for the collection */
   name: string;
   /** JSON Schema definition for data validation */
   schema: Record<string, unknown>;
-  /** Access control type for data stored under this schema */
-  documentType: SchemaDocumentType;
+  /** Access control type for documents stored in this collection */
+  type: CollectionType;
 };
 
 /**
- * Schema collection metadata and statistics.
+ * Collection metadata and statistics.
  */
-export type SchemaMetadata = {
-  /** Unique identifier of the schema */
+export type CollectionMetadata = {
+  /** The collection's unique identifier */
   id: UUID;
   /** Number of documents in the collection */
   count: number;
@@ -59,35 +54,35 @@ export type CollectionIndex = {
 };
 
 /**
- * Command for adding a new schema.
+ * Command for creating a new collection.
  */
-export type CreateSchemaCommand = {
-  /** Unique identifier for the schema */
-  _id: UUID;
-  /** Human-readable name for the schema */
+export type CreateCollectionCommand = {
+  /** Target collection id */
+  id: UUID;
+  /** Access control type for data stored under this collection */
+  type: CollectionType;
+  /** DID of the builder that owns this collection */
+  owner: Did;
+  /** Human-readable name for the collection */
   name: string;
   /** JSON Schema definition for data validation */
   schema: Record<string, unknown>;
-  /** Access control type for data stored under this schema */
-  documentType: SchemaDocumentType;
-  /** DID of the builder that owns this schema */
-  owner: Did;
 };
 
 /**
- * Command for deleting a schema.
+ * Command for deleting a collection.
  */
-export type DeleteSchemaCommand = {
-  /** Unique identifier of the schema to delete */
+export type DeleteCollectionCommand = {
+  /** The collection's id to delete */
   id: UUID;
 };
 
 /**
- * Command for creating an index on a schema collection.
+ * Command for creating an index on a collection.
  */
 export type CreateIndexCommand = {
-  /** Schema identifier for the collection */
-  schema: UUID;
+  /** Target collection id */
+  collection: UUID;
   /** Index name for identification */
   name: string;
   /** Field-to-direction mapping for index keys */
@@ -99,11 +94,11 @@ export type CreateIndexCommand = {
 };
 
 /**
- * Command for dropping an index from a schema collection.
+ * Command for dropping an index from a collection.
  */
 export type DropIndexCommand = {
-  /** Schema identifier for the collection */
-  schema: UUID;
+  /** Target collection id */
+  collection: UUID;
   /** Index name to drop */
   name: string;
 };

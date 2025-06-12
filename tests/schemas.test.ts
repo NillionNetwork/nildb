@@ -1,9 +1,9 @@
 import { UUID } from "mongodb";
 import { describe } from "vitest";
+import type { CollectionDocument } from "#/collections/collections.types";
 import { CollectionName } from "#/common/mongo";
 import { createUuidDto } from "#/common/types";
-import type { SchemaDocument } from "#/schemas/schemas.types";
-import { Permissions } from "#/users/users.types";
+import { Acl } from "#/users/users.types";
 import schemaJson from "./data/wallet.schema.json";
 import {
   assertDefined,
@@ -35,7 +35,7 @@ describe("schemas.test.ts", () => {
       .addSchema(c, {
         _id,
         name: schema.name,
-        schema: schema.schema,
+        collection: schema.schema,
         documentType: schema.documentType,
       })
       .expectSuccess();
@@ -56,7 +56,7 @@ describe("schemas.test.ts", () => {
     const result = await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data: [
           {
             _id: createUuidDto(),
@@ -109,13 +109,13 @@ describe("schemas.test.ts", () => {
     await builder.deleteSchema(c, { id }).expectSuccess();
 
     const schemaDocument = await bindings.db.primary
-      .collection<SchemaDocument>(CollectionName.Schemas)
-      .findOne({ _id: id });
+      .collection<CollectionDocument>(CollectionName.Collections)
+      .findOne({ id: id });
 
     expect(schemaDocument).toBeNull();
 
     const builderDocument = await expectBuilder(c, builder.did);
-    expect(builderDocument.schemas).toHaveLength(0);
+    expect(builderDocument.collections).toHaveLength(0);
 
     await assertDocumentCount(c, id, 0);
   });

@@ -13,7 +13,7 @@ describe("update data", () => {
   const schema = schemaJson as unknown as SchemaFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection: schema,
     query,
   });
   type Record = {
@@ -32,7 +32,7 @@ describe("update data", () => {
     await builder
       .uploadOwnedData(c, {
         userId: user.did,
-        schema: schema.id,
+        collection: schema.id,
         data,
         permissions: new Permissions(builder.did, {
           read: true,
@@ -54,7 +54,7 @@ describe("update data", () => {
     const update = { $set: { name: "foo" } };
     const response = await builder
       .updateData(c, {
-        schema: schema.id,
+        collection: schema.id,
         filter,
         update,
       })

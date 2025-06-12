@@ -25,29 +25,31 @@ export const AclDto = z.object({
 export type AclDto = z.infer<typeof AclDto>;
 
 /**
- * User profile data schema.
+ * User profile data shape.
  */
 const UserProfileData = z.object({
   _id: Did,
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
   log: z.array(
-    z.object({
-      schema: z.string().uuid(),
-      op: z.string(),
+    z
+      .object({
+        col: z.string().uuid(),
+        op: z.string(),
+      })
       // TODO: capture acl type
-    }),
+      .passthrough(),
   ),
   data: z.array(
     z.object({
-      schema: z.string().uuid(),
+      collection: z.string().uuid(),
       id: z.string().uuid(),
     }),
   ),
 });
 
 /**
- * Response schema for getting user profile.
+ * Response for getting user profile.
  */
 export const ReadProfileResponse = ApiSuccessResponse(UserProfileData).openapi({
   ref: "ReadProfileResponse",
@@ -59,7 +61,7 @@ export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
  */
 export const ReadDataRequestParams = z
   .object({
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     document: z.string().uuid(),
   })
   .openapi({
@@ -94,7 +96,7 @@ export type ReadDataResponse = z.infer<typeof ReadDataResponse>;
  */
 const DataDocumentReference = z.object({
   builder: Did,
-  schema: z.string().uuid(),
+  collection: z.string().uuid(),
   document: z.string().uuid(),
 });
 
@@ -104,23 +106,27 @@ const DataDocumentReference = z.object({
 export const ListDataReferencesResponse = ApiSuccessResponse(
   z.array(DataDocumentReference),
 ).openapi({ ref: "ListDataReferencesResponse" });
+
+/**
+ *
+ */
 export type ListDataReferencesResponse = z.infer<
   typeof ListDataReferencesResponse
 >;
 
 /**
- * Request schema for reading permissions on a data document.
+ * Request for reading permissions on a data document.
  */
 export const ReadDataAclRequestParams = z
   .object({
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     document: z.string().uuid(),
   })
   .openapi({ ref: "ReadDataAclRequestParams" });
 export type ReadDataAclRequestParams = z.infer<typeof ReadDataAclRequestParams>;
 
 /**
- * Response schema for reading data access.
+ * Response for reading data access.
  */
 export const ReadDataAccessResponse = ApiSuccessResponse(
   z.array(AclDto),
@@ -134,7 +140,7 @@ export type ReadDataAccessResponse = z.infer<typeof ReadDataAccessResponse>;
  */
 export const GrantAccessToDataRequest = z
   .object({
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     document: z.string().uuid(),
     acl: AclDto,
   })
@@ -155,7 +161,7 @@ export type GrantAccessToDataResponse = typeof GrantAccessToDataResponse;
 export const RevokeAccessToDataRequest = z
   .object({
     builder: Did,
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     document: z.string().uuid(),
   })
   .openapi({ ref: "RevokeAccessToDataRequest" });
@@ -170,7 +176,7 @@ export type RevokeAccessToDataResponse = typeof RevokeAccessToDataResponse;
 
 export const DeleteDocumentRequestParams = z
   .object({
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     document: z.string().uuid(),
   })
   .openapi({ ref: "DeleteDocumentRequestParams" });
