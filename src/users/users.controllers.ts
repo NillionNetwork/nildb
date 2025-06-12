@@ -60,7 +60,7 @@ export function readProfile(options: ControllerOptions): void {
     loadSubjectAndVerifyAsUser(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.user,
+      cmd: NucCmd.nil.db.users.read,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -106,7 +106,7 @@ export function listDataReferences(options: ControllerOptions): void {
     loadSubjectAndVerifyAsUser(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.user,
+      cmd: NucCmd.nil.db.users.read,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -153,7 +153,7 @@ export function readData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsUser(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.user,
+      cmd: NucCmd.nil.db.users.read,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -199,7 +199,7 @@ export function deleteData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsUser(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.user,
+      cmd: NucCmd.nil.db.users.delete,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -246,7 +246,7 @@ export function grantAccess(options: ControllerOptions): void {
     loadSubjectAndVerifyAsUser(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.user,
+      cmd: NucCmd.nil.db.users.update,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -289,7 +289,7 @@ export function revokeAccess(options: ControllerOptions): void {
     loadSubjectAndVerifyAsUser(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.user,
+      cmd: NucCmd.nil.db.users.update,
       validate: (_c, _token) => true,
     }),
     async (c) => {

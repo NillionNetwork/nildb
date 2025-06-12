@@ -62,7 +62,7 @@ export function readCollections(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.schemas,
+      cmd: NucCmd.nil.db.collections.read,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -106,7 +106,7 @@ export function createCollection(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: CreateCollectionRequest }>({
       path,
-      cmd: NucCmd.nil.db.schemas,
+      cmd: NucCmd.nil.db.collections.create,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -152,7 +152,7 @@ export function deleteCollectionById(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: { id: UUID } }>({
       path,
-      cmd: NucCmd.nil.db.schemas,
+      cmd: NucCmd.nil.db.collections.delete,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -201,7 +201,7 @@ export function readCollectionById(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: { id: UUID } }>({
       path,
-      cmd: NucCmd.nil.db.schemas,
+      cmd: NucCmd.nil.db.collections.read,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -254,7 +254,7 @@ export function createCollectionIndex(options: ControllerOptions): void {
       param: { id: UUID };
     }>({
       path,
-      cmd: NucCmd.nil.db.schemas,
+      cmd: NucCmd.nil.db.collections.update,
 
       validate: (_c, _token) => true,
     }),
@@ -299,7 +299,7 @@ export function dropCollectionIndex(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: DropCollectionIndexParams }>({
       path,
-      cmd: NucCmd.nil.db.schemas,
+      cmd: NucCmd.nil.db.collections.update,
       validate: (_c, _token) => true,
     }),
     async (c) => {

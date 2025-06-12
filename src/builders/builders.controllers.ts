@@ -87,7 +87,7 @@ export function readProfile(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.builders,
+      cmd: NucCmd.nil.db.builders.read,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -126,7 +126,7 @@ export function deleteBuilder(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
       path,
-      cmd: NucCmd.nil.db.builders,
+      cmd: NucCmd.nil.db.builders.delete,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -165,7 +165,7 @@ export function updateProfile(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: UpdateProfileRequest }>({
       path,
-      cmd: NucCmd.nil.db.builders,
+      cmd: NucCmd.nil.db.builders.update,
       validate: (_c, _token) => true,
     }),
     async (c) => {

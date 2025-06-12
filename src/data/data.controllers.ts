@@ -62,7 +62,7 @@ export function deleteData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: DeleteDataRequest }>({
       path,
-      cmd: NucCmd.nil.db.data,
+      cmd: NucCmd.nil.db.data.delete,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -109,7 +109,7 @@ export function flushData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: DataSchemaByIdRequestParams }>({
       path,
-      cmd: NucCmd.nil.db.data,
+      cmd: NucCmd.nil.db.data.delete,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -160,7 +160,7 @@ export function findData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: FindDataRequest }>({
       path,
-      cmd: NucCmd.nil.db.data,
+      cmd: NucCmd.nil.db.data.read,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -212,7 +212,7 @@ export function tailData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: { id: string } }>({
       path,
-      cmd: NucCmd.nil.db.data,
+      cmd: NucCmd.nil.db.data.read,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -265,7 +265,7 @@ export function updateData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: UpdateDataRequest }>({
       path,
-      cmd: NucCmd.nil.db.data,
+      cmd: NucCmd.nil.db.data.update,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -316,7 +316,7 @@ export function createOwnedData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: CreateOwnedDataRequest }>({
       path,
-      cmd: NucCmd.nil.db.data,
+      cmd: NucCmd.nil.db.data.create,
       validate: (_c, _token) => true,
     }),
     async (c) => {
@@ -368,7 +368,7 @@ export function createStandardData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: CreateStandardDataRequest }>({
       path,
-      cmd: NucCmd.nil.db.data,
+      cmd: NucCmd.nil.db.data.create,
       validate: (_c, _token) => true,
     }),
     async (c) => {
