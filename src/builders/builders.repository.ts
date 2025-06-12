@@ -192,7 +192,7 @@ export function deleteOneById(
 export function update(
   ctx: AppBindings,
   _id: Did,
-  updates: Partial<{ _id: Did; name: string }>,
+  updates: Partial<{ _id: Did; _updated: Date; name: string }>,
 ): E.Effect<
   UpdateResult,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
@@ -203,6 +203,7 @@ export function update(
   const update: StrictUpdateFilter<BuilderDocument> = {
     $set: {
       ...(updates._id && { _id: updates._id }),
+      ...(updates._updated && { _updated: updates._updated }),
       ...(updates.name && { name: updates.name }),
     },
   };

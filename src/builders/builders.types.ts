@@ -3,9 +3,6 @@ import type { Did } from "#/common/types";
 
 /**
  * Represents a builder document in the database.
- *
- * This type serves as the common data model across all layers,
- * maintaining consistency between service and repository operations.
  */
 export type BuilderDocument = {
   _id: Did;
@@ -18,34 +15,25 @@ export type BuilderDocument = {
 
 /**
  * Domain command types for builder operations.
- *
- * These types represent business operations that can be performed
- * on builders, converted from DTOs at the boundary layer.
  */
 
 /**
  * Command for creating a new builder.
- *
- * Encapsulates the data needed to register a new builder
- * in the system.
  */
 export type CreateBuilderCommand = {
-  /** Decentralized identifier for the builder */
+  /** The builder's did */
   did: Did;
-  /** Display name for the builder */
+  /** The builder's display name */
   name: string;
 };
 
 /**
  * Command for updating an existing builder profile.
- *
- * Contains the builder identifier and the fields to update.
- * Only provided fields will be updated.
  */
 export type UpdateProfileCommand = {
-  /** Builder identifier to update */
-  builderId: Did;
-  /** Profile updates to apply (only provided fields are updated) */
+  /** The builder's identifier */
+  builder: Did;
+  /** Updates to apply  */
   updates: Partial<{
     /** Timestamp for when this update was made **/
     _updated: Date;

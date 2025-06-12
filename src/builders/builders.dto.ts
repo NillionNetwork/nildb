@@ -1,20 +1,14 @@
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { DidSchema } from "#/common/types";
+import { Did } from "#/common/types";
 
 /**
- * Request schema for registering a new organisation builder.
- *
- * @example
- * {
- *   "did": "did:nil:037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b",
- *   "name": "My Organisation"
- * }
+ * Request schema for registering a new builder.
  */
 export const RegisterBuilderRequest = z
   .object({
-    did: DidSchema,
+    did: Did,
     name: z.string().min(1).max(255),
   })
   .openapi({ ref: "RegisterBuilderRequest" });
@@ -22,9 +16,6 @@ export type RegisterBuilderRequest = z.infer<typeof RegisterBuilderRequest>;
 
 /**
  * Response for successful builder registration.
- *
- * Returns HTTP 201 Created with empty body to indicate
- * the resource was created successfully.
  */
 export const RegisterBuilderResponse = new Response(null, {
   status: StatusCodes.CREATED,
@@ -32,13 +23,10 @@ export const RegisterBuilderResponse = new Response(null, {
 export type RegisterBuilderResponse = typeof RegisterBuilderResponse;
 
 /**
- * Profile schema for API responses.
- *
- * Represents an organisation's builder data with dates
- * serialised as ISO strings for JSON compatibility.
+ * Builder profile dto.
  */
-const Profile = z.object({
-  _id: DidSchema,
+const ProfileDto = z.object({
+  _id: Did,
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
   name: z.string(),
@@ -52,10 +40,10 @@ const Profile = z.object({
  * Wraps the profile data in a standard success response
  * format with a `data` property.
  */
-export const GetProfileResponse = ApiSuccessResponse(Profile).openapi({
+export const ReadProfileResponse = ApiSuccessResponse(ProfileDto).openapi({
   ref: "GetProfileResponse",
 });
-export type GetProfileResponse = z.infer<typeof GetProfileResponse>;
+export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
 
 /**
  * Response for successful builder deletion.

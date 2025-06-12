@@ -1,7 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
-import { ReasonPhrases } from "http-status-codes";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import {
@@ -17,7 +16,7 @@ import {
 } from "#/middleware/capability.middleware";
 import {
   DeleteBuilderResponse,
-  GetProfileResponse,
+  ReadProfileResponse,
   RegisterBuilderRequest,
   RegisterBuilderResponse,
   UpdateProfileRequest,
@@ -27,12 +26,7 @@ import { BuilderDataMapper } from "./builders.mapper";
 import * as BuilderService from "./builders.services";
 
 /**
- * Registers the builder registration endpoint.
- *
- * Accepts a DID and name, validates the request, converts DTO to domain model,
- * and delegates to the service layer for builder creation.
- *
- * @param options - Controller configuration including app instance
+ * Handle POST /v1/builders/register
  */
 export function register(options: ControllerOptions): void {
   const { app } = options;
@@ -42,8 +36,7 @@ export function register(options: ControllerOptions): void {
     path,
     describeRoute({
       tags: ["Builders"],
-      summary: "Register a new builder",
-      description: "Creates a new builder with the provided DID and name.",
+      summary: "Register a builder",
       responses: {
         201: OpenApiSpecEmptySuccessResponses["201"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -66,14 +59,9 @@ export function register(options: ControllerOptions): void {
 }
 
 /**
- * Registers the profile retrieval endpoint.
- *
- * Authenticates the user, validates their capability, retrieves builder data
- * from the service layer, and converts the domain model to a DTO response.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle GET /v1/builders/me
  */
-export function getProfile(options: ControllerOptions): void {
+export function readProfile(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.builders.me;
 
@@ -82,14 +70,13 @@ export function getProfile(options: ControllerOptions): void {
     describeRoute({
       tags: ["Builders"],
       security: [{ bearerAuth: [] }],
-      summary: "Get your profile",
-      description: "Retrieves the profile for the authenticated user.",
+      summary: "Retrieve the builder's profile",
       responses: {
         200: {
-          description: "Profile retrieved",
+          description: "OK",
           content: {
             "application/json": {
-              schema: resolver(GetProfileResponse),
+              schema: resolver(ReadProfileResponse),
             },
           },
         },
@@ -105,10 +92,11 @@ export function getProfile(options: ControllerOptions): void {
     }),
     async (c) => {
       const builder = c.get("builder");
+
       return pipe(
         BuilderService.find(c.env, builder._id),
-        E.map((builder) => BuilderDataMapper.toGetProfileResponse(builder)),
-        E.map((response) => c.json<GetProfileResponse>(response)),
+        E.map((builder) => BuilderDataMapper.toReadProfileResponse(builder)),
+        E.map((response) => c.json<ReadProfileResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -117,14 +105,9 @@ export function getProfile(options: ControllerOptions): void {
 }
 
 /**
- * Registers the builder deletion endpoint.
- *
- * Authenticates the user, validates their capability, and delegates
- * to the service layer for permanent builder removal.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle DELETE /v1/builders/me
  */
-export function _delete(options: ControllerOptions): void {
+export function deleteBuilder(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.builders.me;
 
@@ -133,9 +116,7 @@ export function _delete(options: ControllerOptions): void {
     describeRoute({
       tags: ["Builders"],
       security: [{ bearerAuth: [] }],
-      summary: "Delete your builder",
-      description:
-        "Permanently deletes the authenticated user's builder. This action cannot be undone.",
+      summary: "Permanently deletes the builder's account and all data.",
       responses: {
         204: OpenApiSpecEmptySuccessResponses["204"],
         ...OpenApiSpecCommonErrorResponses,
@@ -162,12 +143,7 @@ export function _delete(options: ControllerOptions): void {
 }
 
 /**
- * Registers the profile update endpoint.
- *
- * Authenticates the user, validates their capability and request,
- * then delegates to the service layer for profile updates.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle POST /v1/builders/me
  */
 export function updateProfile(options: ControllerOptions): void {
   const { app, bindings } = options;
@@ -178,15 +154,10 @@ export function updateProfile(options: ControllerOptions): void {
     describeRoute({
       tags: ["Builders"],
       security: [{ bearerAuth: [] }],
-      summary: "Update your profile",
-      description:
-        "Updates the profile information for the authenticated user.",
+      summary: "Update the builder's profile",
       responses: {
         200: OpenApiSpecEmptySuccessResponses["200"],
         ...OpenApiSpecCommonErrorResponses,
-        501: {
-          description: ReasonPhrases.NOT_IMPLEMENTED,
-        },
       },
     }),
     zValidator("json", UpdateProfileRequest),

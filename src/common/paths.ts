@@ -12,29 +12,30 @@ export type Path = z.infer<typeof PathSchema>;
 
 export const PathsV1 = {
   builders: {
-    register: PathSchema.parse("/v1/register"),
+    register: PathSchema.parse("/v1/builders/register"),
     me: PathSchema.parse("/v1/builders/me"),
   },
   data: {
     root: PathSchema.parse("/v1/data"),
-    flush: PathSchema.parse("/v1/data/flush"),
-    tail: PathSchema.parse("/v1/data/tail"),
-    delete: PathSchema.parse("/v1/data/delete"),
-    read: PathSchema.parse("/v1/data/read"),
+    search: PathSchema.parse("/v1/data/search"),
     update: PathSchema.parse("/v1/data/update"),
-    createOwned: PathSchema.parse("/v1/data/owned/create"),
-    createStandard: PathSchema.parse("/v1/data/standard/create"),
+    delete: PathSchema.parse("/v1/data/delete"),
+    flushById: PathSchema.parse("/v1/data/:id/flush"),
+    tailById: PathSchema.parse("/v1/data/:id/tail"),
+    createOwned: PathSchema.parse("/v1/data/owned"),
+    createStandard: PathSchema.parse("/v1/data/standard"),
   },
   queries: {
     root: PathSchema.parse("/v1/queries"),
-    execute: PathSchema.parse("/v1/queries/execute"),
-    job: PathSchema.parse("/v1/queries/job"),
+    byId: PathSchema.parse("/v1/queries/:id"),
+    run: PathSchema.parse("/v1/queries/run"),
+    runById: PathSchema.parse("/v1/queries/run/:id"),
   },
   schemas: {
     root: PathSchema.parse("/v1/schemas"),
-    byIdMeta: PathSchema.parse("/v1/schemas/:id/meta"),
-    byIdIndexes: PathSchema.parse("/v1/schemas/:id/indexes"),
-    byIdIndexesByName: PathSchema.parse("/v1/schemas/:id/indexes/:name"),
+    byId: PathSchema.parse("/v1/schemas/:id"),
+    indexesById: PathSchema.parse("/v1/schemas/:id/indexes"),
+    indexesByNameById: PathSchema.parse("/v1/schemas/:id/indexes/:name"),
   },
   system: {
     about: PathSchema.parse("/about"),
@@ -46,13 +47,15 @@ export const PathsV1 = {
     logLevel: PathSchema.parse("/v1/system/log-level"),
   },
   users: {
+    me: PathSchema.parse("/v1/users/me"),
     data: {
       root: PathSchema.parse("/v1/users/data"),
-      perms: {
-        read: PathSchema.parse("/v1/users/perms/read"),
-        add: PathSchema.parse("/v1/users/perms/add"),
-        update: PathSchema.parse("/v1/users/perms/update"),
-        delete: PathSchema.parse("/v1/users/perms/delete"),
+      byId: PathSchema.parse("/v1/users/data/:schema/:document"),
+      aclById: PathSchema.parse("/v1/users/data/:schema/:document/acl"),
+      acl: {
+        grant: PathSchema.parse("/v1/users/data/acl/grant"),
+        update: PathSchema.parse("/v1/users/data/acl/update"),
+        revoke: PathSchema.parse("/v1/users/data/acl/revoke"),
       },
     },
   },

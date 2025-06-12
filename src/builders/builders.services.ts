@@ -104,5 +104,5 @@ export function updateProfile(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return BuilderRepository.update(ctx, command.builderId, command.updates);
+  return BuilderRepository.update(ctx, command.builder, command.updates);
 }

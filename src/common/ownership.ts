@@ -46,14 +46,14 @@ export function enforceSchemaOwnership(
 
 export function enforceDataOwnership(
   user: UserDocument,
-  documentId: UUID,
+  document: UUID,
   schema: UUID,
 ): E.Effect<void, ResourceAccessDeniedError> {
   return pipe(
     E.succeed(
       user.data.some(
         (s) =>
-          s.id.toString() === documentId.toString() &&
+          s.document.toString() === document.toString() &&
           s.schema.toString() === schema.toString(),
       ),
     ),
@@ -63,7 +63,7 @@ export function enforceDataOwnership(
         : E.fail(
             new ResourceAccessDeniedError({
               type: "schema",
-              id: documentId.toString(),
+              id: document.toString(),
               user: user._id,
             }),
           );
