@@ -1,218 +1,157 @@
-import { type UpdateResult, UUID } from "mongodb";
-import type { DataDocument } from "#/data/data.repository";
+import { UUID } from "mongodb";
+import { Did } from "#/common/types";
+import type { FindDataCommand, OwnedDocumentBase } from "#/data/data.types";
 import type {
-  AddPermissionsRequest,
-  AddPermissionsResponse,
-  DeletePermissionsRequest,
-  DeletePermissionsResponse,
-  ListUserDataResponse,
-  PermissionsDto,
-  ReadPermissionsRequest,
-  ReadPermissionsResponse,
-  UpdatePermissionsRequest,
-  UpdatePermissionsResponse,
+  DeleteDocumentRequestParams,
+  GrantAccessToDataRequest,
+  ListDataReferencesResponse,
+  ReadDataAccessResponse,
+  ReadDataAclRequestParams,
+  ReadDataRequestParams,
+  ReadDataResponse,
+  ReadProfileResponse,
+  RevokeAccessToDataRequest,
 } from "./users.dto";
-import {
-  type AddPermissionsCommand,
-  type DeletePermissionsCommand,
-  Permissions,
-  type ReadPermissionsCommand,
-  type UpdatePermissionsCommand,
+import type {
+  Acl,
+  DataDocumentReference,
+  DeleteDataCommand,
+  GrantAccessToDataCommand,
+  ReadDataAclCommand,
+  RevokeAccessToDataCommand,
+  UserDocument,
 } from "./users.types";
 
-/**
- * Transforms data between HTTP DTOs and domain models for user operations.
- *
- * Centralizes all data transformations to maintain clean layer boundaries.
- * Higher layers (controllers) use these functions to convert domain
- * models to DTOs for API responses.
- */
 export const UserDataMapper = {
-  /**
-   * Converts MongoDB update result to add permissions response DTO.
-   *
-   * @param result - MongoDB update result
-   * @returns Add permissions response DTO
-   */
-  toAddPermissionsResponse(result: UpdateResult): AddPermissionsResponse {
+  toDeleteDataCommand(
+    user: UserDocument,
+    params: DeleteDocumentRequestParams,
+  ): DeleteDataCommand {
+    return {
+      owner: Did.parse(user._id),
+      schema: new UUID(params.schema),
+      document: new UUID(params.document),
+    };
+  },
+
+  toReadProfileResponse(user: UserDocument): ReadProfileResponse {
     return {
       data: {
-        upserted_id: result.upsertedId ? result.upsertedId.toString() : null,
-        acknowledged: result.acknowledged,
-        matched_count: result.matchedCount,
-        modified_count: result.modifiedCount,
-        upserted_count: result.upsertedCount,
+        _id: user._id,
+        _created: user._created.toISOString(),
+        _updated: user._updated.toISOString(),
+        // TODO: if op = "auth" then acl should be returned
+        log: user.log.map((l) => ({ schema: l.col.toString(), op: l.op })),
+        data: user.data.map((d) => ({
+          schema: d.schema.toString(),
+          id: d.document.toString(),
+        })),
       },
     };
   },
 
   /**
-   * Converts MongoDB update result to update permissions response DTO.
    *
-   * @param result - MongoDB update result
-   * @returns Update permissions response DTO
    */
-  toUpdatePermissionsResponse(result: UpdateResult): UpdatePermissionsResponse {
+  toListDataReferencesResponse(
+    references: DataDocumentReference[],
+  ): ListDataReferencesResponse {
     return {
-      data: {
-        upserted_id: result.upsertedId ? result.upsertedId.toString() : null,
-        acknowledged: result.acknowledged,
-        matched_count: result.matchedCount,
-        modified_count: result.modifiedCount,
-        upserted_count: result.upsertedCount,
-      },
-    };
-  },
-
-  /**
-   * Converts MongoDB update result to delete permissions response DTO.
-   *
-   * @param result - MongoDB update result
-   * @returns Delete permissions response DTO
-   */
-  toDeletePermissionsResponse(result: UpdateResult): DeletePermissionsResponse {
-    return {
-      data: {
-        upserted_id: result.upsertedId ? result.upsertedId.toString() : null,
-        acknowledged: result.acknowledged,
-        matched_count: result.matchedCount,
-        modified_count: result.modifiedCount,
-        upserted_count: result.upsertedCount,
-      },
-    };
-  },
-
-  /**
-   * Converts array of data documents to list user data response DTO.
-   *
-   * Serializes dates to ISO strings and ensures all fields are properly
-   * formatted for API consumption.
-   *
-   * @param documents - Array of data documents owned by the user
-   * @returns List user data response DTO
-   */
-  toListUserDataResponse(documents: DataDocument[]): ListUserDataResponse {
-    return {
-      data: documents.map((doc) => ({
-        _id: doc._id.toString(),
-        _created: doc._created.toISOString(),
-        _updated: doc._updated.toISOString(),
-        _owner: doc._owner,
-        // Include any additional fields from the document
-        ...Object.fromEntries(
-          Object.entries(doc).filter(
-            ([key]) =>
-              ![
-                "_id",
-                "_created",
-                "_updated",
-                "_owner",
-                "_tokens",
-                "_perms",
-              ].includes(key),
-          ),
-        ),
+      data: references.map((r) => ({
+        builder: r.builder,
+        schema: r.schema.toString(),
+        document: r.document.toString(),
       })),
     };
   },
 
   /**
-   * Converts array of permissions to read permissions response DTO.
    *
-   * @param permissions - Array of permission objects
-   * @returns Read permissions response DTO
    */
-  toReadPermissionsResponse(
-    permissions: Permissions[],
-  ): ReadPermissionsResponse {
+  toReadDataAccessResponse(acls: Acl[]): ReadDataAccessResponse {
     return {
-      data: permissions.map((perm) => ({
-        did: perm.did,
-        perms: {
-          read: perm.perms.read,
-          write: perm.perms.write,
-          execute: perm.perms.execute,
-        },
+      data: acls.map((acl) => ({
+        grantee: acl.grantee,
+        read: acl.read,
+        write: acl.write,
+        execute: acl.execute,
       })),
     };
   },
 
   /**
-   * Converts permission DTO to domain model.
    *
-   * @param dto - Permission DTO from request
-   * @returns Permission domain model
    */
-  fromPermissionsDto(dto: PermissionsDto): Permissions {
-    return new Permissions(dto.did, dto.perms);
-  },
-
-  /**
-   * Converts read permissions request DTO to domain command.
-   *
-   * Handles string to UUID conversion at the boundary layer.
-   *
-   * @param dto - Read permissions request DTO
-   * @returns Read permissions domain command
-   */
-  toReadPermissionsCommand(
-    dto: ReadPermissionsRequest,
-  ): ReadPermissionsCommand {
+  toReadDataAclCommand(
+    user: UserDocument,
+    dto: ReadDataAclRequestParams,
+  ): ReadDataAclCommand {
     return {
+      owner: user._id,
       schema: new UUID(dto.schema),
-      documentId: new UUID(dto.documentId),
+      document: new UUID(dto.document),
     };
   },
 
   /**
-   * Converts add permissions request DTO to domain command.
    *
-   * Handles string to UUID conversion and permission DTO mapping at the boundary layer.
-   *
-   * @param dto - Add permissions request DTO
-   * @returns Add permissions domain command
    */
-  toAddPermissionsCommand(dto: AddPermissionsRequest): AddPermissionsCommand {
+  toGrantDataAccessCommand(
+    user: UserDocument,
+    body: GrantAccessToDataRequest,
+  ): GrantAccessToDataCommand {
     return {
-      schema: new UUID(dto.schema),
-      documentId: new UUID(dto.documentId),
-      permissions: this.fromPermissionsDto(dto.permissions),
+      schema: new UUID(body.schema),
+      document: new UUID(body.document),
+      owner: user._id,
+      acl: {
+        grantee: body.acl.grantee,
+        read: body.acl.read,
+        write: body.acl.write,
+        execute: body.acl.execute,
+      },
     };
   },
 
   /**
-   * Converts update permissions request DTO to domain command.
    *
-   * Handles string to UUID conversion and permission DTO mapping at the boundary layer.
-   *
-   * @param dto - Update permissions request DTO
-   * @returns Update permissions domain command
    */
-  toUpdatePermissionsCommand(
-    dto: UpdatePermissionsRequest,
-  ): UpdatePermissionsCommand {
+  toRevokeDataAccessCommand(
+    user: UserDocument,
+    body: RevokeAccessToDataRequest,
+  ): RevokeAccessToDataCommand {
     return {
-      schema: new UUID(dto.schema),
-      documentId: new UUID(dto.documentId),
-      permissions: this.fromPermissionsDto(dto.permissions),
+      schema: new UUID(body.schema),
+      document: new UUID(body.document),
+      grantee: body.builder,
+      owner: user._id as Did,
     };
   },
 
   /**
-   * Converts delete permissions request DTO to domain command.
    *
-   * Handles string to UUID conversion at the boundary layer.
-   *
-   * @param dto - Delete permissions request DTO
-   * @returns Delete permissions domain command
    */
-  toDeletePermissionsCommand(
-    dto: DeletePermissionsRequest,
-  ): DeletePermissionsCommand {
+  toFindDataCommand(
+    user: UserDocument,
+    body: ReadDataRequestParams,
+  ): FindDataCommand {
     return {
-      schema: new UUID(dto.schema),
-      documentId: new UUID(dto.documentId),
-      did: dto.did,
+      schema: new UUID(body.schema),
+      filter: {
+        _id: new UUID(body.document),
+        _owner: user._id,
+      },
+    };
+  },
+
+  toReadDataResponse(documents: OwnedDocumentBase[]): ReadDataResponse {
+    return {
+      data: documents.map((d) => ({
+        ...d,
+        _id: d._id.toString(),
+        _created: d._created.toISOString(),
+        _updated: d._updated.toISOString(),
+      })),
     };
   },
 } as const;

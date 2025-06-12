@@ -1,5 +1,5 @@
-import { Effect as E } from "effect";
-import type { UpdateResult, UUID } from "mongodb";
+import { Effect as E, pipe } from "effect";
+import type { UpdateResult } from "mongodb";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -7,18 +7,13 @@ import type {
   DocumentNotFoundError,
 } from "#/common/errors";
 import type { Did } from "#/common/types";
-import { Uuid } from "#/common/types";
-import type { DataDocument } from "#/data/data.repository";
-import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import * as UserRepository from "./users.repository";
-import {
-  type AddPermissionsCommand,
-  type DeletePermissionsCommand,
-  Permissions,
-  type ReadPermissionsCommand,
-  type UpdatePermissionsCommand,
-  type UserDocument,
+import type {
+  DataDocumentReference,
+  GrantAccessToDataCommand,
+  RevokeAccessToDataCommand,
+  UserDocument,
 } from "./users.types";
 
 /**
@@ -48,71 +43,19 @@ export function find(
  * @param did - User's decentralized identifier
  * @returns Array of data documents owned by the user
  */
-export function listUserData(
+export function listUserDataReferences(
   ctx: AppBindings,
   did: Did,
 ): E.Effect<
-  DataDocument[],
+  DataDocumentReference[],
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
-  const groupBySchema = (user: UserDocument): Record<string, UUID[]> => {
-    return user.data.reduce<Record<string, UUID[]>>((acc, ref) => {
-      const schema = ref.schema.toString();
-      if (!acc[schema]) {
-        acc[schema] = [];
-      }
-      acc[schema].push(ref.id);
-      return acc;
-    }, {});
-  };
-
-  const readAllDataCollections = (
-    references: Record<string, UUID[]>,
-  ): E.Effect<
-    DataDocument[],
-    CollectionNotFoundError | DatabaseError | DataValidationError
-  > => {
-    return E.forEach(Object.entries(references), ([schema, ids]) =>
-      DataRepository.findMany(ctx, Uuid.parse(schema), { _id: { $in: ids } }),
-    ).pipe(E.map((arrays) => arrays.flat()));
-  };
-
-  return find(ctx, did).pipe(
-    E.map((user) => groupBySchema(user)),
-    E.flatMap((collections) => readAllDataCollections(collections)),
-  );
-}
-
-/**
- * Reads permissions configured for a data document.
- *
- * @param ctx - Application context and bindings
- * @param command - Permission read command with schema and document ID
- * @returns Array of permissions for the document
- */
-export function readPermissions(
-  ctx: AppBindings,
-  command: ReadPermissionsCommand,
-): E.Effect<
-  Permissions[],
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
-  return DataRepository.findMany(ctx, command.schema, {
-    _id: command.documentId,
-  }).pipe(
-    E.map((documents) =>
-      documents.flatMap((document) => {
-        if (!document._perms) {
-          return []; // No permissions set
-        }
-        return document._perms.map(
-          (perm) => new Permissions(perm.did, perm.perms),
-        );
-      }),
-    ),
+  return pipe(
+    find(ctx, did),
+    E.map((user) => user.data),
   );
 }
 
@@ -123,40 +66,19 @@ export function readPermissions(
  * @param command - Permission addition command
  * @returns MongoDB update result
  */
-export function addPermissions(
+export function grantAccess(
   ctx: AppBindings,
-  command: AddPermissionsCommand,
+  command: GrantAccessToDataCommand,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return UserRepository.addPermissions(
+  return UserRepository.addAclEntry(
     ctx,
     command.schema,
-    command.documentId,
-    command.permissions,
-  );
-}
-
-/**
- * Updates existing permissions for a data document.
- *
- * @param ctx - Application context and bindings
- * @param command - Permission update command
- * @returns MongoDB update result
- */
-export function updatePermissions(
-  ctx: AppBindings,
-  command: UpdatePermissionsCommand,
-): E.Effect<
-  UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
-  return UserRepository.updatePermissions(
-    ctx,
-    command.schema,
-    command.documentId,
-    command.permissions,
+    command.document,
+    command.owner,
+    command.acl,
   );
 }
 
@@ -167,17 +89,18 @@ export function updatePermissions(
  * @param command - Permission deletion command
  * @returns MongoDB update result
  */
-export function deletePermissions(
+export function revokeAccess(
   ctx: AppBindings,
-  command: DeletePermissionsCommand,
+  command: RevokeAccessToDataCommand,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return UserRepository.deletePermissions(
+  return UserRepository.removeAclEntry(
     ctx,
     command.schema,
-    command.documentId,
-    command.did,
+    command.document,
+    command.grantee,
+    command.owner,
   );
 }
