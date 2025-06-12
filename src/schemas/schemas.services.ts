@@ -14,8 +14,8 @@ import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import type {
-  AddSchemaCommand,
   CreateIndexCommand,
+  CreateSchemaCommand,
   DeleteSchemaCommand,
   DropIndexCommand,
   SchemaDocument,
@@ -38,7 +38,7 @@ export function getBuilderSchemas(
 
 export function addSchema(
   ctx: AppBindings,
-  command: AddSchemaCommand,
+  command: CreateSchemaCommand,
 ): E.Effect<
   void,
   | DocumentNotFoundError

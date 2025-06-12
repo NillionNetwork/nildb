@@ -1,39 +1,24 @@
 import { type IndexDirection, UUID } from "mongodb";
 import type { Did } from "#/common/types";
 import type {
-  AddSchemaRequest,
   CreateSchemaIndexRequest,
-  DeleteSchemaRequest,
+  CreateSchemaRequest,
+  DeleteSchemaRequestParams,
   ListSchemasResponse,
   ReadSchemaMetadataResponse,
 } from "#/schemas/schemas.dto";
 import type {
-  AddSchemaCommand,
   CreateIndexCommand,
+  CreateSchemaCommand,
   DeleteSchemaCommand,
   DropIndexCommand,
   SchemaDocument,
   SchemaMetadata,
 } from "#/schemas/schemas.types";
 
-/**
- * Transforms data between HTTP DTOs and domain models for schema operations.
- *
- * Centralizes all data transformations to maintain clean layer boundaries.
- * Higher layers (controllers) use these functions to convert domain
- * models to DTOs for API responses, handling field name conversions
- * and date serialization.
- */
 export const SchemaDataMapper = {
   /**
    * Converts schema metadata to response DTO.
-   *
-   * Transforms domain model to API response format, converting dates
-   * to ISO strings and mapping field names from camelCase to snake_case
-   * for API consistency.
-   *
-   * @param metadata - Schema collection metadata domain model
-   * @returns Schema metadata response DTO with serialized dates
    */
   toReadMetadataResponse(metadata: SchemaMetadata): ReadSchemaMetadataResponse {
     return {
@@ -55,12 +40,6 @@ export const SchemaDataMapper = {
 
   /**
    * Converts array of schema documents to list response DTO.
-   *
-   * Transforms domain models to API response format, mapping field names
-   * from camelCase to snake_case for consistent API contract.
-   *
-   * @param schemas - Array of schema documents from repository
-   * @returns List schemas response DTO with field name conversions
    */
   toListSchemasResponse(schemas: SchemaDocument[]): ListSchemasResponse {
     return {
@@ -75,14 +54,11 @@ export const SchemaDataMapper = {
 
   /**
    * Converts add schema request DTO to domain command.
-   *
-   * Handles DTO to domain command conversion at the boundary layer.
-   *
-   * @param dto - Add schema request DTO
-   * @param owner - Builder DID that owns the schema
-   * @returns Add schema domain command
    */
-  toAddSchemaCommand(dto: AddSchemaRequest, owner: Did): AddSchemaCommand {
+  toCreateSchemaCommand(
+    dto: CreateSchemaRequest,
+    owner: Did,
+  ): CreateSchemaCommand {
     return {
       _id: new UUID(dto._id),
       name: dto.name,
@@ -93,14 +69,9 @@ export const SchemaDataMapper = {
   },
 
   /**
-   * Converts delete schema request DTO to domain command.
-   *
-   * Handles string to UUID conversion at the boundary layer.
-   *
-   * @param dto - Delete schema request DTO
-   * @returns Delete schema domain command
+   * Converts delete schema request params to domain command.
    */
-  toDeleteSchemaCommand(dto: DeleteSchemaRequest): DeleteSchemaCommand {
+  toDeleteSchemaCommand(dto: DeleteSchemaRequestParams): DeleteSchemaCommand {
     return {
       id: new UUID(dto.id),
     };
@@ -108,17 +79,8 @@ export const SchemaDataMapper = {
 
   /**
    * Converts create index request DTO to domain command.
-   *
-   * Handles DTO to domain command conversion with schema UUID at the boundary layer.
-   *
-   * @param dto - Create schema index request DTO
-   * @param schema - Schema UUID for the collection
-   * @returns Create index domain command
    */
-  toCreateIndexCommand(
-    dto: CreateSchemaIndexRequest,
-    schema: UUID,
-  ): CreateIndexCommand {
+  toCreateIndexCommand(dto: CreateSchemaIndexRequest): CreateIndexCommand {
     // Convert keys array to Record<string, IndexDirection>
     const keys: Record<string, IndexDirection> = {};
     for (const keyObj of dto.keys) {
@@ -128,7 +90,7 @@ export const SchemaDataMapper = {
     }
 
     return {
-      schema,
+      schema: new UUID(dto.schema),
       name: dto.name,
       keys,
       unique: dto.unique,
@@ -138,12 +100,6 @@ export const SchemaDataMapper = {
 
   /**
    * Converts index name to drop index command.
-   *
-   * Creates a command for dropping an index from a schema collection.
-   *
-   * @param name - Index name to drop
-   * @param schema - Schema UUID for the collection
-   * @returns Drop index domain command
    */
   toDropIndexCommand(name: string, schema: UUID): DropIndexCommand {
     return {

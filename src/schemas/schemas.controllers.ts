@@ -3,7 +3,6 @@ import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
 import { StatusCodes } from "http-status-codes";
 import type { UUID } from "mongodb";
-import { z } from "zod";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
@@ -13,7 +12,7 @@ import {
 } from "#/common/openapi";
 import { enforceSchemaOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
-import { type ControllerOptions, Uuid } from "#/common/types";
+import type { ControllerOptions } from "#/common/types";
 import {
   enforceCapability,
   loadNucToken,
@@ -21,27 +20,23 @@ import {
 } from "#/middleware/capability.middleware";
 import { SchemaDataMapper } from "#/schemas/schemas.mapper";
 import {
-  type AddSchemaRequest,
-  AddSchemaRequest as AddSchemaRequestSchema,
-  AddSchemaResponse,
-  type CreateSchemaIndexRequest,
-  CreateSchemaIndexRequest as CreateSchemaIndexRequestSchema,
-  type DeleteSchemaRequest,
-  DeleteSchemaRequest as DeleteSchemaRequestSchema,
+  CreateSchemaIndexRequest,
+  CreateSchemaRequest,
+  CreateSchemaResponse,
+  DeleteSchemaRequestParams,
   DeleteSchemaResponse,
+  DropSchemaIndexParams,
+  DropSchemaIndexResponse,
   ListSchemasResponse,
+  ReadSchemaMetadataRequestParams,
   ReadSchemaMetadataResponse,
 } from "./schemas.dto";
 import * as SchemasService from "./schemas.services";
 
 /**
- * Registers the schema listing endpoint.
- *
- * Retrieves all schemas owned by the authenticated builder.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle GET /v1/schemas
  */
-export function list(options: ControllerOptions): void {
+export function readSchemas(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.schemas.root;
 
@@ -50,11 +45,10 @@ export function list(options: ControllerOptions): void {
     describeRoute({
       tags: ["Schemas"],
       security: [{ bearerAuth: [] }],
-      summary: "List builder schemas",
-      description: "Retrieves all schemas owned by the authenticated builder.",
+      summary: "Lists all of the builder's schemas",
       responses: {
         200: {
-          description: "List of schemas",
+          description: "OK",
           content: {
             "application/json": {
               schema: resolver(ListSchemasResponse),
@@ -74,6 +68,7 @@ export function list(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
 
+      // TODO: include schema metadata with response
       return pipe(
         SchemasService.getBuilderSchemas(c.env, builder),
         E.map((schemas) => SchemaDataMapper.toListSchemasResponse(schemas)),
@@ -86,13 +81,9 @@ export function list(options: ControllerOptions): void {
 }
 
 /**
- * Registers the schema creation endpoint.
- *
- * Creates a new schema with the provided specification.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle POST /v1/schemas
  */
-export function add(options: ControllerOptions): void {
+export function createSchema(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.schemas.root;
 
@@ -101,18 +92,17 @@ export function add(options: ControllerOptions): void {
     describeRoute({
       tags: ["Schemas"],
       security: [{ bearerAuth: [] }],
-      summary: "Add a new schema",
-      description: "Creates a new schema with the provided specification.",
+      summary: "Create new schema-validated data collection",
       responses: {
         201: OpenApiSpecEmptySuccessResponses["201"],
         400: OpenApiSpecCommonErrorResponses["400"],
         500: OpenApiSpecCommonErrorResponses["500"],
       },
     }),
-    zValidator("json", AddSchemaRequestSchema),
+    zValidator("json", CreateSchemaRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: AddSchemaRequest }>({
+    enforceCapability<{ json: CreateSchemaRequest }>({
       path,
       cmd: NucCmd.nil.db.schemas,
       validate: (_c, _token) => true,
@@ -120,11 +110,14 @@ export function add(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = SchemaDataMapper.toAddSchemaCommand(payload, builder._id);
+      const command = SchemaDataMapper.toCreateSchemaCommand(
+        payload,
+        builder._id,
+      );
 
       return pipe(
         SchemasService.addSchema(c.env, command),
-        E.map(() => AddSchemaResponse),
+        E.map(() => CreateSchemaResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -133,23 +126,18 @@ export function add(options: ControllerOptions): void {
 }
 
 /**
- * Registers the schema deletion endpoint.
- *
- * Deletes an existing schema by ID.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle DELETE /v1/schemas/:id
  */
-export function _delete(options: ControllerOptions): void {
+export function deleteSchemaById(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.root;
+  const path = PathsV1.schemas.byId;
 
   app.delete(
     path,
     describeRoute({
       tags: ["Schemas"],
       security: [{ bearerAuth: [] }],
-      summary: "Delete a schema",
-      description: "Deletes an existing schema by ID.",
+      summary: "Deletes a collection and all of its data",
       responses: {
         204: OpenApiSpecEmptySuccessResponses["204"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -157,18 +145,18 @@ export function _delete(options: ControllerOptions): void {
         500: OpenApiSpecCommonErrorResponses["500"],
       },
     }),
-    zValidator("json", DeleteSchemaRequestSchema),
+    zValidator("param", DeleteSchemaRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: DeleteSchemaRequest }>({
+    enforceCapability<{ param: { id: UUID } }>({
       path,
       cmd: NucCmd.nil.db.schemas,
       validate: (_c, _token) => true,
     }),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
-      const payload = c.req.valid("json");
-      const command = SchemaDataMapper.toDeleteSchemaCommand(payload);
+      const { id } = c.req.valid("param");
+      const command = SchemaDataMapper.toDeleteSchemaCommand({ id });
 
       return pipe(
         enforceSchemaOwnership(builder, command.id),
@@ -182,31 +170,21 @@ export function _delete(options: ControllerOptions): void {
 }
 
 /**
- * Registers the schema metadata endpoint.
- *
- * Retrieves metadata for a specific schema including statistics and indexes.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle GET /v1/schemas/:id
  */
-export function metadata(options: ControllerOptions): void {
+export function readSchemaById(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.byIdMeta;
-
-  const GetSchemaMetadataParams = z.object({
-    id: Uuid,
-  });
+  const path = PathsV1.schemas.byId;
 
   app.get(
     path,
     describeRoute({
       tags: ["Schemas"],
       security: [{ bearerAuth: [] }],
-      summary: "Get schema metadata",
-      description:
-        "Retrieves metadata for a specific schema including statistics and indexes.",
+      summary: "Retrieve a schema's information",
       responses: {
         200: {
-          description: "Schema metadata",
+          description: "OK",
           content: {
             "application/json": {
               schema: resolver(ReadSchemaMetadataResponse),
@@ -216,7 +194,7 @@ export function metadata(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    zValidator("param", GetSchemaMetadataParams),
+    zValidator("param", ReadSchemaMetadataRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: { id: UUID } }>({
@@ -227,6 +205,8 @@ export function metadata(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("param");
+
+      // TODO: needs to include metadata with schema result
 
       return pipe(
         enforceSchemaOwnership(builder, payload.id),
@@ -241,27 +221,18 @@ export function metadata(options: ControllerOptions): void {
 }
 
 /**
- * Registers the create schema index endpoint.
- *
- * Creates a new index on the specified schema.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle POST /v1/schemas/:id/indexes
  */
 export function createIndex(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.byIdIndexes;
-
-  const CreateIndexParams = z.object({
-    id: Uuid,
-  });
+  const path = PathsV1.schemas.indexesById;
 
   app.post(
     path,
     describeRoute({
       tags: ["Schemas"],
       security: [{ bearerAuth: [] }],
-      summary: "Create schema index",
-      description: "Creates a new index on the specified schema.",
+      summary: "Create a collection index",
       responses: {
         201: OpenApiSpecEmptySuccessResponses["201"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -269,8 +240,7 @@ export function createIndex(options: ControllerOptions): void {
         500: OpenApiSpecCommonErrorResponses["500"],
       },
     }),
-    zValidator("json", CreateSchemaIndexRequestSchema),
-    zValidator("param", CreateIndexParams),
+    zValidator("json", CreateSchemaIndexRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: CreateSchemaIndexRequest; param: { id: UUID } }>({
@@ -282,11 +252,10 @@ export function createIndex(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const { id } = c.req.valid("param");
-      const command = SchemaDataMapper.toCreateIndexCommand(payload, id);
+      const command = SchemaDataMapper.toCreateIndexCommand(payload);
 
       return pipe(
-        enforceSchemaOwnership(builder, id),
+        enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => SchemasService.createIndex(c.env, command)),
         E.map(() => new Response(null, { status: StatusCodes.CREATED })),
         handleTaggedErrors(c),
@@ -297,28 +266,20 @@ export function createIndex(options: ControllerOptions): void {
 }
 
 /**
- * Registers the drop schema index endpoint.
- *
- * Drops an existing index from the specified schema.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle DELETE /v1/schemas/:id/indexes/:name
  */
 export function dropIndex(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.schemas.byIdIndexesByName;
-
-  const DropIndexParams = z.object({
-    id: Uuid,
-    name: z.string().min(4),
-  });
+  const path = PathsV1.schemas.indexesByNameById;
 
   app.delete(
     path,
     describeRoute({
       tags: ["Schemas"],
       security: [{ bearerAuth: [] }],
-      summary: "Drop schema index",
-      description: "Drops an existing index from the specified schema.",
+      summary: "Delete an index by name",
+      description:
+        "Removes a database index from the schema collection. This may impact query performance but does not affect stored data. Only the builder who created the schema can drop indexes. Requires authentication with builder capabilities.",
       responses: {
         204: OpenApiSpecEmptySuccessResponses["204"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -326,10 +287,10 @@ export function dropIndex(options: ControllerOptions): void {
         500: OpenApiSpecCommonErrorResponses["500"],
       },
     }),
-    zValidator("param", DropIndexParams),
+    zValidator("param", DropSchemaIndexParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: { id: UUID; name: string } }>({
+    enforceCapability<{ param: DropSchemaIndexParams }>({
       path,
       cmd: NucCmd.nil.db.schemas,
       validate: (_c, _token) => true,
@@ -342,7 +303,7 @@ export function dropIndex(options: ControllerOptions): void {
       return pipe(
         enforceSchemaOwnership(builder, id),
         E.flatMap(() => SchemasService.dropIndex(c.env, command)),
-        E.map(() => new Response(null, { status: StatusCodes.NO_CONTENT })),
+        E.map(() => DropSchemaIndexResponse),
         handleTaggedErrors(c),
         E.runPromise,
       );
