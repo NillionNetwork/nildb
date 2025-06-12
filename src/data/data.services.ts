@@ -6,38 +6,33 @@ import type {
   DataValidationError,
   DocumentNotFoundError,
 } from "#/common/errors";
-import { DidSchema, Uuid } from "#/common/types";
+import type { DocumentBase } from "#/common/mongo";
+import { Did, Uuid } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import * as SchemasRepository from "#/schemas/schemas.repository";
 import * as UserRepository from "#/users/users.repository";
-import type { DataDocument, UploadResult } from "./data.repository";
 import * as DataRepository from "./data.repository";
 import type {
-  CreateOwnedRecordsCommand,
-  CreateStandardRecordsCommand,
-  DeleteRecordsCommand,
-  FlushCollectionCommand,
+  CreateOwnedDataCommand,
+  CreateStandardDataCommand,
+  DeleteDataCommand,
+  FindDataCommand,
+  FlushDataCommand,
+  OwnedDocumentBase,
   PartialDataDocumentDto,
-  ReadRecordsCommand,
-  TailDataCommand,
-  UpdateRecordsCommand,
+  RecentDataCommand,
+  StandardDocumentBase,
+  UpdateDataCommand,
+  UploadResult,
 } from "./data.types";
 
 /**
- * Creates owned data records in a schema-validated collection.
- *
- * Validates data against the schema, inserts records with ownership tracking,
- * and manages user permissions for owned document types. Handles both shared
- * and user-owned data collections based on schema configuration.
- *
- * @param ctx - Application bindings with database and logging context
- * @param command - Create records command with data and ownership information
- * @returns Effect that succeeds with upload result or fails with validation/database errors
+ * Creates user-owned data in a schema-validated collection.
  */
 export function createOwnedRecords(
   ctx: AppBindings,
-  command: CreateOwnedRecordsCommand,
+  command: CreateOwnedDataCommand,
 ): E.Effect<
   UploadResult,
   | DataValidationError
@@ -49,7 +44,7 @@ export function createOwnedRecords(
     E.Do,
     E.bind("document", () =>
       SchemasRepository.findOne(ctx, {
-        _id: command.schemaId,
+        _id: command.schema,
         documentType: "owned",
       }),
     ),
@@ -57,40 +52,28 @@ export function createOwnedRecords(
       validateData<PartialDataDocumentDto[]>(document.schema, command.data),
     ),
     E.bind("result", ({ document, data }) =>
-      DataRepository.insertOwnedData(
-        ctx,
-        document,
-        data,
-        command.owner,
-        command.permissions ? [command.permissions] : [],
-      ),
+      DataRepository.insertOwnedData(ctx, document, data, command.owner, [
+        command.acl,
+      ]),
     ),
-    E.flatMap(({ result }) => {
-      return UserRepository.upsert(
-        ctx,
-        command.owner,
-        command.schemaId,
-        result.created.map((id) => Uuid.parse(id)),
-        command.permissions,
-      ).pipe(E.flatMap(() => E.succeed(result)));
+    E.flatMap(({ result, document }) => {
+      return UserRepository.upsert(ctx, {
+        builder: document.owner,
+        schema: command.schema,
+        user: command.owner,
+        data: result.created.map((id) => Uuid.parse(id)),
+        acl: command.acl,
+      }).pipe(E.flatMap(() => E.succeed(result)));
     }),
   );
 }
 
 /**
  * Creates data records in a schema-validated collection.
- *
- * Validates data against the schema, inserts records with ownership tracking,
- * and manages user permissions for owned document types. Handles both shared
- * and user-owned data collections based on schema configuration.
- *
- * @param ctx - Application bindings with database and logging context
- * @param command - Create records command with data and ownership information
- * @returns Effect that succeeds with upload result or fails with validation/database errors
  */
 export function createStandardRecords(
   ctx: AppBindings,
-  command: CreateStandardRecordsCommand,
+  command: CreateStandardDataCommand,
 ): E.Effect<
   UploadResult,
   | DataValidationError
@@ -102,7 +85,7 @@ export function createStandardRecords(
     E.Do,
     E.bind("document", () =>
       SchemasRepository.findOne(ctx, {
-        _id: command.schemaId,
+        _id: command.schema,
         documentType: "standard",
       }),
     ),
@@ -117,7 +100,7 @@ export function createStandardRecords(
 
 export function updateRecords(
   ctx: AppBindings,
-  command: UpdateRecordsCommand,
+  command: UpdateDataCommand,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
@@ -132,47 +115,61 @@ export function updateRecords(
 
 export function readRecords(
   ctx: AppBindings,
-  command: ReadRecordsCommand,
+  command: FindDataCommand,
 ): E.Effect<
-  DataDocument[],
+  DocumentBase[],
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return DataRepository.findMany(ctx, command.schema, command.filter);
 }
 
-export function deleteRecords(
+export function deleteData(
   ctx: AppBindings,
-  command: DeleteRecordsCommand,
+  command: DeleteDataCommand,
 ): E.Effect<
   DeleteResult,
   CollectionNotFoundError | DatabaseError | DataValidationError,
   never
 > {
-  const groupByOwner = (documents: DataDocument[]): Record<string, UUID[]> => {
+  // This endpoint can be invoked against a standard and owned collections,
+  // meaning that when the target is an owned collection we also need to
+  // update the user's document
+  const groupByOwner = (
+    documents: StandardDocumentBase[],
+  ): Record<string, UUID[]> => {
     return documents.reduce<Record<string, UUID[]>>((acc, data) => {
-      const owner = data._owner;
-      if (owner) {
-        if (!acc[owner]) {
-          acc[owner] = [];
+      if ("_owner" in data) {
+        const document = data as OwnedDocumentBase;
+        const { _owner } = document;
+
+        if (!acc[_owner]) {
+          acc[_owner] = [];
         }
-        acc[owner].push(data._id);
+
+        acc[_owner].push(data._id);
       }
+
       return acc;
     }, {});
   };
 
   const deleteAllUserDataReferences = (
-    documents: Record<string, UUID[]>,
+    documents: Record<Did, UUID[]>,
   ): E.Effect<
     void,
     CollectionNotFoundError | DatabaseError | DataValidationError
   > => {
-    return E.forEach(Object.entries(documents), ([owner, ids]) =>
-      UserRepository.removeData(ctx, DidSchema.parse(owner), ids),
-    ).pipe(E.map((arrays) => arrays.flat()));
+    return pipe(
+      E.forEach(Object.entries(documents), ([owner, ids]) =>
+        UserRepository.removeData(ctx, Did.parse(owner), ids),
+      ),
+      E.map((arrays) => arrays.flat()),
+    );
   };
 
-  return DataRepository.findMany(ctx, command.schema, command.filter).pipe(
+  // TODO: only invoke the owned check if its an owned collection
+  return pipe(
+    DataRepository.findMany(ctx, command.schema, command.filter),
     E.map((documents) => groupByOwner(documents)),
     E.flatMap((documents) => deleteAllUserDataReferences(documents)),
     E.flatMap(() =>
@@ -183,14 +180,16 @@ export function deleteRecords(
 
 export function flushCollection(
   ctx: AppBindings,
-  command: FlushCollectionCommand,
+  command: FlushDataCommand,
 ): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError, never> {
   return pipe(DataRepository.flushCollection(ctx, command.schema));
 }
 
 export function tailData(
   ctx: AppBindings,
-  command: TailDataCommand,
-): E.Effect<DataDocument[], CollectionNotFoundError | DatabaseError, never> {
-  return pipe(DataRepository.tailCollection(ctx, command.schema));
+  command: RecentDataCommand,
+): E.Effect<DocumentBase[], CollectionNotFoundError | DatabaseError, never> {
+  return pipe(
+    DataRepository.tailCollection(ctx, command.schema, command.limit),
+  );
 }

@@ -30,8 +30,12 @@ import type { Did, UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { SchemaDocument } from "#/schemas/schemas.types";
-import type { Permissions } from "#/users/users.types";
-import type { PartialDataDocumentDto } from "./data.types";
+import type { Acl } from "#/users/users.types";
+import type {
+  CreateFailure,
+  PartialDataDocumentDto,
+  UploadResult,
+} from "./data.types";
 
 export function createCollection(
   ctx: AppBindings,
@@ -88,21 +92,16 @@ export function createCollection(
   );
 }
 
-export const TAIL_DATA_LIMIT = 25;
-
 export function tailCollection(
   ctx: AppBindings,
   schema: UUID,
-): E.Effect<DataDocument[], CollectionNotFoundError | DatabaseError> {
+  limit: number,
+): E.Effect<DocumentBase[], CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DataDocument>(ctx, "data", schema.toString()),
+    checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
     E.tryMapPromise({
       try: (collection) =>
-        collection
-          .find()
-          .sort({ _created: -1 })
-          .limit(TAIL_DATA_LIMIT)
-          .toArray(),
+        collection.find().sort({ _created: -1 }).limit(limit).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "tailCollection" }),
     }),
   );
@@ -113,7 +112,7 @@ export function deleteCollection(
   schema: UUID,
 ): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DataDocument>(ctx, "data", schema.toString()),
+    checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
     E.tryMapPromise({
       try: (collection) =>
         ctx.db.data.dropCollection(collection.collectionName),
@@ -129,7 +128,7 @@ export function flushCollection(
   schema: UUID,
 ): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DataDocument>(ctx, "data", schema.toString()),
+    checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
     E.tryMapPromise({
       try: (collection) => collection.deleteMany(),
       catch: (cause) =>
@@ -138,44 +137,26 @@ export function flushCollection(
   );
 }
 
-export type DataDocumentBase = DocumentBase<UUID> & {
-  _owner?: Did;
-  _perms?: Permissions[];
-};
-export type DataDocument<
-  T extends Record<string, unknown> = Record<string, unknown>,
-> = DataDocumentBase & T;
-
-export type CreateFailure = {
-  error: string;
-  document: unknown;
-};
-
-export type UploadResult = {
-  created: UuidDto[];
-  errors: CreateFailure[];
-};
-
 export function insertOwnedData(
   ctx: AppBindings,
   schema: SchemaDocument,
   data: PartialDataDocumentDto[],
   owner: Did,
-  perms: Permissions[],
+  acl: Acl[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DataDocument>(ctx, "data", schema._id.toString()),
+    checkCollectionExists<DocumentBase>(ctx, "data", schema._id.toString()),
     E.tryMapPromise({
       try: async (collection) => {
         const created = new Set<UuidDto>();
         const errors: CreateFailure[] = [];
 
         const batchSize = 1000;
-        const batches: DataDocument[][] = [];
+        const batches: DocumentBase[][] = [];
         const now = new Date();
 
         for (let i = 0; i < data.length; i += batchSize) {
-          const batch: DataDocument[] = data
+          const batch: DocumentBase[] = data
             .slice(i, i + batchSize)
             .map((partial) => ({
               ...partial,
@@ -183,7 +164,7 @@ export function insertOwnedData(
               _created: now,
               _updated: now,
               _owner: owner,
-              _perms: perms,
+              _perms: acl,
               documentType: schema.documentType,
             }));
           batches.push(batch);
@@ -236,18 +217,18 @@ export function insertStandardData(
   data: PartialDataDocumentDto[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DataDocument>(ctx, "data", schema._id.toString()),
+    checkCollectionExists<DocumentBase>(ctx, "data", schema._id.toString()),
     E.tryMapPromise({
       try: async (collection) => {
         const created = new Set<UuidDto>();
         const errors: CreateFailure[] = [];
 
         const batchSize = 1000;
-        const batches: DataDocument[][] = [];
+        const batches: DocumentBase[][] = [];
         const now = new Date();
 
         for (let i = 0; i < data.length; i += batchSize) {
-          const batch: DataDocument[] = data
+          const batch: DocumentBase[] = data
             .slice(i, i + batchSize)
             .map((partial) => ({
               ...partial,
@@ -304,19 +285,17 @@ export function insertStandardData(
 export function updateMany(
   ctx: AppBindings,
   schema: UUID,
-  filter: Filter<DataDocumentBase>,
-  update: UpdateFilter<DataDocumentBase>,
+  filter: Filter<DocumentBase>,
+  update: UpdateFilter<DocumentBase>,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.all([
-      checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
-      applyCoercions<Filter<DataDocumentBase>>(
-        addDocumentBaseCoercions(filter),
-      ),
-      applyCoercions<UpdateFilter<DataDocumentBase>>(
+      checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+      applyCoercions<UpdateFilter<DocumentBase>>(
         addDocumentBaseCoercions(update),
       ),
     ]),
@@ -331,17 +310,15 @@ export function updateMany(
 export function deleteMany(
   ctx: AppBindings,
   schema: UUID,
-  filter: StrictFilter<DataDocumentBase>,
+  filter: StrictFilter<DocumentBase>,
 ): E.Effect<
   DeleteResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.all([
-      checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
-      applyCoercions<Filter<DataDocumentBase>>(
-        addDocumentBaseCoercions(filter),
-      ),
+      checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
     ]),
     E.tryMapPromise({
       try: ([collection, documentFilter]) =>
@@ -357,11 +334,7 @@ export function runAggregation(
   pipeline: Document[],
 ): E.Effect<JsonObject[], CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DataDocumentBase>(
-      ctx,
-      "data",
-      query.schema.toString(),
-    ),
+    checkCollectionExists<DocumentBase>(ctx, "data", query.schema.toString()),
     E.tryMapPromise({
       try: (collection) => collection.aggregate(pipeline).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "runAggregation" }),
@@ -372,17 +345,15 @@ export function runAggregation(
 export function findMany(
   ctx: AppBindings,
   schema: UUID,
-  filter: Filter<DataDocumentBase>,
+  filter: Filter<DocumentBase>,
 ): E.Effect<
-  DataDocument[],
+  DocumentBase[],
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.all([
-      checkCollectionExists<DataDocumentBase>(ctx, "data", schema.toString()),
-      applyCoercions<Filter<DataDocumentBase>>(
-        addDocumentBaseCoercions(filter),
-      ),
+      checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
     ]),
     E.tryMapPromise({
       try: ([collection, documentFilter]) =>

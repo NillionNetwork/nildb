@@ -1,23 +1,31 @@
 import type { UUID } from "mongodb";
+import type { DocumentBase } from "#/common/mongo";
 import type { Did, UuidDto } from "#/common/types";
-import type { Permissions } from "#/users/users.types";
+import type { Acl } from "#/users/users.types";
 
-/**
- * Domain types for data storage and management operations.
- *
- * These types define the structure for data documents and related
- * operations within schema-validated collections in the NilDB system.
- */
+export type StandardDocumentBase<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = DocumentBase & T;
+
+export type OwnedDocumentBase<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = StandardDocumentBase<T> & {
+  _owner: Did;
+  _acl: Acl[];
+};
+
+export type CreateFailure = {
+  error: string;
+  document: unknown;
+};
+
+export type UploadResult = {
+  created: UuidDto[];
+  errors: CreateFailure[];
+};
 
 /**
  * Partial data document structure for internal processing.
- *
- * Represents user-provided data records with system-generated identifiers.
- * This intersection type combines an array of records with an ID field,
- * used during the data validation and insertion pipeline.
- *
- * Note: This type uses intersection with arrays to maintain compatibility
- * with existing validation logic while adding the ID requirement.
  */
 export type PartialDataDocumentDto = Record<string, unknown>[] & {
   /** System-generated UUID for the data document */
@@ -25,49 +33,33 @@ export type PartialDataDocumentDto = Record<string, unknown>[] & {
 };
 
 /**
- * Domain command types for data operations.
- *
- * These types represent business operations that can be performed
- * on data, converted from DTOs at the boundary layer.
- */
-
-/**
  * Command for creating/uploading owned data records.
- *
- * Encapsulates the data needed to create new records in a schema collection
- * with proper ownership and permissions.
  */
-export type CreateOwnedRecordsCommand = {
+export type CreateOwnedDataCommand = {
+  /** UUID of the schema (collection) to store data in */
+  schema: UUID;
   /** DID of the data owner */
   owner: Did;
-  /** UUID of the schema (collection) to store data in */
-  schemaId: UUID;
+  /** Permissions for the data records */
+  acl: Acl;
   /** Array of data records to store */
   data: Record<string, unknown>[];
-  /** Optional permissions for the data records */
-  permissions?: Permissions;
 };
 
 /**
  * Command for creating/uploading standard data records.
- *
- * Encapsulates the data needed to create new records in a schema collection
- * with proper ownership and permissions.
  */
-export type CreateStandardRecordsCommand = {
+export type CreateStandardDataCommand = {
   /** UUID of the schema (collection) to store data in */
-  schemaId: UUID;
+  schema: UUID;
   /** Array of data records to store */
   data: Record<string, unknown>[];
 };
 
 /**
  * Command for updating data records.
- *
- * Encapsulates the filter and update operations for modifying
- * existing records in a schema collection.
  */
-export type UpdateRecordsCommand = {
+export type UpdateDataCommand = {
   /** UUID of the schema (collection) containing the data */
   schema: UUID;
   /** MongoDB filter to match records for update */
@@ -78,11 +70,8 @@ export type UpdateRecordsCommand = {
 
 /**
  * Command for reading data records.
- *
- * Encapsulates the schema and filter for retrieving records
- * from a schema collection.
  */
-export type ReadRecordsCommand = {
+export type FindDataCommand = {
   /** UUID of the schema (collection) to read from */
   schema: UUID;
   /** MongoDB filter to match records for retrieval */
@@ -91,11 +80,8 @@ export type ReadRecordsCommand = {
 
 /**
  * Command for deleting data records.
- *
- * Encapsulates the schema and filter for removing records
- * from a schema collection.
  */
-export type DeleteRecordsCommand = {
+export type DeleteDataCommand = {
   /** UUID of the schema (collection) containing the data */
   schema: UUID;
   /** MongoDB filter to match records for deletion */
@@ -104,22 +90,18 @@ export type DeleteRecordsCommand = {
 
 /**
  * Command for flushing all data from a schema collection.
- *
- * Encapsulates the schema identifier for removing all records
- * from a collection.
  */
-export type FlushCollectionCommand = {
+export type FlushDataCommand = {
   /** UUID of the schema (collection) to flush */
   schema: UUID;
 };
 
 /**
  * Command for tailing recent data from a schema collection.
- *
- * Encapsulates the schema identifier for retrieving the most
- * recent records from a collection.
  */
-export type TailDataCommand = {
+export type RecentDataCommand = {
   /** UUID of the schema (collection) to tail */
   schema: UUID;
+  /** The max number of documents to return */
+  limit: number;
 };

@@ -14,24 +14,27 @@ import {
   loadSubjectAndVerifyAsBuilder,
 } from "#/middleware/capability.middleware";
 import {
+  CreateDataResponse,
+  CreateOwnedDataRequest,
+  CreateStandardDataRequest,
+  DataSchemaByIdRequestParams,
   DeleteDataRequest,
   DeleteDataResponse,
-  FlushDataRequest,
-  FlushDataResponse,
-  ReadDataRequest,
-  ReadDataResponse,
-  TailDataRequest,
+  FindDataRequest,
+  FindDataResponse,
+  TailDataRequestParams,
+  TailDataRequestQuery,
   TailDataResponse,
   UpdateDataRequest,
   UpdateDataResponse,
-  UploadDataResponse,
-  UploadOwnedDataRequest,
-  UploadStandardDataRequest,
 } from "./data.dto";
 import { DataMapper } from "./data.mapper";
 import * as DataService from "./data.services";
 
-export function remove(options: ControllerOptions): void {
+/**
+ * Register POST /v1/data/delete
+ */
+export function deleteData(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.data.delete;
 
@@ -40,12 +43,11 @@ export function remove(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Delete data records",
-      description:
-        "Deletes data records matching the provided filter from a schema collection.",
+      summary: "Delete data that matches the given filter",
+      description: "Deletes data that matches the given MongoDB-style filter.",
       responses: {
         200: {
-          description: "Records deleted successfully",
+          description: "Success",
           content: {
             "application/json": {
               schema: resolver(DeleteDataResponse),
@@ -64,13 +66,13 @@ export function remove(options: ControllerOptions): void {
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const builder = c.get("builder") as BuilderDocument;
+      const builder = c.get("builder");
       const payload = c.req.valid("json");
+      const command = DataMapper.toDeleteDataCommand(payload);
 
-      const command = DataMapper.toDeleteRecordsCommand(payload);
       return pipe(
         enforceSchemaOwnership(builder, command.schema),
-        E.flatMap(() => DataService.deleteRecords(c.env, command)),
+        E.flatMap(() => DataService.deleteData(c.env, command)),
         E.map((result) => DataMapper.toDeleteDataResponse(result)),
         E.map((response) => c.json<DeleteDataResponse>(response)),
         handleTaggedErrors(c),
@@ -80,48 +82,45 @@ export function remove(options: ControllerOptions): void {
   );
 }
 
-export function flush(options: ControllerOptions): void {
+/**
+ * Register DELETE /v1/data/:id/flush
+ */
+export function flushData(options: ControllerOptions): void {
   const { app, bindings } = options;
+  const path = PathsV1.data.flushById;
 
-  const path = PathsV1.data.flush;
-
-  app.post(
+  app.delete(
     path,
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Flush all data from schema",
-      description: "Removes all data records from a schema collection.",
+      summary: "Flush all data from a collection",
+      description:
+        "Deletes all collection documents. Preserves schema validation and indexes.",
       responses: {
-        200: {
-          description: "Collection flushed successfully",
-          content: {
-            "application/json": {
-              schema: resolver(FlushDataResponse),
-            },
-          },
+        204: {
+          description: "Success",
         },
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    zValidator("json", FlushDataRequest),
+    zValidator("param", DataSchemaByIdRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: FlushDataRequest }>({
+    enforceCapability<{ param: DataSchemaByIdRequestParams }>({
       path,
       cmd: NucCmd.nil.db.data,
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const builder = c.get("builder") as BuilderDocument;
-      const payload = c.req.valid("json");
+      const builder = c.get("builder");
+      const params = c.req.valid("param");
+      const command = DataMapper.toFlushDataCommand(params);
 
-      const command = DataMapper.toFlushCollectionCommand(payload);
       return pipe(
         enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.flushCollection(c.env, command)),
-        E.map((result) => DataMapper.toFlushDataResponse(result)),
-        E.map((response) => c.json<FlushDataResponse>(response)),
+        E.map(() => new Response(null, { status: 204 })),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -129,48 +128,51 @@ export function flush(options: ControllerOptions): void {
   );
 }
 
-export function read(options: ControllerOptions): void {
+/**
+ * Register POST /v1/data/find
+ */
+export function findData(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.data.read;
+  const path = PathsV1.data.search;
 
   app.post(
     path,
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Read data records",
+      summary: "Find data that matches a given filter",
       description:
-        "Reads data records matching the provided filter from a schema collection.",
+        "Finds data that matches the provided MongoDB-style filter in specified collection.",
       responses: {
         200: {
-          description: "Records retrieved successfully",
+          description: "Success",
           content: {
             "application/json": {
-              schema: resolver(ReadDataResponse),
+              schema: resolver(FindDataResponse),
             },
           },
         },
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    zValidator("json", ReadDataRequest),
+    zValidator("json", FindDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: ReadDataRequest }>({
+    enforceCapability<{ json: FindDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
       validate: (_c, _token) => true,
     }),
     async (c) => {
-      const builder = c.get("builder") as BuilderDocument;
+      const builder = c.get("builder");
       const payload = c.req.valid("json");
+      const command = DataMapper.toFindDataCommand(payload);
 
-      const command = DataMapper.toReadRecordsCommand(payload);
       return pipe(
         enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.readRecords(c.env, command)),
-        E.map((documents) => DataMapper.toReadDataResponse(documents)),
-        E.map((response) => c.json<ReadDataResponse>(response)),
+        E.map((documents) => DataMapper.toFindDataResponse(documents)),
+        E.map((response) => c.json<FindDataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -178,18 +180,20 @@ export function read(options: ControllerOptions): void {
   );
 }
 
-export function tail(options: ControllerOptions): void {
+/**
+ * Register GET /v1/data/:id/tail
+ */
+export function tailData(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.data.tail;
+  const path = PathsV1.data.tailById;
 
-  app.post(
+  app.get(
     path,
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Tail recent data",
-      description:
-        "Retrieves the most recent data records from a schema collection.",
+      summary: "Returns a collections newest records",
+      description: "Retrieves up to 'limit' records from a collection.",
       responses: {
         200: {
           description: "Recent records retrieved successfully",
@@ -202,19 +206,21 @@ export function tail(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    zValidator("json", TailDataRequest),
+    zValidator("param", TailDataRequestParams),
+    zValidator("query", TailDataRequestQuery),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: TailDataRequest }>({
+    enforceCapability<{ param: { id: string } }>({
       path,
       cmd: NucCmd.nil.db.data,
       validate: (_c, _token) => true,
     }),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
-      const payload = c.req.valid("json");
+      const param = c.req.valid("param");
+      const query = c.req.valid("query");
+      const command = DataMapper.toRecentDataCommand(param, query);
 
-      const command = DataMapper.toTailDataCommand(payload);
       return pipe(
         enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.tailData(c.env, command)),
@@ -227,7 +233,10 @@ export function tail(options: ControllerOptions): void {
   );
 }
 
-export function update(options: ControllerOptions): void {
+/**
+ * Register POST /v1/data/update
+ */
+export function updateData(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.data.update;
 
@@ -236,12 +245,12 @@ export function update(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Update data records",
+      summary: "Update data matching the given filter",
       description:
-        "Updates data records matching the provided filter in a schema collection.",
+        "Updates data matching the provided MongoDB-style filter in the specified collection.",
       responses: {
         200: {
-          description: "Records updated successfully",
+          description: "Success",
           content: {
             "application/json": {
               schema: resolver(UpdateDataResponse),
@@ -262,8 +271,8 @@ export function update(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
+      const command = DataMapper.toUpdateDataCommand(payload);
 
-      const command = DataMapper.toUpdateRecordsCommand(payload);
       return pipe(
         enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.updateRecords(c.env, command)),
@@ -276,6 +285,9 @@ export function update(options: ControllerOptions): void {
   );
 }
 
+/**
+ * Register POST /v1/data/owned
+ */
 export function createOwnedData(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.data.createOwned;
@@ -285,24 +297,24 @@ export function createOwnedData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Upload owned data records",
-      description: "Uploads one or more owned data records to a collection.",
+      summary: "Create owned records",
+      description: "Creates owned data records in the specified schema.",
       responses: {
         200: {
-          description: "Records uploaded successfully",
+          description: "Success",
           content: {
             "application/json": {
-              schema: resolver(UploadDataResponse),
+              schema: resolver(CreateDataResponse),
             },
           },
         },
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    zValidator("json", UploadOwnedDataRequest),
+    zValidator("json", CreateOwnedDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: UploadOwnedDataRequest }>({
+    enforceCapability<{ json: CreateOwnedDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
       validate: (_c, _token) => true,
@@ -310,13 +322,13 @@ export function createOwnedData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-
       const command = DataMapper.toCreateOwnedRecordsCommand(payload);
+
       return pipe(
-        enforceSchemaOwnership(builder, command.schemaId),
+        enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.createOwnedRecords(c.env, command)),
-        E.map((result) => DataMapper.toUploadDataResponse(result)),
-        E.map((response) => c.json<UploadDataResponse>(response)),
+        E.map((result) => DataMapper.toCreateDataResponse(result)),
+        E.map((response) => c.json<CreateDataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -324,7 +336,10 @@ export function createOwnedData(options: ControllerOptions): void {
   );
 }
 
-export function uploadStandardData(options: ControllerOptions): void {
+/**
+ * Register POST /v1/data/standard
+ */
+export function createStandardData(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.data.createStandard;
 
@@ -333,25 +348,25 @@ export function uploadStandardData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Upload standard data records",
+      summary: "Create standard records",
       description:
-        "Uploads multiple standard data records to a schema collection.",
+        "Creates standard data records in a schema collection. Data in a standard collection is owned outright by the builder.",
       responses: {
         200: {
-          description: "Records uploaded successfully",
+          description: "Success",
           content: {
             "application/json": {
-              schema: resolver(UploadDataResponse),
+              schema: resolver(CreateDataResponse),
             },
           },
         },
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
-    zValidator("json", UploadStandardDataRequest),
+    zValidator("json", CreateStandardDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: UploadStandardDataRequest }>({
+    enforceCapability<{ json: CreateStandardDataRequest }>({
       path,
       cmd: NucCmd.nil.db.data,
       validate: (_c, _token) => true,
@@ -359,13 +374,13 @@ export function uploadStandardData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-
       const command = DataMapper.toCreateStandardRecordsCommand(payload);
+
       return pipe(
-        enforceSchemaOwnership(builder, command.schemaId),
+        enforceSchemaOwnership(builder, command.schema),
         E.flatMap(() => DataService.createStandardRecords(c.env, command)),
-        E.map((result) => DataMapper.toUploadDataResponse(result)),
-        E.map((response) => c.json<UploadDataResponse>(response)),
+        E.map((result) => DataMapper.toCreateDataResponse(result)),
+        E.map((response) => c.json<CreateDataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
