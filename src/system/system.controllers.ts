@@ -18,10 +18,11 @@ import {
   loadNucToken,
   loadSubjectAndVerifyAsAdmin,
 } from "#/middleware/capability.middleware";
+import packageJson from "../../package.json";
 import {
-  GetAboutNodeResponse,
-  GetLogLevelResponse,
   HealthCheckResponse,
+  ReadAboutNodeResponse,
+  ReadLogLevelResponse,
   SetLogLevelRequest,
   SetLogLevelResponse,
   StartMaintenanceResponse,
@@ -30,22 +31,23 @@ import {
 import { SystemDataMapper } from "./system.mapper";
 import * as SystemService from "./system.services";
 
-export function aboutNode(options: ControllerOptions): void {
+/**
+ * Handle GET /about
+ */
+export function readAboutNode(options: ControllerOptions): void {
   const { app } = options;
 
   app.get(
     PathsV1.system.about,
     describeRoute({
       tags: ["System"],
-      summary: "Get node information",
-      description:
-        "Retrieves comprehensive information about the node including build details, identity, and maintenance status.",
+      summary: "Read node information",
       responses: {
         200: {
-          description: "Node information retrieved",
+          description: "OK",
           content: {
             "application/json": {
-              schema: resolver(GetAboutNodeResponse),
+              schema: resolver(ReadAboutNodeResponse),
             },
           },
         },
@@ -56,7 +58,7 @@ export function aboutNode(options: ControllerOptions): void {
       return await pipe(
         SystemService.getNodeInfo(c.env),
         E.map((nodeInfo) =>
-          c.json<GetAboutNodeResponse>(
+          c.json<ReadAboutNodeResponse>(
             SystemDataMapper.toGetAboutNodeResponse(nodeInfo),
           ),
         ),
@@ -67,7 +69,10 @@ export function aboutNode(options: ControllerOptions): void {
   );
 }
 
-export function healthCheck(options: ControllerOptions): void {
+/**
+ * Handle GET /health
+ */
+export function readNodeHealth(options: ControllerOptions): void {
   const { app } = options;
 
   app.get(
@@ -75,11 +80,9 @@ export function healthCheck(options: ControllerOptions): void {
     describeRoute({
       tags: ["System"],
       summary: "Health check",
-      description:
-        "Performs a simple health check to verify the service is responding.",
       responses: {
         200: {
-          description: "Service is healthy",
+          description: "OK",
           content: {
             "text/plain": {
               schema: {
@@ -96,11 +99,78 @@ export function healthCheck(options: ControllerOptions): void {
 }
 
 /**
- * Registers the start maintenance endpoint.
- *
- * Allows root users to immediately start maintenance mode.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle GET /metrics
+ */
+export function getMetrics(options: ControllerOptions): {
+  metrics: Hono | undefined;
+} {
+  const {
+    app,
+    bindings: { log },
+  } = options;
+
+  const enabled = hasFeatureFlag(
+    options.bindings.config.enabledFeatures,
+    FeatureFlag.METRICS,
+  );
+
+  if (!enabled) {
+    log.info("The metrics feature is disabled");
+    return { metrics: undefined };
+  }
+
+  const metrics = new Hono();
+  const { printMetrics, registerMetrics } = prometheus();
+  app.use("*", registerMetrics);
+
+  metrics.get(PathsV1.system.metrics, printMetrics);
+
+  return { metrics };
+}
+
+/**
+ * Handle GET /openapi.json
+ */
+export function getOpenApiJson(options: ControllerOptions): void {
+  const {
+    app,
+    bindings: { log },
+  } = options;
+
+  const enabled = hasFeatureFlag(
+    options.bindings.config.enabledFeatures,
+    FeatureFlag.OPENAPI,
+  );
+
+  if (!enabled) {
+    log.info("The openapi feature is disabled");
+    return;
+  }
+
+  app.get(
+    PathsV1.system.openApiJson,
+    openAPISpecs(app, {
+      documentation: {
+        info: {
+          title: "nilDB API",
+          version: packageJson.version,
+          description: `
+RESTful Api Specification for nilDB
+
+A functional data storage and querying service for the Nillion Network that provides:
+
+- schema-validated data storage
+- MongoDB-style aggregation queries
+- capability-based access control to enable used owned data
+"`.replace(/\n/g, " "),
+        },
+      },
+    }),
+  );
+}
+
+/**
+ * Handle POST /v1/system/maintenance/start
  */
 export function startMaintenance(options: ControllerOptions): void {
   const { app, bindings } = options;
@@ -112,8 +182,6 @@ export function startMaintenance(options: ControllerOptions): void {
       tags: ["Admin"],
       security: [{ bearerAuth: [] }],
       summary: "Start maintenance mode",
-      description:
-        "Activates maintenance mode immediately. The system will reject incoming requests while in maintenance mode.",
       responses: {
         200: OpenApiSpecEmptySuccessResponses["200"],
         ...OpenApiSpecCommonErrorResponses,
@@ -140,11 +208,7 @@ export function startMaintenance(options: ControllerOptions): void {
 }
 
 /**
- * Registers the stop maintenance endpoint.
- *
- * Allows root users to stop maintenance mode and resume normal operations.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle POST /v1/system/maintenance/stop
  */
 export function stopMaintenance(options: ControllerOptions): void {
   const { app, bindings } = options;
@@ -156,8 +220,6 @@ export function stopMaintenance(options: ControllerOptions): void {
       tags: ["Admin"],
       security: [{ bearerAuth: [] }],
       summary: "Stop maintenance mode",
-      description:
-        "Deactivates maintenance mode and resumes normal operations.",
       responses: {
         200: OpenApiSpecEmptySuccessResponses["200"],
         ...OpenApiSpecCommonErrorResponses,
@@ -184,11 +246,7 @@ export function stopMaintenance(options: ControllerOptions): void {
 }
 
 /**
- * Registers the set log level endpoint.
- *
- * Allows admins to dynamically adjust the Api's log level.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle POST /v1/system/log-level
  */
 export function setLogLevel(options: ControllerOptions): void {
   const { app, bindings } = options;
@@ -199,8 +257,7 @@ export function setLogLevel(options: ControllerOptions): void {
     describeRoute({
       tags: ["Admin"],
       security: [{ bearerAuth: [] }],
-      summary: "Set log level",
-      description: "Dynamically sets the API's log level.",
+      summary: "Sets the node's log level",
       responses: {
         200: OpenApiSpecEmptySuccessResponses["200"],
         ...OpenApiSpecCommonErrorResponses,
@@ -229,13 +286,9 @@ export function setLogLevel(options: ControllerOptions): void {
 }
 
 /**
- * Registers the read log level endpoint.
- *
- * Allows admins to read the Api's current log level.
- *
- * @param options - Controller configuration including app instance and bindings
+ * Handle GET /v1/system/log-level
  */
-export function getLogLevel(options: ControllerOptions): void {
+export function readLogLevel(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.system.logLevel;
 
@@ -244,14 +297,13 @@ export function getLogLevel(options: ControllerOptions): void {
     describeRoute({
       tags: ["Admin"],
       security: [{ bearerAuth: [] }],
-      summary: "Get the Api's log level",
-      description: "Retrieves the current API log level.",
+      summary: "Read the node's current log level",
       responses: {
         200: {
-          description: "Log level retrieved",
+          description: "OK",
           content: {
             "application/json": {
-              schema: resolver(GetLogLevelResponse),
+              schema: resolver(ReadLogLevelResponse),
             },
           },
         },
@@ -268,73 +320,9 @@ export function getLogLevel(options: ControllerOptions): void {
     async (c) => {
       const level = c.env.log.level as LogLevel;
 
-      return c.json<GetLogLevelResponse>(
+      return c.json<ReadLogLevelResponse>(
         SystemDataMapper.toGetLogLevelResponse(level),
       );
     },
   );
-}
-
-/**
- * Registers the /openapi.json endpoint.
- *
- * Returns a openapi compatible nildb API specification which can be rendered
- * in a swagger UI.
- *
- * @param options - Controller configuration including app instance and bindings
- */
-export function getOpenApiJson(options: ControllerOptions): void {
-  const {
-    app,
-    bindings: { log },
-  } = options;
-
-  const enabled = hasFeatureFlag(
-    options.bindings.config.enabledFeatures,
-    FeatureFlag.OPENAPI,
-  );
-
-  if (!enabled) {
-    log.info("The openapi feature is disabled");
-    return;
-  }
-
-  app.get(
-    PathsV1.system.openApiJson,
-    openAPISpecs(app, {
-      documentation: {
-        info: {
-          title: "nildb",
-          version: "1.0.0-beta.1",
-          description: "API",
-        },
-      },
-    }),
-  );
-}
-
-export function getMetrics(options: ControllerOptions): {
-  metrics: Hono | undefined;
-} {
-  const {
-    app,
-    bindings: { log },
-  } = options;
-
-  const enabled = hasFeatureFlag(
-    options.bindings.config.enabledFeatures,
-    FeatureFlag.METRICS,
-  );
-
-  if (!enabled) {
-    log.info("The openapi feature is disabled");
-    return { metrics: undefined };
-  }
-
-  const metrics = new Hono();
-  const { printMetrics, registerMetrics } = prometheus();
-  app.use("*", registerMetrics);
-  metrics.get("/metrics", printMetrics);
-
-  return { metrics };
 }

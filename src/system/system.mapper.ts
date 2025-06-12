@@ -1,7 +1,7 @@
 import type { LogLevel } from "#/common/logger";
 import type {
-  GetAboutNodeResponse,
-  GetLogLevelResponse,
+  ReadAboutNodeResponse,
+  ReadLogLevelResponse,
   SetLogLevelRequest,
 } from "./system.dto";
 import type {
@@ -65,7 +65,7 @@ export const SystemDataMapper = {
    * @param about - Node information domain model
    * @returns About node response DTO with serialized dates
    */
-  toGetAboutNodeResponse(about: AboutNode): GetAboutNodeResponse {
+  toGetAboutNodeResponse(about: AboutNode): ReadAboutNodeResponse {
     return {
       started: about.started.toISOString(),
       build: about.build,
@@ -87,7 +87,7 @@ export const SystemDataMapper = {
    * @param level - Current log level value
    * @returns Formatted log level response DTO
    */
-  toGetLogLevelResponse(level: LogLevel): GetLogLevelResponse {
+  toGetLogLevelResponse(level: LogLevel): ReadLogLevelResponse {
     return { data: level };
   },
 };
