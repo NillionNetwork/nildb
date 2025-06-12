@@ -9,7 +9,6 @@ import { type App, buildApp } from "#/app";
 import { mongoMigrateUp } from "#/common/mongo";
 import {
   type AppBindings,
-  type AppBindingsWithNilcomm,
   FeatureFlag,
   hasFeatureFlag,
   loadBindings,
@@ -64,7 +63,6 @@ export async function buildFixture(
     schema?: SchemaFixture;
     query?: QueryFixture;
     keepDbs?: boolean;
-    enableNilcomm?: boolean;
   } = {},
 ): Promise<FixtureContext> {
   dotenv.config({ path: [".env.test", ".env.test.nilauthclient"] });
@@ -74,17 +72,13 @@ export async function buildFixture(
   // Use unique db names for each test
   process.env.APP_DB_NAME_BASE = `${process.env.APP_DB_NAME_BASE}_${id}`;
 
-  // nilcomm should only be enabled via the test fixture params else consumers and producers conflict
   const currentFeatures = process.env.APP_ENABLED_FEATURES || "";
   const featuresArray = currentFeatures.split(",").filter(Boolean);
 
-  if (opts.enableNilcomm && !featuresArray.includes("nilcomm")) {
-    featuresArray.push("nilcomm");
-  }
   process.env.APP_ENABLED_FEATURES = featuresArray.join(",");
   log.info(`Enabled features: ${process.env.APP_ENABLED_FEATURES}`);
 
-  const bindings = (await loadBindings()) as AppBindingsWithNilcomm;
+  const bindings = await loadBindings();
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
     await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);

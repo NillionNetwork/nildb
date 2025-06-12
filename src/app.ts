@@ -8,7 +8,6 @@ import { corsMiddleware } from "./middleware/cors.middleware";
 import { limitRequestBodySizeMiddleware } from "./middleware/limit-body.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
 import { maintenanceMiddleware } from "./middleware/maintenance.middleware";
-import { buildNilCommRouter } from "./nilcomm/nilcomm.router";
 import { buildQueriesRouter } from "./queries/queries.router";
 import { buildSchemasRouter } from "./schemas/schemas.router";
 import { buildSystemRouter } from "./system/system.router";
@@ -36,7 +35,6 @@ export async function buildApp(
   buildQueriesRouter(options);
   buildDataRouter(options);
   buildUserRouter(options);
-  await buildNilCommRouter(options);
 
   return { app, metrics };
 }

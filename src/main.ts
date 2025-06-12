@@ -79,11 +79,6 @@ async function main() {
         new Promise((resolve) => metricsServer.close(resolve));
       }
 
-      if (bindings.mq) {
-        promises.push(bindings.mq.channel.close());
-        promises.push(bindings.mq.channelModel.close());
-      }
-
       await Promise.all(promises);
 
       bindings.log.info("Graceful shutdown completed. Goodbye.");
