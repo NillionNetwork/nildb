@@ -1,21 +1,21 @@
 import type { DidString } from "@nillion/nuc";
 import { UUID } from "mongodb";
 import type {
-  AddQueryRequest,
+  ByIdRequestParams,
+  CreateQueryRequest,
   DeleteQueryRequest,
-  ExecuteQueryRequest,
-  ExecuteQueryResponse,
   GetQueriesResponse,
-  GetQueryJobResponse,
-  QueryJobRequest,
+  GetQueryRunByIdResponse,
+  RunQueryRequest,
+  RunQueryResponse,
 } from "./queries.dto";
 import type {
   AddQueryCommand,
   DeleteQueryCommand,
-  ExecuteQueryCommand,
-  GetQueryJobCommand,
+  GetQueryRunByIdCommand,
   QueryDocument,
-  QueryJobDocument,
+  RunQueryCommand,
+  RunQueryJobDocument,
 } from "./queries.types";
 
 /**
@@ -61,39 +61,68 @@ export const QueriesDataMapper = {
   },
 
   /**
+   * Converts execute query request DTO to domain command.
+   *
+   * Handles string to UUID conversion at the boundary layer.
+   *
+   * @param dto - Execute query request DTO
+   * @returns Execute query domain command
+   */
+  toRunQueryCommand(dto: RunQueryRequest): RunQueryCommand {
+    return {
+      id: new UUID(dto.id),
+      variables: dto.variables,
+    };
+  },
+
+  /**
+   * Converts query id to response DTO.
+   *
+   * @param runId - The query run id used to fetch the result
+   * @returns Execute query response DTO
+   */
+  toRunQueryResponse(runId: UUID): RunQueryResponse {
+    return {
+      data: runId.toString(),
+    };
+  },
+
+  /**
+   * Converts params to get query run results by id command.
+   *
+   * Handles path parameter to UUID conversion at the boundary layer.
+   *
+   * @param params - Job ID params from path parameter
+   * @returns Get query job domain command
+   */
+  toGetQueryRunResultByIdCommand(
+    params: ByIdRequestParams,
+  ): GetQueryRunByIdCommand {
+    return {
+      id: new UUID(params.id),
+    };
+  },
+
+  /**
    * Converts a query job document to response DTO.
    * Serializes dates to ISO strings for JSON compatibility.
    *
    * @param document - Query job document from repository
    * @returns Query job response DTO
    */
-  toQueryJobResponse(document: QueryJobDocument): GetQueryJobResponse {
+  toGetQueryRunResultByResponse(
+    document: RunQueryJobDocument,
+  ): GetQueryRunByIdResponse {
     return {
       data: {
         _id: document._id.toString(),
-        _created: document._created.toISOString(),
-        _updated: document._updated.toISOString(),
-        queryId: document.queryId.toString(),
+        query: document.query.toString(),
         status: document.status,
-        startedAt: document.startedAt?.toISOString(),
-        endedAt: document.endedAt?.toISOString(),
+        started: document.started.toISOString(),
+        completed: document.completed.toISOString(),
         result: document.result,
         errors: document.errors,
       },
-    };
-  },
-
-  /**
-   * Converts query execution result to response DTO.
-   *
-   * @param result - Query execution result (job ID or direct data)
-   * @returns Execute query response DTO
-   */
-  toExecuteQueryResponse(
-    result: { jobId: string } | Record<string, unknown>[],
-  ): ExecuteQueryResponse {
-    return {
-      data: result,
     };
   },
 
@@ -105,14 +134,14 @@ export const QueriesDataMapper = {
    * @param owner - Query owner DID
    * @returns Complete query document for repository
    */
-  fromAddQueryRequest(
-    request: AddQueryRequest,
+  fromCreateQueryRequest(
+    request: CreateQueryRequest,
     owner: DidString,
   ): Omit<QueryDocument, "_id" | "_created" | "_updated"> {
     return {
       owner,
       name: request.name,
-      schema: request.schema,
+      schema: new UUID(request.schema),
       variables: request.variables,
       pipeline: request.pipeline,
     };
@@ -127,7 +156,10 @@ export const QueriesDataMapper = {
    * @param owner - Query owner DID
    * @returns Add query domain command
    */
-  toAddQueryCommand(dto: AddQueryRequest, owner: DidString): AddQueryCommand {
+  toCreateQueryCommand(
+    dto: CreateQueryRequest,
+    owner: DidString,
+  ): AddQueryCommand {
     return {
       _id: new UUID(dto._id),
       name: dto.name,
@@ -135,22 +167,6 @@ export const QueriesDataMapper = {
       variables: dto.variables,
       pipeline: dto.pipeline,
       owner,
-    };
-  },
-
-  /**
-   * Converts execute query request DTO to domain command.
-   *
-   * Handles string to UUID conversion at the boundary layer.
-   *
-   * @param dto - Execute query request DTO
-   * @returns Execute query domain command
-   */
-  toExecuteQueryCommand(dto: ExecuteQueryRequest): ExecuteQueryCommand {
-    return {
-      id: new UUID(dto.id),
-      variables: dto.variables,
-      background: dto.background,
     };
   },
 
@@ -169,16 +185,16 @@ export const QueriesDataMapper = {
   },
 
   /**
-   * Converts query job request DTO to domain command.
+   * Converts query ID params to delete command.
    *
-   * Handles string to UUID conversion at the boundary layer.
+   * Handles path parameter to UUID conversion at the boundary layer.
    *
-   * @param dto - Query job request DTO
-   * @returns Get query job domain command
+   * @param params - Query ID params from path parameter
+   * @returns Delete query domain command
    */
-  toGetQueryJobCommand(dto: QueryJobRequest): GetQueryJobCommand {
+  toDeleteQueryByIdCommand(params: ByIdRequestParams): DeleteQueryCommand {
     return {
-      id: new UUID(dto.id),
+      id: new UUID(params.id),
     };
   },
 };

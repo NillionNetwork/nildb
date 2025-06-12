@@ -65,7 +65,7 @@ export enum CollectionName {
   Builders = "builders",
   Schemas = "schemas",
   Queries = "queries",
-  JobsQueries = "jobs_queries",
+  QueryRuns = "query_runs",
   Config = "config",
   User = "user",
 }

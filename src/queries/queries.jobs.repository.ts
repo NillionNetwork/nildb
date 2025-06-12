@@ -12,9 +12,12 @@ import {
 } from "#/common/errors";
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { AppBindings } from "#/env";
-import type { QueryJobDocument } from "./queries.types";
+import type { RunQueryJobDocument } from "./queries.types";
 
-export function toQueryJobDocument(queryId: UUID): QueryJobDocument {
+/**
+ * Create query job document.
+ */
+export function toRunQueryJobDocument(queryId: UUID): RunQueryJobDocument {
   const now = new Date();
 
   return {
@@ -22,22 +25,29 @@ export function toQueryJobDocument(queryId: UUID): QueryJobDocument {
     _created: now,
     _updated: now,
     status: "pending",
-    queryId,
+    query: queryId,
+    started: new Date(0),
+    completed: new Date(0),
+    result: {},
+    errors: [],
   };
 }
 
+/**
+ * Insert query job document.
+ */
 export function insert(
   ctx: AppBindings,
-  document: QueryJobDocument,
+  document: RunQueryJobDocument,
 ): E.Effect<
-  InsertOneResult<QueryJobDocument>,
+  InsertOneResult<RunQueryJobDocument>,
   CollectionNotFoundError | DatabaseError
 > {
   return pipe(
-    checkCollectionExists<QueryJobDocument>(
+    checkCollectionExists<RunQueryJobDocument>(
       ctx,
       "primary",
-      CollectionName.JobsQueries,
+      CollectionName.QueryRuns,
     ),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
@@ -46,18 +56,21 @@ export function insert(
   );
 }
 
+/**
+ * Find query job by filter.
+ */
 export function findOne(
   ctx: AppBindings,
-  filter: StrictFilter<QueryJobDocument>,
+  filter: StrictFilter<RunQueryJobDocument>,
 ): E.Effect<
-  QueryJobDocument,
+  RunQueryJobDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(
-    checkCollectionExists<QueryJobDocument>(
+    checkCollectionExists<RunQueryJobDocument>(
       ctx,
       "primary",
-      CollectionName.JobsQueries,
+      CollectionName.QueryRuns,
     ),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
@@ -68,7 +81,7 @@ export function findOne(
         ? E.succeed(document)
         : E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.JobsQueries,
+              collection: CollectionName.QueryRuns,
               filter,
             }),
           ),
@@ -76,24 +89,27 @@ export function findOne(
   );
 }
 
+/**
+ * Update query job.
+ */
 export function updateOne(
   ctx: AppBindings,
-  jobId: UUID,
-  data: Partial<QueryJobDocument>,
+  run: UUID,
+  data: Partial<RunQueryJobDocument>,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<QueryJobDocument> = { _id: jobId };
-  const update: StrictUpdateFilter<QueryJobDocument> = {
+  const filter: StrictFilter<RunQueryJobDocument> = { _id: run };
+  const update: StrictUpdateFilter<RunQueryJobDocument> = {
     $set: data,
   };
 
   return pipe(
-    checkCollectionExists<QueryJobDocument>(
+    checkCollectionExists<RunQueryJobDocument>(
       ctx,
       "primary",
-      CollectionName.JobsQueries,
+      CollectionName.QueryRuns,
     ),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
@@ -104,7 +120,7 @@ export function updateOne(
         ? E.succeed(document)
         : E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.JobsQueries,
+              collection: CollectionName.QueryRuns,
               filter,
             }),
           ),

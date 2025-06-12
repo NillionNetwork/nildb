@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { Document, InsertOneResult, UUID } from "mongodb";
+import type { Document, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { z } from "zod";
 import * as BuildersRepository from "#/builders/builders.repository";
@@ -18,17 +18,16 @@ import { validateData } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import pipelineSchema from "./mongodb_pipeline.json";
-import * as QueriesJobsRepository from "./queries.jobs.repository";
+import * as RunQueryJobsRepository from "./queries.jobs.repository";
 import * as QueriesRepository from "./queries.repository";
 import type {
   AddQueryCommand,
   DeleteQueryCommand,
-  ExecuteQueryCommand,
-  GetQueryJobCommand,
+  GetQueryRunByIdCommand,
   QueryDocument,
-  QueryJobDocument,
-  QueryJobStatus,
   QueryVariable,
+  RunQueryCommand,
+  RunQueryJobDocument,
 } from "./queries.types";
 
 export function addQuery(
@@ -50,61 +49,104 @@ export function addQuery(
     _updated: now,
   };
 
+  // TODO: This looks ood ... are we correctly handling success results?
   return pipe(
     validateQuery(document),
     () => validateData(pipelineSchema, document.pipeline),
     () => QueriesRepository.insert(ctx, document),
-    E.flatMap(() =>
-      E.all([
-        E.succeed(ctx.cache.builders.taint(document.owner)),
-        BuildersRepository.addQuery(ctx, document.owner, document._id),
-      ]),
-    ),
+    E.flatMap(() => {
+      ctx.cache.builders.taint(document.owner);
+      return BuildersRepository.addQuery(ctx, document.owner, document._id);
+    }),
     E.as(void 0),
   );
 }
 
-export function executeQuery(
+export function runQueryInBackground(
   ctx: AppBindings,
-  command: ExecuteQueryCommand,
+  command: RunQueryCommand,
 ): E.Effect<
-  { jobId: string } | Record<string, unknown>[],
+  UUID,
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
   | VariableInjectionError
 > {
-  if (command.background) {
-    return pipe(
-      addQueryJob(ctx, command.id),
-      E.flatMap((job) => {
-        // TODO(tim): address this ignored promise
-        // TODO(tim): rename executeQuery -> que query? ... remove background: true?
-        E.runPromise(processQueryJob(ctx, job.insertedId, command.variables));
-        return E.succeed({
-          jobId: job.insertedId.toString(),
-        });
-      }),
-    );
-  }
+  return pipe(
+    E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(command.id)),
+    E.flatMap((document) => RunQueryJobsRepository.insert(ctx, document)),
+    E.flatMap((run) => {
+      const runId = run.insertedId;
 
-  return E.Do.pipe(
-    E.bind("query", () => QueriesRepository.findOne(ctx, { _id: command.id })),
-    E.bind("variables", ({ query }) =>
-      validateVariables(query.variables, command.variables),
-    ),
-    E.bind("pipeline", ({ query, variables }) =>
-      injectVariablesIntoAggregation(
-        query.variables,
-        query.pipeline,
-        variables,
-      ),
-    ),
-    E.flatMap(({ query, pipeline }) => {
-      return pipe(DataRepository.runAggregation(ctx, query, pipeline));
+      // Run query is always done in the background to avoid blocking and request timeouts
+      const _result = pipe(
+        RunQueryJobsRepository.findOne(ctx, { id: jobId }),
+        E.flatMap((job) =>
+          E.all([
+            RunQueryJobsRepository.updateOne(ctx, runId, {
+              status: "running",
+              started: new Date(),
+            }),
+            pipe(
+              E.Do,
+              E.bind("query", () =>
+                QueriesRepository.findOne(ctx, { _id: jobId }),
+              ),
+              E.bind("variables", ({ query }) =>
+                validateVariables(query.variables, command.variables),
+              ),
+              E.bind("pipeline", ({ query, variables }) =>
+                injectVariablesIntoAggregation(
+                  query.variables,
+                  query.pipeline,
+                  variables,
+                ),
+              ),
+              E.flatMap(({ query, pipeline }) => {
+                return pipe(
+                  DataRepository.runAggregation(ctx, query, pipeline),
+                );
+              }),
+              E.timeoutFail({
+                duration: "30 minutes",
+                onTimeout: () =>
+                  new TimeoutError({
+                    message: "Run query job timed out after 30 minutes.",
+                  }),
+              }),
+            ),
+          ]),
+        ),
+        E.flatMap(([, result]) =>
+          RunQueryJobsRepository.updateOne(ctx, runId, {
+            status: "complete",
+            completed: new Date(),
+            result,
+          }),
+        ),
+        E.catchAll((error) =>
+          RunQueryJobsRepository.updateOne(ctx, runId, {
+            status: "complete",
+            completed: new Date(),
+            errors: error.humanize(),
+          }),
+        ),
+        E.runPromise,
+      );
+      return E.succeed(run.insertedId);
     }),
   );
+}
+
+export function getRunQueryJob(
+  ctx: AppBindings,
+  command: GetQueryRunByIdCommand,
+): E.Effect<
+  RunQueryJobDocument,
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  return RunQueryJobsRepository.findOne(ctx, { _id: command.id });
 }
 
 export function findQueries(
@@ -132,11 +174,9 @@ export function removeQuery(
 > {
   return pipe(
     QueriesRepository.findOneAndDelete(ctx, { _id: command.id }),
+    E.tap((document) => ctx.cache.builders.taint(document.owner)),
     E.flatMap((document) =>
-      E.all([
-        E.succeed(ctx.cache.builders.taint(document.owner)),
-        BuildersRepository.removeQuery(ctx, document.owner, command.id),
-      ]),
+      BuildersRepository.removeQuery(ctx, document.owner, command.id),
     ),
     E.as(void 0),
   );
@@ -170,117 +210,6 @@ export function validateQuery(
   return E.forEach(Object.entries(variables), ([key, variable]) =>
     validateVariableDefinition(key, variable),
   ).pipe(E.map(() => query));
-}
-
-export function findQueryJob(
-  ctx: AppBindings,
-  command: GetQueryJobCommand,
-): E.Effect<
-  QueryJobDocument,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
-  return pipe(QueriesJobsRepository.findOne(ctx, { _id: command.id }));
-}
-
-export function addQueryJob(
-  ctx: AppBindings,
-  queryId: UUID,
-): E.Effect<
-  InsertOneResult<QueryJobDocument>,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
-  const document = QueriesJobsRepository.toQueryJobDocument(queryId);
-  return QueriesJobsRepository.insert(ctx, document);
-}
-
-type QueryJobUpdatePayload = {
-  jobId: UUID;
-  status: QueryJobStatus;
-  startedAt?: Date;
-  endedAt?: Date;
-  result?: JsonValue;
-  error?:
-    | DocumentNotFoundError
-    | CollectionNotFoundError
-    | DatabaseError
-    | DataValidationError
-    | VariableInjectionError
-    | TimeoutError;
-};
-
-export function updateQueryJob(
-  ctx: AppBindings,
-  payload: QueryJobUpdatePayload,
-): E.Effect<
-  void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
-  const { jobId, error, ...rest } = payload;
-  const update: Partial<QueryJobDocument> = {
-    ...rest,
-    _updated: new Date(),
-  };
-
-  if (error) {
-    update.errors = error.humanize();
-  }
-
-  return pipe(QueriesJobsRepository.updateOne(ctx, jobId, update));
-}
-
-export function processQueryJob(
-  ctx: AppBindings,
-  jobId: UUID,
-  variables: Record<string, unknown>,
-): E.Effect<
-  void,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | VariableInjectionError
-> {
-  return pipe(
-    findQueryJob(ctx, { id: jobId }),
-    E.flatMap((job) =>
-      E.all([
-        updateQueryJob(ctx, {
-          jobId,
-          status: "running",
-          startedAt: new Date(),
-        }),
-        pipe(
-          executeQuery(ctx, {
-            id: job.queryId,
-            variables,
-          }),
-          E.timeoutFail({
-            duration: "30 minutes",
-            onTimeout: () =>
-              new TimeoutError({
-                message: "Query job timed out after 30 minutes.",
-              }),
-          }),
-        ),
-      ]),
-    ),
-    E.flatMap(([, result]) =>
-      updateQueryJob(ctx, {
-        jobId,
-        result: result as JsonValue,
-        status: "complete",
-        endedAt: new Date(),
-      }),
-    ),
-    E.catchAll((error) =>
-      updateQueryJob(ctx, {
-        jobId,
-        error,
-        status: "complete",
-        endedAt: new Date(),
-      }),
-    ),
-  );
 }
 
 export type QueryPrimitive = string | number | boolean | Date | UUID;

@@ -37,20 +37,12 @@ export type QueryVariable = {
 export type QueryJobStatus = "pending" | "running" | "complete";
 
 /**
- * Base query document structure.
- *
- * Provides common fields for all query documents including
- * timestamps and unique identifier.
- */
-export type QueryDocumentBase = DocumentBase<UUID>;
-
-/**
  * Complete MongoDB aggregation query document.
  *
  * Represents a stored aggregation query with variable definitions
  * and pipeline stages for data processing and analysis.
  */
-export type QueryDocument = QueryDocumentBase & {
+export type QueryDocument = DocumentBase<UUID> & {
   /** DID of the builder that owns this query */
   owner: DidString;
   /** Human-readable name for the query */
@@ -64,24 +56,24 @@ export type QueryDocument = QueryDocumentBase & {
 };
 
 /**
- * Background query execution job document.
+ * Run query background job document.
  *
  * Tracks the status and results of queries executed asynchronously,
  * providing progress monitoring and result retrieval capabilities.
  */
-export type QueryJobDocument = QueryDocumentBase & {
+export type RunQueryJobDocument = DocumentBase<UUID> & {
   /** UUID of the query being executed */
-  queryId: UUID;
+  query: UUID;
   /** Current execution status */
   status: QueryJobStatus;
   /** Timestamp when execution began */
-  startedAt?: Date;
+  started: Date;
   /** Timestamp when execution completed */
-  endedAt?: Date;
+  completed: Date;
   /** Query results if execution completed successfully */
-  result?: JsonValue;
+  result: JsonValue;
   /** Error messages if execution failed */
-  errors?: string[];
+  errors: string[];
 };
 
 /**
@@ -118,19 +110,15 @@ export type AddQueryCommand = {
  * Encapsulates the query execution request with variable values
  * and execution options.
  */
-export type ExecuteQueryCommand = {
+export type RunQueryCommand = {
   /** UUID of the query to execute */
   id: UUID;
   /** Variable values for pipeline substitution */
   variables: Record<string, unknown>;
-  /** Whether to execute in background (async) */
-  background?: boolean;
 };
 
 /**
  * Command for deleting a query.
- *
- * Encapsulates the identifier of the query to be removed.
  */
 export type DeleteQueryCommand = {
   /** UUID of the query to delete */
@@ -138,11 +126,9 @@ export type DeleteQueryCommand = {
 };
 
 /**
- * Command for retrieving a query job.
- *
- * Encapsulates the identifier of the background job to retrieve.
+ * Command for retrieving a query run by id.
  */
-export type GetQueryJobCommand = {
+export type GetQueryRunByIdCommand = {
   /** UUID of the query job to retrieve */
   id: UUID;
 };

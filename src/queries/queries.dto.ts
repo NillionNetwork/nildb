@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import z from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { DidSchema, Uuid } from "#/common/types";
+import { Did } from "#/common/types";
 
 /**
  * Variable validation schemas for MongoDB aggregation pipeline variables.
@@ -23,7 +23,7 @@ export const QueryVariableValidator = z.object({
 });
 
 /**
- * Request schema for creating a new MongoDB aggregation query.
+ * Request schema for creating a new query.
  *
  * @example
  * {
@@ -42,16 +42,16 @@ export const QueryVariableValidator = z.object({
  *   ]
  * }
  */
-export const AddQueryRequest = z
+export const CreateQueryRequest = z
   .object({
-    _id: Uuid,
-    name: z.string(),
-    schema: Uuid,
+    _id: z.string().uuid(),
+    name: z.string().min(1).max(100),
+    schema: z.string().uuid(),
     variables: z.record(z.string(), QueryVariableValidator),
     pipeline: z.array(z.record(z.string(), z.unknown())),
   })
-  .openapi({ ref: "AddQueryRequest" });
-export type AddQueryRequest = z.infer<typeof AddQueryRequest>;
+  .openapi({ ref: "CreateQueryRequest" });
+export type CreateQueryRequest = z.infer<typeof CreateQueryRequest>;
 
 /**
  * Response for successful query creation.
@@ -59,10 +59,10 @@ export type AddQueryRequest = z.infer<typeof AddQueryRequest>;
  * Returns HTTP 201 Created with empty body to indicate
  * the query was created successfully.
  */
-export const AddQueryResponse = new Response(null, {
+export const CreateQueryResponse = new Response(null, {
   status: StatusCodes.CREATED,
 });
-export type AddQueryResponse = typeof AddQueryResponse;
+export type CreateQueryResponse = typeof CreateQueryResponse;
 
 /**
  * Query document schema for API responses.
@@ -74,8 +74,8 @@ const QueryDocumentResponse = z.object({
   _id: z.string().uuid(),
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
-  owner: DidSchema,
-  name: z.string(),
+  owner: Did,
+  name: z.string().min(1).max(100),
   schema: z.string().uuid(),
   variables: z.record(z.string(), QueryVariableValidator),
   pipeline: z.array(z.record(z.string(), z.unknown())),
@@ -108,6 +108,19 @@ export const GetQueriesResponse = ApiSuccessResponse(
 export type GetQueriesResponse = z.infer<typeof GetQueriesResponse>;
 
 /**
+ * Path parameters for query by id.
+ *
+ * @example
+ * VERB /v1/queries/:id
+ */
+export const ByIdRequestParams = z
+  .object({
+    id: z.string().uuid(),
+  })
+  .openapi({ ref: "ByIdRequestParams" });
+export type ByIdRequestParams = z.infer<typeof ByIdRequestParams>;
+
+/**
  * Request schema for deleting a query by ID.
  *
  * @example
@@ -117,7 +130,7 @@ export type GetQueriesResponse = z.infer<typeof GetQueriesResponse>;
  */
 export const DeleteQueryRequest = z
   .object({
-    id: Uuid,
+    id: z.string().uuid(),
   })
   .openapi({ ref: "DeleteQueryRequest" });
 export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
@@ -134,7 +147,7 @@ export const DeleteQueryResponse = new Response(null, {
 export type DeleteQueryResponse = typeof DeleteQueryResponse;
 
 /**
- * Request schema for executing a query with variable substitution.
+ * Request schema for starting a query run with variable substitution.
  *
  * @example
  * {
@@ -142,77 +155,35 @@ export type DeleteQueryResponse = typeof DeleteQueryResponse;
  *   "variables": {
  *     "minAge": 25,
  *     "status": "active"
- *   },
- *   "background": false
- * }
- */
-export const ExecuteQueryRequest = z
-  .object({
-    id: Uuid,
-    variables: z.record(z.string(), z.unknown()),
-    background: z.boolean().optional(),
-  })
-  .openapi({ ref: "ExecuteQueryRequest" });
-export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequest>;
-
-/**
- * Union type for query execution results.
- * Either returns a job ID for background execution or direct results.
- */
-export const QueryExecutionResult = z.union([
-  z.object({
-    jobId: z.string().uuid(),
-  }),
-  z.array(z.record(z.string(), z.unknown())),
-]);
-
-/**
- * Response schema for query execution.
- *
- * @example
- * // Synchronous execution result
- * {
- *   "data": [
- *     {"_id": "user1", "name": "Alice", "age": 30},
- *     {"_id": "user2", "name": "Bob", "age": 25}
- *   ]
- * }
- *
- * @example
- * // Background execution result
- * {
- *   "data": {
- *     "jobId": "456e7890-e89b-12d3-a456-426614174001"
  *   }
  * }
  */
-export const ExecuteQueryResponse = ApiSuccessResponse(
-  QueryExecutionResult,
-).openapi({ ref: "ExecuteQueryResponse" });
-
-export type ExecuteQueryResponse = z.infer<typeof ExecuteQueryResponse>;
-
-/**
- * Query job status enumeration.
- * Represents the current state of a background query execution.
- */
-export const QueryJobStatusSchema = z.enum(["pending", "running", "complete"]);
-export type QueryJobStatus = z.infer<typeof QueryJobStatusSchema>;
+export const RunQueryRequest = z
+  .object({
+    id: z.string().uuid(),
+    variables: z.record(z.string(), z.unknown()),
+  })
+  .openapi({ ref: "RunQueryRequest" });
+export type RunQueryRequest = z.infer<typeof RunQueryRequest>;
 
 /**
- * Request schema for getting query job status and results.
+ * Run query response schema.
  *
  * @example
  * {
- *   "id": "123e4567-e89b-12d3-a456-426614174000"
+ *   "data": "456e7890-e89b-12d3-a456-426614174001"
  * }
  */
-export const QueryJobRequest = z
-  .object({
-    id: Uuid,
-  })
-  .openapi({ ref: "QueryJobRequest" });
-export type QueryJobRequest = z.infer<typeof QueryJobRequest>;
+export const RunQueryResponse = ApiSuccessResponse(z.string().uuid()).openapi({
+  ref: "RunQueryResponse",
+});
+export type RunQueryResponse = z.infer<typeof RunQueryResponse>;
+
+/**
+ * The current state of a query run.
+ */
+export const RunQueryResultStatus = z.enum(["pending", "running", "complete"]);
+export type RunQueryResultStatus = z.infer<typeof RunQueryResultStatus>;
 
 /**
  * Query job document schema for API responses.
@@ -220,40 +191,19 @@ export type QueryJobRequest = z.infer<typeof QueryJobRequest>;
  * Represents a background query execution job with status,
  * timing information, and results when complete.
  */
-const QueryJobResponse = z.object({
+const GetQueryRunByIdDto = z.object({
   _id: z.string().uuid(),
-  _created: z.string().datetime(),
-  _updated: z.string().datetime(),
-  queryId: z.string().uuid(),
-  status: QueryJobStatusSchema,
-  startedAt: z.string().datetime().optional(),
-  endedAt: z.string().datetime().optional(),
+  query: z.string().uuid(),
+  status: RunQueryResultStatus,
+  started: z.string().datetime().optional(),
+  completed: z.string().datetime().optional(),
   result: z.unknown().optional(),
   errors: z.array(z.string()).optional(),
 });
 
-/**
- * Response schema for query job status retrieval.
- *
- * @example
- * {
- *   "data": {
- *     "_id": "456e7890-e89b-12d3-a456-426614174001",
- *     "_created": "2023-12-01T10:00:00.000Z",
- *     "_updated": "2023-12-01T10:05:00.000Z",
- *     "queryId": "123e4567-e89b-12d3-a456-426614174000",
- *     "status": "complete",
- *     "startedAt": "2023-12-01T10:00:00.000Z",
- *     "endedAt": "2023-12-01T10:05:00.000Z",
- *     "result": [
- *       {"_id": "user1", "count": 42}
- *     ]
- *   }
- * }
- */
-export const GetQueryJobResponse = ApiSuccessResponse(QueryJobResponse).openapi(
-  {
-    ref: "GetQueryJobResponse",
-  },
-);
-export type GetQueryJobResponse = z.infer<typeof GetQueryJobResponse>;
+export const GetQueryRunByIdResponse = ApiSuccessResponse(
+  GetQueryRunByIdDto,
+).openapi({
+  ref: "GetQueryRunByIdResponse",
+});
+export type GetQueryRunByIdResponse = z.infer<typeof GetQueryRunByIdResponse>;

@@ -25,11 +25,11 @@ export class init_collections implements MigrationInterface {
           primary.createCollection(CollectionName.Queries),
           primary.createCollection(CollectionName.Schemas),
           primary.createCollection(CollectionName.Config),
-          primary.createCollection(CollectionName.JobsQueries),
+          primary.createCollection(CollectionName.QueryRuns),
           primary.createCollection(CollectionName.User),
         ]);
 
-        await primary.collection(CollectionName.JobsQueries).createIndexes([
+        await primary.collection(CollectionName.QueryRuns).createIndexes([
           {
             key: { _created: 1 },
             name: "_created_1",
@@ -52,7 +52,7 @@ export class init_collections implements MigrationInterface {
         primary.dropCollection(CollectionName.Queries),
         primary.dropCollection(CollectionName.Schemas),
         primary.dropCollection(CollectionName.Config),
-        primary.dropCollection(CollectionName.JobsQueries),
+        primary.dropCollection(CollectionName.QueryRuns),
         primary.dropCollection(CollectionName.User),
       ]);
     } finally {
