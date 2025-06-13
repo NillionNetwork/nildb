@@ -4,12 +4,6 @@ services:
     ports:
       - "30017:27017"
 
-  rabbitmq:
-    image: rabbitmq:4-management
-    ports:
-      - "30672:5672"  # main server
-      - "30673:15672" # management ui
-
   postgres:
     image: postgres:17
     environment:
