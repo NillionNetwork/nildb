@@ -11,7 +11,13 @@ const VariablePath = z
   .string()
   .transform((path) => PATH_EXPRESSION.exec(path))
   .refine((match) => match !== null, "invalid PATH")
-  .transform((match) => match[0]);
+  .transform((match) => match[0])
+  .openapi({
+    type: "string",
+    pattern: "^\\$(\\.[$a-zA-Z][a-zA-Z0-9-_]+(\\[\\d+])*)+$",
+    description: "Jq-like path for variable subsitution",
+    example: "$.field.subfield[0]",
+  });
 
 /**
  * Schema for validating query variable configuration.

@@ -4,6 +4,7 @@ import type {
   CreateCollectionIndexRequest,
   CreateCollectionRequest,
   DeleteCollectionRequestParams,
+  DropCollectionIndexParams,
   ListCollectionsResponse,
   ReadCollectionMetadataResponse,
 } from "./collections.dto";
@@ -107,10 +108,10 @@ export const CollectionsDataMapper = {
   /**
    *
    */
-  toDropIndexCommand(name: string, collection: UUID): DropIndexCommand {
+  toDropIndexCommand(body: DropCollectionIndexParams): DropIndexCommand {
     return {
-      collection,
-      name,
+      collection: new UUID(body.id),
+      name: body.name,
     };
   },
 };

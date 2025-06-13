@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { Did, Uuid } from "#/common/types";
+import { Did } from "#/common/types";
 
 /**
  *
@@ -59,7 +59,7 @@ export type CreateCollectionIndexRequest = z.infer<
  *
  */
 export const DropCollectionIndexParams = z.object({
-  id: Uuid,
+  id: z.string().uuid(),
   name: z.string().min(4).max(50),
 });
 
@@ -82,7 +82,7 @@ export const DropCollectionIndexResponse = new Response(null, {
  */
 export const CreateCollectionRequest = z
   .object({
-    id: Uuid,
+    id: z.string().uuid(),
     type: z.union([z.literal("standard"), z.literal("owned")]),
     name: z.string().min(1),
     schema: z.record(z.string(), z.unknown()),
@@ -103,7 +103,7 @@ export const CreateCollectionResponse = new Response(null, {
  */
 export const DeleteCollectionRequestParams = z
   .object({
-    id: Uuid,
+    id: z.string().uuid(),
   })
   .openapi({ ref: "DeleteCollectionRequestParams" });
 
@@ -126,7 +126,7 @@ export const DeleteCollectionResponse = new Response(null, {
  */
 export const ReadCollectionMetadataRequestParams = z
   .object({
-    id: Uuid,
+    id: z.string().uuid(),
   })
   .openapi({ ref: "ReadCollectionMetadataRequestParams" });
 

@@ -304,11 +304,11 @@ export function dropCollectionIndex(options: ControllerOptions): void {
     }),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
-      const { id, name } = c.req.valid("param");
-      const command = CollectionsDataMapper.toDropIndexCommand(name, id);
+      const params = c.req.valid("param");
+      const command = CollectionsDataMapper.toDropIndexCommand(params);
 
       return pipe(
-        enforceSchemaOwnership(builder, id),
+        enforceSchemaOwnership(builder, command.collection),
         E.flatMap(() => CollectionsService.dropIndex(c.env, command)),
         E.map(() => DropCollectionIndexResponse),
         handleTaggedErrors(c),

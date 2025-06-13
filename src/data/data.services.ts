@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { DeleteResult, UpdateResult, UUID } from "mongodb";
+import { type DeleteResult, type UpdateResult, UUID } from "mongodb";
 import * as SchemasRepository from "#/collections/collections.repository";
 import type {
   CollectionNotFoundError,
@@ -8,7 +8,7 @@ import type {
   DocumentNotFoundError,
 } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
-import { Did, Uuid } from "#/common/types";
+import { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import * as UserRepository from "#/users/users.repository";
@@ -61,7 +61,7 @@ export function createOwnedRecords(
         builder: document.owner,
         collection: command.collection,
         user: command.owner,
-        data: result.created.map((id) => Uuid.parse(id)),
+        data: result.created.map((id) => new UUID(id)),
         acl: command.acl,
       }).pipe(E.flatMap(() => E.succeed(result)));
     }),
