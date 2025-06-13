@@ -25,7 +25,7 @@ import type { AppBindings, EnvVars } from "#/env";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
 // identifier across the cluster.
-export type DocumentBase<I> = {
+export type DocumentBase<I = UUID> = {
   _id: I;
   _created: Date;
   _updated: Date;
@@ -63,9 +63,9 @@ export async function initAndCreateDbClients(
 
 export enum CollectionName {
   Builders = "builders",
-  Schemas = "schemas",
+  Collections = "collections",
   Queries = "queries",
-  JobsQueries = "jobs_queries",
+  QueryRuns = "query_runs",
   Config = "config",
   User = "user",
 }

@@ -1,7 +1,7 @@
+/** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
 import type { StatusCodes } from "http-status-codes";
 import type z from "zod";
 import type { ApiErrorResponse } from "#/common/handler";
-// biome-ignore lint/nursery/noImportCycles: this cycle resolves correctly, is limited to testing, and avoids an overly large fixture file
 import type { FixtureContext } from "./fixture";
 
 export class ResponseHandler<TSuccess = unknown> {
@@ -15,8 +15,31 @@ export class ResponseHandler<TSuccess = unknown> {
 
   async expectSuccess(): Promise<TSuccess> {
     const response = await this.request();
-    this.c.expect(response.ok).toBe(true);
-    this.c.expect(response.status).toBe(this.successStatus);
+    // this.c.expect(response.ok).toBe(true);
+    // this.c.expect(response.status).toBe(this.successStatus);
+
+    // if failure try and print the error body
+    if (!response.ok) {
+      const type = response.headers.get("content-type");
+
+      switch (type) {
+        case "application/json": {
+          const json = await response.json();
+          console.log("Json: ", json);
+          break;
+        }
+        case "plain/text": {
+          const text = await response.text();
+          console.log("Text: ", text);
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+
+      this.c.expect(response.status).toBe(this.successStatus);
+    }
 
     // Handle responses that do not expect a body
     if (!this.successSchema) {

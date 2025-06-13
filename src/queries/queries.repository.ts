@@ -17,6 +17,9 @@ import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "./queries.types";
 
+/**
+ * Insert query document.
+ */
 export function insert(
   ctx: AppBindings,
   document: QueryDocument,
@@ -35,6 +38,9 @@ export function insert(
   );
 }
 
+/**
+ * Find multiple queries.
+ */
 export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
@@ -63,7 +69,7 @@ export function findMany(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Schemas,
+              collection: CollectionName.Collections,
               filter,
             }),
           )
@@ -72,6 +78,9 @@ export function findMany(
   );
 }
 
+/**
+ * Find query by filter.
+ */
 export function findOne(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
@@ -83,23 +92,26 @@ export function findOne(
   | DataValidationError
 > {
   return pipe(
-    E.all([
+    E.Do,
+    E.bind("collection", () =>
       checkCollectionExists<QueryDocument>(
         ctx,
         "primary",
         CollectionName.Queries,
       ),
+    ),
+    E.bind("filter", () =>
       applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
-    ]),
+    ),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) => collection.findOne(documentFilter),
+      try: ({ collection, filter }) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
     }),
     E.flatMap((result) =>
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Schemas,
+              collection: CollectionName.Collections,
               filter,
             }),
           )
@@ -108,6 +120,9 @@ export function findOne(
   );
 }
 
+/**
+ * Find and delete query.
+ */
 export function findOneAndDelete(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
@@ -137,7 +152,7 @@ export function findOneAndDelete(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Schemas,
+              collection: CollectionName.Collections,
               filter,
             }),
           )
@@ -146,6 +161,9 @@ export function findOneAndDelete(
   );
 }
 
+/**
+ * Add query document coercions.
+ */
 export function addQueryDocumentCoercions(
   coercibleMap: CoercibleMap,
 ): CoercibleMap {

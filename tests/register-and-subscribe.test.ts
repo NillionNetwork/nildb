@@ -53,7 +53,7 @@ describe("bootstrap.test.ts", () => {
       process.env.APP_NILCHAIN_PRIVATE_KEY_1!,
     );
 
-    const admin = await createAdminTestClient({
+    const system = await createAdminTestClient({
       app,
       keypair: nodeKeypair,
       nodePublicKey: nodeKeypair.publicKey("hex"),
@@ -76,7 +76,7 @@ describe("bootstrap.test.ts", () => {
       log,
       app,
       bindings,
-      admin: admin,
+      system,
       builder,
       user,
       // expect is required, so adding global vitest.expect (tests should replace it for localised reporting)
@@ -88,7 +88,7 @@ describe("bootstrap.test.ts", () => {
     expect,
   }) => {
     c.expect = expect;
-    const response = await c.app.request(PathsV1.schemas.root);
+    const response = await c.app.request(PathsV1.collections.root);
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
@@ -105,15 +105,15 @@ describe("bootstrap.test.ts", () => {
 
   it("self-signed tokens are rejected from paid route", async ({ expect }) => {
     c.expect = expect;
-    const { builder, admin } = c;
+    const { builder, system } = c;
 
     const selfSignedToken = NucTokenBuilder.invocation({})
       .command(new Command(["nil", "db"]))
-      .audience(Did.fromHex(admin.keypair.publicKey("hex")))
+      .audience(Did.fromHex(system.keypair.publicKey("hex")))
       .subject(Did.fromHex(builder.keypair.publicKey("hex")))
       .build(builder.keypair.privateKey());
 
-    const response = await builder.app.request(PathsV1.schemas.root, {
+    const response = await builder.app.request(PathsV1.collections.root, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${selfSignedToken}`,
@@ -129,6 +129,6 @@ describe("bootstrap.test.ts", () => {
     const { builder } = c;
 
     await builder.ensureSubscriptionActive();
-    await builder.listSchemas(c).expectSuccess();
+    await builder.readCollections(c).expectSuccess();
   });
 });

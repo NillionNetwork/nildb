@@ -2,19 +2,17 @@ import type { ControllerOptions } from "#/common/types";
 import * as BuilderController from "./builders.controllers";
 
 /**
- * Registers all builder-related routes with the application.
+ * Registers the builders domain.
  *
- * Mounts the following endpoints:
- * - POST /api/v1/register - Register a new organisation builder
- * - GET /api/v1/builders/me - Retrieve authenticated user's profile
- * - DELETE /api/v1/builders/me - Delete authenticated user's builder
- * - PUT /api/v1/builders/me - Update authenticated user's profile
+ * - POST   /v1/builders/register - Register a new builder
+ * - GET    /v1/builders/me       - Read the builder's profile
+ * - POST   /v1/builders/me       - Updates the builder's profile
+ * - DELETE /v1/builders/me       - Deletes the builder
  *
- * @param options - Controller configuration including app instance and bindings
  */
 export function buildBuildersRouter(options: ControllerOptions): void {
   BuilderController.register(options);
-  BuilderController.getProfile(options);
-  BuilderController._delete(options);
+  BuilderController.readProfile(options);
   BuilderController.updateProfile(options);
+  BuilderController.deleteBuilder(options);
 }

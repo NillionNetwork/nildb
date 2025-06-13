@@ -2,17 +2,18 @@ import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import type { DataDocument } from "#/data/data.repository";
+import type { StandardDocumentBase } from "#/data/data.types";
+import collectionJson from "./data/wallet.standard.collection.json";
 import queryJson from "./data/wallet.standard.query.json";
-import schemaJson from "./data/wallet.standard.schema.json";
-import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import { waitForQueryRun } from "./fixture/assertions";
+import type { CollectionFixture, QueryFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("data", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+describe("standard-data.test.ts", () => {
+  const collection = collectionJson as unknown as CollectionFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection,
     query,
   });
   beforeAll(async (_c) => {});
@@ -50,15 +51,17 @@ describe("data", () => {
     ];
 
     const result = await builder
-      .uploadStandardData(c, {
-        schema: schema.id,
+      .createStandardData(c, {
+        collection: collection.id,
         data,
       })
       .expectSuccess();
 
     expect(result.data.created).toHaveLength(3);
 
-    const cursor = bindings.db.data.collection(schema.id.toString()).find({});
+    const cursor = bindings.db.data
+      .collection(collection.id.toString())
+      .find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
@@ -77,15 +80,17 @@ describe("data", () => {
     ];
 
     const result = await builder
-      .uploadStandardData(c, {
-        schema: schema.id,
+      .createStandardData(c, {
+        collection: collection.id,
         data,
       })
       .expectSuccess();
 
     expect(result.data.errors).toHaveLength(1);
 
-    const cursor = bindings.db.data.collection(schema.id.toString()).find({});
+    const cursor = bindings.db.data
+      .collection(collection.id.toString())
+      .find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
@@ -110,8 +115,8 @@ describe("data", () => {
     ];
 
     const result = await builder
-      .uploadStandardData(c, {
-        schema: schema.id,
+      .createStandardData(c, {
+        collection: collection.id,
         data,
       })
       .expectSuccess();
@@ -140,13 +145,15 @@ describe("data", () => {
     ];
 
     await builder
-      .uploadStandardData(c, {
-        schema: schema.id,
+      .createStandardData(c, {
+        collection: collection.id,
         data,
       })
       .expectSuccess();
 
-    const cursor = c.bindings.db.data.collection(schema.id.toString()).find({});
+    const cursor = c.bindings.db.data
+      .collection(collection.id.toString())
+      .find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(4);
   });
@@ -165,28 +172,30 @@ describe("data", () => {
     ];
 
     await builder
-      .uploadStandardData(c, {
-        schema: schema.id,
+      .createStandardData(c, {
+        collection: collection.id,
         data,
       })
       .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
   });
 
-  it.skip("can run a query", async ({ skip, c }) => {
-    skip("depends on indexes, disable until index endpoint is ready");
+  it("can run a query", async ({ c }) => {
     const { expect, builder } = c;
 
-    const { data } = await builder
-      .executeQuery(c, {
-        id: query.id,
-        variables: query.variables,
-      })
-      .expectSuccess();
+    const runId = (
+      await builder
+        .runQuery(c, {
+          _id: query.id,
+          variables: query.variables,
+        })
+        .expectSuccess()
+    ).data as UuidDto;
 
-    expect(data).toEqual([
+    const result = await waitForQueryRun(c, runId);
+    expect(result.data.result).toEqual([
       {
         averageAge: 30,
-        count: 3,
+        count: 2,
       },
     ]);
   });
@@ -195,15 +204,15 @@ describe("data", () => {
     const { expect, bindings, builder } = c;
 
     const expected = await bindings.db.data
-      .collection<DataDocument>(schema.id.toString())
+      .collection<StandardDocumentBase>(collection.id.toString())
       .findOne({});
 
     expect(expected).toBeDefined();
     const _id = expected!._id.toString();
 
     const result = await builder
-      .readData(c, {
-        schema: schema.id,
+      .findData(c, {
+        collection: collection.id,
         filter: { _id },
       })
       .expectSuccess();
@@ -216,7 +225,7 @@ describe("data", () => {
     const { expect, bindings, builder } = c;
 
     const expected = await bindings.db.data
-      .collection<DataDocument>(schema.id.toString())
+      .collection<StandardDocumentBase>(collection.id.toString())
       .find({})
       .limit(3)
       .toArray();
@@ -225,8 +234,8 @@ describe("data", () => {
     const ids = expected.map((document) => document._id.toString());
 
     const result = await builder
-      .readData(c, {
-        schema: schema.id,
+      .findData(c, {
+        collection: collection.id,
         filter: { _id: { $in: ids } },
       })
       .expectSuccess();
@@ -238,7 +247,7 @@ describe("data", () => {
     const { expect, bindings, builder } = c;
 
     const expected = await bindings.db.data
-      .collection<DataDocument>(schema.id.toString())
+      .collection<StandardDocumentBase>(collection.id.toString())
       .find({})
       .limit(1)
       .toArray();
@@ -248,7 +257,7 @@ describe("data", () => {
 
     const result = await builder
       .deleteData(c, {
-        schema: schema.id,
+        collection: collection.id,
         filter: { _id: { $in: ids } },
       })
       .expectSuccess();

@@ -11,8 +11,8 @@ payments:
   nilchain_url: http://nilchain:26648
 
   subscriptions:
-    renewal_threshold_seconds: 1000
-    length_seconds: 120
+    renewal_threshold_seconds: 86400 # 1 day
+    length_seconds: 604800 # 1 week
     dollar_cost: 1
 
   token_price:

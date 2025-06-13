@@ -1,21 +1,26 @@
 import { StatusCodes } from "http-status-codes";
 import z from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { DidSchema, Uuid } from "#/common/types";
+import { Did } from "#/common/types";
 
 /**
- * Variable validation schemas for MongoDB aggregation pipeline variables.
+ * MongoDB aggregation pipeline variable validation.
  */
 const PATH_EXPRESSION = /^\$(\.[$a-zA-Z][a-zA-Z0-9-_]+(\[\d+])*)+$/;
 const VariablePath = z
   .string()
   .transform((path) => PATH_EXPRESSION.exec(path))
   .refine((match) => match !== null, "invalid PATH")
-  .transform((match) => match[0]);
+  .transform((match) => match[0])
+  .openapi({
+    type: "string",
+    pattern: "^\\$(\\.[$a-zA-Z][a-zA-Z0-9-_]+(\\[\\d+])*)+$",
+    description: "Jq-like path for variable subsitution",
+    example: "$.field.subfield[0]",
+  });
 
 /**
- * Schema for validating query variable configuration.
- * Variables define replaceable parameters in MongoDB aggregation pipelines.
+ * Query variable configuration validator.
  */
 export const QueryVariableValidator = z.object({
   path: VariablePath,
@@ -23,82 +28,43 @@ export const QueryVariableValidator = z.object({
 });
 
 /**
- * Request schema for creating a new MongoDB aggregation query.
- *
- * @example
- * {
- *   "_id": "123e4567-e89b-12d3-a456-426614174000",
- *   "name": "User Analytics Query",
- *   "schema": "456e7890-e89b-12d3-a456-426614174001",
- *   "variables": {
- *     "minAge": {
- *       "path": "$.age",
- *       "description": "Minimum age filter"
- *     }
- *   },
- *   "pipeline": [
- *     { "$match": { "age": { "$gte": "{{minAge}}" } } },
- *     { "$group": { "_id": null, "count": { "$sum": 1 } } }
- *   ]
- * }
+ * Query creation request.
  */
-export const AddQueryRequest = z
+export const CreateQueryRequest = z
   .object({
-    _id: Uuid,
-    name: z.string(),
-    schema: Uuid,
+    _id: z.string().uuid(),
+    name: z.string().min(1).max(100),
+    collection: z.string().uuid(),
     variables: z.record(z.string(), QueryVariableValidator),
     pipeline: z.array(z.record(z.string(), z.unknown())),
   })
-  .openapi({ ref: "AddQueryRequest" });
-export type AddQueryRequest = z.infer<typeof AddQueryRequest>;
+  .openapi({ ref: "CreateQueryRequest" });
+export type CreateQueryRequest = z.infer<typeof CreateQueryRequest>;
 
 /**
- * Response for successful query creation.
- *
- * Returns HTTP 201 Created with empty body to indicate
- * the query was created successfully.
+ * Query creation response.
  */
-export const AddQueryResponse = new Response(null, {
+export const CreateQueryResponse = new Response(null, {
   status: StatusCodes.CREATED,
 });
-export type AddQueryResponse = typeof AddQueryResponse;
+export type CreateQueryResponse = typeof CreateQueryResponse;
 
 /**
- * Query document schema for API responses.
- *
- * Represents a MongoDB aggregation query with metadata
- * and dates serialized as ISO strings for JSON compatibility.
+ * Query document data.
  */
 const QueryDocumentResponse = z.object({
   _id: z.string().uuid(),
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
-  owner: DidSchema,
-  name: z.string(),
-  schema: z.string().uuid(),
+  owner: Did,
+  name: z.string().min(1).max(100),
+  collection: z.string().uuid(),
   variables: z.record(z.string(), QueryVariableValidator),
   pipeline: z.array(z.record(z.string(), z.unknown())),
 });
 
 /**
- * Response schema for listing organization queries.
- *
- * @example
- * {
- *   "data": [
- *     {
- *       "_id": "123e4567-e89b-12d3-a456-426614174000",
- *       "_created": "2023-12-01T10:00:00.000Z",
- *       "_updated": "2023-12-01T10:00:00.000Z",
- *       "owner": "did:nil:037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b",
- *       "name": "User Analytics Query",
- *       "schema": "456e7890-e89b-12d3-a456-426614174001",
- *       "variables": {},
- *       "pipeline": [{"$match": {"active": true}}]
- *     }
- *   ]
- * }
+ * Queries list response.
  */
 export const GetQueriesResponse = ApiSuccessResponse(
   z.array(QueryDocumentResponse),
@@ -108,25 +74,27 @@ export const GetQueriesResponse = ApiSuccessResponse(
 export type GetQueriesResponse = z.infer<typeof GetQueriesResponse>;
 
 /**
- * Request schema for deleting a query by ID.
- *
- * @example
- * {
- *   "id": "123e4567-e89b-12d3-a456-426614174000"
- * }
+ * Query ID path parameters.
+ */
+export const ByIdRequestParams = z
+  .object({
+    id: z.string().uuid(),
+  })
+  .openapi({ ref: "ByIdRequestParams" });
+export type ByIdRequestParams = z.infer<typeof ByIdRequestParams>;
+
+/**
+ * Query deletion request.
  */
 export const DeleteQueryRequest = z
   .object({
-    id: Uuid,
+    id: z.string().uuid(),
   })
   .openapi({ ref: "DeleteQueryRequest" });
 export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
 
 /**
- * Response for successful query deletion.
- *
- * Returns HTTP 204 No Content with empty body to indicate
- * the query was deleted successfully.
+ * Query deletion response.
  */
 export const DeleteQueryResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,
@@ -134,126 +102,51 @@ export const DeleteQueryResponse = new Response(null, {
 export type DeleteQueryResponse = typeof DeleteQueryResponse;
 
 /**
- * Request schema for executing a query with variable substitution.
- *
- * @example
- * {
- *   "id": "123e4567-e89b-12d3-a456-426614174000",
- *   "variables": {
- *     "minAge": 25,
- *     "status": "active"
- *   },
- *   "background": false
- * }
+ * Query execution request.
  */
-export const ExecuteQueryRequest = z
+export const RunQueryRequest = z
   .object({
-    id: Uuid,
+    _id: z.string().uuid(),
     variables: z.record(z.string(), z.unknown()),
-    background: z.boolean().optional(),
   })
-  .openapi({ ref: "ExecuteQueryRequest" });
-export type ExecuteQueryRequest = z.infer<typeof ExecuteQueryRequest>;
+  .openapi({ ref: "RunQueryRequest" });
+export type RunQueryRequest = z.infer<typeof RunQueryRequest>;
 
 /**
- * Union type for query execution results.
- * Either returns a job ID for background execution or direct results.
+ * Query execution response.
  */
-export const QueryExecutionResult = z.union([
-  z.object({
-    jobId: z.string().uuid(),
-  }),
-  z.array(z.record(z.string(), z.unknown())),
+export const RunQueryResponse = ApiSuccessResponse(z.string().uuid()).openapi({
+  ref: "RunQueryResponse",
+});
+export type RunQueryResponse = z.infer<typeof RunQueryResponse>;
+
+/**
+ * Query execution status.
+ */
+export const RunQueryResultStatus = z.enum([
+  "pending",
+  "running",
+  "complete",
+  "error",
 ]);
+export type RunQueryResultStatus = z.infer<typeof RunQueryResultStatus>;
 
 /**
- * Response schema for query execution.
- *
- * @example
- * // Synchronous execution result
- * {
- *   "data": [
- *     {"_id": "user1", "name": "Alice", "age": 30},
- *     {"_id": "user2", "name": "Bob", "age": 25}
- *   ]
- * }
- *
- * @example
- * // Background execution result
- * {
- *   "data": {
- *     "jobId": "456e7890-e89b-12d3-a456-426614174001"
- *   }
- * }
+ * Query job data.
  */
-export const ExecuteQueryResponse = ApiSuccessResponse(
-  QueryExecutionResult,
-).openapi({ ref: "ExecuteQueryResponse" });
-
-export type ExecuteQueryResponse = z.infer<typeof ExecuteQueryResponse>;
-
-/**
- * Query job status enumeration.
- * Represents the current state of a background query execution.
- */
-export const QueryJobStatusSchema = z.enum(["pending", "running", "complete"]);
-export type QueryJobStatus = z.infer<typeof QueryJobStatusSchema>;
-
-/**
- * Request schema for getting query job status and results.
- *
- * @example
- * {
- *   "id": "123e4567-e89b-12d3-a456-426614174000"
- * }
- */
-export const QueryJobRequest = z
-  .object({
-    id: Uuid,
-  })
-  .openapi({ ref: "QueryJobRequest" });
-export type QueryJobRequest = z.infer<typeof QueryJobRequest>;
-
-/**
- * Query job document schema for API responses.
- *
- * Represents a background query execution job with status,
- * timing information, and results when complete.
- */
-const QueryJobResponse = z.object({
+const GetQueryRunByIdDto = z.object({
   _id: z.string().uuid(),
-  _created: z.string().datetime(),
-  _updated: z.string().datetime(),
-  queryId: z.string().uuid(),
-  status: QueryJobStatusSchema,
-  startedAt: z.string().datetime().optional(),
-  endedAt: z.string().datetime().optional(),
+  query: z.string().uuid(),
+  status: RunQueryResultStatus,
+  started: z.string().datetime().optional(),
+  completed: z.string().datetime().optional(),
   result: z.unknown().optional(),
   errors: z.array(z.string()).optional(),
 });
 
-/**
- * Response schema for query job status retrieval.
- *
- * @example
- * {
- *   "data": {
- *     "_id": "456e7890-e89b-12d3-a456-426614174001",
- *     "_created": "2023-12-01T10:00:00.000Z",
- *     "_updated": "2023-12-01T10:05:00.000Z",
- *     "queryId": "123e4567-e89b-12d3-a456-426614174000",
- *     "status": "complete",
- *     "startedAt": "2023-12-01T10:00:00.000Z",
- *     "endedAt": "2023-12-01T10:05:00.000Z",
- *     "result": [
- *       {"_id": "user1", "count": 42}
- *     ]
- *   }
- * }
- */
-export const GetQueryJobResponse = ApiSuccessResponse(QueryJobResponse).openapi(
-  {
-    ref: "GetQueryJobResponse",
-  },
-);
-export type GetQueryJobResponse = z.infer<typeof GetQueryJobResponse>;
+export const GetQueryRunByIdResponse = ApiSuccessResponse(
+  GetQueryRunByIdDto,
+).openapi({
+  ref: "GetQueryRunByIdResponse",
+});
+export type GetQueryRunByIdResponse = z.infer<typeof GetQueryRunByIdResponse>;

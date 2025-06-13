@@ -1,5 +1,5 @@
+/** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
 import {
-  Command,
   Did,
   type DidString,
   InvocationBody,
@@ -11,74 +11,60 @@ import {
   PayerBuilder,
 } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
-import z from "zod";
 import type { App } from "#/app";
 import {
-  GetProfileResponse,
+  ReadProfileResponse,
   type RegisterBuilderRequest,
   type UpdateProfileRequest,
 } from "#/builders/builders.dto";
-import { PathsV1 } from "#/common/paths";
 import {
+  type CreateCollectionIndexRequest,
+  type CreateCollectionRequest,
+  ListCollectionsResponse,
+  ReadCollectionMetadataResponse,
+} from "#/collections/collections.dto";
+import { NucCmd } from "#/common/nuc-cmd-tree";
+import { PathsV1 } from "#/common/paths";
+import type { UuidDto } from "#/common/types";
+import {
+  CreateDataResponse,
+  type CreateOwnedDataRequest,
+  type CreateStandardDataRequest,
   type DeleteDataRequest,
   DeleteDataResponse,
-  type FlushDataRequest,
-  type ReadDataRequest,
-  ReadDataResponse,
-  type TailDataRequest,
+  type FindDataRequest,
+  FindDataResponse,
   TailDataResponse,
   type UpdateDataRequest,
   UpdateDataResponse,
-  UploadDataResponse,
-  type UploadOwnedDataRequest,
-  type UploadStandardDataRequest,
 } from "#/data/data.dto";
 import {
-  type AddQueryRequest,
-  type DeleteQueryRequest,
-  type ExecuteQueryRequest,
-  ExecuteQueryResponse,
+  type CreateQueryRequest,
   GetQueriesResponse,
-  GetQueryJobResponse,
-  type QueryJobRequest,
+  GetQueryRunByIdResponse,
+  type RunQueryRequest,
+  RunQueryResponse,
 } from "#/queries/queries.dto";
 import {
-  type AddSchemaRequest,
-  type DeleteSchemaRequest,
-  ListSchemasResponse,
-  ReadSchemaMetadataResponse,
-} from "#/schemas/schemas.dto";
-import {
-  GetAboutNodeResponse,
-  GetLogLevelResponse,
+  ReadAboutNodeResponse,
+  ReadLogLevelResponse,
   type SetLogLevelRequest,
 } from "#/system/system.dto";
 import {
-  type AddPermissionsRequest,
-  AddPermissionsResponse,
-  type DeletePermissionsRequest,
-  ListUserDataResponse,
-  type ReadPermissionsRequest,
-  ReadPermissionsResponse,
-  type UpdatePermissionsRequest,
-  UpdatePermissionsResponse,
-} from "#/user/user.dto";
-// biome-ignore lint/nursery/noImportCycles: this cycle resolves correctly, is limited to testing, and avoids an overly large fixture file
+  type GrantAccessToDataRequest,
+  ListDataReferencesResponse,
+  ReadDataResponse,
+  type RevokeAccessToDataRequest,
+} from "#/users/users.dto";
 import type { FixtureContext } from "./fixture";
-// biome-ignore lint/nursery/noImportCycles: this cycle resolves correctly, is limited to testing, and avoids an overly large fixture file
 import { ResponseHandler } from "./response-handler";
 
 /**
  * Base configuration for test client creation.
- *
- * Contains common properties required by all test client types.
  */
 type BaseTestClientOptions = {
-  /** Hono application instance for making requests */
   app: App;
-  /** Cryptographic keypair for signing tokens */
   keypair: Keypair;
-  /** Node's public key for token audience validation */
   nodePublicKey: string;
 };
 
@@ -90,7 +76,6 @@ type BaseTestClientOptions = {
  * and don't require subscription management.
  */
 type AdminTestClientOptions = BaseTestClientOptions & {
-  /** Discriminator for admin client type */
   type: "admin";
 };
 
@@ -102,11 +87,8 @@ type AdminTestClientOptions = BaseTestClientOptions & {
  * builder management endpoints.
  */
 type BuilderTestClientOptions = BaseTestClientOptions & {
-  /** Discriminator for builder client type */
   type: "builder";
-  /** Payment service for subscription management */
   payer: Payer;
-  /** Nilauth client for token generation and validation */
   nilauth: NilauthClient;
 };
 
@@ -118,9 +100,7 @@ type BuilderTestClientOptions = BaseTestClientOptions & {
  * and don't require subscriptions.
  */
 type UserTestClientOptions = BaseTestClientOptions & {
-  /** Discriminator for user client type */
   type: "user";
-  /** Optional builder delegation token for accessing builder resources */
   builderDelegation?: string;
 };
 
@@ -142,24 +122,18 @@ export type TestClientOptions =
 abstract class BaseTestClient {
   /**
    * Creates a new test client instance.
-   *
-   * @param _options - Configuration options for the test client
    */
   constructor(public _options: TestClientOptions) {}
 
   /**
    * Gets the Hono application instance for making requests.
-   *
-   * @returns The configured Hono app instance
    */
   get app(): App {
     return this._options.app;
   }
 
   /**
-   * Gets the client's decentralized identifier (DID).
-   *
-   * @returns DID string derived from the client's keypair
+   * Gets the client's decentralized identifier (Did).
    */
   get did(): DidString {
     return this._options.keypair.toDidString();
@@ -167,8 +141,6 @@ abstract class BaseTestClient {
 
   /**
    * Gets the client's cryptographic keypair.
-   *
-   * @returns The keypair used for token signing
    */
   get keypair() {
     return this._options.keypair;
@@ -176,23 +148,11 @@ abstract class BaseTestClient {
 
   /**
    * Creates an authentication token for API requests.
-   *
-   * Implemented by each client type with their specific authentication method.
-   *
-   * @returns JWT token string for Authorization header
-   * @protected
    */
   protected abstract createToken(): Promise<string>;
 
   /**
    * Makes an authenticated HTTP request to the API.
-   *
-   * Handles token creation, header configuration, and body serialization
-   * for all API endpoints. Automatically includes authentication headers.
-   *
-   * @param path - API endpoint path
-   * @param options - Request configuration including method and body
-   * @returns HTTP response from the API
    */
   async request<T>(
     path: string,
@@ -218,9 +178,6 @@ abstract class BaseTestClient {
 
   /**
    * Checks node health status.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for health check endpoint
    */
   health(c: FixtureContext): ResponseHandler {
     return new ResponseHandler(
@@ -232,16 +189,13 @@ abstract class BaseTestClient {
 
   /**
    * Retrieves comprehensive node information including version and configuration.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for node about endpoint
    */
-  about(c: FixtureContext): ResponseHandler<GetAboutNodeResponse> {
+  about(c: FixtureContext): ResponseHandler<ReadAboutNodeResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.system.about),
       StatusCodes.OK,
-      GetAboutNodeResponse,
+      ReadAboutNodeResponse,
     );
   }
 }
@@ -257,19 +211,13 @@ abstract class BaseTestClient {
 export class AdminTestClient extends BaseTestClient {
   /**
    * Creates a self-signed authentication token for admin operations.
-   *
-   * Admin tokens are derived from the node's authority and have access
-   * to system administration endpoints.
-   *
-   * @returns JWT token string for Authorization header
-   * @protected
    */
   protected async createToken(): Promise<string> {
     const audience = Did.fromHex(this._options.nodePublicKey);
     const subject = Did.fromHex(this.keypair.publicKey("hex"));
 
     return NucTokenBuilder.invocation({})
-      .command(new Command(["nil", "db"]))
+      .command(NucCmd.nil.db.root)
       .audience(audience)
       .subject(subject)
       .build(this.keypair.privateKey());
@@ -277,12 +225,6 @@ export class AdminTestClient extends BaseTestClient {
 
   /**
    * Activates maintenance mode on the node.
-   *
-   * During maintenance mode, the node may reject certain operations
-   * to allow for safe system updates or repairs.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for maintenance start endpoint
    */
   startMaintenance(c: FixtureContext): ResponseHandler {
     return new ResponseHandler(
@@ -294,11 +236,6 @@ export class AdminTestClient extends BaseTestClient {
 
   /**
    * Deactivates maintenance mode on the node.
-   *
-   * Restores normal operation after maintenance activities are complete.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for maintenance stop endpoint
    */
   stopMaintenance(c: FixtureContext): ResponseHandler {
     return new ResponseHandler(
@@ -310,27 +247,18 @@ export class AdminTestClient extends BaseTestClient {
 
   /**
    * Retrieves the current log level configuration.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for log level retrieval
    */
-  getLogLevel(c: FixtureContext): ResponseHandler<GetLogLevelResponse> {
+  getLogLevel(c: FixtureContext): ResponseHandler<ReadLogLevelResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.system.logLevel),
       StatusCodes.OK,
-      GetLogLevelResponse,
+      ReadLogLevelResponse,
     );
   }
 
   /**
    * Updates the node's log level configuration.
-   *
-   * Controls the verbosity of system logging for debugging and monitoring.
-   *
-   * @param c - Test fixture context
-   * @param body - Log level configuration request
-   * @returns Response handler for log level update
    */
   setLogLevel(c: FixtureContext, body: SetLogLevelRequest): ResponseHandler {
     return new ResponseHandler(
@@ -342,12 +270,12 @@ export class AdminTestClient extends BaseTestClient {
 }
 
 /**
- * Builder test client for organization operations.
+ * Test client for builder operations.
  *
  * Builder clients pay subscriptions for access to the node and require nilauth
  * services for token generation. They have access to data management, query
  * execution, schema definition, and builder management endpoints. These clients
- * represent organizations that build applications on top of NilDB.
+ * represent builder that build applications on top of NilDB.
  */
 export class BuilderTestClient extends BaseTestClient {
   constructor(private options: BuilderTestClientOptions) {
@@ -356,8 +284,6 @@ export class BuilderTestClient extends BaseTestClient {
 
   /**
    * Gets the nilauth client for external authentication services.
-   *
-   * @returns The nilauth client instance for subscription and token management
    */
   get nilauth(): NilauthClient {
     return this.options.nilauth;
@@ -365,12 +291,6 @@ export class BuilderTestClient extends BaseTestClient {
 
   /**
    * Creates an invocation token extending a nilauth root token.
-   *
-   * Builder tokens are created by extending root tokens obtained from
-   * the nilauth service after subscription payment and validation.
-   *
-   * @returns JWT token string for Authorization header
-   * @protected
    */
   protected async createToken(): Promise<string> {
     const audience = Did.fromHex(this._options.nodePublicKey);
@@ -386,9 +306,6 @@ export class BuilderTestClient extends BaseTestClient {
 
   /**
    * Ensures the builder has an active subscription for API access.
-   *
-   * Attempts to activate subscription through payment if not already active.
-   * Includes retry logic to handle temporary payment processing delays.
    */
   async ensureSubscriptionActive(): Promise<void> {
     for (let retry = 0; retry < 5; retry++) {
@@ -411,27 +328,14 @@ export class BuilderTestClient extends BaseTestClient {
 
   /**
    * Retrieves the root token from nilauth for token extension.
-   *
-   * Used for creating custom invocation tokens with specific capabilities
-   * or for delegating access to user clients.
-   *
-   * @returns The root token envelope from nilauth
    */
   async getRootToken(): Promise<NucTokenEnvelope> {
     const response = await this.options.nilauth.requestToken();
     return response.token;
   }
 
-  // Builder Management API Methods
-
   /**
-   * Registers a new organization builder.
-   *
-   * Note: This endpoint bypasses authentication for initial builder creation.
-   *
-   * @param c - Test fixture context
-   * @param body - Builder registration request
-   * @returns Response handler for builder registration
+   * Registers a new builder.
    */
   register(c: FixtureContext, body: RegisterBuilderRequest): ResponseHandler {
     return new ResponseHandler(
@@ -448,25 +352,18 @@ export class BuilderTestClient extends BaseTestClient {
 
   /**
    * Retrieves the authenticated builder's profile information.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for profile retrieval
    */
-  getProfile(c: FixtureContext): ResponseHandler<GetProfileResponse> {
+  getProfile(c: FixtureContext): ResponseHandler<ReadProfileResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.builders.me),
       StatusCodes.OK,
-      GetProfileResponse,
+      ReadProfileResponse,
     );
   }
 
   /**
    * Updates the authenticated builder's profile information.
-   *
-   * @param c - Test fixture context
-   * @param body - Profile update request
-   * @returns Response handler for profile update
    */
   updateProfile(
     c: FixtureContext,
@@ -493,79 +390,110 @@ export class BuilderTestClient extends BaseTestClient {
     );
   }
 
-  // Schema Management API Methods
+  // Collection Management API Methods
 
   /**
-   * Creates a new JSON schema definition for data validation.
-   *
-   * @param c - Test fixture context
-   * @param body - Schema creation request
-   * @returns Response handler for schema creation
+   * Creates a new collection for data validation.
    */
-  addSchema(c: FixtureContext, body: AddSchemaRequest): ResponseHandler {
+  createCollection(
+    c: FixtureContext,
+    body: CreateCollectionRequest,
+  ): ResponseHandler {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.schemas.root, { method: "POST", body }),
+      () => this.request(PathsV1.collections.root, { method: "POST", body }),
       StatusCodes.CREATED,
     );
   }
 
   /**
-   * Lists all schemas owned by the authenticated organization.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for schema listing
+   * Lists all collections owned by the authenticated builder.
    */
-  listSchemas(c: FixtureContext): ResponseHandler<ListSchemasResponse> {
+  readCollections(c: FixtureContext): ResponseHandler<ListCollectionsResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.schemas.root),
+      () => this.request(PathsV1.collections.root),
       StatusCodes.OK,
-      ListSchemasResponse,
+      ListCollectionsResponse,
     );
   }
 
   /**
-   * Deletes a schema by ID and all associated data.
-   *
-   * @param c - Test fixture context
-   * @param body - Schema deletion request
-   * @returns Response handler for schema deletion
+   * Deletes a collection by id and all associated data.
    */
-  deleteSchema(c: FixtureContext, body: DeleteSchemaRequest) {
+  deleteCollection(c: FixtureContext, collectionId: string) {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.schemas.root, { method: "DELETE", body }),
+      () =>
+        this.request(PathsV1.collections.byId.replace(":id", collectionId), {
+          method: "DELETE",
+        }),
       StatusCodes.NO_CONTENT,
     );
   }
 
   /**
-   * Retrieves metadata and statistics for a schema collection.
-   *
-   * @param c - Test fixture context
-   * @param id - Schema UUID
-   * @returns Response handler for schema metadata retrieval
+   * Retrieves a collection by id including metadata.
    */
-  getSchemaMetadata(
+  readCollection(
     c: FixtureContext,
-    id: string,
-  ): ResponseHandler<ReadSchemaMetadataResponse> {
+    collectionId: string,
+  ): ResponseHandler<ReadCollectionMetadataResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.schemas.byIdMeta.replace(":id", id)),
+      () => this.request(PathsV1.collections.byId.replace(":id", collectionId)),
       StatusCodes.OK,
-      ReadSchemaMetadataResponse,
+      ReadCollectionMetadataResponse,
     );
   }
 
   /**
-   * Lists all queries owned by the authenticated organization.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for query listing
+   * Creates an index on a collection.
    */
-  listQueries(c: FixtureContext): ResponseHandler<GetQueriesResponse> {
+  createCollectionIndex(
+    c: FixtureContext,
+    collectionId: string,
+    body: CreateCollectionIndexRequest,
+  ): ResponseHandler {
+    return new ResponseHandler(
+      c,
+      () =>
+        this.request(
+          PathsV1.collections.indexesById.replace(":id", collectionId),
+          {
+            method: "POST",
+            body,
+          },
+        ),
+      StatusCodes.CREATED,
+    );
+  }
+
+  /**
+   * Drops an index from a collection.
+   */
+  dropCollectionIndex(
+    c: FixtureContext,
+    collectionId: string,
+    indexName: string,
+  ): ResponseHandler {
+    return new ResponseHandler(
+      c,
+      () =>
+        this.request(
+          PathsV1.collections.indexesByNameById
+            .replace(":id", collectionId)
+            .replace(":name", indexName),
+          { method: "DELETE" },
+        ),
+      StatusCodes.NO_CONTENT,
+    );
+  }
+
+  /**
+   * Lists all queries owned by the authenticated builder.
+   */
+  getQueries(c: FixtureContext): ResponseHandler<GetQueriesResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.queries.root),
@@ -575,13 +503,20 @@ export class BuilderTestClient extends BaseTestClient {
   }
 
   /**
-   * Creates a new MongoDB aggregation query with variable substitution.
-   *
-   * @param c - Test fixture context
-   * @param body - Query creation request
-   * @returns Response handler for query creation
+   * Retrieves a query by id.
    */
-  addQuery(c: FixtureContext, body: AddQueryRequest): ResponseHandler {
+  getQuery(c: FixtureContext, queryId: string): ResponseHandler {
+    return new ResponseHandler(
+      c,
+      () => this.request(PathsV1.queries.byId.replace(":id", queryId)),
+      StatusCodes.OK,
+    );
+  }
+
+  /**
+   * Creates a new MongoDB aggregation query with variable substitution.
+   */
+  createQuery(c: FixtureContext, body: CreateQueryRequest): ResponseHandler {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.queries.root, { method: "POST", body }),
@@ -590,105 +525,111 @@ export class BuilderTestClient extends BaseTestClient {
   }
 
   /**
-   * Deletes a query by ID.
-   *
-   * @param c - Test fixture context
-   * @param body - Query deletion request
-   * @returns Response handler for query deletion
+   * Deletes a query by id.
    */
-  deleteQuery(c: FixtureContext, body: DeleteQueryRequest): ResponseHandler {
+  deleteQuery(c: FixtureContext, queryId: string): ResponseHandler {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.queries.root, { method: "DELETE", body }),
+      () =>
+        this.request(PathsV1.queries.byId.replace(":id", queryId), {
+          method: "DELETE",
+        }),
       StatusCodes.NO_CONTENT,
     );
   }
 
   /**
    * Executes a query with variable substitution.
-   *
-   * Can run synchronously or as a background job depending on request
-   * configuration. Background jobs are useful for long-running queries.
-   *
-   * @param c - Test fixture context
-   * @param body - Query execution request with variables
-   * @returns Response handler for query execution
    */
-  executeQuery(
+  runQuery(
     c: FixtureContext,
-    body: ExecuteQueryRequest,
-  ): ResponseHandler<ExecuteQueryResponse> {
+    body: RunQueryRequest,
+  ): ResponseHandler<RunQueryResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.queries.execute, { method: "POST", body }),
+      () => this.request(PathsV1.queries.run, { method: "POST", body }),
       StatusCodes.OK,
-      ExecuteQueryResponse,
+      RunQueryResponse,
     );
   }
 
   /**
    * Retrieves the status and results of a background query job.
-   *
-   * @param c - Test fixture context
-   * @param body - Query job status request
-   * @returns Response handler for job status retrieval
    */
-  getQueryJob(
+  readQueryRunResults(
     c: FixtureContext,
-    body: QueryJobRequest,
-  ): ResponseHandler<GetQueryJobResponse> {
+    runId: string,
+  ): ResponseHandler<GetQueryRunByIdResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.queries.job, { method: "POST", body }),
+      () => this.request(PathsV1.queries.runById.replace(":id", runId)),
       StatusCodes.OK,
-      GetQueryJobResponse,
+      GetQueryRunByIdResponse,
     );
   }
 
   /**
    * Uploads owned data records to a schema-validated collection.
-   *
-   * @param c - Test fixture context
-   * @param body - Data upload request with records and permissions
-   * @returns Response handler for data upload
    */
-  uploadOwnedData(
+  createOwnedData(
     c: FixtureContext,
-    body: UploadOwnedDataRequest,
-  ): ResponseHandler<UploadDataResponse> {
+    body: CreateOwnedDataRequest,
+  ): ResponseHandler<CreateDataResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.data.uploadOwned, { method: "POST", body }),
+      () => this.request(PathsV1.data.createOwned, { method: "POST", body }),
       StatusCodes.OK,
-      UploadDataResponse,
+      CreateDataResponse,
     );
   }
 
   /**
    * Uploads standard data records to a schema-validated collection.
-   *
-   * @param c - Test fixture context
-   * @param body - Data upload request with records and permissions
-   * @returns Response handler for data upload
    */
-  uploadStandardData(
+  createStandardData(
     c: FixtureContext,
-    body: UploadStandardDataRequest,
-  ): ResponseHandler<UploadDataResponse> {
+    body: CreateStandardDataRequest,
+  ): ResponseHandler<CreateDataResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.data.uploadStandard, { method: "POST", body }),
+      () => this.request(PathsV1.data.createStandard, { method: "POST", body }),
       StatusCodes.OK,
-      UploadDataResponse,
+      CreateDataResponse,
+    );
+  }
+
+  /**
+   * Searches for data records matching the provided filter.
+   */
+  findData(
+    c: FixtureContext,
+    body: FindDataRequest,
+  ): ResponseHandler<FindDataResponse> {
+    return new ResponseHandler(
+      c,
+      () => this.request(PathsV1.data.search, { method: "POST", body }),
+      StatusCodes.OK,
+      FindDataResponse,
+    );
+  }
+
+  /**
+   * Updates data records matching the provided filter.
+   */
+  updateData(
+    c: FixtureContext,
+    body: UpdateDataRequest,
+  ): ResponseHandler<UpdateDataResponse> {
+    return new ResponseHandler(
+      c,
+      () => this.request(PathsV1.data.update, { method: "POST", body }),
+      StatusCodes.OK,
+      UpdateDataResponse,
     );
   }
 
   /**
    * Deletes data records matching the provided filter.
-   *
-   * @param c - Test fixture context
-   * @param body - Data deletion request with filter
-   * @returns Response handler for data deletion
    */
   deleteData(
     c: FixtureContext,
@@ -703,78 +644,35 @@ export class BuilderTestClient extends BaseTestClient {
   }
 
   /**
-   * Removes all data from a schema collection.
-   *
-   * @param c - Test fixture context
-   * @param body - Collection flush request
-   * @returns Response handler for collection flush
+   * Removes all data from a collection.
    */
-  flushData(
-    c: FixtureContext,
-    body: FlushDataRequest,
-  ): ResponseHandler<DeleteDataResponse> {
+  flushData(c: FixtureContext, collectionId: string): ResponseHandler {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.data.flush, { method: "POST", body }),
-      StatusCodes.OK,
-      DeleteDataResponse,
+      () =>
+        this.request(PathsV1.data.flushById.replace(":id", collectionId), {
+          method: "DELETE",
+        }),
+      StatusCodes.NO_CONTENT,
     );
   }
 
   /**
    * Retrieves the most recent data records from a collection.
-   *
-   * @param c - Test fixture context
-   * @param body - Data tail request
-   * @returns Response handler for recent data retrieval
    */
   tailData(
     c: FixtureContext,
-    body: TailDataRequest,
+    collection: UuidDto,
+    limit = 10,
   ): ResponseHandler<TailDataResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.data.tail, { method: "POST", body }),
+      () =>
+        this.request(
+          `${PathsV1.data.tailById.replace(":id", collection)}?limit=${limit}`,
+        ),
       StatusCodes.OK,
       TailDataResponse,
-    );
-  }
-
-  /**
-   * Reads data records matching the provided filter.
-   *
-   * @param c - Test fixture context
-   * @param body - Data read request with filter
-   * @returns Response handler for data retrieval
-   */
-  readData(
-    c: FixtureContext,
-    body: ReadDataRequest,
-  ): ResponseHandler<ReadDataResponse> {
-    return new ResponseHandler(
-      c,
-      () => this.request(PathsV1.data.read, { method: "POST", body }),
-      StatusCodes.OK,
-      ReadDataResponse,
-    );
-  }
-
-  /**
-   * Updates data records matching the provided filter.
-   *
-   * @param c - Test fixture context
-   * @param body - Data update request with filter and modifications
-   * @returns Response handler for data update
-   */
-  updateData(
-    c: FixtureContext,
-    body: UpdateDataRequest,
-  ): ResponseHandler<UpdateDataResponse> {
-    return new ResponseHandler(
-      c,
-      () => this.request(PathsV1.data.update, { method: "POST", body }),
-      StatusCodes.OK,
-      UpdateDataResponse,
     );
   }
 }
@@ -794,12 +692,6 @@ export class UserTestClient extends BaseTestClient {
 
   /**
    * Creates a self-signed authentication token for user operations.
-   *
-   * User tokens provide access to user domain endpoints for managing
-   * data permissions and accessing user-owned data.
-   *
-   * @returns JWT token string for Authorization header
-   * @protected
    */
   protected async createToken(): Promise<string> {
     const audience = Did.fromHex(this._options.nodePublicKey);
@@ -812,7 +704,7 @@ export class UserTestClient extends BaseTestClient {
     }
 
     return NucTokenBuilder.invocation({})
-      .command(new Command(["nil", "db"]))
+      .command(NucCmd.nil.db.users.root)
       .audience(audience)
       .subject(subject)
       .build(this.keypair.privateKey());
@@ -820,8 +712,6 @@ export class UserTestClient extends BaseTestClient {
 
   /**
    * Sets a builder delegation token to use when accessing builder-owned resources.
-   *
-   * @param token - The delegation token provided by a builder
    */
   async setBuilderDelegation(token: string): Promise<void> {
     this.options.builderDelegation = token;
@@ -830,108 +720,99 @@ export class UserTestClient extends BaseTestClient {
   // User Domain API Methods
 
   /**
+   * Retrieves the authenticated user's profile information.
+   */
+  getProfile(c: FixtureContext): ResponseHandler {
+    return new ResponseHandler(
+      c,
+      () => this.request(PathsV1.users.me),
+      StatusCodes.OK,
+    );
+  }
+
+  /**
    * Lists all data records owned by the authenticated user.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for user data listing
    */
-  readUserData(c: FixtureContext): ResponseHandler<ListUserDataResponse> {
+  listDataReferences(
+    c: FixtureContext,
+  ): ResponseHandler<ListDataReferencesResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.user.data.root, { method: "GET" }),
+      () => this.request(PathsV1.users.data.root),
       StatusCodes.OK,
-      ListUserDataResponse,
+      ListDataReferencesResponse,
     );
   }
 
   /**
-   * Reads permissions for specific data records.
-   *
-   * Allows users to check who has access to their data and what
-   * level of permissions have been granted.
-   *
-   * @param c - Test fixture context
-   * @param body - Permissions read request
-   * @returns Response handler for permissions retrieval
+   * Retrieves user-owned data by collection and document id.
    */
-  readPermissions(
+  readData(
     c: FixtureContext,
-    body: ReadPermissionsRequest,
-  ): ResponseHandler<ReadPermissionsResponse> {
+    collection: string,
+    document: string,
+  ): ResponseHandler<ReadDataResponse> {
     return new ResponseHandler(
       c,
       () =>
-        this.request(PathsV1.user.data.perms.read, { method: "POST", body }),
+        this.request(
+          PathsV1.users.data.byId
+            .replace(":collection", collection)
+            .replace(":document", document),
+        ),
       StatusCodes.OK,
-      ReadPermissionsResponse,
+      ReadDataResponse,
     );
   }
 
   /**
-   * Grants permissions to other users for accessing data.
-   *
-   * Data owners can grant read, write, or other permissions to
-   * specific users or roles for their data records.
-   *
-   * @param c - Test fixture context
-   * @param body - Permissions addition request
-   * @returns Response handler for permissions addition
+   * Deletes a user-owned data document.
    */
-  addPermissions(
+  deleteData(
     c: FixtureContext,
-    body: AddPermissionsRequest,
-  ): ResponseHandler<AddPermissionsResponse> {
-    return new ResponseHandler(
-      c,
-      () => this.request(PathsV1.user.data.perms.add, { method: "POST", body }),
-      StatusCodes.OK,
-      AddPermissionsResponse,
-    );
-  }
-
-  /**
-   * Updates existing permissions for data access.
-   *
-   * Allows modification of previously granted permissions,
-   * such as changing permission levels or scopes.
-   *
-   * @param c - Test fixture context
-   * @param body - Permissions update request
-   * @returns Response handler for permissions update
-   */
-  updatePermissions(
-    c: FixtureContext,
-    body: UpdatePermissionsRequest,
-  ): ResponseHandler<UpdatePermissionsResponse> {
-    return new ResponseHandler(
-      c,
-      () =>
-        this.request(PathsV1.user.data.perms.update, { method: "POST", body }),
-      StatusCodes.OK,
-      UpdatePermissionsResponse,
-    );
-  }
-
-  /**
-   * Revokes permissions for data access.
-   *
-   * Removes previously granted permissions, restricting access
-   * to the specified data records.
-   *
-   * @param c - Test fixture context
-   * @param body - Permissions deletion request
-   * @returns Response handler for permissions revocation
-   */
-  deletePermissions(
-    c: FixtureContext,
-    body: DeletePermissionsRequest,
+    collection: string,
+    document: string,
   ): ResponseHandler {
     return new ResponseHandler(
       c,
       () =>
-        this.request(PathsV1.user.data.perms.delete, { method: "POST", body }),
-      StatusCodes.OK,
-      z.unknown(),
+        this.request(
+          PathsV1.users.data.byId
+            .replace(":collection", collection)
+            .replace(":document", document),
+          { method: "DELETE" },
+        ),
+      StatusCodes.NO_CONTENT,
+    );
+  }
+
+  /**
+   * Grants access to user-owned data.
+   */
+  grantAccess(
+    c: FixtureContext,
+    body: GrantAccessToDataRequest,
+  ): ResponseHandler {
+    return new ResponseHandler(
+      c,
+      () =>
+        this.request(PathsV1.users.data.acl.grant, { method: "POST", body }),
+      StatusCodes.NO_CONTENT,
+    );
+  }
+
+  /**
+   * Removes access to user-owned data.
+   */
+  revokeAccess(
+    c: FixtureContext,
+    body: RevokeAccessToDataRequest,
+  ): ResponseHandler {
+    return new ResponseHandler(
+      c,
+      () =>
+        this.request(PathsV1.users.data.acl.revoke, { method: "POST", body }),
+      StatusCodes.NO_CONTENT,
     );
   }
 }
@@ -960,14 +841,11 @@ export async function createAdminTestClient(opts: {
 }
 
 /**
- * Creates a builder test client for organization operations.
+ * Creates a test client for builder operations.
  *
  * Builder clients require subscription management and use nilauth for
  * token generation. They automatically handle payment and validation
  * processes for API access.
- *
- * @param opts - Builder client configuration options
- * @returns Configured builder test client instance
  */
 export async function createBuilderTestClient(opts: {
   app: App;
@@ -999,13 +877,6 @@ export async function createBuilderTestClient(opts: {
 
 /**
  * Creates a user test client for data owner operations.
- *
- * User clients represent data owners who can access their own data with
- * self-signed tokens. They don't require subscriptions but can use builder
- * delegations to access builder-owned resources.
- *
- * @param opts - User client configuration options
- * @returns Configured user test client instance
  */
 export async function createUserTestClient(opts: {
   app: App;

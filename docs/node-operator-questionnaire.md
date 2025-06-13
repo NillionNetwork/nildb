@@ -2,9 +2,9 @@
 
 Thank you for showing interest in becoming a nilDB Node Operator. This questionnaire helps us understand your operational and infrastructure compatibility. Please provide detailed responses and return to your Nillion point of contact.
 
-## Organization Details
+## Builder Details
 
-Please provide your organization name (if applicable), primary contact name, role/title, contact email, phone number, and the timezone in which your team primarily operates.
+Please provide your company name (if applicable), primary contact name, role/title, contact email, phone number, and the timezone in which your team primarily operates.
 
 ## Infrastructure & Hosting
 

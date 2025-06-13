@@ -5,7 +5,7 @@ import { describe, it } from "vitest";
 import { validateQuery } from "#/queries/queries.services";
 import type { QueryDocument, QueryVariable } from "#/queries/queries.types";
 
-describe("query definition", () => {
+describe("queries-validation.test.ts", () => {
   it("valid query", async ({ expect }) => {
     const variables: Record<string, QueryVariable> = {
       minAmount: {
@@ -190,7 +190,7 @@ function buildQuery(
     _updated: new Date(),
     owner: new Did(Uint8Array.from(Array(33).fill(0xaa))).toString(),
     name: "variables.wallet.query.json",
-    schema: new UUID(),
+    collection: new UUID(),
     variables,
     pipeline,
   };

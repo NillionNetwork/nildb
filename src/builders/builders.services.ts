@@ -15,11 +15,7 @@ import type {
 } from "./builders.types";
 
 /**
- * Retrieves an organisation builder by DID.
- *
- * @param ctx - Application context containing configuration and dependencies
- * @param did - Decentralised identifier of the builder to retrieve
- * @returns Effect containing the builder document or relevant errors
+ * Find builder by DID.
  */
 export function find(
   ctx: AppBindings,
@@ -28,19 +24,11 @@ export function find(
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return BuilderRepository.findOneOrganization(ctx, did);
+  return BuilderRepository.findOne(ctx, did);
 }
 
 /**
- * Creates a new organisation builder based on the provided command.
- *
- * Validates that the builder's DID differs from the node's own DID
- * before persisting to the database. Constructs the complete document
- * from the command data.
- *
- * @param ctx - Application context containing configuration and dependencies
- * @param command - Create builder command with DID and name
- * @returns Effect indicating success or relevant errors
+ * Create new builder.
  */
 export function createBuilder(
   ctx: AppBindings,
@@ -62,11 +50,10 @@ export function createBuilder(
       const now = new Date();
       return {
         _id: cmd.did,
-        _role: "organization" as const,
         _created: now,
         _updated: now,
         name: cmd.name,
-        schemas: [],
+        collections: [],
         queries: [],
       };
     }),
@@ -75,11 +62,7 @@ export function createBuilder(
 }
 
 /**
- * Removes an organisation builder permanently.
- *
- * @param ctx - Application context containing configuration and dependencies
- * @param id - DID of the builder to delete
- * @returns Effect indicating success or relevant errors
+ * Remove builder.
  */
 export function remove(
   ctx: AppBindings,
@@ -92,11 +75,7 @@ export function remove(
 }
 
 /**
- * Updates an organisation's profile fields based on the provided command.
- *
- * @param ctx - Application context containing configuration and dependencies
- * @param command - Update profile command with builder ID and updates
- * @returns Effect indicating success or relevant errors
+ * Update builder profile.
  */
 export function updateProfile(
   ctx: AppBindings,
@@ -105,5 +84,5 @@ export function updateProfile(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return BuilderRepository.update(ctx, command.builderId, command.updates);
+  return BuilderRepository.update(ctx, command.builder, command.updates);
 }

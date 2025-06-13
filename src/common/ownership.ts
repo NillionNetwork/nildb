@@ -2,7 +2,7 @@ import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { ResourceAccessDeniedError } from "#/common/errors";
-import type { UserDocument } from "#/user/user.types";
+import type { UserDocument } from "#/users/users.types";
 
 export function enforceQueryOwnership(
   builder: BuilderDocument,
@@ -24,19 +24,21 @@ export function enforceQueryOwnership(
   );
 }
 
-export function enforceSchemaOwnership(
+export function enforceCollectionOwnership(
   builder: BuilderDocument,
-  schema: UUID,
+  collection: UUID,
 ): E.Effect<void, ResourceAccessDeniedError> {
   return pipe(
-    E.succeed(builder.schemas.some((s) => s.toString() === schema.toString())),
+    E.succeed(
+      builder.collections.some((s) => s.toString() === collection.toString()),
+    ),
     E.flatMap((isAuthorized) => {
       return isAuthorized
         ? E.succeed(void 0)
         : E.fail(
             new ResourceAccessDeniedError({
               type: "schema",
-              id: schema.toString(),
+              id: collection.toString(),
               user: builder._id,
             }),
           );
@@ -46,15 +48,15 @@ export function enforceSchemaOwnership(
 
 export function enforceDataOwnership(
   user: UserDocument,
-  documentId: UUID,
+  document: UUID,
   schema: UUID,
 ): E.Effect<void, ResourceAccessDeniedError> {
   return pipe(
     E.succeed(
       user.data.some(
         (s) =>
-          s.id.toString() === documentId.toString() &&
-          s.schema.toString() === schema.toString(),
+          s.document.toString() === document.toString() &&
+          s.collection.toString() === schema.toString(),
       ),
     ),
     E.flatMap((isAuthorized) => {
@@ -63,7 +65,7 @@ export function enforceDataOwnership(
         : E.fail(
             new ResourceAccessDeniedError({
               type: "schema",
-              id: documentId.toString(),
+              id: document.toString(),
               user: user._id,
             }),
           );

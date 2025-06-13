@@ -1,18 +1,17 @@
 import { faker } from "@faker-js/faker";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
+import collectionJson from "./data/simple.collection.json";
 import queryJson from "./data/simple.query.json";
-import schemaJson from "./data/simple.schema.json";
 import { assertDocumentCount } from "./fixture/assertions";
-import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import type { CollectionFixture, QueryFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("flush data collection", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+describe("flush.data.test.ts", () => {
+  const collection = collectionJson as unknown as CollectionFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection,
     query,
   });
 
@@ -30,15 +29,11 @@ describe("flush data collection", () => {
     const { builder, user } = c;
 
     await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        schema: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
   });
@@ -46,17 +41,10 @@ describe("flush data collection", () => {
   afterAll(async (_c) => {});
 
   it("can flush a collection", async ({ c }) => {
-    const { expect, builder } = c;
+    const { builder } = c;
 
-    await assertDocumentCount(c, schema.id, collectionSize);
-
-    const result = await builder
-      .flushData(c, {
-        schema: schema.id,
-      })
-      .expectSuccess();
-
-    expect(result.data.deletedCount).toBe(collectionSize);
-    await assertDocumentCount(c, schema.id, 0);
+    await assertDocumentCount(c, collection.id, collectionSize);
+    await builder.flushData(c, collection.id).expectSuccess();
+    await assertDocumentCount(c, collection.id, 0);
   });
 });

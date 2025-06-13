@@ -2,15 +2,9 @@ import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
 import { LogLevel } from "#/common/logger";
-import { DidSchema } from "#/common/types";
 
 /**
- * Request schema for updating the node's log level.
- *
- * @example
- * {
- *   "level": "debug"
- * }
+ * Log level update request.
  */
 export const SetLogLevelRequest = z
   .object({
@@ -21,69 +15,57 @@ export const SetLogLevelRequest = z
 export type SetLogLevelRequest = z.infer<typeof SetLogLevelRequest>;
 
 /**
- * Response for successful log level update.
- *
- * Returns HTTP 200 OK with empty body to indicate
- * the log level was updated successfully.
+ * Log level update response.
  */
 export const SetLogLevelResponse = new Response(null, {
   status: StatusCodes.OK,
 });
 
 /**
- * Response for health check endpoint.
- *
- * Returns HTTP 200 OK with empty body to indicate
- * the node is healthy and operational.
+ * Log level update response type.
+ */
+export type SetLogLevelResponse = typeof SetLogLevelResponse;
+
+/**
+ * Health check response.
  */
 export const HealthCheckResponse = new Response(null, {
   status: StatusCodes.OK,
 });
 
 /**
- * Response for starting maintenance mode.
- *
- * Returns HTTP 200 OK with empty body to indicate
- * maintenance mode was activated successfully.
+ * Health check response type.
+ */
+export type HealthCheckResponse = typeof HealthCheckResponse;
+
+/**
+ * Start maintenance response.
  */
 export const StartMaintenanceResponse = new Response(null, {
   status: StatusCodes.OK,
 });
 
 /**
- * Response for stopping maintenance mode.
- *
- * Returns HTTP 200 OK with empty body to indicate
- * maintenance mode was deactivated successfully.
+ * Start maintenance response type.
+ */
+export type StartMaintenanceResponse = typeof StartMaintenanceResponse;
+
+/**
+ * Stop maintenance response.
  */
 export const StopMaintenanceResponse = new Response(null, {
   status: StatusCodes.OK,
 });
 
 /**
- * Response schema for node information and status.
- *
- * Provides comprehensive information about the node including
- * build details, identity, and operational status.
- *
- * @example
- * {
- *   "started": "2023-12-01T10:00:00.000Z",
- *   "build": {
- *     "time": "2023-11-30T09:00:00.000Z",
- *     "commit": "abc123def456",
- *     "version": "1.0.0"
- *   },
- *   "public_key": "030923f2e7120c50e42905b857ddd2947f6ecced6bb02aab64e63b28e9e2e06d10",
- *   "did": "did:nil:030923f2e7120c50e42905b857ddd2947f6ecced6bb02aab64e63b28e9e2e06d10",
- *   "url": "https://api.nillion.com",
- *   "maintenance": {
- *     "active": false,
- *     "started_at": "2023-12-01T08:00:00.000Z"
- *   }
- * }
+ * Stop maintenance response type.
  */
-export const GetAboutNodeResponse = z
+export type StopMaintenanceResponse = typeof StopMaintenanceResponse;
+
+/**
+ * Node information response.
+ */
+export const ReadAboutNodeResponse = z
   .object({
     started: z.string().datetime(),
     build: z.object({
@@ -92,27 +74,21 @@ export const GetAboutNodeResponse = z
       version: z.string(),
     }),
     public_key: z.string(),
-    did: DidSchema,
     url: z.string().url(),
     maintenance: z.object({
       active: z.boolean(),
       started_at: z.string().datetime(),
     }),
   })
-  .openapi({ ref: "GetAboutNodeResponse" });
+  .openapi({ ref: "ReadAboutNodeResponse" });
 
-export type GetAboutNodeResponse = z.infer<typeof GetAboutNodeResponse>;
+export type ReadAboutNodeResponse = z.infer<typeof ReadAboutNodeResponse>;
 
 /**
- * Response schema for current log level retrieval.
- *
- * @example
- * {
- *   "data": "info"
- * }
+ * Log level retrieval response.
  */
-export const GetLogLevelResponse = ApiSuccessResponse(LogLevel).openapi({
-  ref: "GetLogLevelResponse",
+export const ReadLogLevelResponse = ApiSuccessResponse(LogLevel).openapi({
+  ref: "ReadLogLevelResponse",
 });
 
-export type GetLogLevelResponse = z.infer<typeof GetLogLevelResponse>;
+export type ReadLogLevelResponse = z.infer<typeof ReadLogLevelResponse>;

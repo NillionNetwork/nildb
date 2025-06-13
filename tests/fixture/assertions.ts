@@ -1,8 +1,9 @@
-import type { UUID } from "mongodb";
+import { vi } from "vitest";
 import type { BuilderDocument } from "#/builders/builders.types";
 import type { ApiErrorResponse, ApiSuccessResponse } from "#/common/handler";
 import { CollectionName } from "#/common/mongo";
-import type { Did } from "#/common/types";
+import type { Did, UuidDto } from "#/common/types";
+import type { GetQueryRunByIdResponse } from "#/queries/queries.dto";
 import type { FixtureContext } from "./fixture";
 
 export function assertDefined<T>(
@@ -51,27 +52,46 @@ export async function expectErrorResponse(
 
 export async function expectBuilder(
   c: FixtureContext,
-  did: Did,
+  _id: Did,
 ): Promise<BuilderDocument> {
   const document = await c.bindings.db.primary
     .collection<BuilderDocument>(CollectionName.Builders)
-    .findOne({ _id: did });
+    .findOne({ _id });
 
-  assertDefined(c, document, `Builder does not exist: did=${did}`);
+  assertDefined(c, document, `Builder does not exist: did=${_id}`);
   return document;
 }
 
 export async function assertDocumentCount(
   c: FixtureContext,
-  collection: UUID,
+  collection: UuidDto,
   expected: number,
 ): Promise<void> {
   const count = await c.bindings.db.data
-    .collection(collection.toString())
+    .collection(collection)
     .countDocuments();
 
   c.expect(
     count,
     `Unexpected document count: collection=${collection} count=${count} expected=${expected}`,
   ).toBe(expected);
+}
+
+export function waitForQueryRun(
+  c: FixtureContext,
+  run: UuidDto,
+): Promise<GetQueryRunByIdResponse> {
+  const { expect, builder } = c;
+
+  return vi.waitFor(
+    async () => {
+      const result = await builder.readQueryRunResults(c, run).expectSuccess();
+      expect(result.data.status).toBeOneOf(["complete", "error"]);
+      return result;
+    },
+    {
+      timeout: 5000,
+      interval: 500,
+    },
+  );
 }

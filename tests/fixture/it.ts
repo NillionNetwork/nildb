@@ -1,6 +1,10 @@
 import * as vitest from "vitest";
 import type { FixtureContext } from "./fixture";
-import { buildFixture, type QueryFixture, type SchemaFixture } from "./fixture";
+import {
+  buildFixture,
+  type CollectionFixture,
+  type QueryFixture,
+} from "./fixture";
 
 type TestFixtureExtension = {
   it: vitest.TestAPI<{ c: FixtureContext }>;
@@ -10,7 +14,7 @@ type TestFixtureExtension = {
 
 export function createTestFixtureExtension(
   opts: {
-    schema?: SchemaFixture;
+    collection?: CollectionFixture;
     query?: QueryFixture;
     keepDbs?: boolean;
     enableNilcomm?: boolean;
@@ -65,12 +69,6 @@ export function createTestFixtureExtension(
         await db.client.db(config.dbNameData).dropDatabase();
       }
       await db.client.close(true);
-
-      if (bindings.mq) {
-        await bindings.mq.channel.close();
-        await bindings.mq.channelModel.close();
-      }
-
       await fn(fixture);
     });
 

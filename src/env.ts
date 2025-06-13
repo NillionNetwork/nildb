@@ -1,5 +1,4 @@
 import { Keypair, type NucTokenEnvelope } from "@nillion/nuc";
-import * as amqp from "amqplib";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
@@ -8,16 +7,15 @@ import { Cache } from "#/common/cache";
 import { createLogger, LogLevel } from "#/common/logger";
 import type { Did } from "#/common/types";
 import { initAndCreateDbClients } from "./common/mongo";
-import type { UserDocument } from "./user/user.types";
+import type { UserDocument } from "./users/users.types";
 
 export const PRIVATE_KEY_LENGTH = 64;
 export const PUBLIC_KEY_LENGTH = 66;
 
 export const FeatureFlag = {
-  OPENAPI_SPEC: "openapi",
-  PROMETHEUS_METRICS: "metrics",
+  OPENAPI: "openapi",
+  METRICS: "metrics",
   MIGRATIONS: "migrations",
-  NILCOMM: "nilcomm",
 } as const;
 
 export type FeatureFlag = (typeof FeatureFlag)[keyof typeof FeatureFlag];
@@ -37,7 +35,6 @@ export const EnvVarsSchema = z.object({
   logLevel: LogLevel,
   nilauthBaseUrl: z.string().url(),
   nilauthPubKey: z.string().length(PUBLIC_KEY_LENGTH),
-  nilcommPublicKey: z.string().length(PUBLIC_KEY_LENGTH).optional(),
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.string().url(),
   metricsPort: z.number().int().positive(),
@@ -57,24 +54,9 @@ export type AppBindings = {
     builders: Cache<Did, BuilderDocument>;
   };
   log: Logger;
-  mq?: {
-    channelModel: amqp.ChannelModel;
-    channel: amqp.Channel;
-  };
   node: {
     endpoint: string;
     keypair: Keypair;
-  };
-};
-
-/**
- * Use this variant when the nilcomm feature is enabled
- */
-export type AppBindingsWithNilcomm = Omit<AppBindings, "mq" | "config"> & {
-  config: Required<AppBindings["config"]>;
-  mq: {
-    channelModel: amqp.ChannelModel;
-    channel: amqp.Channel;
   };
 };
 
@@ -89,7 +71,6 @@ declare global {
       APP_NILAUTH_PUBLIC_KEY: string;
       APP_NILAUTH_BASE_URL: string;
       APP_NILCHAIN_JSON_RPC: string;
-      APP_NILCOMM_PUBLIC_KEY?: string;
       APP_METRICS_PORT?: number;
       APP_MQ_URI?: string;
       APP_NODE_SECRET_KEY: string;
@@ -113,21 +94,6 @@ export async function loadBindings(
 ): Promise<AppBindings> {
   const config = parseConfigFromEnv(overrides);
 
-  let mq: AppBindingsWithNilcomm["mq"] | undefined;
-  if (hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILCOMM)) {
-    if (!config.mqUri) {
-      throw new TypeError(
-        `The env var "APP_MQ_URI" is required when "${FeatureFlag.NILCOMM}" feature is enabled`,
-      );
-    }
-    const channelModel = await amqp.connect(config.mqUri);
-    const channel = await channelModel.createChannel();
-    mq = {
-      channelModel,
-      channel,
-    };
-  }
-
   return {
     config,
     cache: {
@@ -135,7 +101,6 @@ export async function loadBindings(
     },
     db: await initAndCreateDbClients(config),
     log: createLogger(config.logLevel),
-    mq,
     node: {
       keypair: Keypair.from(config.nodeSecretKey),
       endpoint: config.nodePublicEndpoint,
@@ -154,7 +119,6 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     mqUri: process.env.APP_MQ_URI,
     nilauthBaseUrl: process.env.APP_NILAUTH_BASE_URL,
     nilauthPubKey: process.env.APP_NILAUTH_PUBLIC_KEY,
-    nilcommPublicKey: process.env.APP_NILCOMM_PUBLIC_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
     nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
     webPort: Number(process.env.APP_PORT),

@@ -6,12 +6,7 @@ import type { AppBindings } from "#/env";
 import type { MaintenanceStatusDocument } from "#/system/system.types";
 
 /**
- * Maintenance state is managed as a singleton document in the config collection.
- * The document uses `_type: "maintenance"` as its unique identifier.
- *
- * State model:
- * - No document exists = maintenance is inactive
- * - Document exists with `active: true` = maintenance is active
+ * Start maintenance mode.
  */
 export function startMaintenance(
   ctx: AppBindings,
@@ -45,6 +40,9 @@ export function startMaintenance(
   );
 }
 
+/**
+ * Stop maintenance mode.
+ */
 export function stopMaintenance(
   ctx: AppBindings,
 ): E.Effect<void, CollectionNotFoundError | DatabaseError> {
@@ -69,6 +67,9 @@ export function stopMaintenance(
   );
 }
 
+/**
+ * Find maintenance configuration.
+ */
 export function findMaintenanceConfig(
   ctx: AppBindings,
 ): E.Effect<

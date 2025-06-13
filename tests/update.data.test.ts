@@ -1,19 +1,18 @@
 import { faker } from "@faker-js/faker";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import type { DataDocument } from "#/data/data.repository";
-import { Permissions } from "#/user/user.types";
+import type { OwnedDocumentBase } from "#/data/data.types";
+import collectionJson from "./data/simple.collection.json";
 import queryJson from "./data/simple.query.json";
-import schemaJson from "./data/simple.schema.json";
 import { assertDefined } from "./fixture/assertions";
-import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import type { CollectionFixture, QueryFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
 describe("update data", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+  const collection = collectionJson as unknown as CollectionFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection: collection,
     query,
   });
   type Record = {
@@ -30,15 +29,16 @@ describe("update data", () => {
     const { builder, user } = c;
 
     await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        schema: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data,
-        permissions: new Permissions(builder.did, {
+        acl: {
+          grantee: builder.did,
           read: true,
           write: false,
           execute: false,
-        }),
+        },
       })
       .expectSuccess();
   });
@@ -54,17 +54,17 @@ describe("update data", () => {
     const update = { $set: { name: "foo" } };
     const response = await builder
       .updateData(c, {
-        schema: schema.id,
+        collection: collection.id,
         filter,
         update,
       })
       .expectSuccess();
 
-    expect(response.data.modifiedCount).toBe(1);
-    expect(response.data.matchedCount).toBe(1);
+    expect(response.data.modified).toBe(1);
+    expect(response.data.matched).toBe(1);
 
     const actual = await bindings.db.data
-      .collection<DataDocument>(schema.id.toString())
+      .collection<OwnedDocumentBase>(collection.id.toString())
       .findOne({ name: "foo" });
 
     assertDefined(c, actual);

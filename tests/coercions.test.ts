@@ -4,15 +4,14 @@ import { UUID } from "mongodb";
 import { describe } from "vitest";
 import { applyCoercions } from "#/common/mongo";
 import { type CoercibleMap, createUuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
-import schemaJson from "./data/coercions.schema.json";
-import type { SchemaFixture } from "./fixture/fixture";
+import collectionJson from "./data/coercions.collection.json";
+import type { CollectionFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("coercions", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+describe("coercions.test.ts", () => {
+  const collection = collectionJson as unknown as CollectionFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection,
   });
   beforeAll(async (_c) => {});
   afterAll(async (_c) => {});
@@ -276,15 +275,11 @@ describe("coercions", () => {
     ];
 
     const response = await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        schema: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
 
@@ -292,7 +287,7 @@ describe("coercions", () => {
     expect(response.data.errors).toHaveLength(0);
 
     const documents = await bindings.db.data
-      .collection(schema.id.toString())
+      .collection(collection.id.toString())
       .find({})
       .toArray();
 
@@ -319,15 +314,11 @@ describe("coercions", () => {
     ];
 
     await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        schema: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,
@@ -352,15 +343,11 @@ describe("coercions", () => {
     ];
 
     await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        schema: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,
@@ -385,15 +372,11 @@ describe("coercions", () => {
     ];
 
     await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        schema: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,

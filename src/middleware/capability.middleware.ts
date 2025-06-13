@@ -15,7 +15,7 @@ import { getReasonPhrase, StatusCodes } from "http-status-codes";
 import type { EmptyObject } from "type-fest";
 import * as BuilderRepository from "#/builders/builders.repository";
 import type { AppBindings, AppEnv } from "#/env";
-import * as UserRepository from "#/user/user.repository";
+import * as UserRepository from "#/users/users.repository";
 
 export function loadNucToken<
   P extends string = string,
@@ -147,7 +147,7 @@ export function loadSubjectAndVerifyAsBuilder<
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
-        log.error({ cause: cause.message }, "Auth error");
+        log.error({ cause: JSON.stringify(cause) }, "Auth error");
 
         // This isn't an elegant approach, but we want to return PAYMENT_REQUIRED
         // to communicate when invocation NUC's chain is missing authority from nilauth
@@ -224,7 +224,6 @@ export type EnforceCapabilityOptions<
   Path extends string = string,
   E extends Env = AppEnv,
 > = {
-  path: Path;
   cmd: Command;
   validate: (
     c: Context<E, Path, { out: ValidatedParams }>,
@@ -243,10 +242,6 @@ export function enforceCapability<
   return async (c, next) => {
     const { log } = c.env;
     const { token } = c.get("envelope").token;
-
-    if (c.req.path !== options.path) {
-      log.warn("Path mismatch: %s, expected: %s", c.req.path, options.path);
-    }
 
     const isValidCommand = options.cmd.isAttenuationOf(token.command);
     if (!isValidCommand) {

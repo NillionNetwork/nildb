@@ -2,18 +2,17 @@ import { faker } from "@faker-js/faker";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
+import collectionJson from "./data/simple.collection.json";
 import queryJson from "./data/simple.query.json";
-import schemaJson from "./data/simple.schema.json";
 import { assertDocumentCount } from "./fixture/assertions";
-import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import type { CollectionFixture, QueryFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("delete by filter data", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+describe("delete-by-filter.data.test.ts", () => {
+  const collection = collectionJson as unknown as CollectionFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    schema,
+    collection,
     query,
   });
 
@@ -22,6 +21,7 @@ describe("delete by filter data", () => {
     _id: UuidDto;
     name: string;
   };
+
   const data: Record[] = Array.from({ length: collectionSize - 3 }, () => ({
     _id: createUuidDto(),
     name: faker.person.fullName(),
@@ -37,15 +37,11 @@ describe("delete by filter data", () => {
     const { builder, user } = c;
 
     await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        schema: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
         data: shuffledData,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
       })
       .expectSuccess();
   });
@@ -57,7 +53,7 @@ describe("delete by filter data", () => {
 
     await builder
       .deleteData(c, {
-        schema: schema.id,
+        collection: collection.id,
         filter: {},
       })
       .expectFailure(
@@ -72,13 +68,13 @@ describe("delete by filter data", () => {
 
     const result = await builder
       .deleteData(c, {
-        schema: schema.id,
+        collection: collection.id,
         filter: { name: "foo" },
       })
       .expectSuccess();
 
     expect(result.data.deletedCount).toBe(1);
-    await assertDocumentCount(c, schema.id, collectionSize - 1);
+    await assertDocumentCount(c, collection.id, collectionSize - 1);
   });
 
   it("can remove multiple matches", async ({ c }) => {
@@ -86,13 +82,13 @@ describe("delete by filter data", () => {
 
     const result = await builder
       .deleteData(c, {
-        schema: schema.id,
+        collection: collection.id,
         filter: { name: "bar" },
       })
       .expectSuccess();
 
     expect(result.data.deletedCount).toBe(2);
 
-    await assertDocumentCount(c, schema.id, collectionSize - 3);
+    await assertDocumentCount(c, collection.id, collectionSize - 3);
   });
 });

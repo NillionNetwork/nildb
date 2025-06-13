@@ -1,7 +1,8 @@
 import { Effect as E, pipe } from "effect";
-import type { Document, InsertOneResult, UUID } from "mongodb";
+import type { Document, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { z } from "zod";
+import * as BuildersRepository from "#/builders/builders.repository";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
@@ -16,33 +17,38 @@ import type { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import * as OrganizationRepository from "#/organizations/organizations.repository";
 import pipelineSchema from "./mongodb_pipeline.json";
-import * as QueriesJobsRepository from "./queries.jobs.repository";
+import * as RunQueryJobsRepository from "./queries.jobs.repository";
 import * as QueriesRepository from "./queries.repository";
 import type {
   AddQueryCommand,
   DeleteQueryCommand,
-  ExecuteQueryCommand,
-  GetQueryJobCommand,
+  GetQueryRunByIdCommand,
   QueryDocument,
-  QueryJobDocument,
-  QueryJobStatus,
   QueryVariable,
+  RunQueryCommand,
+  RunQueryJobDocument,
 } from "./queries.types";
 
+/**
+ * Add query.
+ */
 export function addQuery(
   ctx: AppBindings,
   command: AddQueryCommand,
 ): E.Effect<
   void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+  | VariableInjectionError
+  | DataValidationError
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
 > {
   const now = new Date();
   const document: QueryDocument = {
     _id: command._id,
     name: command.name,
-    schema: command.schema,
+    collection: command.collection,
     variables: command.variables,
     pipeline: command.pipeline,
     owner: command.owner,
@@ -52,61 +58,123 @@ export function addQuery(
 
   return pipe(
     validateQuery(document),
-    () => validateData(pipelineSchema, document.pipeline),
-    () => QueriesRepository.insert(ctx, document),
-    E.flatMap(() =>
-      E.all([
-        E.succeed(ctx.cache.builders.taint(document.owner)),
-        OrganizationRepository.addQuery(ctx, document.owner, document._id),
-      ]),
-    ),
+    E.flatMap((_document) => validateData(pipelineSchema, document.pipeline)),
+    E.flatMap(() => QueriesRepository.insert(ctx, document)),
+    E.flatMap(() => {
+      ctx.cache.builders.taint(document.owner);
+      return BuildersRepository.addQuery(ctx, document.owner, document._id);
+    }),
     E.as(void 0),
   );
 }
 
-export function executeQuery(
+/**
+ * Run query in background.
+ */
+export function runQueryInBackground(
   ctx: AppBindings,
-  command: ExecuteQueryCommand,
+  command: RunQueryCommand,
 ): E.Effect<
-  { jobId: string } | Record<string, unknown>[],
+  UUID,
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
   | VariableInjectionError
 > {
-  if (command.background) {
-    return pipe(
-      addQueryJob(ctx, command.id),
-      E.flatMap((job) => {
-        // TODO(tim): address this ignored promise
-        // TODO(tim): rename executeQuery -> que query? ... remove background: true?
-        E.runPromise(processQueryJob(ctx, job.insertedId, command.variables));
-        return E.succeed({
-          jobId: job.insertedId.toString(),
-        });
-      }),
-    );
-  }
+  return pipe(
+    E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(command._id)),
+    E.flatMap((document) => RunQueryJobsRepository.insert(ctx, document)),
+    E.flatMap((run) => {
+      const runId = run.insertedId;
 
-  return E.Do.pipe(
-    E.bind("query", () => QueriesRepository.findOne(ctx, { _id: command.id })),
-    E.bind("variables", ({ query }) =>
-      validateVariables(query.variables, command.variables),
-    ),
-    E.bind("pipeline", ({ query, variables }) =>
-      injectVariablesIntoAggregation(
-        query.variables,
-        query.pipeline,
-        variables,
-      ),
-    ),
-    E.flatMap(({ query, pipeline }) => {
-      return pipe(DataRepository.runAggregation(ctx, query, pipeline));
+      // Run query in background (fire and forget)
+      const backgroundJob = pipe(
+        E.Do,
+        E.bind("job", () =>
+          RunQueryJobsRepository.findOne(ctx, { _id: runId }),
+        ),
+        E.bind("query", ({ job }) =>
+          QueriesRepository.findOne(ctx, { _id: job.query }),
+        ),
+        E.bind("variables", ({ query }) =>
+          validateVariables(query.variables, command.variables),
+        ),
+        E.bind("update", ({ job }) =>
+          RunQueryJobsRepository.updateOne(ctx, job._id, {
+            status: "running",
+            started: new Date(),
+          }),
+        ),
+        E.bind("pipeline", ({ query, variables }) =>
+          injectVariablesIntoAggregation(
+            query.variables,
+            query.pipeline,
+            variables,
+          ),
+        ),
+        E.flatMap(({ query, pipeline }) =>
+          DataRepository.runAggregation(ctx, query, pipeline),
+        ),
+        E.timeoutFail({
+          duration: "30 minutes",
+          onTimeout: () =>
+            new TimeoutError({
+              message: "Run query job timed out after 30 minutes.",
+            }),
+        }),
+        E.flatMap((result) =>
+          RunQueryJobsRepository.updateOne(ctx, runId, {
+            status: "complete",
+            completed: new Date(),
+            result,
+          }),
+        ),
+        E.catchAll((error) =>
+          RunQueryJobsRepository.updateOne(ctx, runId, {
+            status: "error",
+            completed: new Date(),
+            errors: error.humanize(),
+          }),
+        ),
+        E.runPromiseExit,
+      );
+
+      backgroundJob
+        .then((exit) => {
+          ctx.log.info(
+            { run: runId.toString(), result: exit._tag },
+            "Query run finished",
+          );
+        })
+        .catch((error: unknown) => {
+          ctx.log.warn(
+            { run: runId.toString(), error },
+            "Query run threw an unhandled error: ",
+          );
+        });
+
+      return E.succeed(runId);
     }),
   );
 }
 
+/**
+ * Get query run job.
+ */
+export function getRunQueryJob(
+  ctx: AppBindings,
+  command: GetQueryRunByIdCommand,
+): E.Effect<
+  RunQueryJobDocument,
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  return RunQueryJobsRepository.findOne(ctx, { _id: command._id });
+}
+
+/**
+ * Find queries by owner.
+ */
 export function findQueries(
   ctx: AppBindings,
   owner: Did,
@@ -120,6 +188,9 @@ export function findQueries(
   return pipe(QueriesRepository.findMany(ctx, { owner }));
 }
 
+/**
+ * Remove query.
+ */
 export function removeQuery(
   ctx: AppBindings,
   command: DeleteQueryCommand,
@@ -131,17 +202,18 @@ export function removeQuery(
   | DataValidationError
 > {
   return pipe(
-    QueriesRepository.findOneAndDelete(ctx, { _id: command.id }),
+    QueriesRepository.findOneAndDelete(ctx, { _id: command._id }),
+    E.tap((document) => ctx.cache.builders.taint(document.owner)),
     E.flatMap((document) =>
-      E.all([
-        E.succeed(ctx.cache.builders.taint(document.owner)),
-        OrganizationRepository.removeQuery(ctx, document.owner, command.id),
-      ]),
+      BuildersRepository.removeQuery(ctx, document.owner, command._id),
     ),
     E.as(void 0),
   );
 }
 
+/**
+ * Validate query.
+ */
 export function validateQuery(
   query: QueryDocument,
 ): E.Effect<QueryDocument, QueryValidationError> {
@@ -172,117 +244,6 @@ export function validateQuery(
   ).pipe(E.map(() => query));
 }
 
-export function findQueryJob(
-  ctx: AppBindings,
-  command: GetQueryJobCommand,
-): E.Effect<
-  QueryJobDocument,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
-  return pipe(QueriesJobsRepository.findOne(ctx, { _id: command.id }));
-}
-
-export function addQueryJob(
-  ctx: AppBindings,
-  queryId: UUID,
-): E.Effect<
-  InsertOneResult<QueryJobDocument>,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
-  const document = QueriesJobsRepository.toQueryJobDocument(queryId);
-  return QueriesJobsRepository.insert(ctx, document);
-}
-
-type QueryJobUpdatePayload = {
-  jobId: UUID;
-  status: QueryJobStatus;
-  startedAt?: Date;
-  endedAt?: Date;
-  result?: JsonValue;
-  error?:
-    | DocumentNotFoundError
-    | CollectionNotFoundError
-    | DatabaseError
-    | DataValidationError
-    | VariableInjectionError
-    | TimeoutError;
-};
-
-export function updateQueryJob(
-  ctx: AppBindings,
-  payload: QueryJobUpdatePayload,
-): E.Effect<
-  void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
-  const { jobId, error, ...rest } = payload;
-  const update: Partial<QueryJobDocument> = {
-    ...rest,
-    _updated: new Date(),
-  };
-
-  if (error) {
-    update.errors = error.humanize();
-  }
-
-  return pipe(QueriesJobsRepository.updateOne(ctx, jobId, update));
-}
-
-export function processQueryJob(
-  ctx: AppBindings,
-  jobId: UUID,
-  variables: Record<string, unknown>,
-): E.Effect<
-  void,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | VariableInjectionError
-> {
-  return pipe(
-    findQueryJob(ctx, { id: jobId }),
-    E.flatMap((job) =>
-      E.all([
-        updateQueryJob(ctx, {
-          jobId,
-          status: "running",
-          startedAt: new Date(),
-        }),
-        pipe(
-          executeQuery(ctx, {
-            id: job.queryId,
-            variables,
-          }),
-          E.timeoutFail({
-            duration: "30 minutes",
-            onTimeout: () =>
-              new TimeoutError({
-                message: "Query job timed out after 30 minutes.",
-              }),
-          }),
-        ),
-      ]),
-    ),
-    E.flatMap(([, result]) =>
-      updateQueryJob(ctx, {
-        jobId,
-        result: result as JsonValue,
-        status: "complete",
-        endedAt: new Date(),
-      }),
-    ),
-    E.catchAll((error) =>
-      updateQueryJob(ctx, {
-        jobId,
-        error,
-        status: "complete",
-        endedAt: new Date(),
-      }),
-    ),
-  );
-}
-
 export type QueryPrimitive = string | number | boolean | Date | UUID;
 
 export type QueryRuntimeVariables = Record<
@@ -291,15 +252,7 @@ export type QueryRuntimeVariables = Record<
 >;
 
 /**
- * Validates query execution variables against template definitions.
- *
- * Ensures that all required variables are provided and no unexpected
- * variables are included. Applies type coercions and validates data types
- * for each variable according to the query template.
- *
- * @param template - Variable definitions from the query document
- * @param provided - Variable values provided for query execution
- * @returns Effect that succeeds with validated runtime variables or fails with validation error
+ * Validate query variables.
  */
 export function validateVariables(
   template: QueryDocument["variables"],
@@ -421,16 +374,7 @@ function getAggregationField(
 }
 
 /**
- * Injects runtime variable values into MongoDB aggregation pipeline.
- *
- * Replaces variable placeholders in the aggregation pipeline with actual
- * values using JSONPath-style variable definitions. Supports deep object
- * and array access for complex pipeline structures.
- *
- * @param queryVariables - Variable definitions with path specifications
- * @param aggregation - MongoDB aggregation pipeline stages
- * @param variables - Runtime variable values to inject
- * @returns Effect that succeeds with modified pipeline or fails with injection error
+ * Inject variables into aggregation.
  */
 export function injectVariablesIntoAggregation(
   queryVariables: Record<string, QueryVariable>,

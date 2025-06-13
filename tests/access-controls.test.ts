@@ -3,10 +3,9 @@ import { Keypair } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createUuidDto } from "#/common/types";
-import { Permissions } from "#/user/user.types";
+import collectionJson from "./data/simple.collection.json";
 import queryJson from "./data/simple.query.json";
-import schemaJson from "./data/simple.schema.json";
-import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import type { CollectionFixture, QueryFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 import {
   type BuilderTestClient,
@@ -15,10 +14,10 @@ import {
 
 // TODO(tim): revisit once we start enforcing Nuc policies
 describe("access-controls", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+  const collection = collectionJson as unknown as CollectionFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll } = createTestFixtureExtension({
-    schema,
+    collection,
     query,
   });
 
@@ -34,15 +33,16 @@ describe("access-controls", () => {
     const { builder, bindings, app, user } = c;
 
     await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        schema: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data,
-        permissions: new Permissions(builder.did, {
+        acl: {
+          grantee: builder.did,
           read: true,
           write: false,
           execute: false,
-        }),
+        },
       })
       .expectSuccess();
 
@@ -68,28 +68,29 @@ describe("access-controls", () => {
     const { builder, user } = c;
 
     await builderB
-      .uploadOwnedData(c, {
-        userId: user.did,
-        schema: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data: [
           {
             _id: createUuidDto(),
             name: faker.person.fullName(),
           },
         ],
-        permissions: new Permissions(builder.did, {
+        acl: {
+          grantee: builder.did,
           read: true,
           write: false,
           execute: false,
-        }),
+        },
       })
       .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 
   it("prevents data reads", async ({ c }) => {
     await builderB
-      .readData(c, {
-        schema: schema.id,
+      .findData(c, {
+        collection: collection.id,
         filter: {},
       })
       .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
@@ -99,7 +100,7 @@ describe("access-controls", () => {
     const record = data[Math.floor(Math.random() * collectionSize)];
     await builderB
       .updateData(c, {
-        schema: schema.id,
+        collection: collection.id,
         filter: { name: record.name },
         update: { name: "foo" },
       })
@@ -111,7 +112,7 @@ describe("access-controls", () => {
 
     await builderB
       .deleteData(c, {
-        schema: schema.id,
+        collection: collection.id,
         filter: { name: record.name },
       })
       .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
@@ -119,17 +120,13 @@ describe("access-controls", () => {
 
   it("prevents data flush", async ({ c }) => {
     await builderB
-      .flushData(c, {
-        schema: schema.id,
-      })
+      .flushData(c, collection.id)
       .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 
   it("prevents data tail", async ({ c }) => {
     await builderB
-      .tailData(c, {
-        schema: schema.id,
-      })
+      .tailData(c, collection.id)
       .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 });
