@@ -51,7 +51,7 @@ export const QueriesDataMapper = {
    */
   toRunQueryCommand(dto: RunQueryRequest): RunQueryCommand {
     return {
-      id: new UUID(dto.id),
+      _id: new UUID(dto._id),
       variables: dto.variables,
     };
   },
@@ -72,7 +72,7 @@ export const QueriesDataMapper = {
     params: ByIdRequestParams,
   ): GetQueryRunByIdCommand {
     return {
-      id: new UUID(params.id),
+      _id: new UUID(params.id),
     };
   },
 
@@ -133,7 +133,7 @@ export const QueriesDataMapper = {
    */
   toDeleteQueryCommand(dto: DeleteQueryRequest): DeleteQueryCommand {
     return {
-      id: new UUID(dto.id),
+      _id: new UUID(dto.id),
     };
   },
 
@@ -142,7 +142,7 @@ export const QueriesDataMapper = {
    */
   toDeleteQueryByIdCommand(params: ByIdRequestParams): DeleteQueryCommand {
     return {
-      id: new UUID(params.id),
+      _id: new UUID(params.id),
     };
   },
 };

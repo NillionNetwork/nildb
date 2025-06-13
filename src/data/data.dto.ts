@@ -96,7 +96,9 @@ export type FindDataResponse = z.infer<typeof FindDataResponse>;
 export const DeleteDataRequest = z
   .object({
     collection: z.string().uuid(),
-    filter: z.record(z.string(), z.unknown()),
+    filter: z
+      .record(z.string(), z.unknown())
+      .refine((obj) => Object.keys(obj).length > 0, "Filter cannot be empty"),
   })
   .openapi({ ref: "DeleteDataRequest" });
 export type DeleteDataRequest = z.infer<typeof DeleteDataRequest>;
@@ -160,7 +162,7 @@ export type TailDataRequestParams = z.infer<typeof TailDataRequestParams>;
  */
 export const TailDataRequestQuery = z
   .object({
-    limit: z.number().max(1_000).optional().default(25),
+    limit: z.coerce.number().max(1_000).optional().default(25),
   })
   .openapi({ ref: "TailDataRequestQuery" });
 export type TailDataRequestQuery = z.infer<typeof TailDataRequestQuery>;

@@ -47,14 +47,15 @@ export function addCollection(
   command: CreateCollectionCommand,
 ): E.Effect<
   void,
+  | DataValidationError
   | DocumentNotFoundError
   | InvalidIndexOptionsError
   | CollectionNotFoundError
   | DatabaseError
 > {
   const now = new Date();
-  const document: CollectionDocument = {
-    _id: command.id,
+  const collection: CollectionDocument = {
+    _id: command._id,
     _created: now,
     _updated: now,
     name: command.name,
@@ -65,14 +66,12 @@ export function addCollection(
 
   return pipe(
     validateSchema(command.schema),
-    () => CollectionsRepository.insert(ctx, document),
+    E.flatMap(() => CollectionsRepository.insert(ctx, collection)),
+    E.map(() => ctx.cache.builders.taint(collection.owner)),
     E.flatMap(() =>
-      E.all([
-        E.succeed(ctx.cache.builders.taint(document.owner)),
-        BuildersRepository.addCollection(ctx, command.owner, document._id),
-        DataRepository.createCollection(ctx, document._id),
-      ]),
+      BuildersRepository.addCollection(ctx, command.owner, collection._id),
     ),
+    E.flatMap(() => DataRepository.createCollection(ctx, collection._id)),
     E.as(void 0),
   );
 }
@@ -91,12 +90,12 @@ export function deleteCollection(
   | DataValidationError
 > {
   return pipe(
-    CollectionsRepository.deleteOne(ctx, { id: command.id }),
+    CollectionsRepository.deleteOne(ctx, { _id: command._id }),
     E.flatMap((collection) =>
       E.all([
         E.succeed(ctx.cache.builders.taint(collection.owner)),
-        BuildersRepository.removeCollection(ctx, collection.owner, command.id),
-        DataRepository.deleteCollection(ctx, command.id),
+        BuildersRepository.removeCollection(ctx, collection.owner, command._id),
+        DataRepository.deleteCollection(ctx, command._id),
       ]),
     ),
     E.as(void 0),
@@ -110,7 +109,7 @@ export function getCollectionMetadata(
   ctx: AppBindings,
   collection: UUID,
 ): E.Effect<CollectionMetadata, CollectionNotFoundError | DatabaseError> {
-  return pipe(CollectionsRepository.getCollectionStats(ctx, collection));
+  return CollectionsRepository.getCollectionStats(ctx, collection);
 }
 
 /**

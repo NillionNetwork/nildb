@@ -177,10 +177,10 @@ export function deleteOne(
  */
 export function getCollectionStats(
   ctx: AppBindings,
-  id: UUID,
+  _id: UUID,
 ): E.Effect<CollectionMetadata, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists(ctx, "data", id.toString()),
+    checkCollectionExists(ctx, "data", _id.toString()),
     E.flatMap((collection) =>
       E.Do.pipe(
         E.bind("timeStats", () =>
@@ -265,7 +265,7 @@ export function getCollectionStats(
     ),
     E.map(({ timeStats, indexes, counts }) => {
       return {
-        id,
+        _id,
         ...timeStats,
         ...counts,
         indexes,

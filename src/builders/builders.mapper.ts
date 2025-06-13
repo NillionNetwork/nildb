@@ -1,4 +1,4 @@
-import { Did } from "#/common/types";
+import type { Did } from "#/common/types";
 import type {
   ReadProfileResponse,
   RegisterBuilderRequest,
@@ -35,7 +35,7 @@ export const BuilderDataMapper = {
    */
   toCreateBuilderCommand(dto: RegisterBuilderRequest): CreateBuilderCommand {
     return {
-      did: Did.parse(dto.did),
+      did: dto.did,
       name: dto.name,
     };
   },

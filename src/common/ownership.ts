@@ -24,13 +24,13 @@ export function enforceQueryOwnership(
   );
 }
 
-export function enforceSchemaOwnership(
+export function enforceCollectionOwnership(
   builder: BuilderDocument,
-  schema: UUID,
+  collection: UUID,
 ): E.Effect<void, ResourceAccessDeniedError> {
   return pipe(
     E.succeed(
-      builder.collections.some((s) => s.toString() === schema.toString()),
+      builder.collections.some((s) => s.toString() === collection.toString()),
     ),
     E.flatMap((isAuthorized) => {
       return isAuthorized
@@ -38,7 +38,7 @@ export function enforceSchemaOwnership(
         : E.fail(
             new ResourceAccessDeniedError({
               type: "schema",
-              id: schema.toString(),
+              id: collection.toString(),
               user: builder._id,
             }),
           );

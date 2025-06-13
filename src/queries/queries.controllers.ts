@@ -104,7 +104,7 @@ export function deleteQuery(options: ControllerOptions): void {
       const command = QueriesDataMapper.toDeleteQueryByIdCommand(params);
 
       return pipe(
-        enforceQueryOwnership(builder, command.id),
+        enforceQueryOwnership(builder, command._id),
         E.flatMap(() => QueriesService.removeQuery(c.env, command)),
         E.map(() => DeleteQueryResponse),
         handleTaggedErrors(c),
@@ -236,7 +236,7 @@ export function runQuery(options: ControllerOptions): void {
       const command = QueriesDataMapper.toRunQueryCommand(payload);
 
       return pipe(
-        enforceQueryOwnership(builder, command.id),
+        enforceQueryOwnership(builder, command._id),
         E.flatMap(() => QueriesService.runQueryInBackground(c.env, command)),
         E.map((result) => QueriesDataMapper.toRunQueryResponse(result)),
         E.map((response) => c.json<RunQueryResponse>(response)),
@@ -286,10 +286,10 @@ export function getQueryRunResultById(options: ControllerOptions): void {
 
       return pipe(
         QueriesService.getRunQueryJob(c.env, command),
-        E.flatMap((job) =>
+        E.flatMap((run) =>
           pipe(
-            enforceQueryOwnership(builder, job.query),
-            E.map(() => QueriesDataMapper.toGetQueryRunResultByResponse(job)),
+            enforceQueryOwnership(builder, run.query),
+            E.map(() => QueriesDataMapper.toGetQueryRunResultByResponse(run)),
             E.map((response) => c.json<GetQueryRunByIdResponse>(response)),
           ),
         ),

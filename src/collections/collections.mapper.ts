@@ -26,7 +26,7 @@ export const CollectionsDataMapper = {
   ): ReadCollectionMetadataResponse {
     return {
       data: {
-        id: metadata.id.toString(),
+        _id: metadata._id.toString(),
         count: metadata.count,
         size: metadata.size,
         first_write: metadata.firstWrite.toISOString(),
@@ -65,7 +65,7 @@ export const CollectionsDataMapper = {
     owner: Did,
   ): CreateCollectionCommand {
     return {
-      id: new UUID(body.id),
+      _id: new UUID(body._id),
       name: body.name,
       schema: body.schema,
       type: body.type,
@@ -80,7 +80,7 @@ export const CollectionsDataMapper = {
     dto: DeleteCollectionRequestParams,
   ): DeleteCollectionCommand {
     return {
-      id: new UUID(dto.id),
+      _id: new UUID(dto.id),
     };
   },
 

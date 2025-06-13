@@ -92,16 +92,19 @@ export function findOne(
   | DataValidationError
 > {
   return pipe(
-    E.all([
+    E.Do,
+    E.bind("collection", () =>
       checkCollectionExists<QueryDocument>(
         ctx,
         "primary",
         CollectionName.Queries,
       ),
+    ),
+    E.bind("filter", () =>
       applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
-    ]),
+    ),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) => collection.findOne(documentFilter),
+      try: ({ collection, filter }) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
     }),
     E.flatMap((result) =>

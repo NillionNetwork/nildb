@@ -83,51 +83,47 @@ export function runQueryInBackground(
   | VariableInjectionError
 > {
   return pipe(
-    E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(command.id)),
+    E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(command._id)),
     E.flatMap((document) => RunQueryJobsRepository.insert(ctx, document)),
     E.flatMap((run) => {
       const runId = run.insertedId;
 
-      // Run query is always done in the background to avoid blocking and request timeouts
-      const _result = pipe(
-        RunQueryJobsRepository.findOne(ctx, { id: jobId }),
-        E.flatMap((_job) =>
-          E.all([
-            RunQueryJobsRepository.updateOne(ctx, runId, {
-              status: "running",
-              started: new Date(),
-            }),
-            pipe(
-              E.Do,
-              E.bind("query", () =>
-                QueriesRepository.findOne(ctx, { id: jobId }),
-              ),
-              E.bind("variables", ({ query }) =>
-                validateVariables(query.variables, command.variables),
-              ),
-              E.bind("pipeline", ({ query, variables }) =>
-                injectVariablesIntoAggregation(
-                  query.variables,
-                  query.pipeline,
-                  variables,
-                ),
-              ),
-              E.flatMap(({ query, pipeline }) => {
-                return pipe(
-                  DataRepository.runAggregation(ctx, query, pipeline),
-                );
-              }),
-              E.timeoutFail({
-                duration: "30 minutes",
-                onTimeout: () =>
-                  new TimeoutError({
-                    message: "Run query job timed out after 30 minutes.",
-                  }),
-              }),
-            ),
-          ]),
+      // Run query in background (fire and forget)
+      const backgroundJob = pipe(
+        E.Do,
+        E.bind("job", () =>
+          RunQueryJobsRepository.findOne(ctx, { _id: runId }),
         ),
-        E.flatMap(([, result]) =>
+        E.bind("query", ({ job }) =>
+          QueriesRepository.findOne(ctx, { _id: job.query }),
+        ),
+        E.bind("variables", ({ query }) =>
+          validateVariables(query.variables, command.variables),
+        ),
+        E.bind("update", ({ job }) =>
+          RunQueryJobsRepository.updateOne(ctx, job._id, {
+            status: "running",
+            started: new Date(),
+          }),
+        ),
+        E.bind("pipeline", ({ query, variables }) =>
+          injectVariablesIntoAggregation(
+            query.variables,
+            query.pipeline,
+            variables,
+          ),
+        ),
+        E.flatMap(({ query, pipeline }) =>
+          DataRepository.runAggregation(ctx, query, pipeline),
+        ),
+        E.timeoutFail({
+          duration: "30 minutes",
+          onTimeout: () =>
+            new TimeoutError({
+              message: "Run query job timed out after 30 minutes.",
+            }),
+        }),
+        E.flatMap((result) =>
           RunQueryJobsRepository.updateOne(ctx, runId, {
             status: "complete",
             completed: new Date(),
@@ -136,14 +132,29 @@ export function runQueryInBackground(
         ),
         E.catchAll((error) =>
           RunQueryJobsRepository.updateOne(ctx, runId, {
-            status: "complete",
+            status: "error",
             completed: new Date(),
             errors: error.humanize(),
           }),
         ),
-        E.runPromise,
+        E.runPromiseExit,
       );
-      return E.succeed(run.insertedId);
+
+      backgroundJob
+        .then((exit) => {
+          ctx.log.info(
+            { run: runId.toString(), result: exit._tag },
+            "Query run finished",
+          );
+        })
+        .catch((error: unknown) => {
+          ctx.log.warn(
+            { run: runId.toString(), error },
+            "Query run threw an unhandled error: ",
+          );
+        });
+
+      return E.succeed(runId);
     }),
   );
 }
@@ -158,7 +169,7 @@ export function getRunQueryJob(
   RunQueryJobDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return RunQueryJobsRepository.findOne(ctx, { id: command.id });
+  return RunQueryJobsRepository.findOne(ctx, { _id: command._id });
 }
 
 /**
@@ -191,10 +202,10 @@ export function removeQuery(
   | DataValidationError
 > {
   return pipe(
-    QueriesRepository.findOneAndDelete(ctx, { id: command.id }),
+    QueriesRepository.findOneAndDelete(ctx, { _id: command._id }),
     E.tap((document) => ctx.cache.builders.taint(document.owner)),
     E.flatMap((document) =>
-      BuildersRepository.removeQuery(ctx, document.owner, command.id),
+      BuildersRepository.removeQuery(ctx, document.owner, command._id),
     ),
     E.as(void 0),
   );

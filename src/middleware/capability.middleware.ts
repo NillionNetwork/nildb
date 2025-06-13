@@ -243,10 +243,6 @@ export function enforceCapability<
     const { log } = c.env;
     const { token } = c.get("envelope").token;
 
-    if (c.req.path !== options.path) {
-      log.warn("Path mismatch: %s, expected: %s", c.req.path, options.path);
-    }
-
     const isValidCommand = options.cmd.isAttenuationOf(token.command);
     if (!isValidCommand) {
       log.debug(

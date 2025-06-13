@@ -11,7 +11,7 @@ import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
 } from "#/common/openapi";
-import { enforceSchemaOwnership } from "#/common/ownership";
+import { enforceCollectionOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
@@ -67,7 +67,6 @@ export function readCollections(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
 
-      // TODO: include collection metadata with response
       return pipe(
         CollectionsService.getBuilderCollections(c.env, builder),
         E.map((schemas) =>
@@ -154,11 +153,11 @@ export function deleteCollectionById(options: ControllerOptions): void {
     }),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
-      const { id } = c.req.valid("param");
-      const command = CollectionsDataMapper.toDeleteCollectionCommand({ id });
+      const params = c.req.valid("param");
+      const command = CollectionsDataMapper.toDeleteCollectionCommand(params);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.id),
+        enforceCollectionOwnership(builder, command._id),
         E.flatMap(() => CollectionsService.deleteCollection(c.env, command)),
         E.map(() => DeleteCollectionResponse),
         handleTaggedErrors(c),
@@ -204,10 +203,10 @@ export function readCollectionById(options: ControllerOptions): void {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("param");
 
-      // TODO: needs to include metadata with schema result
+      // TODO: needs to include metadata with result
 
       return pipe(
-        enforceSchemaOwnership(builder, payload.id),
+        enforceCollectionOwnership(builder, payload.id),
         E.flatMap(() =>
           CollectionsService.getCollectionMetadata(c.env, payload.id),
         ),
@@ -259,7 +258,7 @@ export function createCollectionIndex(options: ControllerOptions): void {
       const command = CollectionsDataMapper.toCreateIndexCommand(payload);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.collection),
+        enforceCollectionOwnership(builder, command.collection),
         E.flatMap(() => CollectionsService.createIndex(c.env, command)),
         E.map(() => new Response(null, { status: StatusCodes.CREATED })),
         handleTaggedErrors(c),
@@ -302,7 +301,7 @@ export function dropCollectionIndex(options: ControllerOptions): void {
       const command = CollectionsDataMapper.toDropIndexCommand(params);
 
       return pipe(
-        enforceSchemaOwnership(builder, command.collection),
+        enforceCollectionOwnership(builder, command.collection),
         E.flatMap(() => CollectionsService.dropIndex(c.env, command)),
         E.map(() => DropCollectionIndexResponse),
         handleTaggedErrors(c),

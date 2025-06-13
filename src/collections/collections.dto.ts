@@ -76,7 +76,7 @@ export const DropCollectionIndexResponse = new Response(null, {
  */
 export const CreateCollectionRequest = z
   .object({
-    id: z.string().uuid(),
+    _id: z.string().uuid(),
     type: z.union([z.literal("standard"), z.literal("owned")]),
     name: z.string().min(1),
     schema: z.record(z.string(), z.unknown()),
@@ -139,7 +139,7 @@ export const CollectionIndexDto = z.object({
  * Collection metadata data.
  */
 export const CollectionMetadataDto = z.object({
-  id: z.string().uuid(),
+  _id: z.string().uuid(),
   count: z.number(),
   size: z.number(),
   first_write: z.string().datetime(),

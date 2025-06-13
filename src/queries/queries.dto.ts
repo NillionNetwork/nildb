@@ -106,7 +106,7 @@ export type DeleteQueryResponse = typeof DeleteQueryResponse;
  */
 export const RunQueryRequest = z
   .object({
-    id: z.string().uuid(),
+    _id: z.string().uuid(),
     variables: z.record(z.string(), z.unknown()),
   })
   .openapi({ ref: "RunQueryRequest" });
@@ -123,7 +123,12 @@ export type RunQueryResponse = z.infer<typeof RunQueryResponse>;
 /**
  * Query execution status.
  */
-export const RunQueryResultStatus = z.enum(["pending", "running", "complete"]);
+export const RunQueryResultStatus = z.enum([
+  "pending",
+  "running",
+  "complete",
+  "error",
+]);
 export type RunQueryResultStatus = z.infer<typeof RunQueryResultStatus>;
 
 /**

@@ -41,18 +41,18 @@ export function insert(
  */
 export function findByIdWithCache(
   ctx: AppBindings,
-  _id: Did,
+  builder: Did,
 ): E.Effect<
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const cache = ctx.cache.builders;
-  const builder = cache.get(_id);
-  if (builder) {
-    return E.succeed(builder);
+  const document = cache.get(builder);
+  if (document) {
+    return E.succeed(document);
   }
 
-  const filter = { _id };
+  const filter = { _id: builder };
 
   return pipe(
     checkCollectionExists<BuilderDocument>(
@@ -75,7 +75,7 @@ export function findByIdWithCache(
           )
         : E.succeed(result),
     ),
-    E.tap((document) => cache.set(_id, document)),
+    E.tap((document) => cache.set(builder, document)),
   );
 }
 
@@ -84,14 +84,13 @@ export function findByIdWithCache(
  */
 export function findOne(
   ctx: AppBindings,
-  _id: Did,
+  builder: Did,
 ): E.Effect<
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = {
-    id: _id,
-  };
+  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+
   return pipe(
     checkCollectionExists<BuilderDocument>(
       ctx,
@@ -120,14 +119,12 @@ export function findOne(
  */
 export function deleteOneById(
   ctx: AppBindings,
-  _id: Did,
+  builder: Did,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = {
-    id: _id,
-  };
+  const filter: StrictFilter<BuilderDocument> = { _id: builder };
 
   return pipe(
     checkCollectionExists<BuilderDocument>(
@@ -149,7 +146,7 @@ export function deleteOneById(
           )
         : E.succeed(result),
     ),
-    E.tap(() => ctx.cache.builders.delete(_id)),
+    E.tap(() => ctx.cache.builders.delete(builder)),
   );
 }
 
@@ -158,18 +155,16 @@ export function deleteOneById(
  */
 export function update(
   ctx: AppBindings,
-  _id: Did,
-  updates: Partial<{ _id: Did; _updated: Date; name: string }>,
+  builder: Did,
+  updates: Partial<{ _updated: Date; name: string }>,
 ): E.Effect<
   UpdateResult,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = {
-    id: _id,
-  };
+  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+
   const update: StrictUpdateFilter<BuilderDocument> = {
     $set: {
-      ...(updates._id && { id: updates._id }),
       ...(updates._updated && { _updated: updates._updated }),
       ...(updates.name && { name: updates.name }),
     },
@@ -203,15 +198,16 @@ export function update(
  */
 export function addCollection(
   ctx: AppBindings,
-  owner: Did,
-  id: UUID,
+  builder: Did,
+  collection: UUID,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { id: owner };
+  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+
   const update: StrictUpdateFilter<BuilderDocument> = {
-    $addToSet: { collections: id },
+    $addToSet: { collections: collection },
   };
 
   return pipe(
@@ -242,16 +238,16 @@ export function addCollection(
  */
 export function removeCollection(
   ctx: AppBindings,
-  owner: Did,
-  id: UUID,
+  builder: Did,
+  collection: UUID,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { id: owner };
+  const filter: StrictFilter<BuilderDocument> = { _id: builder };
 
   const update: StrictUpdateFilter<BuilderDocument> = {
-    $pull: { collections: id },
+    $pull: { collections: collection },
   };
 
   return pipe(
@@ -283,15 +279,15 @@ export function removeCollection(
  */
 export function addQuery(
   ctx: AppBindings,
-  orgId: Did,
-  queryId: UUID,
+  builder: Did,
+  query: UUID,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { id: orgId };
+  const filter: StrictFilter<BuilderDocument> = { _id: builder };
   const update: StrictUpdateFilter<BuilderDocument> = {
-    $addToSet: { queries: queryId },
+    $addToSet: { queries: query },
   };
 
   return pipe(
@@ -302,7 +298,7 @@ export function addQuery(
     ),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
-      catch: (cause) => new DatabaseError({ cause, message: "" }),
+      catch: (cause) => new DatabaseError({ cause, message: "addQuery" }),
     }),
     E.flatMap((result) =>
       result.modifiedCount === 1
@@ -322,15 +318,16 @@ export function addQuery(
  */
 export function removeQuery(
   ctx: AppBindings,
-  orgId: Did,
-  queryId: UUID,
+  builder: Did,
+  query: UUID,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { id: orgId };
+  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+
   const update: StrictUpdateFilter<BuilderDocument> = {
-    $pull: { queries: queryId },
+    $pull: { queries: query },
   };
 
   return pipe(

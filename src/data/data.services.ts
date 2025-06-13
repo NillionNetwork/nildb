@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import { type DeleteResult, type UpdateResult, UUID } from "mongodb";
-import * as SchemasRepository from "#/collections/collections.repository";
+import * as CollectionsRepository from "#/collections/collections.repository";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -43,8 +43,8 @@ export function createOwnedRecords(
   return pipe(
     E.Do,
     E.bind("document", () =>
-      SchemasRepository.findOne(ctx, {
-        id: command.collection,
+      CollectionsRepository.findOne(ctx, {
+        _id: command.collection,
         type: "owned",
       }),
     ),
@@ -56,15 +56,18 @@ export function createOwnedRecords(
         command.acl,
       ]),
     ),
-    E.flatMap(({ result, document }) => {
-      return UserRepository.upsert(ctx, {
-        builder: document.owner,
-        collection: command.collection,
-        user: command.owner,
-        data: result.created.map((id) => new UUID(id)),
-        acl: command.acl,
-      }).pipe(E.flatMap(() => E.succeed(result)));
-    }),
+    E.flatMap(({ result, document }) =>
+      pipe(
+        UserRepository.upsert(ctx, {
+          builder: document.owner,
+          collection: command.collection,
+          user: command.owner,
+          data: result.created.map((id) => new UUID(id)),
+          acl: command.acl,
+        }),
+        E.map(() => result),
+      ),
+    ),
   );
 }
 
@@ -84,8 +87,8 @@ export function createStandardRecords(
   return pipe(
     E.Do,
     E.bind("document", () =>
-      SchemasRepository.findOne(ctx, {
-        id: command.collection,
+      CollectionsRepository.findOne(ctx, {
+        _id: command.collection,
         type: "standard",
       }),
     ),

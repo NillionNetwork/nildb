@@ -15,7 +15,7 @@ export type QueryVariable = {
 /**
  * Query job status.
  */
-export type QueryJobStatus = "pending" | "running" | "complete";
+export type QueryJobStatus = "pending" | "running" | "complete" | "error";
 
 /**
  * Query document.
@@ -60,7 +60,7 @@ export type AddQueryCommand = {
  * Run query command.
  */
 export type RunQueryCommand = {
-  id: UUID;
+  _id: UUID;
   variables: Record<string, unknown>;
 };
 
@@ -68,12 +68,12 @@ export type RunQueryCommand = {
  * Delete query command.
  */
 export type DeleteQueryCommand = {
-  id: UUID;
+  _id: UUID;
 };
 
 /**
  * Get query run command.
  */
 export type GetQueryRunByIdCommand = {
-  id: UUID;
+  _id: UUID;
 };

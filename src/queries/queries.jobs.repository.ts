@@ -94,13 +94,14 @@ export function findOne(
  */
 export function updateOne(
   ctx: AppBindings,
-  run: UUID,
+  _id: UUID,
   data: Partial<RunQueryJobDocument>,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<RunQueryJobDocument> = { _id: run };
+  const filter: StrictFilter<RunQueryJobDocument> = { _id };
+
   const update: StrictUpdateFilter<RunQueryJobDocument> = {
     $set: data,
   };

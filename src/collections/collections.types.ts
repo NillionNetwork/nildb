@@ -21,7 +21,7 @@ export type CollectionDocument = DocumentBase & {
  * Collection metadata.
  */
 export type CollectionMetadata = {
-  id: UUID;
+  _id: UUID;
   count: number;
   size: number;
   firstWrite: Date;
@@ -43,7 +43,7 @@ export type CollectionIndex = {
  * Create collection command.
  */
 export type CreateCollectionCommand = {
-  id: UUID;
+  _id: UUID;
   type: CollectionType;
   owner: Did;
   name: string;
@@ -54,7 +54,7 @@ export type CreateCollectionCommand = {
  * Delete collection command.
  */
 export type DeleteCollectionCommand = {
-  id: UUID;
+  _id: UUID;
 };
 
 /**

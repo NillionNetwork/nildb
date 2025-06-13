@@ -33,7 +33,9 @@ import type { QueryDocument } from "#/queries/queries.types";
 import type { Acl } from "#/users/users.types";
 import type {
   CreateFailure,
+  OwnedDocumentBase,
   PartialDataDocumentDto,
+  StandardDocumentBase,
   UploadResult,
 } from "./data.types";
 
@@ -42,12 +44,13 @@ import type {
  */
 export function createCollection(
   ctx: AppBindings,
-  schemaId: UUID,
+  id: UUID,
 ): E.Effect<void, InvalidIndexOptionsError | DatabaseError> {
   return pipe(
     E.tryPromise({
-      try: () => ctx.db.data.createCollection(schemaId.toString()),
-      catch: (cause) => new DatabaseError({ cause, message: "" }),
+      try: () => ctx.db.data.createCollection(id.toString()),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "createCollection" }),
     }),
     E.flatMap((collection) =>
       E.all([
@@ -63,7 +66,7 @@ export function createCollection(
               cause.code === MongoErrorCode.IndexNotFound
             ) {
               return new InvalidIndexOptionsError({
-                collection: schemaId.toString(),
+                collection: collection.toString(),
                 message: "_updated_1",
               });
             }
@@ -82,7 +85,7 @@ export function createCollection(
               cause.code === MongoErrorCode.IndexNotFound
             ) {
               return new InvalidIndexOptionsError({
-                collection: schemaId.toString(),
+                collection: collection.toString(),
                 message: "_created_1",
               });
             }
@@ -154,24 +157,28 @@ export function flushCollection(
  */
 export function insertOwnedData(
   ctx: AppBindings,
-  schema: CollectionDocument,
+  collection: CollectionDocument,
   data: PartialDataDocumentDto[],
   owner: Did,
   acl: Acl[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DocumentBase>(ctx, "data", schema._id.toString()),
+    checkCollectionExists<OwnedDocumentBase>(
+      ctx,
+      "data",
+      collection._id.toString(),
+    ),
     E.tryMapPromise({
-      try: async (collection) => {
+      try: async (dataCollection) => {
         const created = new Set<UuidDto>();
         const errors: CreateFailure[] = [];
 
         const batchSize = 1000;
-        const batches: DocumentBase[][] = [];
+        const batches: OwnedDocumentBase[][] = [];
         const now = new Date();
 
         for (let i = 0; i < data.length; i += batchSize) {
-          const batch: DocumentBase[] = data
+          const batch: OwnedDocumentBase[] = data
             .slice(i, i + batchSize)
             .map((partial) => ({
               ...partial,
@@ -179,8 +186,7 @@ export function insertOwnedData(
               _created: now,
               _updated: now,
               _owner: owner,
-              _perms: acl,
-              documentType: schema.type,
+              _acl: acl,
             }));
           batches.push(batch);
         }
@@ -188,7 +194,7 @@ export function insertOwnedData(
         // Insert each batch of documents into the collection
         for (const batch of batches) {
           try {
-            const result = await collection.insertMany(batch, {
+            const result = await dataCollection.insertMany(batch, {
               ordered: false,
             });
             for (const id of Object.values(result.insertedIds)) {
@@ -231,18 +237,22 @@ export function insertOwnedData(
  */
 export function insertStandardData(
   ctx: AppBindings,
-  schema: CollectionDocument,
+  collection: CollectionDocument,
   data: PartialDataDocumentDto[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DocumentBase>(ctx, "data", schema._id.toString()),
+    checkCollectionExists<StandardDocumentBase>(
+      ctx,
+      "data",
+      collection._id.toString(),
+    ),
     E.tryMapPromise({
-      try: async (collection) => {
+      try: async (dataCollection) => {
         const created = new Set<UuidDto>();
         const errors: CreateFailure[] = [];
 
         const batchSize = 1000;
-        const batches: DocumentBase[][] = [];
+        const batches: StandardDocumentBase[][] = [];
         const now = new Date();
 
         for (let i = 0; i < data.length; i += batchSize) {
@@ -253,7 +263,6 @@ export function insertStandardData(
               _id: new UUID(partial._id),
               _created: now,
               _updated: now,
-              documentType: schema.type,
             }));
           batches.push(batch);
         }
@@ -261,7 +270,7 @@ export function insertStandardData(
         // Insert each batch of documents into the collection
         for (const batch of batches) {
           try {
-            const result = await collection.insertMany(batch, {
+            const result = await dataCollection.insertMany(batch, {
               ordered: false,
             });
             for (const id of Object.values(result.insertedIds)) {
@@ -305,7 +314,7 @@ export function insertStandardData(
  */
 export function updateMany(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
   filter: Filter<DocumentBase>,
   update: UpdateFilter<DocumentBase>,
 ): E.Effect<
@@ -314,7 +323,7 @@ export function updateMany(
 > {
   return pipe(
     E.all([
-      checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
+      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
       applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
       applyCoercions<UpdateFilter<DocumentBase>>(
         addDocumentBaseCoercions(update),
@@ -333,7 +342,7 @@ export function updateMany(
  */
 export function deleteMany(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
   filter: StrictFilter<DocumentBase>,
 ): E.Effect<
   DeleteResult,
@@ -341,7 +350,7 @@ export function deleteMany(
 > {
   return pipe(
     E.all([
-      checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
+      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
       applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
     ]),
     E.tryMapPromise({
@@ -378,7 +387,7 @@ export function runAggregation(
  */
 export function findMany(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
   filter: Filter<DocumentBase>,
 ): E.Effect<
   DocumentBase[],
@@ -386,7 +395,7 @@ export function findMany(
 > {
   return pipe(
     E.all([
-      checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
+      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
       applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
     ]),
     E.tryMapPromise({

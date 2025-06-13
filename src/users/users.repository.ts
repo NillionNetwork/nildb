@@ -38,7 +38,7 @@ export function upsert(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   const { builder, collection, user, data, acl } = options;
-  const filter: StrictFilter<UserDocument> = { id: user };
+  const filter: StrictFilter<UserDocument> = { _id: user };
 
   const logOperations: LogOperation[] = [];
   // TODO: Clarify why these are distinct ... eg why is acl both a write + auth operation?
@@ -96,7 +96,7 @@ export function removeData(
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  const filter: StrictFilter<UserDocument> = { id: user };
+  const filter: StrictFilter<UserDocument> = { _id: user };
 
   const logOperations: LogOperation[] = data.map((col) => ({
     op: "delete",
@@ -138,12 +138,12 @@ export function removeData(
  */
 export function findById(
   ctx: AppBindings,
-  userId: Did,
+  user: Did,
 ): E.Effect<
   UserDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<UserDocument> = { id: userId };
+  const filter: StrictFilter<UserDocument> = { _id: user };
 
   return pipe(
     checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
@@ -169,7 +169,7 @@ export function findById(
  */
 export function addAclEntry(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
   document: UUID,
   owner: Did,
   acl: Acl,
@@ -178,8 +178,8 @@ export function addAclEntry(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   const filter: StrictFilter<OwnedDocumentBase> = {
-    id: document,
-    owner,
+    _id: document,
+    _owner: owner,
   };
 
   const update: StrictUpdateFilter<OwnedDocumentBase> = {
@@ -188,7 +188,11 @@ export function addAclEntry(
   };
 
   return pipe(
-    checkCollectionExists<OwnedDocumentBase>(ctx, "data", schema.toString()),
+    checkCollectionExists<OwnedDocumentBase>(
+      ctx,
+      "data",
+      collection.toString(),
+    ),
     E.tryMapPromise({
       try: (collection) =>
         collection.updateOne(filter, update, { upsert: true }),
@@ -202,7 +206,7 @@ export function addAclEntry(
  */
 export function removeAclEntry(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
   document: UUID,
   grantee: Did,
   owner: Did,
@@ -221,7 +225,11 @@ export function removeAclEntry(
   };
 
   return pipe(
-    checkCollectionExists<OwnedDocumentBase>(ctx, "data", schema.toString()),
+    checkCollectionExists<OwnedDocumentBase>(
+      ctx,
+      "data",
+      collection.toString(),
+    ),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "removeAclEntry" }),
