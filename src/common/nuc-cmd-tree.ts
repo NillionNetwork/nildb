@@ -15,6 +15,7 @@ function createNucNamespace(prefix: string) {
 export const NucCmd = {
   nil: {
     db: {
+      root: new Command(["nil", "db"]),
       system: createNucNamespace("nil/db/system"),
       builders: createNucNamespace("nil/db/builders"),
       data: createNucNamespace("nil/db/data"),
