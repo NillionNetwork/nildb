@@ -1,5 +1,6 @@
 {
   "id": "",
+  "type": "owned",
   "name": "variables.wallet.schema.json",
   "schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -19,6 +20,5 @@
       },
       "required": ["wallet", "amount", "status", "timestamp"]
     }
-  },
-  "documentType": "owned"
+  }
 }

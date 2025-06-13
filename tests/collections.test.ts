@@ -3,60 +3,60 @@ import { describe } from "vitest";
 import type { CollectionDocument } from "#/collections/collections.types";
 import { CollectionName } from "#/common/mongo";
 import { createUuidDto } from "#/common/types";
-import { Acl } from "#/users/users.types";
-import schemaJson from "./data/wallet.schema.json";
+import collectionJson from "./data/wallet.collection.json";
 import {
   assertDefined,
   assertDocumentCount,
   expectBuilder,
 } from "./fixture/assertions";
-import type { SchemaFixture } from "./fixture/fixture";
+import type { CollectionFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("schemas.test.ts", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+describe("collections.test.ts", () => {
+  const collection = collectionJson as unknown as CollectionFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
+
   beforeAll(async (ctx) => {
     await ctx.builder.ensureSubscriptionActive();
   });
   afterAll(async (_c) => {});
 
-  it("can list schemas (expect 0)", async ({ c }) => {
+  it("can list collections (expect 0)", async ({ c }) => {
     const { expect, builder } = c;
-    const { data } = await builder.listSchemas(c).expectSuccess();
+    const { data } = await builder.readCollections(c).expectSuccess();
     expect(data).toHaveLength(0);
   });
 
-  it("can add schema", async ({ c }) => {
+  it("can add collection", async ({ c }) => {
     const { bindings, builder } = c;
 
-    const _id = new UUID();
+    const _id = createUuidDto();
     await builder
-      .addSchema(c, {
+      .createCollection(c, {
         _id,
-        name: schema.name,
-        collection: schema.schema,
-        documentType: schema.documentType,
+        type: collection.type,
+        name: collection.name,
+        schema: collection.schema,
       })
       .expectSuccess();
 
     const document = await bindings.db.primary
       .collection(CollectionName.Builders)
       .findOne({
-        schemas: { $elemMatch: { $in: [_id] } },
+        collections: { $elemMatch: { $in: [new UUID(_id)] } },
       });
     assertDefined(c, document);
 
-    schema.id = _id;
+    collection.id = _id;
   });
 
   it("can upload data", async ({ c }) => {
     const { expect, bindings, builder, user } = c;
 
     const result = await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        collection: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data: [
           {
             _id: createUuidDto(),
@@ -65,18 +65,14 @@ describe("schemas.test.ts", () => {
             age: 42,
           },
         ],
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
 
     expect(result.data.created).toHaveLength(1);
 
     const data = await bindings.db.data
-      .collection(schema.id.toString())
+      .collection(collection.id.toString())
       .find()
       .toArray();
 
@@ -84,35 +80,35 @@ describe("schemas.test.ts", () => {
     expect(data[0]?.age).toBe(42);
   });
 
-  it("can list schemas (expect 1)", async ({ c }) => {
+  it("can list collections (expect 1)", async ({ c }) => {
     const { expect, builder } = c;
 
-    const { data } = await builder.listSchemas(c).expectSuccess();
+    const { data } = await builder.readCollections(c).expectSuccess();
     expect(data).toHaveLength(1);
   });
 
-  it("can get schema metadata", async ({ c }) => {
+  it("can get collection metadata", async ({ c }) => {
     const { expect, builder } = c;
 
     const { data } = await builder
-      .getSchemaMetadata(c, schema.id.toString())
+      .readCollection(c, collection.id)
       .expectSuccess();
 
-    expect(data.id).toBe(schema.id.toString());
+    expect(data._id).toBe(collection.id);
     expect(data.count).toBe(1);
   });
 
-  it("can delete schema", async ({ c }) => {
+  it("can delete collection", async ({ c }) => {
     const { expect, bindings, builder } = c;
 
-    const id = schema.id;
-    await builder.deleteSchema(c, { id }).expectSuccess();
+    const id = collection.id;
+    await builder.deleteCollection(c, id).expectSuccess();
 
-    const schemaDocument = await bindings.db.primary
+    const collectionDocument = await bindings.db.primary
       .collection<CollectionDocument>(CollectionName.Collections)
-      .findOne({ id: id });
+      .findOne({ _id: new UUID(id) });
 
-    expect(schemaDocument).toBeNull();
+    expect(collectionDocument).toBeNull();
 
     const builderDocument = await expectBuilder(c, builder.did);
     expect(builderDocument.collections).toHaveLength(0);

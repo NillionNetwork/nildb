@@ -1,18 +1,16 @@
 import { faker } from "@faker-js/faker";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import { TAIL_DATA_LIMIT } from "#/data/data.repository";
-import { Permissions } from "#/users/users.types";
+import collectionJson from "./data/simple.collection.json";
 import queryJson from "./data/simple.query.json";
-import schemaJson from "./data/simple.schema.json";
-import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import type { CollectionFixture, QueryFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("read data", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+describe("read.data.test.ts", () => {
+  const collection = collectionJson as unknown as CollectionFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    collection: schema,
+    collection,
     query,
   });
 
@@ -31,15 +29,11 @@ describe("read data", () => {
     const { builder, user } = c;
 
     await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        collection: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data: testData,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
   });
@@ -49,13 +43,12 @@ describe("read data", () => {
   it("can tail a collection", async ({ c }) => {
     const { expect, builder } = c;
 
+    const limit = 50;
     const result = await builder
-      .tailData(c, {
-        schema: schema.id,
-      })
+      .tailData(c, collection.id, limit)
       .expectSuccess();
 
-    expect(result.data).toHaveLength(TAIL_DATA_LIMIT);
+    expect(result.data).toHaveLength(limit);
   });
 
   it("can read data from a collection", async ({ c }) => {
@@ -64,8 +57,8 @@ describe("read data", () => {
     const testRecord = testData[Math.floor(Math.random() * collectionSize)];
 
     const result = await builder
-      .readData(c, {
-        schema: schema.id,
+      .findData(c, {
+        collection: collection.id,
         filter: { name: testRecord.name },
       })
       .expectSuccess();

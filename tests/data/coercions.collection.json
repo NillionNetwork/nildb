@@ -1,5 +1,6 @@
 {
   "id": "",
+  "type": "owned",
   "name": "coercions.schema.json",
   "schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -25,6 +26,5 @@
         }
       }
     }
-  },
-  "documentType": "owned"
+  }
 }

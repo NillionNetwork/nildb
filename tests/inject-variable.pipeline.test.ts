@@ -24,7 +24,7 @@ function executePartialQuery(
   );
 }
 
-describe("pipeline variable injection", () => {
+describe("inject-variable.pipeline.test.ts", () => {
   it("replaces simple variables", async ({ expect }) => {
     const queryVariables: Record<string, QueryVariable> = {
       address: {

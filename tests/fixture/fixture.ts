@@ -1,13 +1,13 @@
 import { faker } from "@faker-js/faker";
 import { Keypair } from "@nillion/nuc";
 import dotenv from "dotenv";
-import { UUID } from "mongodb";
 import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
 import * as vitest from "vitest";
 import { type App, buildApp } from "#/app";
 import type { CollectionType } from "#/collections/collections.types";
 import { mongoMigrateUp } from "#/common/mongo";
+import { createUuidDto, type UuidDto } from "#/common/types";
 import {
   type AppBindings,
   FeatureFlag,
@@ -23,7 +23,6 @@ import {
   createBuilderTestClient,
   createUserTestClient,
   type UserTestClient,
-  // biome-ignore lint/nursery/noImportCycles: this cycle resolves correctly, is limited to testing, and avoids an overly large fixture file
 } from "./test-client";
 
 export type FixtureContext = {
@@ -36,37 +35,37 @@ export type FixtureContext = {
       endpoint: string;
     };
   };
-  admin: AdminTestClient;
+  system: AdminTestClient;
   builder: BuilderTestClient;
   user: UserTestClient;
   expect: vitest.ExpectStatic;
 };
 
-export type SchemaFixture = {
-  id: UUID;
+export type CollectionFixture = {
+  id: UuidDto;
+  type: CollectionType;
   name: string;
   keys: string[];
   schema: JsonObject;
-  documentType: CollectionType;
 };
 
 export type QueryFixture = {
-  id: UUID;
+  id: UuidDto;
   name: string;
-  schema: UUID;
+  collection: UuidDto;
   variables: Record<string, QueryVariable>;
   pipeline: JsonObject[];
 };
 
 export async function buildFixture(
   opts: {
-    schema?: SchemaFixture;
+    collection?: CollectionFixture;
     query?: QueryFixture;
     keepDbs?: boolean;
   } = {},
 ): Promise<FixtureContext> {
   dotenv.config({ path: [".env.test", ".env.test.nilauthclient"] });
-  const id = faker.string.alphanumeric({ length: 4, casing: "lower" });
+  const id = new Date().toISOString().replaceAll(":", "").replaceAll(".", "_");
   const log = createTestLogger(id);
 
   // Use unique db names for each test
@@ -97,8 +96,8 @@ export async function buildFixture(
   const chainUrl = process.env.APP_NILCHAIN_JSON_RPC;
   const nilauthBaseUrl = bindings.config.nilauthBaseUrl;
 
-  // Create admin client - uses node's keypair for system administration
-  const admin = await createAdminTestClient({
+  // Create system client - uses node's keypair for system administration
+  const system = await createAdminTestClient({
     app,
     keypair: node.keypair,
     nodePublicKey: node.keypair.publicKey("hex"),
@@ -128,7 +127,7 @@ export async function buildFixture(
     app,
     bindings,
     expect,
-    admin,
+    system,
     builder,
     user,
   };
@@ -145,30 +144,30 @@ export async function buildFixture(
     .expectSuccess();
   log.info({ did: builder.did }, "Builder registered");
 
-  if (opts.schema) {
-    const { schema, query } = opts;
+  if (opts.collection) {
+    const { collection, query } = opts;
 
-    schema.id = new UUID();
+    collection.id = createUuidDto();
     await builder
-      .addSchema(c, {
-        _id: schema.id,
-        name: schema.name,
-        collection: schema.schema,
-        documentType: schema.documentType,
+      .createCollection(c, {
+        _id: collection.id,
+        type: collection.type,
+        name: collection.name,
+        schema: collection.schema,
       })
       .expectSuccess();
 
-    log.info({ id: schema.id }, "Schema registered");
+    log.info({ id: collection.id }, "Schema registered");
 
     if (query) {
       log.info("Registering query");
-      query.id = new UUID();
-      query.schema = schema.id;
+      query.id = createUuidDto();
+      query.collection = collection.id;
       await builder
-        .addQuery(c, {
+        .createQuery(c, {
           _id: query.id,
           name: query.name,
-          collection: query.schema,
+          collection: query.collection,
           variables: query.variables,
           pipeline: query.pipeline,
         })

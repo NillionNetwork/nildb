@@ -1,5 +1,6 @@
 {
   "id": "",
+  "type": "standard",
   "name": "wallet.standard.schema.json",
   "schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -27,6 +28,5 @@
       },
       "required": ["_id", "wallet", "country", "age"]
     }
-  },
-  "documentType": "standard"
+  }
 }

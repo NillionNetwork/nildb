@@ -1,17 +1,16 @@
 import { StatusCodes } from "http-status-codes";
-import { describe } from "vitest";
-import { createUuidDto } from "#/common/types";
-import { Permissions } from "#/users/users.types";
+import { describe, vi } from "vitest";
+import { createUuidDto, Uuid } from "#/common/types";
+import collectionJson from "./data/datetime.collection.json";
 import queryJson from "./data/datetime.query.json";
-import schemaJson from "./data/datetime.schema.json";
-import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import type { CollectionFixture, QueryFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("schemas.datetime.test", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+describe("coercions-datetime.test", () => {
+  const collection = collectionJson as unknown as CollectionFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    collection: schema,
+    collection,
     query,
   });
   beforeAll(async (_c) => {});
@@ -27,21 +26,19 @@ describe("schemas.datetime.test", () => {
     ];
 
     const result = await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        collection: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
 
     expect(result.data.created).toHaveLength(3);
 
-    const cursor = bindings.db.data.collection(schema.id.toString()).find({});
+    const cursor = bindings.db.data
+      .collection(collection.id.toString())
+      .find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
@@ -59,15 +56,16 @@ describe("schemas.datetime.test", () => {
 
     for (const invalid of data) {
       await builder
-        .uploadOwnedData(c, {
-          userId: user.did,
-          collection: schema.id,
+        .createOwnedData(c, {
+          owner: user.did,
+          collection: collection.id,
           data: [invalid],
-          permissions: new Permissions(builder.did, {
+          acl: {
+            grantee: builder.did,
             read: true,
             write: false,
             execute: false,
-          }),
+          },
         })
         .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
     }
@@ -76,17 +74,31 @@ describe("schemas.datetime.test", () => {
   it("can run query with datetime data", async ({ c }) => {
     const { expect, builder } = c;
 
-    const result = await builder
-      .executeQuery(c, {
-        id: query.id,
+    const runResult = await builder
+      .runQuery(c, {
+        _id: query.id,
         variables: query.variables,
       })
       .expectSuccess();
 
-    expect(result.data).toEqual([
-      {
-        datetime: "2024-03-19T14:30:00Z",
+    const parseResult = Uuid.safeParse(runResult.data);
+    expect(parseResult.success).toBeTruthy();
+
+    const runId = parseResult.data!;
+
+    await vi.waitFor(
+      async () => {
+        const result = await builder
+          .readQueryRunResults(c, runId.toString())
+          .expectSuccess();
+
+        expect(result.data.status).toBe("complete");
+        return result;
       },
-    ]);
+      {
+        timeout: 5000,
+        interval: 500,
+      },
+    );
   });
 });

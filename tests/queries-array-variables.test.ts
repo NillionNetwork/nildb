@@ -1,18 +1,17 @@
 import { faker } from "@faker-js/faker";
-import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createUuidDto, type UuidDto } from "#/common/types";
-import { Permissions } from "#/users/users.types";
+import collectionJson from "./data/variables.array.collection.json";
 import queryJson from "./data/variables.array.query.json";
-import schemaJson from "./data/variables.array.schema.json";
-import type { QueryFixture, SchemaFixture } from "./fixture/fixture";
+import { waitForQueryRun } from "./fixture/assertions";
+import type { CollectionFixture, QueryFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
 
-describe("array variable queries", () => {
-  const schema = schemaJson as unknown as SchemaFixture;
+describe("queries-array-variables.test.ts", () => {
+  const collection = collectionJson as unknown as CollectionFixture;
   const query = queryJson as unknown as QueryFixture;
   const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    collection: schema,
+    collection,
     query,
   });
 
@@ -30,15 +29,11 @@ describe("array variable queries", () => {
     const { builder, user } = c;
 
     await builder
-      .uploadOwnedData(c, {
-        userId: user.did,
-        collection: schema.id,
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
         data,
-        permissions: new Permissions(builder.did, {
-          read: true,
-          write: false,
-          execute: false,
-        }),
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
   });
@@ -46,18 +41,23 @@ describe("array variable queries", () => {
   afterAll(async (_c) => {});
 
   it("rejects mixed-type arrays", async ({ c }) => {
-    const { builder } = c;
+    const { builder, expect } = c;
 
     const variables = {
       values: [1, "string"],
     };
 
-    await builder
-      .executeQuery(c, {
-        id: query.id,
-        variables,
-      })
-      .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
+    const runId = (
+      await builder
+        .runQuery(c, {
+          _id: query.id,
+          variables,
+        })
+        .expectSuccess()
+    ).data as UuidDto;
+
+    const result = await waitForQueryRun(c, runId);
+    expect(result.data.errors?.at(0)).toMatch("DataValidationError");
   });
 
   it("can execute with empty array", async ({ c }) => {
@@ -67,14 +67,17 @@ describe("array variable queries", () => {
       values: [],
     };
 
-    const result = await builder
-      .executeQuery(c, {
-        id: query.id,
-        variables,
-      })
-      .expectSuccess();
+    const runId = (
+      await builder
+        .runQuery(c, {
+          _id: query.id,
+          variables,
+        })
+        .expectSuccess()
+    ).data as UuidDto;
 
-    expect(result.data).toHaveLength(0);
+    const result = await waitForQueryRun(c, runId);
+    expect(result.data.result).toHaveLength(0);
   });
 
   it("can use valid array of variables in pipeline", async ({ c }) => {
@@ -85,13 +88,16 @@ describe("array variable queries", () => {
       values: testRecord.values,
     };
 
-    const result = await builder
-      .executeQuery(c, {
-        id: query.id,
-        variables,
-      })
-      .expectSuccess();
+    const runId = (
+      await builder
+        .runQuery(c, {
+          _id: query.id,
+          variables,
+        })
+        .expectSuccess()
+    ).data as UuidDto;
 
-    expect(result.data).toHaveLength(1);
+    const result = await waitForQueryRun(c, runId);
+    expect(result.data.result).toHaveLength(1);
   });
 });
