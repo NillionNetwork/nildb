@@ -9,7 +9,7 @@ import { AclDto } from "#/users/users.dto";
 export const CreateOwnedDataRequest = z
   .object({
     owner: Did,
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     data: z.array(z.record(z.string(), z.unknown())).min(1),
     acl: AclDto,
   })
@@ -21,7 +21,7 @@ export type CreateOwnedDataRequest = z.infer<typeof CreateOwnedDataRequest>;
  */
 export const CreateStandardDataRequest = z
   .object({
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     data: z.array(z.record(z.string(), z.unknown())).min(1),
   })
   .openapi({ ref: "CreateStandardDataRequest" });
@@ -50,7 +50,7 @@ export type CreateDataResponse = z.infer<typeof CreateDataResponse>;
  */
 export const UpdateDataRequest = z
   .object({
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     filter: z.record(z.string(), z.unknown()),
     update: z.record(z.string(), z.unknown()),
   })
@@ -76,7 +76,7 @@ export type UpdateDataResponse = z.infer<typeof UpdateDataResponse>;
  */
 export const FindDataRequest = z
   .object({
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     filter: z.record(z.string(), z.unknown()),
   })
   .openapi({ ref: "FindDataRequest" });
@@ -95,7 +95,7 @@ export type FindDataResponse = z.infer<typeof FindDataResponse>;
  */
 export const DeleteDataRequest = z
   .object({
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     filter: z.record(z.string(), z.unknown()),
   })
   .openapi({ ref: "DeleteDataRequest" });
@@ -117,7 +117,7 @@ export type DeleteDataResponse = z.infer<typeof DeleteDataResponse>;
  */
 export const FlushDataRequest = z
   .object({
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
   })
   .openapi({ ref: "FlushDataRequest" });
 export type FlushDataRequest = z.infer<typeof FlushDataRequest>;

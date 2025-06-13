@@ -23,7 +23,7 @@ export type QueryJobStatus = "pending" | "running" | "complete";
 export type QueryDocument = DocumentBase<UUID> & {
   owner: DidString;
   name: string;
-  schema: UUID;
+  collection: UUID;
   variables: Record<string, QueryVariable>;
   pipeline: Record<string, unknown>[];
 };
@@ -50,7 +50,7 @@ export type RunQueryJobDocument = DocumentBase<UUID> & {
 export type AddQueryCommand = {
   _id: UUID;
   name: string;
-  schema: UUID;
+  collection: UUID;
   variables: Record<string, QueryVariable>;
   pipeline: Record<string, unknown>[];
   owner: DidString;

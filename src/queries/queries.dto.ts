@@ -34,7 +34,7 @@ export const CreateQueryRequest = z
   .object({
     _id: z.string().uuid(),
     name: z.string().min(1).max(100),
-    schema: z.string().uuid(),
+    collection: z.string().uuid(),
     variables: z.record(z.string(), QueryVariableValidator),
     pipeline: z.array(z.record(z.string(), z.unknown())),
   })
@@ -58,7 +58,7 @@ const QueryDocumentResponse = z.object({
   _updated: z.string().datetime(),
   owner: Did,
   name: z.string().min(1).max(100),
-  schema: z.string().uuid(),
+  collection: z.string().uuid(),
   variables: z.record(z.string(), QueryVariableValidator),
   pipeline: z.array(z.record(z.string(), z.unknown())),
 });

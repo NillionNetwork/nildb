@@ -103,7 +103,7 @@ export const DataMapper = {
   ): CreateOwnedDataCommand {
     return {
       owner: body.owner,
-      collection: new UUID(body.schema),
+      collection: new UUID(body.collection),
       data: body.data,
       acl: body.acl,
     };
@@ -116,7 +116,7 @@ export const DataMapper = {
     body: CreateStandardDataRequest,
   ): CreateStandardDataCommand {
     return {
-      collection: new UUID(body.schema),
+      collection: new UUID(body.collection),
       data: body.data,
     };
   },
@@ -126,7 +126,7 @@ export const DataMapper = {
    */
   toUpdateDataCommand(dto: UpdateDataRequest): UpdateDataCommand {
     return {
-      collection: new UUID(dto.schema),
+      collection: new UUID(dto.collection),
       filter: dto.filter,
       update: dto.update,
     };
@@ -137,7 +137,7 @@ export const DataMapper = {
    */
   toFindDataCommand(dto: FindDataRequest): FindDataCommand {
     return {
-      collection: new UUID(dto.schema),
+      collection: new UUID(dto.collection),
       filter: dto.filter,
     };
   },
@@ -147,7 +147,7 @@ export const DataMapper = {
    */
   toDeleteDataCommand(dto: DeleteDataRequest): DeleteDataCommand {
     return {
-      collection: new UUID(dto.schema),
+      collection: new UUID(dto.collection),
       filter: dto.filter,
     };
   },
@@ -157,7 +157,7 @@ export const DataMapper = {
    */
   toFlushCollectionCommand(params: FlushDataRequest): FlushDataCommand {
     return {
-      collection: new UUID(params.schema),
+      collection: new UUID(params.collection),
     };
   },
 

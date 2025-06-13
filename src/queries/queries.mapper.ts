@@ -31,7 +31,7 @@ export const QueriesDataMapper = {
       _updated: document._updated.toISOString(),
       owner: document.owner,
       name: document.name,
-      schema: document.schema.toString(),
+      collection: document.collection.toString(),
       variables: document.variables,
       pipeline: document.pipeline,
     };
@@ -105,7 +105,7 @@ export const QueriesDataMapper = {
     return {
       owner,
       name: request.name,
-      schema: new UUID(request.schema),
+      collection: new UUID(request.collection),
       variables: request.variables,
       pipeline: request.pipeline,
     };
@@ -121,7 +121,7 @@ export const QueriesDataMapper = {
     return {
       _id: new UUID(body._id),
       name: body.name,
-      schema: new UUID(body.schema),
+      collection: new UUID(body.collection),
       variables: body.variables,
       pipeline: body.pipeline,
       owner,

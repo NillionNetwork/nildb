@@ -48,7 +48,7 @@ export function addQuery(
   const document: QueryDocument = {
     _id: command._id,
     name: command.name,
-    schema: command.schema,
+    collection: command.collection,
     variables: command.variables,
     pipeline: command.pipeline,
     owner: command.owner,

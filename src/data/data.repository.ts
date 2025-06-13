@@ -361,7 +361,11 @@ export function runAggregation(
   pipeline: Document[],
 ): E.Effect<JsonObject[], CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DocumentBase>(ctx, "data", query.schema.toString()),
+    checkCollectionExists<DocumentBase>(
+      ctx,
+      "data",
+      query.collection.toString(),
+    ),
     E.tryMapPromise({
       try: (collection) => collection.aggregate(pipeline).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "runAggregation" }),
