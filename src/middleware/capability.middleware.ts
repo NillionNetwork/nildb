@@ -224,7 +224,6 @@ export type EnforceCapabilityOptions<
   Path extends string = string,
   E extends Env = AppEnv,
 > = {
-  path: Path;
   cmd: Command;
   validate: (
     c: Context<E, Path, { out: ValidatedParams }>,

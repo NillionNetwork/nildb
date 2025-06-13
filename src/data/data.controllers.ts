@@ -60,7 +60,6 @@ export function deleteData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: DeleteDataRequest }>({
-      path,
       cmd: NucCmd.nil.db.data.delete,
       validate: (_c, _token) => true,
     }),
@@ -105,7 +104,6 @@ export function flushData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: DataSchemaByIdRequestParams }>({
-      path,
       cmd: NucCmd.nil.db.data.delete,
       validate: (_c, _token) => true,
     }),
@@ -154,7 +152,6 @@ export function findData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: FindDataRequest }>({
-      path,
       cmd: NucCmd.nil.db.data.read,
       validate: (_c, _token) => true,
     }),
@@ -205,7 +202,6 @@ export function tailData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: { id: string } }>({
-      path,
       cmd: NucCmd.nil.db.data.read,
       validate: (_c, _token) => true,
     }),
@@ -256,7 +252,6 @@ export function updateData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: UpdateDataRequest }>({
-      path,
       cmd: NucCmd.nil.db.data.update,
       validate: (_c, _token) => true,
     }),
@@ -306,7 +301,6 @@ export function createOwnedData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: CreateOwnedDataRequest }>({
-      path,
       cmd: NucCmd.nil.db.data.create,
       validate: (_c, _token) => true,
     }),
@@ -356,7 +350,6 @@ export function createStandardData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: CreateStandardDataRequest }>({
-      path,
       cmd: NucCmd.nil.db.data.create,
       validate: (_c, _token) => true,
     }),

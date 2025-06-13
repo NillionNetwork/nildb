@@ -183,7 +183,6 @@ export function startMaintenance(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsAdmin(bindings),
     enforceCapability({
-      path,
       cmd: NucCmd.nil.db.system.update,
       validate: (_c, _token) => true,
     }),
@@ -221,7 +220,6 @@ export function stopMaintenance(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsAdmin(bindings),
     enforceCapability({
-      path,
       cmd: NucCmd.nil.db.system.update,
       validate: (_c, _token) => true,
     }),
@@ -260,7 +258,6 @@ export function setLogLevel(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsAdmin(bindings),
     enforceCapability<{ json: SetLogLevelRequest }>({
-      path,
       cmd: NucCmd.nil.db.system.update,
       validate: (_c, _token) => true,
     }),
@@ -306,7 +303,6 @@ export function readLogLevel(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsAdmin(bindings),
     enforceCapability({
-      path,
       cmd: NucCmd.nil.db.system.read,
       validate: (_c, _token) => true,
     }),

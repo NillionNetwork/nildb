@@ -52,7 +52,6 @@ export function createQuery(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: CreateQueryRequest }>({
-      path,
       cmd: NucCmd.nil.db.queries.create,
       validate: (_c, _token) => true,
     }),
@@ -96,7 +95,6 @@ export function deleteQuery(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: ByIdRequestParams }>({
-      path,
       cmd: NucCmd.nil.db.queries.delete,
       validate: (_c, _token) => true,
     }),
@@ -144,7 +142,6 @@ export function readQueries(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability({
-      path,
       cmd: NucCmd.nil.db.queries.read,
       validate: (_c, _token) => true,
     }),
@@ -191,7 +188,6 @@ export function readQueryById(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: ByIdRequestParams }>({
-      path,
       cmd: NucCmd.nil.db.queries.read,
       validate: (_c, _token) => true,
     }),
@@ -231,7 +227,6 @@ export function runQuery(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ json: RunQueryRequest }>({
-      path,
       cmd: NucCmd.nil.db.queries.execute,
       validate: (_c, _token) => true,
     }),
@@ -281,7 +276,6 @@ export function getQueryRunResultById(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     enforceCapability<{ param: ByIdRequestParams }>({
-      path,
       cmd: NucCmd.nil.db.queries.read,
       validate: (_c, _token) => true,
     }),
