@@ -35,7 +35,11 @@ export function addQuery(
   command: AddQueryCommand,
 ): E.Effect<
   void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+  | VariableInjectionError
+  | DataValidationError
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
 > {
   const now = new Date();
   const document: QueryDocument = {
@@ -49,11 +53,10 @@ export function addQuery(
     _updated: now,
   };
 
-  // TODO: This looks ood ... are we correctly handling success results?
   return pipe(
     validateQuery(document),
-    () => validateData(pipelineSchema, document.pipeline),
-    () => QueriesRepository.insert(ctx, document),
+    E.flatMap((_document) => validateData(pipelineSchema, document.pipeline)),
+    E.flatMap(() => QueriesRepository.insert(ctx, document)),
     E.flatMap(() => {
       ctx.cache.builders.taint(document.owner);
       return BuildersRepository.addQuery(ctx, document.owner, document._id);
