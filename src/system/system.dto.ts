@@ -4,7 +4,7 @@ import { ApiSuccessResponse } from "#/common/handler";
 import { LogLevel } from "#/common/logger";
 
 /**
- * Request schema for updating the node's log level.
+ * Log level update request.
  */
 export const SetLogLevelRequest = z
   .object({
@@ -15,35 +15,55 @@ export const SetLogLevelRequest = z
 export type SetLogLevelRequest = z.infer<typeof SetLogLevelRequest>;
 
 /**
- * Response for successful log level update.
+ * Log level update response.
  */
 export const SetLogLevelResponse = new Response(null, {
   status: StatusCodes.OK,
 });
 
 /**
- * Response for health check endpoint.
+ * Log level update response type.
+ */
+export type SetLogLevelResponse = typeof SetLogLevelResponse;
+
+/**
+ * Health check response.
  */
 export const HealthCheckResponse = new Response(null, {
   status: StatusCodes.OK,
 });
 
 /**
- * Response for starting maintenance mode.
+ * Health check response type.
+ */
+export type HealthCheckResponse = typeof HealthCheckResponse;
+
+/**
+ * Start maintenance response.
  */
 export const StartMaintenanceResponse = new Response(null, {
   status: StatusCodes.OK,
 });
 
 /**
- * Response for stopping maintenance mode.
+ * Start maintenance response type.
+ */
+export type StartMaintenanceResponse = typeof StartMaintenanceResponse;
+
+/**
+ * Stop maintenance response.
  */
 export const StopMaintenanceResponse = new Response(null, {
   status: StatusCodes.OK,
 });
 
 /**
- * Response schema for node information.
+ * Stop maintenance response type.
+ */
+export type StopMaintenanceResponse = typeof StopMaintenanceResponse;
+
+/**
+ * Node information response.
  */
 export const ReadAboutNodeResponse = z
   .object({
@@ -65,7 +85,7 @@ export const ReadAboutNodeResponse = z
 export type ReadAboutNodeResponse = z.infer<typeof ReadAboutNodeResponse>;
 
 /**
- * Response schema for current log level retrieval.
+ * Log level retrieval response.
  */
 export const ReadLogLevelResponse = ApiSuccessResponse(LogLevel).openapi({
   ref: "ReadLogLevelResponse",

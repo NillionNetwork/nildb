@@ -2,6 +2,9 @@ import type { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
 import type { Did } from "#/common/types";
 
+/**
+ * Access control list entry.
+ */
 export type Acl = {
   grantee: Did;
   read: boolean;
@@ -9,6 +12,9 @@ export type Acl = {
   execute: boolean;
 };
 
+/**
+ * Delete data command.
+ */
 export type DeleteDataCommand = {
   owner: Did;
   collection: UUID;
@@ -16,7 +22,7 @@ export type DeleteDataCommand = {
 };
 
 /**
- * User operation log entry types.
+ * User operation log entry.
  */
 export type LogOperation =
   | { op: "write"; col: UUID }
@@ -24,7 +30,7 @@ export type LogOperation =
   | { op: "auth"; col: UUID; acl: Acl };
 
 /**
- *
+ * Data document reference.
  */
 export type DataDocumentReference = {
   builder: Did;
@@ -33,7 +39,7 @@ export type DataDocumentReference = {
 };
 
 /**
- *
+ * User document.
  */
 export type UserDocument = DocumentBase<Did> & {
   data: DataDocumentReference[];
@@ -41,7 +47,7 @@ export type UserDocument = DocumentBase<Did> & {
 };
 
 /**
- *
+ * Read data ACL command.
  */
 export type ReadDataAclCommand = {
   owner: Did;
@@ -50,7 +56,7 @@ export type ReadDataAclCommand = {
 };
 
 /**
- *
+ * Grant data access command.
  */
 export type GrantAccessToDataCommand = {
   collection: UUID;
@@ -60,7 +66,7 @@ export type GrantAccessToDataCommand = {
 };
 
 /**
- *
+ * Revoke data access command.
  */
 export type RevokeAccessToDataCommand = {
   collection: UUID;

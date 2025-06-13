@@ -22,7 +22,13 @@ import type {
   UserDocument,
 } from "./users.types";
 
+/**
+ * User data mapper.
+ */
 export const UserDataMapper = {
+  /**
+   * Convert delete params to command.
+   */
   toDeleteDataCommand(
     user: UserDocument,
     params: DeleteDocumentRequestParams,
@@ -34,6 +40,9 @@ export const UserDataMapper = {
     };
   },
 
+  /**
+   * Convert user document to profile response.
+   */
   toReadProfileResponse(user: UserDocument): ReadProfileResponse {
     return {
       data: {
@@ -51,7 +60,7 @@ export const UserDataMapper = {
   },
 
   /**
-   *
+   * Convert references to list response.
    */
   toListDataReferencesResponse(
     references: DataDocumentReference[],
@@ -66,7 +75,7 @@ export const UserDataMapper = {
   },
 
   /**
-   *
+   * Convert ACLs to access response.
    */
   toReadDataAccessResponse(acls: Acl[]): ReadDataAccessResponse {
     return {
@@ -80,7 +89,7 @@ export const UserDataMapper = {
   },
 
   /**
-   *
+   * Convert ACL params to command.
    */
   toReadDataAclCommand(
     user: UserDocument,
@@ -94,7 +103,7 @@ export const UserDataMapper = {
   },
 
   /**
-   *
+   * Convert grant request to command.
    */
   toGrantDataAccessCommand(
     user: UserDocument,
@@ -114,7 +123,7 @@ export const UserDataMapper = {
   },
 
   /**
-   *
+   * Convert revoke request to command.
    */
   toRevokeDataAccessCommand(
     user: UserDocument,
@@ -129,7 +138,7 @@ export const UserDataMapper = {
   },
 
   /**
-   *
+   * Convert read params to find command.
    */
   toFindDataCommand(
     user: UserDocument,
@@ -144,6 +153,9 @@ export const UserDataMapper = {
     };
   },
 
+  /**
+   * Convert documents to read response.
+   */
   toReadDataResponse(documents: OwnedDocumentBase[]): ReadDataResponse {
     return {
       data: documents.map((d) => ({

@@ -23,6 +23,9 @@ import type {
  * @param did - User's decentralized identifier
  * @returns User document or appropriate error
  */
+/**
+ * Find user.
+ */
 export function find(
   ctx: AppBindings,
   did: Did,
@@ -42,6 +45,9 @@ export function find(
  * @param ctx - Application context and bindings
  * @param did - User's decentralized identifier
  * @returns Array of data documents owned by the user
+ */
+/**
+ * List user data references.
  */
 export function listUserDataReferences(
   ctx: AppBindings,
@@ -66,6 +72,9 @@ export function listUserDataReferences(
  * @param command - Permission addition command
  * @returns MongoDB update result
  */
+/**
+ * Grant user access.
+ */
 export function grantAccess(
   ctx: AppBindings,
   command: GrantAccessToDataCommand,
@@ -88,6 +97,9 @@ export function grantAccess(
  * @param ctx - Application context and bindings
  * @param command - Permission deletion command
  * @returns MongoDB update result
+ */
+/**
+ * Revoke user access.
  */
 export function revokeAccess(
   ctx: AppBindings,

@@ -15,7 +15,7 @@ import type {
 } from "./builders.types";
 
 /**
- * Retrieves an organisation builder by DID.
+ * Find builder by DID.
  */
 export function find(
   ctx: AppBindings,
@@ -28,7 +28,7 @@ export function find(
 }
 
 /**
- * Creates a new organisation builder based on the provided command.
+ * Create new builder.
  */
 export function createBuilder(
   ctx: AppBindings,
@@ -62,7 +62,7 @@ export function createBuilder(
 }
 
 /**
- * Removes an organisation builder permanently.
+ * Remove builder.
  */
 export function remove(
   ctx: AppBindings,
@@ -75,7 +75,7 @@ export function remove(
 }
 
 /**
- * Updates an organisation's profile fields based on the provided command.
+ * Update builder profile.
  */
 export function updateProfile(
   ctx: AppBindings,

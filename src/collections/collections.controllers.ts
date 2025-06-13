@@ -45,7 +45,7 @@ export function readCollections(options: ControllerOptions): void {
     describeRoute({
       tags: ["Collections"],
       security: [{ bearerAuth: [] }],
-      summary: "Lists all of the builder's collections",
+      summary: "Read collections",
       responses: {
         200: {
           description: "OK",
@@ -94,7 +94,7 @@ export function createCollection(options: ControllerOptions): void {
     describeRoute({
       tags: ["Collections"],
       security: [{ bearerAuth: [] }],
-      summary: "Create new schema-validated data collection",
+      summary: "Create collection",
       responses: {
         201: OpenApiSpecEmptySuccessResponses["201"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -139,7 +139,7 @@ export function deleteCollectionById(options: ControllerOptions): void {
     describeRoute({
       tags: ["Collections"],
       security: [{ bearerAuth: [] }],
-      summary: "Deletes a collection and all of its data",
+      summary: "Delete collection",
       responses: {
         204: OpenApiSpecEmptySuccessResponses["204"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -183,7 +183,7 @@ export function readCollectionById(options: ControllerOptions): void {
     describeRoute({
       tags: ["Collections"],
       security: [{ bearerAuth: [] }],
-      summary: "Retrieve collection information",
+      summary: "Read collection",
       responses: {
         200: {
           description: "OK",
@@ -238,7 +238,7 @@ export function createCollectionIndex(options: ControllerOptions): void {
     describeRoute({
       tags: ["Collections"],
       security: [{ bearerAuth: [] }],
-      summary: "Create a collection index",
+      summary: "Create collection index",
       responses: {
         201: OpenApiSpecEmptySuccessResponses["201"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -286,7 +286,7 @@ export function dropCollectionIndex(options: ControllerOptions): void {
     describeRoute({
       tags: ["Collections"],
       security: [{ bearerAuth: [] }],
-      summary: "Delete an collection index by it's name",
+      summary: "Drop collection index",
       responses: {
         204: OpenApiSpecEmptySuccessResponses["204"],
         400: OpenApiSpecCommonErrorResponses["400"],

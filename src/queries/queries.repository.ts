@@ -17,6 +17,9 @@ import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "./queries.types";
 
+/**
+ * Insert query document.
+ */
 export function insert(
   ctx: AppBindings,
   document: QueryDocument,
@@ -35,6 +38,9 @@ export function insert(
   );
 }
 
+/**
+ * Find multiple queries.
+ */
 export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
@@ -72,6 +78,9 @@ export function findMany(
   );
 }
 
+/**
+ * Find query by filter.
+ */
 export function findOne(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
@@ -108,6 +117,9 @@ export function findOne(
   );
 }
 
+/**
+ * Find and delete query.
+ */
 export function findOneAndDelete(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
@@ -146,6 +158,9 @@ export function findOneAndDelete(
   );
 }
 
+/**
+ * Add query document coercions.
+ */
 export function addQueryDocumentCoercions(
   coercibleMap: CoercibleMap,
 ): CoercibleMap {

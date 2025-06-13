@@ -3,6 +3,9 @@ import { ApiSuccessResponse } from "#/common/handler";
 import { Did } from "#/common/types";
 import { AclDto } from "#/users/users.dto";
 
+/**
+ * Owned data creation request.
+ */
 export const CreateOwnedDataRequest = z
   .object({
     owner: Did,
@@ -13,6 +16,9 @@ export const CreateOwnedDataRequest = z
   .openapi({ ref: "CreateOwnedDataRequest" });
 export type CreateOwnedDataRequest = z.infer<typeof CreateOwnedDataRequest>;
 
+/**
+ * Standard data creation request.
+ */
 export const CreateStandardDataRequest = z
   .object({
     schema: z.string().uuid(),
@@ -23,6 +29,9 @@ export type CreateStandardDataRequest = z.infer<
   typeof CreateStandardDataRequest
 >;
 
+/**
+ * Data creation response.
+ */
 export const CreateDataResponse = ApiSuccessResponse(
   z.object({
     created: z.array(z.string().uuid()),
@@ -36,6 +45,9 @@ export const CreateDataResponse = ApiSuccessResponse(
 ).openapi({ ref: "CreateDataResponse" });
 export type CreateDataResponse = z.infer<typeof CreateDataResponse>;
 
+/**
+ * Data update request.
+ */
 export const UpdateDataRequest = z
   .object({
     schema: z.string().uuid(),
@@ -45,6 +57,9 @@ export const UpdateDataRequest = z
   .openapi({ ref: "UpdateDataRequest" });
 export type UpdateDataRequest = z.infer<typeof UpdateDataRequest>;
 
+/**
+ * Data update response.
+ */
 export const UpdateDataResponse = ApiSuccessResponse(
   z.object({
     acknowledged: z.boolean(),
@@ -56,6 +71,9 @@ export const UpdateDataResponse = ApiSuccessResponse(
 ).openapi({ ref: "UpdateDataResponse" });
 export type UpdateDataResponse = z.infer<typeof UpdateDataResponse>;
 
+/**
+ * Data search request.
+ */
 export const FindDataRequest = z
   .object({
     schema: z.string().uuid(),
@@ -64,11 +82,17 @@ export const FindDataRequest = z
   .openapi({ ref: "FindDataRequest" });
 export type FindDataRequest = z.infer<typeof FindDataRequest>;
 
+/**
+ * Data search response.
+ */
 export const FindDataResponse = ApiSuccessResponse(
   z.array(z.record(z.string(), z.unknown())),
 ).openapi({ ref: "FindDataResponse" });
 export type FindDataResponse = z.infer<typeof FindDataResponse>;
 
+/**
+ * Data deletion request.
+ */
 export const DeleteDataRequest = z
   .object({
     schema: z.string().uuid(),
@@ -77,6 +101,9 @@ export const DeleteDataRequest = z
   .openapi({ ref: "DeleteDataRequest" });
 export type DeleteDataRequest = z.infer<typeof DeleteDataRequest>;
 
+/**
+ * Data deletion response.
+ */
 export const DeleteDataResponse = ApiSuccessResponse(
   z.object({
     acknowledged: z.boolean(),
@@ -85,6 +112,9 @@ export const DeleteDataResponse = ApiSuccessResponse(
 ).openapi({ ref: "DeleteDataResponse" });
 export type DeleteDataResponse = z.infer<typeof DeleteDataResponse>;
 
+/**
+ * Data flush request.
+ */
 export const FlushDataRequest = z
   .object({
     schema: z.string().uuid(),
@@ -92,6 +122,9 @@ export const FlushDataRequest = z
   .openapi({ ref: "FlushDataRequest" });
 export type FlushDataRequest = z.infer<typeof FlushDataRequest>;
 
+/**
+ * Data drop response.
+ */
 export const DropDataResponse = ApiSuccessResponse(
   z.object({
     acknowledged: z.boolean(),
@@ -100,6 +133,9 @@ export const DropDataResponse = ApiSuccessResponse(
 ).openapi({ ref: "DropDataResponse" });
 export type DropDataResponse = z.infer<typeof DropDataResponse>;
 
+/**
+ * Data collection ID parameters.
+ */
 export const DataSchemaByIdRequestParams = z
   .object({
     id: z.string().uuid(),
@@ -109,6 +145,9 @@ export type DataSchemaByIdRequestParams = z.infer<
   typeof DataSchemaByIdRequestParams
 >;
 
+/**
+ * Data tail request parameters.
+ */
 export const TailDataRequestParams = z
   .object({
     id: z.string().uuid(),
@@ -116,6 +155,9 @@ export const TailDataRequestParams = z
   .openapi({ ref: "TailDataRequestParams" });
 export type TailDataRequestParams = z.infer<typeof TailDataRequestParams>;
 
+/**
+ * Data tail query parameters.
+ */
 export const TailDataRequestQuery = z
   .object({
     limit: z.number().max(1_000).optional().default(25),
@@ -123,6 +165,9 @@ export const TailDataRequestQuery = z
   .openapi({ ref: "TailDataRequestQuery" });
 export type TailDataRequestQuery = z.infer<typeof TailDataRequestQuery>;
 
+/**
+ * Data tail response.
+ */
 export const TailDataResponse = ApiSuccessResponse(
   z.array(z.record(z.string(), z.unknown())),
 ).openapi({ ref: "TailDataResponse" });

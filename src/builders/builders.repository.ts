@@ -16,11 +16,7 @@ import type { AppBindings } from "#/env";
 import type { BuilderDocument } from "./builders.types";
 
 /**
- * Inserts a new organisation builder document into the database.
- *
- * @param ctx - Application context containing database connections
- * @param document - Complete builder document to insert
- * @returns Effect indicating success or database errors
+ * Insert builder document.
  */
 export function insert(
   ctx: AppBindings,
@@ -41,14 +37,7 @@ export function insert(
 }
 
 /**
- * Retrieves any builder type by DID with caching.
- *
- * Checks the cache first, falls back to database if not found.
- * Caches the result for subsequent requests.
- *
- * @param ctx - Application context containing database connections and cache
- * @param _id - DID of the builder to retrieve
- * @returns Effect containing the builder document or relevant errors
+ * Find builder by ID with cache.
  */
 export function findByIdWithCache(
   ctx: AppBindings,
@@ -91,14 +80,7 @@ export function findByIdWithCache(
 }
 
 /**
- * Retrieves an organisation builder by DID.
- *
- * Filters by both DID and organisation role to ensure
- * only organisation builders are returned.
- *
- * @param ctx - Application context containing database connections
- * @param _id - DID of the organisation to retrieve
- * @returns Effect containing the organisation document or relevant errors
+ * Find builder by ID.
  */
 export function findOne(
   ctx: AppBindings,
@@ -134,14 +116,7 @@ export function findOne(
 }
 
 /**
- * Deletes an organisation builder by DID.
- *
- * Removes the builder from the database and invalidates
- * any cached entries for this DID.
- *
- * @param ctx - Application context containing database connections and cache
- * @param _id - DID of the organisation to delete
- * @returns Effect indicating success or relevant errors
+ * Delete builder by ID.
  */
 export function deleteOneById(
   ctx: AppBindings,
@@ -179,15 +154,7 @@ export function deleteOneById(
 }
 
 /**
- * Updates an organisation builder's fields.
- *
- * Performs a partial update of allowed fields using MongoDB's
- * $set operator. Currently supports updating name only.
- *
- * @param ctx - Application context containing database connections
- * @param _id - DID of the organisation to update
- * @param updates - Partial object containing fields to update
- * @returns Effect containing update result or relevant errors
+ * Update builder fields.
  */
 export function update(
   ctx: AppBindings,
@@ -231,6 +198,9 @@ export function update(
   );
 }
 
+/**
+ * Add collection to builder.
+ */
 export function addCollection(
   ctx: AppBindings,
   owner: Did,
@@ -267,6 +237,9 @@ export function addCollection(
   );
 }
 
+/**
+ * Remove collection from builder.
+ */
 export function removeCollection(
   ctx: AppBindings,
   owner: Did,
@@ -305,6 +278,9 @@ export function removeCollection(
   );
 }
 
+/**
+ * Add query to builder.
+ */
 export function addQuery(
   ctx: AppBindings,
   orgId: Did,
@@ -341,6 +317,9 @@ export function addQuery(
   );
 }
 
+/**
+ * Remove query from builder.
+ */
 export function removeQuery(
   ctx: AppBindings,
   orgId: Did,

@@ -28,7 +28,7 @@ import type {
 } from "./data.types";
 
 /**
- * Creates user-owned data in a schema-validated collection.
+ * Create owned records.
  */
 export function createOwnedRecords(
   ctx: AppBindings,
@@ -69,7 +69,7 @@ export function createOwnedRecords(
 }
 
 /**
- * Creates data records in a schema-validated collection.
+ * Create standard records.
  */
 export function createStandardRecords(
   ctx: AppBindings,
@@ -98,6 +98,9 @@ export function createStandardRecords(
   );
 }
 
+/**
+ * Update records.
+ */
 export function updateRecords(
   ctx: AppBindings,
   command: UpdateDataCommand,
@@ -113,6 +116,9 @@ export function updateRecords(
   );
 }
 
+/**
+ * Read records.
+ */
 export function readRecords(
   ctx: AppBindings,
   command: FindDataCommand,
@@ -123,6 +129,9 @@ export function readRecords(
   return DataRepository.findMany(ctx, command.collection, command.filter);
 }
 
+/**
+ * Delete data records.
+ */
 export function deleteData(
   ctx: AppBindings,
   command: DeleteDataCommand,
@@ -178,6 +187,9 @@ export function deleteData(
   );
 }
 
+/**
+ * Flush collection.
+ */
 export function flushCollection(
   ctx: AppBindings,
   command: FlushDataCommand,
@@ -185,6 +197,9 @@ export function flushCollection(
   return pipe(DataRepository.flushCollection(ctx, command.collection));
 }
 
+/**
+ * Tail data.
+ */
 export function tailData(
   ctx: AppBindings,
   command: RecentDataCommand,

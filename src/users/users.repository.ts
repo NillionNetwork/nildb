@@ -27,6 +27,9 @@ type UpsertOptions = {
   acl?: Acl;
 };
 
+/**
+ * Upsert user document.
+ */
 export function upsert(
   ctx: AppBindings,
   options: UpsertOptions,
@@ -82,6 +85,9 @@ export function upsert(
   );
 }
 
+/**
+ * Remove user data.
+ */
 export function removeData(
   ctx: AppBindings,
   user: Did,
@@ -127,6 +133,9 @@ export function removeData(
   );
 }
 
+/**
+ * Find user by ID.
+ */
 export function findById(
   ctx: AppBindings,
   userId: Did,
@@ -155,6 +164,9 @@ export function findById(
   );
 }
 
+/**
+ * Add ACL entry.
+ */
 export function addAclEntry(
   ctx: AppBindings,
   schema: UUID,
@@ -185,6 +197,9 @@ export function addAclEntry(
   );
 }
 
+/**
+ * Remove ACL entry.
+ */
 export function removeAclEntry(
   ctx: AppBindings,
   schema: UUID,

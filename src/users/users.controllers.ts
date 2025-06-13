@@ -43,7 +43,7 @@ export function readProfile(options: ControllerOptions): void {
     describeRoute({
       tags: ["Users"],
       security: [{ bearerAuth: [] }],
-      summary: "Retrieve the user's profile",
+      summary: "Read profile",
       responses: {
         200: {
           description: "OK",
@@ -89,7 +89,7 @@ export function listDataReferences(options: ControllerOptions): void {
     describeRoute({
       tags: ["Users"],
       security: [{ bearerAuth: [] }],
-      summary: "List the user's data document references",
+      summary: "List data references",
       responses: {
         200: {
           description: "OK",
@@ -136,7 +136,7 @@ export function readData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Users"],
       security: [{ bearerAuth: [] }],
-      summary: "Retrieves a user-owned document",
+      summary: "Read data",
       responses: {
         200: {
           description: "OK",
@@ -187,8 +187,7 @@ export function deleteData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Users"],
       security: [{ bearerAuth: [] }],
-      summary:
-        "Delete a user owned document by specifying the schema an document",
+      summary: "Delete data",
       responses: {
         204: OpenApiSpecEmptySuccessResponses[204],
         ...OpenApiSpecCommonErrorResponses,
@@ -235,7 +234,7 @@ export function grantAccess(options: ControllerOptions): void {
     describeRoute({
       tags: ["Users"],
       security: [{ bearerAuth: [] }],
-      summary: "Grant a Did access to user-owned data",
+      summary: "Grant access",
       responses: {
         204: OpenApiSpecEmptySuccessResponses[204],
         ...OpenApiSpecCommonErrorResponses,
@@ -278,7 +277,7 @@ export function revokeAccess(options: ControllerOptions): void {
     describeRoute({
       tags: ["Users"],
       security: [{ bearerAuth: [] }],
-      summary: "Remove a user-owned data Acl",
+      summary: "Revoke access",
       responses: {
         204: OpenApiSpecEmptySuccessResponses[204],
         ...OpenApiSpecCommonErrorResponses,

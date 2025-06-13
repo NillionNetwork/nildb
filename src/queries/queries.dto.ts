@@ -4,7 +4,7 @@ import { ApiSuccessResponse } from "#/common/handler";
 import { Did } from "#/common/types";
 
 /**
- * Variable validation schemas for MongoDB aggregation pipeline variables.
+ * MongoDB aggregation pipeline variable validation.
  */
 const PATH_EXPRESSION = /^\$(\.[$a-zA-Z][a-zA-Z0-9-_]+(\[\d+])*)+$/;
 const VariablePath = z
@@ -20,8 +20,7 @@ const VariablePath = z
   });
 
 /**
- * Schema for validating query variable configuration.
- * Variables define replaceable parameters in MongoDB aggregation pipelines.
+ * Query variable configuration validator.
  */
 export const QueryVariableValidator = z.object({
   path: VariablePath,
@@ -29,24 +28,7 @@ export const QueryVariableValidator = z.object({
 });
 
 /**
- * Request schema for creating a new query.
- *
- * @example
- * {
- *   "_id": "123e4567-e89b-12d3-a456-426614174000",
- *   "name": "User Analytics Query",
- *   "schema": "456e7890-e89b-12d3-a456-426614174001",
- *   "variables": {
- *     "minAge": {
- *       "path": "$.age",
- *       "description": "Minimum age filter"
- *     }
- *   },
- *   "pipeline": [
- *     { "$match": { "age": { "$gte": "{{minAge}}" } } },
- *     { "$group": { "_id": null, "count": { "$sum": 1 } } }
- *   ]
- * }
+ * Query creation request.
  */
 export const CreateQueryRequest = z
   .object({
@@ -60,10 +42,7 @@ export const CreateQueryRequest = z
 export type CreateQueryRequest = z.infer<typeof CreateQueryRequest>;
 
 /**
- * Response for successful query creation.
- *
- * Returns HTTP 201 Created with empty body to indicate
- * the query was created successfully.
+ * Query creation response.
  */
 export const CreateQueryResponse = new Response(null, {
   status: StatusCodes.CREATED,
@@ -71,10 +50,7 @@ export const CreateQueryResponse = new Response(null, {
 export type CreateQueryResponse = typeof CreateQueryResponse;
 
 /**
- * Query document schema for API responses.
- *
- * Represents a MongoDB aggregation query with metadata
- * and dates serialized as ISO strings for JSON compatibility.
+ * Query document data.
  */
 const QueryDocumentResponse = z.object({
   _id: z.string().uuid(),
@@ -88,23 +64,7 @@ const QueryDocumentResponse = z.object({
 });
 
 /**
- * Response schema for listing builder queries.
- *
- * @example
- * {
- *   "data": [
- *     {
- *       "_id": "123e4567-e89b-12d3-a456-426614174000",
- *       "_created": "2023-12-01T10:00:00.000Z",
- *       "_updated": "2023-12-01T10:00:00.000Z",
- *       "owner": "did:nil:037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b",
- *       "name": "User Analytics Query",
- *       "schema": "456e7890-e89b-12d3-a456-426614174001",
- *       "variables": {},
- *       "pipeline": [{"$match": {"active": true}}]
- *     }
- *   ]
- * }
+ * Queries list response.
  */
 export const GetQueriesResponse = ApiSuccessResponse(
   z.array(QueryDocumentResponse),
@@ -114,10 +74,7 @@ export const GetQueriesResponse = ApiSuccessResponse(
 export type GetQueriesResponse = z.infer<typeof GetQueriesResponse>;
 
 /**
- * Path parameters for query by id.
- *
- * @example
- * VERB /v1/queries/:id
+ * Query ID path parameters.
  */
 export const ByIdRequestParams = z
   .object({
@@ -127,12 +84,7 @@ export const ByIdRequestParams = z
 export type ByIdRequestParams = z.infer<typeof ByIdRequestParams>;
 
 /**
- * Request schema for deleting a query by ID.
- *
- * @example
- * {
- *   "id": "123e4567-e89b-12d3-a456-426614174000"
- * }
+ * Query deletion request.
  */
 export const DeleteQueryRequest = z
   .object({
@@ -142,10 +94,7 @@ export const DeleteQueryRequest = z
 export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
 
 /**
- * Response for successful query deletion.
- *
- * Returns HTTP 204 No Content with empty body to indicate
- * the query was deleted successfully.
+ * Query deletion response.
  */
 export const DeleteQueryResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,
@@ -153,16 +102,7 @@ export const DeleteQueryResponse = new Response(null, {
 export type DeleteQueryResponse = typeof DeleteQueryResponse;
 
 /**
- * Request schema for starting a query run with variable substitution.
- *
- * @example
- * {
- *   "id": "123e4567-e89b-12d3-a456-426614174000",
- *   "variables": {
- *     "minAge": 25,
- *     "status": "active"
- *   }
- * }
+ * Query execution request.
  */
 export const RunQueryRequest = z
   .object({
@@ -173,12 +113,7 @@ export const RunQueryRequest = z
 export type RunQueryRequest = z.infer<typeof RunQueryRequest>;
 
 /**
- * Run query response schema.
- *
- * @example
- * {
- *   "data": "456e7890-e89b-12d3-a456-426614174001"
- * }
+ * Query execution response.
  */
 export const RunQueryResponse = ApiSuccessResponse(z.string().uuid()).openapi({
   ref: "RunQueryResponse",
@@ -186,16 +121,13 @@ export const RunQueryResponse = ApiSuccessResponse(z.string().uuid()).openapi({
 export type RunQueryResponse = z.infer<typeof RunQueryResponse>;
 
 /**
- * The current state of a query run.
+ * Query execution status.
  */
 export const RunQueryResultStatus = z.enum(["pending", "running", "complete"]);
 export type RunQueryResultStatus = z.infer<typeof RunQueryResultStatus>;
 
 /**
- * Query job document schema for API responses.
- *
- * Represents a background query execution job with status,
- * timing information, and results when complete.
+ * Query job data.
  */
 const GetQueryRunByIdDto = z.object({
   _id: z.string().uuid(),

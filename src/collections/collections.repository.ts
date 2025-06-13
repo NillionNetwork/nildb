@@ -30,12 +30,18 @@ import {
 import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
 
+/**
+ * Add collection document coercions.
+ */
 export function addCollectionDocumentCoercions(
   coercibleMap: CoercibleMap,
 ): CoercibleMap {
   return addDocumentBaseCoercions(coercibleMap);
 }
 
+/**
+ * Insert collection document.
+ */
 export function insert(
   ctx: AppBindings,
   document: CollectionDocument,
@@ -54,6 +60,9 @@ export function insert(
   );
 }
 
+/**
+ * Find multiple collections.
+ */
 export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<CollectionDocument>,
@@ -80,6 +89,9 @@ export function findMany(
   );
 }
 
+/**
+ * Find collection by filter.
+ */
 export function findOne(
   ctx: AppBindings,
   filter: StrictFilter<CollectionDocument>,
@@ -118,6 +130,9 @@ export function findOne(
   );
 }
 
+/**
+ * Delete collection.
+ */
 export function deleteOne(
   ctx: AppBindings,
   filter: StrictFilter<CollectionDocument>,
@@ -157,6 +172,9 @@ export function deleteOne(
   );
 }
 
+/**
+ * Get collection statistics.
+ */
 export function getCollectionStats(
   ctx: AppBindings,
   id: UUID,
@@ -256,6 +274,9 @@ export function getCollectionStats(
   );
 }
 
+/**
+ * Create collection index.
+ */
 export function createIndex(
   ctx: AppBindings,
   collection: UUID,
@@ -285,6 +306,9 @@ export function createIndex(
   );
 }
 
+/**
+ * Drop collection index.
+ */
 export function dropIndex(
   ctx: AppBindings,
   collection: UUID,

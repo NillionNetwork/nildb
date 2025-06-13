@@ -37,6 +37,9 @@ import type {
   UploadResult,
 } from "./data.types";
 
+/**
+ * Create data collection.
+ */
 export function createCollection(
   ctx: AppBindings,
   schemaId: UUID,
@@ -92,6 +95,9 @@ export function createCollection(
   );
 }
 
+/**
+ * Tail collection data.
+ */
 export function tailCollection(
   ctx: AppBindings,
   schema: UUID,
@@ -107,6 +113,9 @@ export function tailCollection(
   );
 }
 
+/**
+ * Delete data collection.
+ */
 export function deleteCollection(
   ctx: AppBindings,
   schema: UUID,
@@ -123,6 +132,9 @@ export function deleteCollection(
   );
 }
 
+/**
+ * Flush collection data.
+ */
 export function flushCollection(
   ctx: AppBindings,
   schema: UUID,
@@ -137,6 +149,9 @@ export function flushCollection(
   );
 }
 
+/**
+ * Insert owned data.
+ */
 export function insertOwnedData(
   ctx: AppBindings,
   schema: CollectionDocument,
@@ -211,6 +226,9 @@ export function insertOwnedData(
     }),
   );
 }
+/**
+ * Insert standard data.
+ */
 export function insertStandardData(
   ctx: AppBindings,
   schema: CollectionDocument,
@@ -282,6 +300,9 @@ export function insertStandardData(
   );
 }
 
+/**
+ * Update multiple records.
+ */
 export function updateMany(
   ctx: AppBindings,
   schema: UUID,
@@ -307,6 +328,9 @@ export function updateMany(
   );
 }
 
+/**
+ * Delete multiple records.
+ */
 export function deleteMany(
   ctx: AppBindings,
   schema: UUID,
@@ -328,6 +352,9 @@ export function deleteMany(
   );
 }
 
+/**
+ * Run aggregation query.
+ */
 export function runAggregation(
   ctx: AppBindings,
   query: QueryDocument,
@@ -342,6 +369,9 @@ export function runAggregation(
   );
 }
 
+/**
+ * Find multiple records.
+ */
 export function findMany(
   ctx: AppBindings,
   schema: UUID,

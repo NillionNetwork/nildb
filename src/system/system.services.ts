@@ -17,6 +17,9 @@ import type {
 const started = new Date();
 let buildInfo: BuildInfo;
 
+/**
+ * Get node information.
+ */
 export function getNodeInfo(
   ctx: AppBindings,
 ): E.Effect<AboutNode, CollectionNotFoundError | DatabaseError> {
@@ -34,6 +37,9 @@ export function getNodeInfo(
   );
 }
 
+/**
+ * Get build information.
+ */
 function getBuildInfo(ctx: AppBindings): BuildInfo {
   if (buildInfo) {
     return buildInfo;
@@ -57,11 +63,7 @@ function getBuildInfo(ctx: AppBindings): BuildInfo {
 }
 
 /**
- * Sets the node's log level based on the provided command.
- *
- * @param ctx - Application context and bindings
- * @param command - Set log level command with new level
- * @returns Effect that succeeds when log level is set
+ * Set node log level.
  */
 export function setLogLevel(
   ctx: AppBindings,
@@ -74,11 +76,7 @@ export function setLogLevel(
 }
 
 /**
- * Starts maintenance mode based on the provided command.
- *
- * @param ctx - Application context and bindings
- * @param _command - Start maintenance command (no parameters needed, unused but required for consistency)
- * @returns Effect that succeeds when maintenance mode is started
+ * Start maintenance mode.
  */
 export function startMaintenance(
   ctx: AppBindings,
@@ -91,11 +89,7 @@ export function startMaintenance(
 }
 
 /**
- * Stops maintenance mode based on the provided command.
- *
- * @param ctx - Application context and bindings
- * @param _command - Stop maintenance command (no parameters needed, unused but required for consistency)
- * @returns Effect that succeeds when maintenance mode is stopped
+ * Stop maintenance mode.
  */
 export function stopMaintenance(
   ctx: AppBindings,
@@ -107,6 +101,9 @@ export function stopMaintenance(
   );
 }
 
+/**
+ * Get maintenance status.
+ */
 export function getMaintenanceStatus(
   ctx: AppBindings,
 ): E.Effect<MaintenanceInfo, CollectionNotFoundError | DatabaseError> {

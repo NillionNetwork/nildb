@@ -30,6 +30,9 @@ import type {
   RunQueryJobDocument,
 } from "./queries.types";
 
+/**
+ * Add query.
+ */
 export function addQuery(
   ctx: AppBindings,
   command: AddQueryCommand,
@@ -65,6 +68,9 @@ export function addQuery(
   );
 }
 
+/**
+ * Run query in background.
+ */
 export function runQueryInBackground(
   ctx: AppBindings,
   command: RunQueryCommand,
@@ -142,6 +148,9 @@ export function runQueryInBackground(
   );
 }
 
+/**
+ * Get query run job.
+ */
 export function getRunQueryJob(
   ctx: AppBindings,
   command: GetQueryRunByIdCommand,
@@ -152,6 +161,9 @@ export function getRunQueryJob(
   return RunQueryJobsRepository.findOne(ctx, { id: command.id });
 }
 
+/**
+ * Find queries by owner.
+ */
 export function findQueries(
   ctx: AppBindings,
   owner: Did,
@@ -165,6 +177,9 @@ export function findQueries(
   return pipe(QueriesRepository.findMany(ctx, { owner }));
 }
 
+/**
+ * Remove query.
+ */
 export function removeQuery(
   ctx: AppBindings,
   command: DeleteQueryCommand,
@@ -185,6 +200,9 @@ export function removeQuery(
   );
 }
 
+/**
+ * Validate query.
+ */
 export function validateQuery(
   query: QueryDocument,
 ): E.Effect<QueryDocument, QueryValidationError> {
@@ -223,15 +241,7 @@ export type QueryRuntimeVariables = Record<
 >;
 
 /**
- * Validates query execution variables against template definitions.
- *
- * Ensures that all required variables are provided and no unexpected
- * variables are included. Applies type coercions and validates data types
- * for each variable according to the query template.
- *
- * @param template - Variable definitions from the query document
- * @param provided - Variable values provided for query execution
- * @returns Effect that succeeds with validated runtime variables or fails with validation error
+ * Validate query variables.
  */
 export function validateVariables(
   template: QueryDocument["variables"],
@@ -353,16 +363,7 @@ function getAggregationField(
 }
 
 /**
- * Injects runtime variable values into MongoDB aggregation pipeline.
- *
- * Replaces variable placeholders in the aggregation pipeline with actual
- * values using JSONPath-style variable definitions. Supports deep object
- * and array access for complex pipeline structures.
- *
- * @param queryVariables - Variable definitions with path specifications
- * @param aggregation - MongoDB aggregation pipeline stages
- * @param variables - Runtime variable values to inject
- * @returns Effect that succeeds with modified pipeline or fails with injection error
+ * Inject variables into aggregation.
  */
 export function injectVariablesIntoAggregation(
   queryVariables: Record<string, QueryVariable>,

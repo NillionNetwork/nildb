@@ -4,7 +4,7 @@ import { ApiSuccessResponse } from "#/common/handler";
 import { Did } from "#/common/types";
 
 /**
- * A generic id in path param schema.
+ * Generic ID path parameter.
  */
 export const ByIdRequestParams = z
   .object({
@@ -14,7 +14,7 @@ export const ByIdRequestParams = z
 export type ByIdRequestParams = z.infer<typeof ByIdRequestParams>;
 
 /**
- * Access control list for user-owned data.
+ * Access control list entry.
  */
 export const AclDto = z.object({
   grantee: Did,
@@ -25,7 +25,7 @@ export const AclDto = z.object({
 export type AclDto = z.infer<typeof AclDto>;
 
 /**
- * User profile data shape.
+ * User profile data.
  */
 const UserProfileData = z.object({
   _id: Did,
@@ -49,7 +49,7 @@ const UserProfileData = z.object({
 });
 
 /**
- * Response for getting user profile.
+ * User profile response.
  */
 export const ReadProfileResponse = ApiSuccessResponse(UserProfileData).openapi({
   ref: "ReadProfileResponse",
@@ -57,7 +57,7 @@ export const ReadProfileResponse = ApiSuccessResponse(UserProfileData).openapi({
 export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
 
 /**
- *
+ * Data read request parameters.
  */
 export const ReadDataRequestParams = z
   .object({
@@ -68,9 +68,6 @@ export const ReadDataRequestParams = z
     ref: "ReadDataRequestParams",
   });
 
-/**
- *
- */
 export type ReadDataRequestParams = z.infer<typeof ReadDataRequestParams>;
 
 const OwnedDataDto = z
@@ -92,7 +89,7 @@ export const ReadDataResponse = ApiSuccessResponse(
 export type ReadDataResponse = z.infer<typeof ReadDataResponse>;
 
 /**
- * Data document reference schema for user-owned data.
+ * Data document reference.
  */
 const DataDocumentReference = z.object({
   builder: Did,
@@ -101,21 +98,18 @@ const DataDocumentReference = z.object({
 });
 
 /**
- * Response schema for getting user data.
+ * User data references response.
  */
 export const ListDataReferencesResponse = ApiSuccessResponse(
   z.array(DataDocumentReference),
 ).openapi({ ref: "ListDataReferencesResponse" });
 
-/**
- *
- */
 export type ListDataReferencesResponse = z.infer<
   typeof ListDataReferencesResponse
 >;
 
 /**
- * Request for reading permissions on a data document.
+ * Data ACL read parameters.
  */
 export const ReadDataAclRequestParams = z
   .object({
@@ -126,7 +120,7 @@ export const ReadDataAclRequestParams = z
 export type ReadDataAclRequestParams = z.infer<typeof ReadDataAclRequestParams>;
 
 /**
- * Response for reading data access.
+ * Data access response.
  */
 export const ReadDataAccessResponse = ApiSuccessResponse(
   z.array(AclDto),
@@ -136,7 +130,7 @@ export const ReadDataAccessResponse = ApiSuccessResponse(
 export type ReadDataAccessResponse = z.infer<typeof ReadDataAccessResponse>;
 
 /**
- *
+ * Grant data access request.
  */
 export const GrantAccessToDataRequest = z
   .object({
@@ -148,7 +142,7 @@ export const GrantAccessToDataRequest = z
 export type GrantAccessToDataRequest = z.infer<typeof GrantAccessToDataRequest>;
 
 /**
- *
+ * Grant data access response.
  */
 export const GrantAccessToDataResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,
@@ -156,7 +150,7 @@ export const GrantAccessToDataResponse = new Response(null, {
 export type GrantAccessToDataResponse = typeof GrantAccessToDataResponse;
 
 /**
- *
+ * Revoke data access request.
  */
 export const RevokeAccessToDataRequest = z
   .object({
@@ -169,11 +163,17 @@ export type RevokeAccessToDataRequest = z.infer<
   typeof RevokeAccessToDataRequest
 >;
 
+/**
+ * Revoke data access response.
+ */
 export const RevokeAccessToDataResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,
 });
 export type RevokeAccessToDataResponse = typeof RevokeAccessToDataResponse;
 
+/**
+ * Document deletion parameters.
+ */
 export const DeleteDocumentRequestParams = z
   .object({
     collection: z.string().uuid(),
@@ -185,6 +185,9 @@ export type DeleteDocumentRequestParams = z.infer<
   typeof DeleteDocumentRequestParams
 >;
 
+/**
+ * Document deletion response.
+ */
 export const DeleteDocumentResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,
 });

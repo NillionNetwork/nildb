@@ -42,9 +42,7 @@ export function createQuery(options: ControllerOptions): void {
     describeRoute({
       tags: ["Queries"],
       security: [{ bearerAuth: [] }],
-      summary: "Create new query",
-      description:
-        "Creates a new data query pipeline starting from a specific schema. The query can include complex aggregation pipelines and supports variable substitution.",
+      summary: "Create query",
       responses: {
         201: OpenApiSpecEmptySuccessResponses[201],
         ...OpenApiSpecCommonErrorResponses,
@@ -88,7 +86,7 @@ export function deleteQuery(options: ControllerOptions): void {
     describeRoute({
       tags: ["Queries"],
       security: [{ bearerAuth: [] }],
-      summary: "Delete the specified query",
+      summary: "Delete query",
       responses: {
         204: OpenApiSpecEmptySuccessResponses[204],
         ...OpenApiSpecCommonErrorResponses,
@@ -130,7 +128,7 @@ export function readQueries(options: ControllerOptions): void {
     describeRoute({
       tags: ["Queries"],
       security: [{ bearerAuth: [] }],
-      summary: "Lists all of the builder's queries",
+      summary: "Read queries",
       responses: {
         200: {
           description: "OK",
@@ -176,7 +174,7 @@ export function readQueryById(options: ControllerOptions): void {
     describeRoute({
       tags: ["Queries"],
       security: [{ bearerAuth: [] }],
-      summary: "Retrieve a query by id",
+      summary: "Read query",
       responses: {
         200: {
           description: "OK",
@@ -216,7 +214,7 @@ export function runQuery(options: ControllerOptions): void {
     describeRoute({
       tags: ["Queries"],
       security: [{ bearerAuth: [] }],
-      summary: "Start a query run in the background",
+      summary: "Run query",
       responses: {
         200: {
           description: "OK",
@@ -266,10 +264,10 @@ export function getQueryRunResultById(options: ControllerOptions): void {
     describeRoute({
       tags: ["Queries"],
       security: [{ bearerAuth: [] }],
-      summary: "Get the query run results",
+      summary: "Read query run results",
       responses: {
         200: {
-          description: "Query run results retrieved successfully",
+          description: "OK",
           content: {
             "application/json": {
               schema: resolver(GetQueryRunByIdResponse),

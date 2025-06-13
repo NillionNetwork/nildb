@@ -43,8 +43,7 @@ export function deleteData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Delete data that matches the given filter",
-      description: "Deletes data that matches the given MongoDB-style filter.",
+      summary: "Delete data",
       responses: {
         200: {
           description: "Success",
@@ -94,9 +93,7 @@ export function flushData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Flush all data from a collection",
-      description:
-        "Deletes all collection documents. Preserves schema validation and indexes.",
+      summary: "Flush data",
       responses: {
         204: {
           description: "Success",
@@ -140,9 +137,7 @@ export function findData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Find data that matches a given filter",
-      description:
-        "Finds data that matches the provided MongoDB-style filter in specified collection.",
+      summary: "Find data",
       responses: {
         200: {
           description: "Success",
@@ -192,8 +187,7 @@ export function tailData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Returns a collections newest records",
-      description: "Retrieves up to 'limit' records from a collection.",
+      summary: "Tail data",
       responses: {
         200: {
           description: "Recent records retrieved successfully",
@@ -245,9 +239,7 @@ export function updateData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Update data matching the given filter",
-      description:
-        "Updates data matching the provided MongoDB-style filter in the specified collection.",
+      summary: "Update data",
       responses: {
         200: {
           description: "Success",
@@ -297,11 +289,10 @@ export function createOwnedData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Create owned records",
-      description: "Creates owned data records in the specified schema.",
+      summary: "Upload owned data",
       responses: {
         200: {
-          description: "Success",
+          description: "OK",
           content: {
             "application/json": {
               schema: resolver(CreateDataResponse),
@@ -348,12 +339,10 @@ export function createStandardData(options: ControllerOptions): void {
     describeRoute({
       tags: ["Data"],
       security: [{ bearerAuth: [] }],
-      summary: "Create standard records",
-      description:
-        "Creates standard data records in a schema collection. Data in a standard collection is owned outright by the builder.",
+      summary: "Upload standard data",
       responses: {
         200: {
-          description: "Success",
+          description: "OK",
           content: {
             "application/json": {
               schema: resolver(CreateDataResponse),

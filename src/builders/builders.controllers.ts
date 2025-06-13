@@ -36,7 +36,7 @@ export function register(options: ControllerOptions): void {
     path,
     describeRoute({
       tags: ["Builders"],
-      summary: "Register a builder",
+      summary: "Register builder",
       responses: {
         201: OpenApiSpecEmptySuccessResponses["201"],
         400: OpenApiSpecCommonErrorResponses["400"],
@@ -70,7 +70,7 @@ export function readProfile(options: ControllerOptions): void {
     describeRoute({
       tags: ["Builders"],
       security: [{ bearerAuth: [] }],
-      summary: "Retrieve the builder's profile",
+      summary: "Read profile",
       responses: {
         200: {
           description: "OK",
@@ -116,7 +116,7 @@ export function deleteBuilder(options: ControllerOptions): void {
     describeRoute({
       tags: ["Builders"],
       security: [{ bearerAuth: [] }],
-      summary: "Permanently deletes the builder's account and all data.",
+      summary: "Delete builder",
       responses: {
         204: OpenApiSpecEmptySuccessResponses["204"],
         ...OpenApiSpecCommonErrorResponses,
@@ -154,7 +154,7 @@ export function updateProfile(options: ControllerOptions): void {
     describeRoute({
       tags: ["Builders"],
       security: [{ bearerAuth: [] }],
-      summary: "Update the builder's profile",
+      summary: "Update profile",
       responses: {
         200: OpenApiSpecEmptySuccessResponses["200"],
         ...OpenApiSpecCommonErrorResponses,

@@ -1,4 +1,4 @@
-import type { Did } from "#/common/types";
+import { Did } from "#/common/types";
 import type {
   ReadProfileResponse,
   RegisterBuilderRequest,
@@ -11,11 +11,11 @@ import type {
 } from "./builders.types";
 
 /**
- * Transforms data between HTTP DTOs and domain models.
+ * Builder data mapper.
  */
 export const BuilderDataMapper = {
   /**
-   * Converts a domain builder document to an api response dto.
+   * Convert builder document to profile response.
    */
   toReadProfileResponse(data: BuilderDocument): ReadProfileResponse {
     return {
@@ -31,17 +31,17 @@ export const BuilderDataMapper = {
   },
 
   /**
-   * Converts registration request dto to domain command.
+   * Convert registration request to create command.
    */
   toCreateBuilderCommand(dto: RegisterBuilderRequest): CreateBuilderCommand {
     return {
-      did: dto.did,
+      did: Did.parse(dto.did),
       name: dto.name,
     };
   },
 
   /**
-   * Converts update profile request dto to domain command.
+   * Convert update request to update command.
    */
   toUpdateProfileCommand(
     dto: UpdateProfileRequest,

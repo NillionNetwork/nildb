@@ -4,7 +4,7 @@ import { ApiSuccessResponse } from "#/common/handler";
 import { Did } from "#/common/types";
 
 /**
- * Request schema for registering a new builder.
+ * Builder registration request.
  */
 export const RegisterBuilderRequest = z
   .object({
@@ -15,7 +15,7 @@ export const RegisterBuilderRequest = z
 export type RegisterBuilderRequest = z.infer<typeof RegisterBuilderRequest>;
 
 /**
- * Response for successful builder registration.
+ * Builder registration response.
  */
 export const RegisterBuilderResponse = new Response(null, {
   status: StatusCodes.CREATED,
@@ -23,7 +23,7 @@ export const RegisterBuilderResponse = new Response(null, {
 export type RegisterBuilderResponse = typeof RegisterBuilderResponse;
 
 /**
- * Builder profile dto.
+ * Builder profile data.
  */
 const ProfileDto = z.object({
   _id: Did,
@@ -35,10 +35,7 @@ const ProfileDto = z.object({
 });
 
 /**
- * Response schema for profile retrieval.
- *
- * Wraps the profile data in a standard success response
- * format with a `data` property.
+ * Profile retrieval response.
  */
 export const ReadProfileResponse = ApiSuccessResponse(ProfileDto).openapi({
   ref: "GetProfileResponse",
@@ -46,10 +43,7 @@ export const ReadProfileResponse = ApiSuccessResponse(ProfileDto).openapi({
 export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
 
 /**
- * Response for successful builder deletion.
- *
- * Returns HTTP 204 No Content to indicate the resource
- * was deleted successfully with no response body.
+ * Builder deletion response.
  */
 export const DeleteBuilderResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,
@@ -57,10 +51,7 @@ export const DeleteBuilderResponse = new Response(null, {
 export type DeleteBuilderResponse = typeof DeleteBuilderResponse;
 
 /**
- * Request schema for updating builder profile.
- *
- * All fields are optional - only provided fields will be updated.
- * At least one field must be provided.
+ * Profile update request.
  */
 export const UpdateProfileRequest = z
   .object({
@@ -70,10 +61,7 @@ export const UpdateProfileRequest = z
 export type UpdateProfileRequest = z.infer<typeof UpdateProfileRequest>;
 
 /**
- * Response for profile update endpoint.
- *
- * Returns HTTP 204 No Content to indicate the profile update
- * was successful with no response body.
+ * Profile update response.
  */
 export const UpdateProfileResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,

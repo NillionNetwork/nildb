@@ -41,7 +41,7 @@ export function readAboutNode(options: ControllerOptions): void {
     PathsV1.system.about,
     describeRoute({
       tags: ["System"],
-      summary: "Read node information",
+      summary: "Get node identity and status",
       responses: {
         200: {
           description: "OK",
@@ -154,15 +154,8 @@ export function getOpenApiJson(options: ControllerOptions): void {
         info: {
           title: "nilDB API",
           version: packageJson.version,
-          description: `
-RESTful Api Specification for nilDB
-
-A functional data storage and querying service for the Nillion Network that provides:
-
-- schema-validated data storage
-- MongoDB-style aggregation queries
-- capability-based access control to enable used owned data
-"`.replace(/\n/g, " "),
+          description:
+            "nilDB is a privacy-focused data storage and querying service built for the Nillion Network. It combines schema-validated storage, MongoDB-style aggregation pipelines, and capability-based access control (UCAN) to enable truly user-owned data. Designed to integrate with Nillion's blind computation modules and SDKs, nilDB empowers developers to build applications where users maintain full control and privacy over their data.",
         },
       },
     }),
@@ -179,7 +172,7 @@ export function startMaintenance(options: ControllerOptions): void {
   app.post(
     path,
     describeRoute({
-      tags: ["Admin"],
+      tags: ["System"],
       security: [{ bearerAuth: [] }],
       summary: "Start maintenance mode",
       responses: {
@@ -217,7 +210,7 @@ export function stopMaintenance(options: ControllerOptions): void {
   app.post(
     path,
     describeRoute({
-      tags: ["Admin"],
+      tags: ["System"],
       security: [{ bearerAuth: [] }],
       summary: "Stop maintenance mode",
       responses: {
@@ -255,9 +248,9 @@ export function setLogLevel(options: ControllerOptions): void {
   app.post(
     path,
     describeRoute({
-      tags: ["Admin"],
+      tags: ["System"],
       security: [{ bearerAuth: [] }],
-      summary: "Sets the node's log level",
+      summary: "Set log level",
       responses: {
         200: OpenApiSpecEmptySuccessResponses["200"],
         ...OpenApiSpecCommonErrorResponses,
@@ -295,9 +288,9 @@ export function readLogLevel(options: ControllerOptions): void {
   app.get(
     path,
     describeRoute({
-      tags: ["Admin"],
+      tags: ["System"],
       security: [{ bearerAuth: [] }],
-      summary: "Read the node's current log level",
+      summary: "Read log level",
       responses: {
         200: {
           description: "OK",

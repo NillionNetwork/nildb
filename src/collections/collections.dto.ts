@@ -4,7 +4,7 @@ import { ApiSuccessResponse } from "#/common/handler";
 import { Did } from "#/common/types";
 
 /**
- *
+ * Collection document data.
  */
 export const CollectionDocumentDto = z.object({
   owner: Did,
@@ -14,12 +14,12 @@ export const CollectionDocumentDto = z.object({
 });
 
 /**
- *
+ * Collection documents array.
  */
 export const CollectionDocuments = z.array(CollectionDocumentDto);
 
 /**
- *
+ * Collections list response.
  */
 export const ListCollectionsResponse = ApiSuccessResponse(
   CollectionDocuments,
@@ -29,7 +29,7 @@ export const ListCollectionsResponse = ApiSuccessResponse(
 export type ListCollectionsResponse = z.infer<typeof ListCollectionsResponse>;
 
 /**
- *
+ * Collection index creation request.
  */
 export const CreateCollectionIndexRequest = z
   .object({
@@ -48,37 +48,31 @@ export const CreateCollectionIndexRequest = z
   })
   .openapi({ ref: "CreateCollectionIndexRequest" });
 
-/**
- *
- */
 export type CreateCollectionIndexRequest = z.infer<
   typeof CreateCollectionIndexRequest
 >;
 
 /**
- *
+ * Drop collection index parameters.
  */
 export const DropCollectionIndexParams = z.object({
   id: z.string().uuid(),
   name: z.string().min(4).max(50),
 });
 
-/**
- *
- */
 export type DropCollectionIndexParams = z.infer<
   typeof DropCollectionIndexParams
 >;
 
 /**
- *
+ * Drop collection index response.
  */
 export const DropCollectionIndexResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,
 });
 
 /**
- *
+ * Collection creation request.
  */
 export const CreateCollectionRequest = z
   .object({
@@ -92,14 +86,14 @@ export const CreateCollectionRequest = z
 export type CreateCollectionRequest = z.infer<typeof CreateCollectionRequest>;
 
 /**
- *
+ * Collection creation response.
  */
 export const CreateCollectionResponse = new Response(null, {
   status: StatusCodes.CREATED,
 });
 
 /**
- *
+ * Collection deletion parameters.
  */
 export const DeleteCollectionRequestParams = z
   .object({
@@ -107,22 +101,19 @@ export const DeleteCollectionRequestParams = z
   })
   .openapi({ ref: "DeleteCollectionRequestParams" });
 
-/**
- *
- */
 export type DeleteCollectionRequestParams = z.infer<
   typeof DeleteCollectionRequestParams
 >;
 
 /**
- *
+ * Collection deletion response.
  */
 export const DeleteCollectionResponse = new Response(null, {
   status: StatusCodes.NO_CONTENT,
 });
 
 /**
- *
+ * Collection metadata read parameters.
  */
 export const ReadCollectionMetadataRequestParams = z
   .object({
@@ -130,15 +121,12 @@ export const ReadCollectionMetadataRequestParams = z
   })
   .openapi({ ref: "ReadCollectionMetadataRequestParams" });
 
-/**
- *
- */
 export type ReadCollectionMetadataRequestParams = z.infer<
   typeof ReadCollectionMetadataRequestParams
 >;
 
 /**
- *
+ * Collection index data.
  */
 export const CollectionIndexDto = z.object({
   v: z.number(),
@@ -148,7 +136,7 @@ export const CollectionIndexDto = z.object({
 });
 
 /**
- *
+ * Collection metadata data.
  */
 export const CollectionMetadataDto = z.object({
   id: z.string().uuid(),
@@ -160,7 +148,7 @@ export const CollectionMetadataDto = z.object({
 });
 
 /**
- *
+ * Collection metadata response.
  */
 export const ReadCollectionMetadataResponse = ApiSuccessResponse(
   CollectionMetadataDto,

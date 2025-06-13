@@ -23,6 +23,9 @@ import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import * as CollectionsRepository from "./collections.repository";
 
+/**
+ * Get builder collections.
+ */
 export function getBuilderCollections(
   ctx: AppBindings,
   builder: BuilderDocument,
@@ -36,6 +39,9 @@ export function getBuilderCollections(
   return CollectionsRepository.findMany(ctx, { owner: builder._id });
 }
 
+/**
+ * Add collection.
+ */
 export function addCollection(
   ctx: AppBindings,
   command: CreateCollectionCommand,
@@ -71,6 +77,9 @@ export function addCollection(
   );
 }
 
+/**
+ * Delete collection.
+ */
 export function deleteCollection(
   ctx: AppBindings,
   command: DeleteCollectionCommand,
@@ -94,6 +103,9 @@ export function deleteCollection(
   );
 }
 
+/**
+ * Get collection metadata.
+ */
 export function getCollectionMetadata(
   ctx: AppBindings,
   collection: UUID,
@@ -101,6 +113,9 @@ export function getCollectionMetadata(
   return pipe(CollectionsRepository.getCollectionStats(ctx, collection));
 }
 
+/**
+ * Create index.
+ */
 export function createIndex(
   ctx: AppBindings,
   command: CreateIndexCommand,
@@ -129,6 +144,9 @@ export function createIndex(
   );
 }
 
+/**
+ * Drop index.
+ */
 export function dropIndex(
   ctx: AppBindings,
   command: DropIndexCommand,
