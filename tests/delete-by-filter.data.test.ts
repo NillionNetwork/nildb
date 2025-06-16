@@ -56,11 +56,7 @@ describe("delete-by-filter.data.test.ts", () => {
         collection: collection.id,
         filter: {},
       })
-      .expectFailure(
-        StatusCodes.BAD_REQUEST,
-        // TODO: disabled until we correctly unpack the zod error message
-        // 'Filter cannot be empty at "filter"',
-      );
+      .expectFailure(StatusCodes.BAD_REQUEST);
   });
 
   it("can remove a single match", async ({ c }) => {

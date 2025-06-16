@@ -203,8 +203,6 @@ export function readCollectionById(options: ControllerOptions): void {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("param");
 
-      // TODO: needs to include metadata with result
-
       return pipe(
         enforceCollectionOwnership(builder, payload.id),
         E.flatMap(() =>

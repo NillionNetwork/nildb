@@ -49,7 +49,6 @@ export const UserDataMapper = {
         _id: user._id,
         _created: user._created.toISOString(),
         _updated: user._updated.toISOString(),
-        // TODO: if op = "auth" then acl should be returned
         log: user.log.map((l) => ({ col: l.col.toString(), op: l.op })),
         data: user.data.map((d) => ({
           collection: d.collection.toString(),

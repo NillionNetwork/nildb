@@ -179,7 +179,6 @@ export function deleteData(
     );
   };
 
-  // TODO: only invoke the owned check if its an owned collection
   return pipe(
     DataRepository.findMany(ctx, command.collection, command.filter),
     E.map((documents) => groupByOwner(documents)),

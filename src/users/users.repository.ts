@@ -41,8 +41,6 @@ export function upsert(
   const filter: StrictFilter<UserDocument> = { _id: user };
 
   const logOperations: LogOperation[] = [];
-  // TODO: Clarify why these are distinct ... eg why is acl both a write + auth operation?
-  // Add write operations for each document
   for (const col of data) {
     logOperations.push({ op: "write", col });
   }
@@ -183,7 +181,7 @@ export function addAclEntry(
   };
 
   const update: StrictUpdateFilter<OwnedDocumentBase> = {
-    // @ts-expect-error TODO: investigate how to type $push
+    // @ts-expect-error
     $push: { _acl: acl },
   };
 
@@ -220,7 +218,7 @@ export function removeAclEntry(
   };
 
   const update: UpdateFilter<OwnedDocumentBase> = {
-    // @ts-expect-error TODO: investigate how to type $pull
+    // @ts-expect-error
     $pull: { _acl: { grantee } },
   };
 
