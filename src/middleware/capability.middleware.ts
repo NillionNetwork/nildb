@@ -3,16 +3,13 @@ import {
   Did,
   InvocationRequirement,
   NilauthClient,
-  type NucToken,
   NucTokenEnvelopeSchema,
   NucTokenValidator,
   ValidationParameters,
 } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
-import type { Context, Env, Input, MiddlewareHandler } from "hono";
-import type { BlankInput } from "hono/types";
+import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
-import type { EmptyObject } from "type-fest";
 import * as BuilderRepository from "#/builders/builders.repository";
 import type { AppBindings, AppEnv } from "#/env";
 import * as UserRepository from "#/users/users.repository";
@@ -121,10 +118,30 @@ export function loadSubjectAndVerifyAsBuilder<
           StatusCodes.UNAUTHORIZED,
         );
       }
+
+      // @ts-ignore
+      const context = {
+        req: {
+          path: c.req.path,
+          headers: c.req.header(),
+        },
+        token: token.toJson(),
+        payload: {
+          // @ts-expect-error requires zValidator to run before the capability middleware but we cannot straightforwardly bring types into this scope
+          body: c.req.valid("json") ?? {},
+          // @ts-expect-error requires zValidator to run before the capability middleware but we cannot straightforwardly bring types into this scope
+          query: c.req.valid("query") ?? {},
+          // @ts-expect-error requires zValidator to run before the capability middleware but we cannot straightforwardly bring types into this scope
+          param: c.req.valid("param") ?? {},
+        },
+      };
+
       validateNucWithSubscription.validate(
         envelope,
         defaultValidationParameters,
+        context,
       );
+
       // check revocations last because it's costly (in terms of network RTT)
       const { revoked } = await NilauthClient.findRevocationsInProofChain(
         config.nilauthBaseUrl,
@@ -147,7 +164,7 @@ export function loadSubjectAndVerifyAsBuilder<
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
-        log.error({ cause: JSON.stringify(cause) }, "Auth error");
+        log.error({ cause: cause.message }, "Auth error");
 
         // This isn't an elegant approach, but we want to return PAYMENT_REQUIRED
         // to communicate when invocation NUC's chain is missing authority from nilauth
@@ -212,43 +229,18 @@ export function loadSubjectAndVerifyAsUser<
   };
 }
 
-export type ValidatedOutput = Partial<{
-  json: EmptyObject;
-  param: EmptyObject;
-  query: EmptyObject;
-}>;
-
-export type EnforceCapabilityOptions<
-  // Define the payload first since it's the most used generic
-  ValidatedParams extends Input["out"] = ValidatedOutput,
-  Path extends string = string,
-  E extends Env = AppEnv,
-> = {
-  cmd: Command;
-  validate: (
-    c: Context<E, Path, { out: ValidatedParams }>,
-    token: NucToken,
-  ) => boolean | Promise<boolean>;
-};
-
-export function enforceCapability<
-  // Define the payload first since it's the most used generic
-  ValidatedParams extends Input["out"] = ValidatedOutput,
-  Path extends string = string,
-  E extends AppEnv = AppEnv,
->(
-  options: EnforceCapabilityOptions<ValidatedParams, Path, E>,
-): MiddlewareHandler<E, Path, { out: ValidatedParams }> {
+export function requireNucNamespace(cmd: Command): MiddlewareHandler {
   return async (c, next) => {
     const { log } = c.env;
     const { token } = c.get("envelope").token;
 
-    const isValidCommand = options.cmd.isAttenuationOf(token.command);
+    const isValidCommand = cmd.isAttenuationOf(token.command);
     if (!isValidCommand) {
       log.debug(
-        "Command %s not attenuation of %s",
+        "Nuc does not grant access to access %s: token command '%s' is not an attenuation of '%s'",
+        c.req.path,
         token.command.toString(),
-        options.cmd.toString(),
+        cmd.toString(),
       );
       return c.text(
         getReasonPhrase(StatusCodes.FORBIDDEN),
@@ -256,14 +248,6 @@ export function enforceCapability<
       );
     }
 
-    if (options.validate(c, token)) {
-      return next();
-    }
-
-    log.debug("Token failed validation check: %O", options);
-    return c.text(
-      getReasonPhrase(StatusCodes.FORBIDDEN),
-      StatusCodes.FORBIDDEN,
-    );
+    return next();
   };
 }

@@ -6,6 +6,7 @@ import type {
   DeleteCollectionRequestParams,
   DropCollectionIndexParams,
   ListCollectionsResponse,
+  ReadCollectionMetadataRequestParams,
   ReadCollectionMetadataResponse,
 } from "./collections.dto";
 import type {
@@ -15,6 +16,7 @@ import type {
   CreateIndexCommand,
   DeleteCollectionCommand,
   DropIndexCommand,
+  ReadCollectionByIdCommand,
 } from "./collections.types";
 
 export const CollectionsDataMapper = {
@@ -112,6 +114,17 @@ export const CollectionsDataMapper = {
     return {
       collection: new UUID(body.id),
       name: body.name,
+    };
+  },
+
+  /**
+   *
+   */
+  toReadCollectionById(
+    params: ReadCollectionMetadataRequestParams,
+  ): ReadCollectionByIdCommand {
+    return {
+      id: new UUID(params.id),
     };
   },
 };

@@ -14,9 +14,9 @@ import type { ControllerOptions } from "#/common/types";
 import * as DataService from "#/data/data.services";
 import type { OwnedDocumentBase } from "#/data/data.types";
 import {
-  enforceCapability,
   loadNucToken,
   loadSubjectAndVerifyAsUser,
+  requireNucNamespace,
 } from "#/middleware/capability.middleware";
 import {
   DeleteDocumentRequestParams,
@@ -59,10 +59,7 @@ export function readProfile(options: ControllerOptions): void {
     }),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsUser(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.users.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.users.read),
     async (c) => {
       const user = c.get("user");
 
@@ -104,10 +101,7 @@ export function listDataReferences(options: ControllerOptions): void {
     }),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsUser(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.users.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.users.read),
     async (c) => {
       const user = c.get("user");
       return pipe(
@@ -124,7 +118,7 @@ export function listDataReferences(options: ControllerOptions): void {
 }
 
 /**
- * Handle GET /v1/users/data/:schema/:document
+ * Handle GET /v1/users/data/:collection/:document
  */
 export function readData(options: ControllerOptions): void {
   const { app, bindings } = options;
@@ -151,10 +145,7 @@ export function readData(options: ControllerOptions): void {
     zValidator("param", ReadDataRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsUser(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.users.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.users.read),
     async (c) => {
       const user = c.get("user");
       const params = c.req.valid("param");
@@ -194,10 +185,7 @@ export function deleteData(options: ControllerOptions): void {
     zValidator("param", DeleteDocumentRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsUser(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.users.delete,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.users.delete),
     async (c) => {
       const user = c.get("user");
       const params = c.req.valid("param");
@@ -240,10 +228,7 @@ export function grantAccess(options: ControllerOptions): void {
     zValidator("json", GrantAccessToDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsUser(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.users.update,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.users.update),
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");
@@ -282,10 +267,7 @@ export function revokeAccess(options: ControllerOptions): void {
     zValidator("json", RevokeAccessToDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsUser(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.users.update,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.users.update),
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");

@@ -9,9 +9,9 @@ import { enforceCollectionOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
-  enforceCapability,
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
+  requireNucNamespace,
 } from "#/middleware/capability.middleware";
 import {
   CreateDataResponse,
@@ -59,10 +59,7 @@ export function deleteData(options: ControllerOptions): void {
     zValidator("json", DeleteDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: DeleteDataRequest }>({
-      cmd: NucCmd.nil.db.data.delete,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.data.delete),
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
@@ -103,10 +100,7 @@ export function flushData(options: ControllerOptions): void {
     zValidator("param", DataSchemaByIdRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: DataSchemaByIdRequestParams }>({
-      cmd: NucCmd.nil.db.data.delete,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.data.delete),
     async (c) => {
       const builder = c.get("builder");
       const params = c.req.valid("param");
@@ -151,10 +145,7 @@ export function findData(options: ControllerOptions): void {
     zValidator("json", FindDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: FindDataRequest }>({
-      cmd: NucCmd.nil.db.data.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.data.read),
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
@@ -201,10 +192,7 @@ export function tailData(options: ControllerOptions): void {
     zValidator("query", TailDataRequestQuery),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: { id: string }; query: { limit: number } }>({
-      cmd: NucCmd.nil.db.data.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.data.read),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const param = c.req.valid("param");
@@ -251,10 +239,7 @@ export function updateData(options: ControllerOptions): void {
     zValidator("json", UpdateDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: UpdateDataRequest }>({
-      cmd: NucCmd.nil.db.data.update,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.data.update),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -300,10 +285,7 @@ export function createOwnedData(options: ControllerOptions): void {
     zValidator("json", CreateOwnedDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: CreateOwnedDataRequest }>({
-      cmd: NucCmd.nil.db.data.create,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.data.create),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -349,10 +331,7 @@ export function createStandardData(options: ControllerOptions): void {
     zValidator("json", CreateStandardDataRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: CreateStandardDataRequest }>({
-      cmd: NucCmd.nil.db.data.create,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.data.create),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");

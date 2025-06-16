@@ -10,9 +10,9 @@ import {
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
-  enforceCapability,
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
+  requireNucNamespace,
 } from "#/middleware/capability.middleware";
 import {
   DeleteBuilderResponse,
@@ -85,10 +85,7 @@ export function readProfile(options: ControllerOptions): void {
     }),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.builders.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.builders.read),
     async (c) => {
       const builder = c.get("builder");
 
@@ -123,10 +120,7 @@ export function deleteBuilder(options: ControllerOptions): void {
     }),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.builders.delete,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.builders.delete),
     async (c) => {
       const builder = c.get("builder");
 
@@ -161,10 +155,7 @@ export function updateProfile(options: ControllerOptions): void {
     zValidator("json", UpdateProfileRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: UpdateProfileRequest }>({
-      cmd: NucCmd.nil.db.builders.update,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.builders.update),
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
