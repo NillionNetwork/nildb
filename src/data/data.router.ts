@@ -5,7 +5,7 @@ import * as DataController from "./data.controllers";
  * Registers all data-related routes with the application.
  *
  * Mounts the following endpoints:
- * - POST   /v1/data/search         - Find documents that match a given filter
+ * - POST   /v1/data/find           - Find documents that match a given filter
  * - POST   /v1/data/update         - Update documents that match the given filter
  * - POST   /v1/data/delete         - Delete documents that match the given filter
  * - DELETE /v1/data/:id/drop       - Drop all documents in the collection

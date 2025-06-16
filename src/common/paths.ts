@@ -17,7 +17,7 @@ export const PathsV1 = {
   },
   data: {
     root: Path.parse("/v1/data"),
-    search: Path.parse("/v1/data/search"),
+    find: Path.parse("/v1/data/find"),
     update: Path.parse("/v1/data/update"),
     delete: Path.parse("/v1/data/delete"),
     flushById: Path.parse("/v1/data/:id/flush"),

@@ -58,7 +58,7 @@ export const DataMapper = {
   },
 
   /**
-   * Converts array of data documents to search response.
+   * Converts array of data documents to find response.
    */
   toFindDataResponse(documents: DocumentBase[]): FindDataResponse {
     return { data: documents };
