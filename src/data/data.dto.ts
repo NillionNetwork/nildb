@@ -72,7 +72,7 @@ export const UpdateDataResponse = ApiSuccessResponse(
 export type UpdateDataResponse = z.infer<typeof UpdateDataResponse>;
 
 /**
- * Data search request.
+ * Data find request.
  */
 export const FindDataRequest = z
   .object({
@@ -83,7 +83,7 @@ export const FindDataRequest = z
 export type FindDataRequest = z.infer<typeof FindDataRequest>;
 
 /**
- * Data search response.
+ * Data find response.
  */
 export const FindDataResponse = ApiSuccessResponse(
   z.array(z.record(z.string(), z.unknown())),

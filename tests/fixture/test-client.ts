@@ -611,7 +611,7 @@ export class BuilderTestClient extends BaseTestClient {
   }
 
   /**
-   * Searches for data records matching the provided filter.
+   * Searches for data matching the provided filter.
    */
   findData(
     c: FixtureContext,
@@ -619,7 +619,7 @@ export class BuilderTestClient extends BaseTestClient {
   ): ResponseHandler<FindDataResponse> {
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.data.search, { method: "POST", body }),
+      () => this.request(PathsV1.data.find, { method: "POST", body }),
       StatusCodes.OK,
       FindDataResponse,
     );

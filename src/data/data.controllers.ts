@@ -128,7 +128,7 @@ export function flushData(options: ControllerOptions): void {
  */
 export function findData(options: ControllerOptions): void {
   const { app, bindings } = options;
-  const path = PathsV1.data.search;
+  const path = PathsV1.data.find;
 
   app.post(
     path,
