@@ -13,9 +13,9 @@ import { enforceQueryOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
-  enforceCapability,
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
+  requireNucNamespace,
 } from "#/middleware/capability.middleware";
 import {
   ByIdRequestParams,
@@ -51,10 +51,7 @@ export function createQuery(options: ControllerOptions): void {
     zValidator("json", CreateQueryRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: CreateQueryRequest }>({
-      cmd: NucCmd.nil.db.queries.create,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.queries.create),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -94,10 +91,7 @@ export function deleteQuery(options: ControllerOptions): void {
     zValidator("param", ByIdRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: ByIdRequestParams }>({
-      cmd: NucCmd.nil.db.queries.delete,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.queries.delete),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
@@ -141,10 +135,7 @@ export function readQueries(options: ControllerOptions): void {
     }),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.queries.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.queries.read),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
 
@@ -187,10 +178,7 @@ export function readQueryById(options: ControllerOptions): void {
     zValidator("param", ByIdRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: ByIdRequestParams }>({
-      cmd: NucCmd.nil.db.queries.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.queries.read),
     async (c) => {
       // TODO: Implement getQueryById
       return c.text("NOT_IMPLEMENTED", StatusCodes.NOT_IMPLEMENTED);
@@ -226,10 +214,7 @@ export function runQuery(options: ControllerOptions): void {
     zValidator("json", RunQueryRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: RunQueryRequest }>({
-      cmd: NucCmd.nil.db.queries.execute,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.queries.execute),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -275,10 +260,7 @@ export function getQueryRunResultById(options: ControllerOptions): void {
     zValidator("param", ByIdRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: ByIdRequestParams }>({
-      cmd: NucCmd.nil.db.queries.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.queries.read),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");

@@ -2,7 +2,6 @@ import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
 import { StatusCodes } from "http-status-codes";
-import type { UUID } from "mongodb";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { CollectionsDataMapper } from "#/collections/collections.mapper";
 import { handleTaggedErrors } from "#/common/handler";
@@ -15,9 +14,9 @@ import { enforceCollectionOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
-  enforceCapability,
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
+  requireNucNamespace,
 } from "#/middleware/capability.middleware";
 import {
   CreateCollectionIndexRequest,
@@ -60,10 +59,7 @@ export function readCollections(options: ControllerOptions): void {
     }),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.collections.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.collections.read),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
 
@@ -102,10 +98,7 @@ export function createCollection(options: ControllerOptions): void {
     zValidator("json", CreateCollectionRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ json: CreateCollectionRequest }>({
-      cmd: NucCmd.nil.db.collections.create,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.collections.create),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -147,10 +140,7 @@ export function deleteCollectionById(options: ControllerOptions): void {
     zValidator("param", DeleteCollectionRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: { id: UUID } }>({
-      cmd: NucCmd.nil.db.collections.delete,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.collections.delete),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
@@ -195,10 +185,7 @@ export function readCollectionById(options: ControllerOptions): void {
     zValidator("param", ReadCollectionMetadataRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: { id: UUID } }>({
-      cmd: NucCmd.nil.db.collections.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.collections.read),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("param");
@@ -243,14 +230,7 @@ export function createCollectionIndex(options: ControllerOptions): void {
     zValidator("json", CreateCollectionIndexRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{
-      json: CreateCollectionIndexRequest;
-      param: { id: UUID };
-    }>({
-      cmd: NucCmd.nil.db.collections.update,
-
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.collections.update),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -290,10 +270,7 @@ export function dropCollectionIndex(options: ControllerOptions): void {
     zValidator("param", DropCollectionIndexParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
-    enforceCapability<{ param: DropCollectionIndexParams }>({
-      cmd: NucCmd.nil.db.collections.update,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.collections.update),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");

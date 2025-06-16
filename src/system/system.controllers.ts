@@ -14,9 +14,9 @@ import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import { FeatureFlag, hasFeatureFlag } from "#/env";
 import {
-  enforceCapability,
   loadNucToken,
   loadSubjectAndVerifyAsAdmin,
+  requireNucNamespace,
 } from "#/middleware/capability.middleware";
 import packageJson from "../../package.json";
 import {
@@ -182,10 +182,7 @@ export function startMaintenance(options: ControllerOptions): void {
     }),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsAdmin(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.system.update,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.system.update),
     async (c) => {
       const command = SystemDataMapper.toStartMaintenanceCommand();
 
@@ -219,10 +216,7 @@ export function stopMaintenance(options: ControllerOptions): void {
     }),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsAdmin(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.system.update,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.system.update),
     async (c) => {
       const command = SystemDataMapper.toStopMaintenanceCommand();
 
@@ -257,10 +251,7 @@ export function setLogLevel(options: ControllerOptions): void {
     zValidator("json", SetLogLevelRequest),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsAdmin(bindings),
-    enforceCapability<{ json: SetLogLevelRequest }>({
-      cmd: NucCmd.nil.db.system.update,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.system.update),
     async (c) => {
       const payload = c.req.valid("json");
       const command = SystemDataMapper.toSetLogLevelCommand(payload);
@@ -302,10 +293,7 @@ export function readLogLevel(options: ControllerOptions): void {
     }),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsAdmin(bindings),
-    enforceCapability({
-      cmd: NucCmd.nil.db.system.read,
-      validate: (_c, _token) => true,
-    }),
+    requireNucNamespace(NucCmd.nil.db.system.read),
     async (c) => {
       const level = c.env.log.level as LogLevel;
 
