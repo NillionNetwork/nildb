@@ -118,10 +118,30 @@ export function loadSubjectAndVerifyAsBuilder<
           StatusCodes.UNAUTHORIZED,
         );
       }
+
+      // @ts-ignore
+      const context = {
+        req: {
+          path: c.req.path,
+          headers: c.req.header(),
+        },
+        token: token.toJson(),
+        payload: {
+          // @ts-expect-error requires zValidator to run before the capability middleware but we cannot straightforwardly bring types into this scope
+          body: c.req.valid("json") ?? {},
+          // @ts-expect-error requires zValidator to run before the capability middleware but we cannot straightforwardly bring types into this scope
+          query: c.req.valid("query") ?? {},
+          // @ts-expect-error requires zValidator to run before the capability middleware but we cannot straightforwardly bring types into this scope
+          param: c.req.valid("param") ?? {},
+        },
+      };
+
       validateNucWithSubscription.validate(
         envelope,
         defaultValidationParameters,
+        context,
       );
+
       // check revocations last because it's costly (in terms of network RTT)
       const { revoked } = await NilauthClient.findRevocationsInProofChain(
         config.nilauthBaseUrl,
@@ -144,7 +164,7 @@ export function loadSubjectAndVerifyAsBuilder<
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
-        log.error({ cause: JSON.stringify(cause) }, "Auth error");
+        log.error({ cause: cause.message }, "Auth error");
 
         // This isn't an elegant approach, but we want to return PAYMENT_REQUIRED
         // to communicate when invocation NUC's chain is missing authority from nilauth
