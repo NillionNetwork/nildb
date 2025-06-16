@@ -23,6 +23,7 @@ import {
   GrantAccessToDataRequest,
   GrantAccessToDataResponse,
   ListDataReferencesResponse,
+  ReadDataRequestParams,
   ReadDataResponse,
   ReadProfileResponse,
   RevokeAccessToDataRequest,
@@ -147,6 +148,7 @@ export function readData(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
+    zValidator("param", ReadDataRequestParams),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsUser(bindings),
     enforceCapability({
@@ -159,7 +161,8 @@ export function readData(options: ControllerOptions): void {
       const command = UserDataMapper.toFindDataCommand(user, params);
 
       return pipe(
-        DataService.readRecords(c.env, command),
+        enforceDataOwnership(user, params.document, params.collection),
+        E.flatMap(() => DataService.readRecords(c.env, command)),
         E.map((documents) => documents as OwnedDocumentBase[]),
         E.map((document) => UserDataMapper.toReadDataResponse(document)),
         E.map((response) => c.json(response)),
