@@ -131,7 +131,7 @@ export const UserDataMapper = {
     return {
       collection: new UUID(body.collection),
       document: new UUID(body.document),
-      grantee: body.builder,
+      grantee: body.grantee,
       owner: user._id as Did,
     };
   },

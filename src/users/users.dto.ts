@@ -153,7 +153,7 @@ export type GrantAccessToDataResponse = typeof GrantAccessToDataResponse;
  */
 export const RevokeAccessToDataRequest = z
   .object({
-    builder: Did,
+    grantee: Did,
     collection: z.string().uuid(),
     document: z.string().uuid(),
   })
