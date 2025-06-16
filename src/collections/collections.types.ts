@@ -75,3 +75,10 @@ export type DropIndexCommand = {
   collection: UUID;
   name: string;
 };
+
+/**
+ * Read collection by id command
+ */
+export type ReadCollectionByIdCommand = {
+  id: UUID;
+};

@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { CreateIndexesOptions, IndexSpecification, UUID } from "mongodb";
+import type { CreateIndexesOptions, IndexSpecification } from "mongodb";
 import * as BuildersRepository from "#/builders/builders.repository";
 import type { BuilderDocument } from "#/builders/builders.types";
 import type {
@@ -9,6 +9,7 @@ import type {
   CreateIndexCommand,
   DeleteCollectionCommand,
   DropIndexCommand,
+  ReadCollectionByIdCommand,
 } from "#/collections/collections.types";
 import type {
   CollectionNotFoundError,
@@ -107,9 +108,9 @@ export function deleteCollection(
  */
 export function getCollectionMetadata(
   ctx: AppBindings,
-  collection: UUID,
+  command: ReadCollectionByIdCommand,
 ): E.Effect<CollectionMetadata, CollectionNotFoundError | DatabaseError> {
-  return CollectionsRepository.getCollectionStats(ctx, collection);
+  return CollectionsRepository.getCollectionStats(ctx, command.id);
 }
 
 /**

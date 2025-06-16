@@ -202,11 +202,12 @@ export function readCollectionById(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("param");
+      const command = CollectionsDataMapper.toReadCollectionById(payload);
 
       return pipe(
-        enforceCollectionOwnership(builder, payload.id),
+        enforceCollectionOwnership(builder, command.id),
         E.flatMap(() =>
-          CollectionsService.getCollectionMetadata(c.env, payload.id),
+          CollectionsService.getCollectionMetadata(c.env, command),
         ),
         E.map((metadata) =>
           CollectionsDataMapper.toReadMetadataResponse(metadata),
