@@ -294,7 +294,10 @@ export class BuilderTestClient extends BaseTestClient {
    */
   protected async createToken(): Promise<string> {
     const audience = Did.fromHex(this._options.nodePublicKey);
-    const response = await this.options.nilauth.requestToken();
+    const response = await this.options.nilauth.requestToken(
+      this.options.keypair,
+      "nildb",
+    );
     const { token: rootToken } = response;
 
     return NucTokenBuilder.extending(rootToken)
@@ -309,10 +312,16 @@ export class BuilderTestClient extends BaseTestClient {
    */
   async ensureSubscriptionActive(): Promise<void> {
     for (let retry = 0; retry < 5; retry++) {
-      const response = await this.options.nilauth.subscriptionStatus();
+      const response = await this.options.nilauth.subscriptionStatus(
+        this.options.keypair.publicKey("hex"),
+        "nildb",
+      );
       if (!response.subscribed) {
         try {
-          await this.options.nilauth.payAndValidate();
+          await this.options.nilauth.payAndValidate(
+            this.options.keypair.publicKey("hex"),
+            "nildb",
+          );
           return;
         } catch (_error) {
           console.log(
@@ -330,7 +339,10 @@ export class BuilderTestClient extends BaseTestClient {
    * Retrieves the root token from nilauth for token extension.
    */
   async getRootToken(): Promise<NucTokenEnvelope> {
-    const response = await this.options.nilauth.requestToken();
+    const response = await this.options.nilauth.requestToken(
+      this.options.keypair,
+      "nildb",
+    );
     return response.token;
   }
 
@@ -859,11 +871,7 @@ export async function createBuilderTestClient(opts: {
     .chainUrl(opts.chainUrl)
     .build();
 
-  const nilauth = await NilauthClient.from({
-    keypair: opts.keypair,
-    payer,
-    baseUrl: opts.nilauthBaseUrl,
-  });
+  const nilauth = await NilauthClient.from(opts.nilauthBaseUrl, payer);
 
   return new BuilderTestClient({
     type: "builder",
