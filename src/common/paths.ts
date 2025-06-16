@@ -54,7 +54,6 @@ export const PathsV1 = {
       aclById: Path.parse("/v1/users/data/:collection/:document/acl"),
       acl: {
         grant: Path.parse("/v1/users/data/acl/grant"),
-        update: Path.parse("/v1/users/data/acl/update"),
         revoke: Path.parse("/v1/users/data/acl/revoke"),
       },
     },

@@ -1,7 +1,7 @@
 import type { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
 import type { Did } from "#/common/types";
-import type { FindDataCommand } from "#/data/data.types";
+import type { FindDataCommand, UpdateDataCommand } from "#/data/data.types";
 
 /**
  * Access control list entry.
@@ -51,6 +51,13 @@ export type UserDocument = DocumentBase<Did> & {
  * Read data command.
  */
 export type ReadDataCommand = FindDataCommand & {
+  document: UUID;
+};
+
+/**
+ * Update data command.
+ */
+export type UpdateUserDataCommand = UpdateDataCommand & {
   document: UUID;
 };
 

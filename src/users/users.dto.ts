@@ -119,6 +119,18 @@ export const ReadDataAclRequestParams = z
 export type ReadDataAclRequestParams = z.infer<typeof ReadDataAclRequestParams>;
 
 /**
+ * User data update request.
+ */
+export const UpdateUserDataRequest = z
+  .object({
+    document: z.string().uuid(),
+    collection: z.string().uuid(),
+    update: z.record(z.string(), z.unknown()),
+  })
+  .openapi({ ref: "UpdateUserDataRequest" });
+export type UpdateUserDataRequest = z.infer<typeof UpdateUserDataRequest>;
+
+/**
  * Data access response.
  */
 export const ReadDataAccessResponse = ApiSuccessResponse(
