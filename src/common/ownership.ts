@@ -48,8 +48,8 @@ export function enforceCollectionOwnership(
 
 export function enforceDataOwnership(
   user: UserDocument,
-  document: UUID | string,
-  collection: UUID | string,
+  document: UUID,
+  collection: UUID,
 ): E.Effect<void, ResourceAccessDeniedError> {
   return pipe(
     E.succeed(

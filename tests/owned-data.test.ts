@@ -71,7 +71,7 @@ describe("owned-data.test.ts", () => {
   });
 
   it("rejects primary key collisions", async ({ skip, c }) => {
-    skip("TODO: depends on indexes, disable until index endpoint is ready");
+    skip("depends on indexes, disable until index endpoint is ready");
     const { expect, bindings, builder, user } = c;
 
     const data = [

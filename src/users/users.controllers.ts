@@ -161,7 +161,7 @@ export function readData(options: ControllerOptions): void {
       const command = UserDataMapper.toFindDataCommand(user, params);
 
       return pipe(
-        enforceDataOwnership(user, params.document, params.collection),
+        enforceDataOwnership(user, command.document, command.collection),
         E.flatMap(() => DataService.readRecords(c.env, command)),
         E.map((documents) => documents as OwnedDocumentBase[]),
         E.map((document) => UserDataMapper.toReadDataResponse(document)),
