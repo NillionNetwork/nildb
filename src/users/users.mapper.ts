@@ -1,6 +1,6 @@
 import { UUID } from "mongodb";
 import { Did } from "#/common/types";
-import type { FindDataCommand, OwnedDocumentBase } from "#/data/data.types";
+import type { OwnedDocumentBase } from "#/data/data.types";
 import type {
   DeleteDocumentRequestParams,
   GrantAccessToDataRequest,
@@ -18,6 +18,7 @@ import type {
   DeleteDataCommand,
   GrantAccessToDataCommand,
   ReadDataAclCommand,
+  ReadDataCommand,
   RevokeAccessToDataCommand,
   UserDocument,
 } from "./users.types";
@@ -142,8 +143,9 @@ export const UserDataMapper = {
   toFindDataCommand(
     user: UserDocument,
     body: ReadDataRequestParams,
-  ): FindDataCommand {
+  ): ReadDataCommand {
     return {
+      document: new UUID(body.document),
       collection: new UUID(body.collection),
       filter: {
         _id: new UUID(body.document),
