@@ -66,8 +66,7 @@ describe("standard-data.test.ts", () => {
     expect(records).toHaveLength(3);
   });
 
-  it.skip("rejects primary key collisions", async ({ skip, c }) => {
-    skip("TODO: depends on indexes, disable until index endpoint is ready");
+  it.skip("rejects primary key collisions", async ({ c }) => {
     const { expect, bindings, builder } = c;
 
     const data = [

@@ -37,7 +37,6 @@ const UserProfileData = z.object({
         col: z.string().uuid(),
         op: z.string(),
       })
-      // TODO: capture acl type
       .passthrough(),
   ),
   data: z.array(

@@ -159,10 +159,8 @@ export function readData(options: ControllerOptions): void {
       const command = UserDataMapper.toFindDataCommand(user, params);
 
       return pipe(
-        // TODO: Do we want to simply have _owner as part of the query or do we want to do enforcement?
         DataService.readRecords(c.env, command),
         E.map((documents) => documents as OwnedDocumentBase[]),
-        // TODO: This should return 1 document or null ... need to deal with this more elegantly
         E.map((document) => UserDataMapper.toReadDataResponse(document)),
         E.map((response) => c.json(response)),
         handleTaggedErrors(c),
@@ -289,8 +287,6 @@ export function revokeAccess(options: ControllerOptions): void {
       const user = c.get("user");
       const payload = c.req.valid("json");
       const command = UserDataMapper.toRevokeDataAccessCommand(user, payload);
-
-      // TODO: What should happen if the user revokes permissions for the schema owner?
 
       return pipe(
         enforceDataOwnership(user, command.document, command.collection),

@@ -697,12 +697,6 @@ export class UserTestClient extends BaseTestClient {
     const audience = Did.fromHex(this._options.nodePublicKey);
     const subject = Did.fromHex(this.keypair.publicKey("hex"));
 
-    // If a builder delegation is set, use it; otherwise create self-signed token
-    if (this.options.builderDelegation) {
-      // TODO: Implement delegation token usage
-      // For now, fall back to self-signed token
-    }
-
     return NucTokenBuilder.invocation({})
       .command(NucCmd.nil.db.users.root)
       .audience(audience)

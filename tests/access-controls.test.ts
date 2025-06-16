@@ -12,7 +12,6 @@ import {
   createBuilderTestClient,
 } from "./fixture/test-client";
 
-// TODO(tim): revisit once we start enforcing Nuc policies
 describe("access-controls", () => {
   const collection = collectionJson as unknown as CollectionFixture;
   const query = queryJson as unknown as QueryFixture;
