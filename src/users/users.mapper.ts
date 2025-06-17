@@ -11,6 +11,7 @@ import type {
   ReadDataResponse,
   ReadProfileResponse,
   RevokeAccessToDataRequest,
+  UpdateUserDataRequest,
 } from "./users.dto";
 import type {
   Acl,
@@ -20,6 +21,7 @@ import type {
   ReadDataAclCommand,
   ReadDataCommand,
   RevokeAccessToDataCommand,
+  UpdateUserDataCommand,
   UserDocument,
 } from "./users.types";
 
@@ -27,6 +29,20 @@ import type {
  * User data mapper.
  */
 export const UserDataMapper = {
+  /**
+   * Converts update data request DTO to domain command.
+   */
+  toUpdateDataCommand(dto: UpdateUserDataRequest): UpdateUserDataCommand {
+    return {
+      document: new UUID(dto.document),
+      collection: new UUID(dto.collection),
+      filter: {
+        _id: new UUID(dto.document),
+      },
+      update: dto.update,
+    };
+  },
+
   /**
    * Convert delete params to command.
    */

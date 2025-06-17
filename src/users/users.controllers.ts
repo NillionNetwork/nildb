@@ -11,6 +11,8 @@ import {
 import { enforceDataOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
+import { UpdateDataResponse } from "#/data/data.dto";
+import { DataMapper } from "#/data/data.mapper";
 import * as DataService from "#/data/data.services";
 import type { OwnedDocumentBase } from "#/data/data.types";
 import {
@@ -28,6 +30,7 @@ import {
   ReadProfileResponse,
   RevokeAccessToDataRequest,
   RevokeAccessToDataResponse,
+  UpdateUserDataRequest,
 } from "#/users/users.dto";
 import { UserDataMapper } from "#/users/users.mapper";
 import * as UserService from "#/users/users.services";
@@ -165,7 +168,53 @@ export function readData(options: ControllerOptions): void {
 }
 
 /**
- * Handle DELETE /v1/users/data/:schema/:document
+ * Handle POST /v1/users/data
+ */
+export function updateData(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.users.data.root;
+
+  app.post(
+    path,
+    describeRoute({
+      tags: ["Users"],
+      security: [{ bearerAuth: [] }],
+      summary: "Update user data",
+      responses: {
+        200: {
+          description: "OK",
+          content: {
+            "application/json": {
+              schema: resolver(UpdateDataResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", UpdateUserDataRequest),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsUser(bindings),
+    requireNucNamespace(NucCmd.nil.db.users.update),
+    async (c) => {
+      const user = c.get("user");
+      const payload = c.req.valid("json");
+      const command = UserDataMapper.toUpdateDataCommand(payload);
+
+      return pipe(
+        enforceDataOwnership(user, command.document, command.collection),
+        E.flatMap(() => DataService.updateRecords(c.env, command)),
+        E.map((result) => DataMapper.toUpdateDataResponse(result)),
+        E.map((response) => c.json<UpdateDataResponse>(response)),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+/**
+ * Handle DELETE /v1/users/data/:collection/:document
  */
 export function deleteData(options: ControllerOptions): void {
   const { app, bindings } = options;

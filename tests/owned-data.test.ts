@@ -283,6 +283,29 @@ describe("owned-data.test.ts", () => {
     expect(result.data).toHaveLength(2);
   });
 
+  it("can update data", async ({ c }) => {
+    const { bindings, user } = c;
+
+    const expected = await bindings.db.data
+      .collection<OwnedDocumentBase>(collection.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    const documentId = expected.map((document) => document._id.toString())[0];
+    await user
+      .updateData(c, {
+        collection: collection.id.toString(),
+        document: documentId.toString(),
+        update: {
+          $set: {
+            age: 41,
+          },
+        },
+      })
+      .expectSuccess();
+  });
+
   it("can read data", async ({ c }) => {
     const { expect, bindings, user } = c;
 

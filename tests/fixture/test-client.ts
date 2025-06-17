@@ -55,6 +55,7 @@ import {
   ListDataReferencesResponse,
   ReadDataResponse,
   type RevokeAccessToDataRequest,
+  type UpdateUserDataRequest,
 } from "#/users/users.dto";
 import type { FixtureContext } from "./fixture";
 import { ResponseHandler } from "./response-handler";
@@ -768,6 +769,21 @@ export class UserTestClient extends BaseTestClient {
         ),
       StatusCodes.OK,
       ReadDataResponse,
+    );
+  }
+
+  /**
+   * Updates user-owned data by collection and document id.
+   */
+  updateData(
+    c: FixtureContext,
+    body: UpdateUserDataRequest,
+  ): ResponseHandler<UpdateDataResponse> {
+    return new ResponseHandler(
+      c,
+      () => this.request(PathsV1.users.data.root, { method: "POST", body }),
+      StatusCodes.OK,
+      UpdateDataResponse,
     );
   }
 
