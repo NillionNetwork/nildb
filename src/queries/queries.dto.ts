@@ -1,7 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import z from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { Did } from "#/common/types";
 
 /**
  * MongoDB aggregation pipeline variable validation.
@@ -54,13 +53,8 @@ export type CreateQueryResponse = typeof CreateQueryResponse;
  */
 const QueryDocumentResponse = z.object({
   _id: z.string().uuid(),
-  _created: z.string().datetime(),
-  _updated: z.string().datetime(),
-  owner: Did,
   name: z.string().min(1).max(100),
   collection: z.string().uuid(),
-  variables: z.record(z.string(), QueryVariableValidator),
-  pipeline: z.array(z.record(z.string(), z.unknown())),
 });
 
 /**

@@ -27,13 +27,8 @@ export const QueriesDataMapper = {
   ): GetQueriesResponse["data"][0] {
     return {
       _id: document._id.toString(),
-      _created: document._created.toISOString(),
-      _updated: document._updated.toISOString(),
-      owner: document.owner,
       name: document.name,
       collection: document.collection.toString(),
-      variables: document.variables,
-      pipeline: document.pipeline,
     };
   },
 
