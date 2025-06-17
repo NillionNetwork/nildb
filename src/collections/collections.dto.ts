@@ -1,16 +1,14 @@
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { Did } from "#/common/types";
 
 /**
  * Collection document data.
  */
 export const CollectionDocumentDto = z.object({
-  owner: Did,
+  id: z.string().uuid(),
   type: z.enum(["standard", "owned"]),
   name: z.string(),
-  schema: z.record(z.string(), z.unknown()),
 });
 
 /**

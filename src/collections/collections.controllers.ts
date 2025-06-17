@@ -65,8 +65,8 @@ export function readCollections(options: ControllerOptions): void {
 
       return pipe(
         CollectionsService.getBuilderCollections(c.env, builder),
-        E.map((schemas) =>
-          CollectionsDataMapper.toListCollectionsResponse(schemas),
+        E.map((collection) =>
+          CollectionsDataMapper.toListCollectionsResponse(collection),
         ),
         E.map((response) => c.json<ListCollectionsResponse>(response)),
         handleTaggedErrors(c),

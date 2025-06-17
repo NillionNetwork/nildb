@@ -51,9 +51,8 @@ export const CollectionsDataMapper = {
   ): ListCollectionsResponse {
     return {
       data: collections.map((collection) => ({
-        owner: collection.owner,
+        id: collection._id.toString(),
         name: collection.name,
-        schema: collection.schema,
         type: collection.type,
       })),
     };
