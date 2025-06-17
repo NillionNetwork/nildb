@@ -1,7 +1,12 @@
 import type { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
 import type { Did } from "#/common/types";
-import type { FindDataCommand, UpdateDataCommand } from "#/data/data.types";
+import type {
+  DeleteDataCommand,
+  FindDataCommand,
+  UpdateDataCommand,
+} from "#/data/data.types";
+import type { UserDataLogs } from "#/users/users.dto";
 
 /**
  * Access control list entry.
@@ -16,19 +21,10 @@ export type Acl = {
 /**
  * Delete data command.
  */
-export type DeleteDataCommand = {
+export type DeleteUserDataCommand = DeleteDataCommand & {
   owner: Did;
-  collection: UUID;
   document: UUID;
 };
-
-/**
- * User operation log entry.
- */
-export type LogOperation =
-  | { op: "write"; col: UUID }
-  | { op: "delete"; col: UUID }
-  | { op: "auth"; col: UUID; acl: Acl };
 
 /**
  * Data document reference.
@@ -44,7 +40,7 @@ export type DataDocumentReference = {
  */
 export type UserDocument = DocumentBase<Did> & {
   data: DataDocumentReference[];
-  log: LogOperation[];
+  log: UserDataLogs[];
 };
 
 /**

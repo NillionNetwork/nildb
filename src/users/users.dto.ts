@@ -25,20 +25,33 @@ export const AclDto = z.object({
 export type AclDto = z.infer<typeof AclDto>;
 
 /**
+ * User operation log entry.
+ */
+const UserDataLogs = z.discriminatedUnion("op", [
+  z.object({ op: z.literal("create-data"), collection: z.string().uuid() }),
+  z.object({ op: z.literal("update-data"), collection: z.string().uuid() }),
+  z.object({ op: z.literal("delete-data"), collection: z.string().uuid() }),
+  z.object({
+    op: z.literal("grant-access"),
+    collection: z.string().uuid(),
+    acl: AclDto,
+  }),
+  z.object({
+    op: z.literal("revoke-access"),
+    collection: z.string().uuid(),
+    grantee: Did,
+  }),
+]);
+export type UserDataLogs = z.infer<typeof UserDataLogs>;
+
+/**
  * User profile data.
  */
 const UserProfileData = z.object({
   _id: Did,
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
-  log: z.array(
-    z
-      .object({
-        col: z.string().uuid(),
-        op: z.string(),
-      })
-      .passthrough(),
-  ),
+  log: z.array(UserDataLogs),
   data: z.array(
     z.object({
       collection: z.string().uuid(),

@@ -11,6 +11,7 @@ import type { DocumentBase } from "#/common/mongo";
 import { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
+import { UserLoggerMapper } from "#/users/users.mapper";
 import * as UserRepository from "#/users/users.repository";
 import * as DataRepository from "./data.repository";
 import type {
@@ -59,10 +60,12 @@ export function createOwnedRecords(
     E.flatMap(({ result, document }) =>
       pipe(
         UserRepository.upsert(ctx, {
-          builder: document.owner,
-          collection: command.collection,
           user: command.owner,
-          data: result.created.map((id) => new UUID(id)),
+          data: result.created.map((id) => ({
+            builder: document.owner,
+            document: new UUID(id),
+            collection: command.collection,
+          })),
           acl: command.acl,
         }),
         E.map(() => result),
@@ -101,6 +104,28 @@ export function createStandardRecords(
   );
 }
 
+// This endpoint can be invoked against a standard and owned collections,
+// meaning that when the target is an owned collection we also need to
+// update the user's document
+function groupByOwner(
+  documents: StandardDocumentBase[],
+): Record<string, UUID[]> {
+  return documents.reduce<Record<string, UUID[]>>((acc, data) => {
+    if ("_owner" in data) {
+      const document = data as OwnedDocumentBase;
+      const { _owner } = document;
+
+      if (!acc[_owner]) {
+        acc[_owner] = [];
+      }
+
+      acc[_owner].push(data._id);
+    }
+
+    return acc;
+  }, {});
+}
+
 /**
  * Update records.
  */
@@ -111,11 +136,27 @@ export function updateRecords(
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return DataRepository.updateMany(
-    ctx,
-    command.collection,
-    command.filter,
-    command.update,
+  const { collection, filter, update } = command;
+
+  const updateUserLogs = (
+    documents: Record<Did, UUID[]>,
+  ): E.Effect<
+    void,
+    CollectionNotFoundError | DatabaseError | DataValidationError
+  > => {
+    return E.forEach(Object.entries(documents), ([owner, ids]) =>
+      UserRepository.updateUserLogs(
+        ctx,
+        Did.parse(owner),
+        UserLoggerMapper.toUpdateDataLogs(ids),
+      ),
+    );
+  };
+  return pipe(
+    DataRepository.findMany(ctx, collection, filter),
+    E.map((documents) => groupByOwner(documents)),
+    E.flatMap((documents) => updateUserLogs(documents)),
+    E.flatMap(() => DataRepository.updateMany(ctx, collection, filter, update)),
   );
 }
 
@@ -143,39 +184,14 @@ export function deleteData(
   CollectionNotFoundError | DatabaseError | DataValidationError,
   never
 > {
-  // This endpoint can be invoked against a standard and owned collections,
-  // meaning that when the target is an owned collection we also need to
-  // update the user's document
-  const groupByOwner = (
-    documents: StandardDocumentBase[],
-  ): Record<string, UUID[]> => {
-    return documents.reduce<Record<string, UUID[]>>((acc, data) => {
-      if ("_owner" in data) {
-        const document = data as OwnedDocumentBase;
-        const { _owner } = document;
-
-        if (!acc[_owner]) {
-          acc[_owner] = [];
-        }
-
-        acc[_owner].push(data._id);
-      }
-
-      return acc;
-    }, {});
-  };
-
   const deleteAllUserDataReferences = (
     documents: Record<Did, UUID[]>,
   ): E.Effect<
     void,
     CollectionNotFoundError | DatabaseError | DataValidationError
   > => {
-    return pipe(
-      E.forEach(Object.entries(documents), ([owner, ids]) =>
-        UserRepository.removeData(ctx, Did.parse(owner), ids),
-      ),
-      E.map((arrays) => arrays.flat()),
+    return E.forEach(Object.entries(documents), ([owner, ids]) =>
+      UserRepository.removeData(ctx, Did.parse(owner), ids),
     );
   };
 

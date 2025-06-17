@@ -427,6 +427,6 @@ describe("owned-data.test.ts", () => {
       .readData(c, collection.id.toString(), documentId.toString())
       .expectSuccess();
 
-    expect(result.data).toHaveLength(1);
+    expect(result.data[0]?._acl).toHaveLength(1);
   });
 });

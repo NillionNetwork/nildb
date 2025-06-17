@@ -242,7 +242,7 @@ export function deleteData(options: ControllerOptions): void {
 
       return pipe(
         enforceDataOwnership(user, command.document, command.collection),
-        // E.map(() => DeleteDocumentResponse),
+        E.flatMap(() => DataService.deleteData(c.env, command)),
         E.map(() =>
           c.text(
             getReasonPhrase(StatusCodes.NOT_IMPLEMENTED),
