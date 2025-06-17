@@ -66,12 +66,12 @@ const QueryDocumentResponse = z.object({
 /**
  * Queries list response.
  */
-export const GetQueriesResponse = ApiSuccessResponse(
+export const ReadQueriesResponse = ApiSuccessResponse(
   z.array(QueryDocumentResponse),
 ).openapi({
-  ref: "GetQueriesResponse",
+  ref: "ReadQueriesResponse",
 });
-export type GetQueriesResponse = z.infer<typeof GetQueriesResponse>;
+export type ReadQueriesResponse = z.infer<typeof ReadQueriesResponse>;
 
 /**
  * Query ID path parameters.
@@ -134,7 +134,7 @@ export type RunQueryResultStatus = z.infer<typeof RunQueryResultStatus>;
 /**
  * Query job data.
  */
-const GetQueryRunByIdDto = z.object({
+const ReadQueryRunByIdDto = z.object({
   _id: z.string().uuid(),
   query: z.string().uuid(),
   status: RunQueryResultStatus,
@@ -144,9 +144,9 @@ const GetQueryRunByIdDto = z.object({
   errors: z.array(z.string()).optional(),
 });
 
-export const GetQueryRunByIdResponse = ApiSuccessResponse(
-  GetQueryRunByIdDto,
+export const ReadQueryRunByIdResponse = ApiSuccessResponse(
+  ReadQueryRunByIdDto,
 ).openapi({
-  ref: "GetQueryRunByIdResponse",
+  ref: "ReadQueryRunByIdResponse",
 });
-export type GetQueryRunByIdResponse = z.infer<typeof GetQueryRunByIdResponse>;
+export type ReadQueryRunByIdResponse = z.infer<typeof ReadQueryRunByIdResponse>;

@@ -40,8 +40,8 @@ import {
 } from "#/data/data.dto";
 import {
   type CreateQueryRequest,
-  GetQueriesResponse,
-  GetQueryRunByIdResponse,
+  ReadQueriesResponse,
+  ReadQueryRunByIdResponse,
   type RunQueryRequest,
   RunQueryResponse,
 } from "#/queries/queries.dto";
@@ -505,12 +505,12 @@ export class BuilderTestClient extends BaseTestClient {
   /**
    * Lists all queries owned by the authenticated builder.
    */
-  getQueries(c: FixtureContext): ResponseHandler<GetQueriesResponse> {
+  getQueries(c: FixtureContext): ResponseHandler<ReadQueriesResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.queries.root),
       StatusCodes.OK,
-      GetQueriesResponse,
+      ReadQueriesResponse,
     );
   }
 
@@ -571,12 +571,12 @@ export class BuilderTestClient extends BaseTestClient {
   readQueryRunResults(
     c: FixtureContext,
     runId: string,
-  ): ResponseHandler<GetQueryRunByIdResponse> {
+  ): ResponseHandler<ReadQueryRunByIdResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.queries.runById.replace(":id", runId)),
       StatusCodes.OK,
-      GetQueryRunByIdResponse,
+      ReadQueryRunByIdResponse,
     );
   }
 
