@@ -34,7 +34,6 @@ export function validateData<T>(
   schema: Record<string, unknown>,
   data: unknown,
 ): E.Effect<T, DataValidationError> {
-  // TODO this is inefficient the ajv instance should be created once ... move to ctx
   return E.try({
     try: () => {
       const ajv = new Ajv();
