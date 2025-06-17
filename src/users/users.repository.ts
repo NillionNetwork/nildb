@@ -17,13 +17,17 @@ import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import type { OwnedDocumentBase } from "#/data/data.types";
 import type { AppBindings } from "#/env";
-import type { Acl, LogOperation, UserDocument } from "#/users/users.types";
+import type { UserDataLogs } from "#/users/users.dto";
+import { UserLoggerMapper } from "#/users/users.mapper";
+import type {
+  Acl,
+  DataDocumentReference,
+  UserDocument,
+} from "#/users/users.types";
 
 type UpsertOptions = {
-  builder: Did;
-  collection: UUID;
   user: Did;
-  data: UUID[];
+  data: DataDocumentReference[];
   acl?: Acl;
 };
 
@@ -37,40 +41,34 @@ export function upsert(
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  const { builder, collection, user, data, acl } = options;
-  const filter: StrictFilter<UserDocument> = { _id: user };
+  const { user, data, acl } = options;
 
-  const logOperations: LogOperation[] = [];
-  for (const col of data) {
-    logOperations.push({ op: "write", col });
-  }
-
+  const documents = data.map((d) => d.document);
+  const createDataLogs = UserLoggerMapper.toCreateDataLogs(documents);
   // Add auth when acl provided
-  if (acl) {
-    for (const col of data) {
-      logOperations.push({ op: "auth", col, acl });
-    }
-  }
+  const grantAccessLogs = UserLoggerMapper.toGrantAccessLogs(documents, acl);
+  const logs: UserDataLogs[] = [...createDataLogs, ...grantAccessLogs];
 
+  const filter: StrictFilter<UserDocument> = { _id: user };
+  const now = new Date();
   const update: UpdateFilter<UserDocument> = {
     // only set when first created
     $setOnInsert: {
-      _created: new Date(),
+      _created: now,
     },
     // set on every update
     $set: {
-      _updated: new Date(),
+      _updated: now,
     },
     $addToSet: {
       data: {
-        $each: data.map((document) => ({ builder, collection, document })),
+        $each: data,
       },
-      log: {
-        $each: logOperations,
+      logs: {
+        $each: logs,
       },
     },
   };
-
   const updateOptions: UpdateOptions = { upsert: true };
 
   return pipe(
@@ -96,11 +94,6 @@ export function removeData(
 > {
   const filter: StrictFilter<UserDocument> = { _id: user };
 
-  const logOperations: LogOperation[] = data.map((col) => ({
-    op: "delete",
-    col,
-  }));
-
   const update: UpdateFilter<UserDocument> = {
     $set: {
       _updated: new Date(),
@@ -108,24 +101,54 @@ export function removeData(
     $pull: {
       data: {
         document: {
-          $in: data.map((uuid) => uuid),
+          $in: data,
         },
       },
     },
     $addToSet: {
-      log: {
-        $each: logOperations,
+      logs: {
+        $each: UserLoggerMapper.toDeleteDataLogs(data),
       },
     },
   };
 
-  const options: UpdateOptions = { upsert: true };
-
   return pipe(
     checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
     E.tryMapPromise({
-      try: (collection) => collection.updateOne(filter, update, options),
+      try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "remove data" }),
+    }),
+    E.as(void 0),
+  );
+}
+
+/**
+ * Update user logs.
+ */
+export function updateUserLogs(
+  ctx: AppBindings,
+  userId: Did,
+  logs: UserDataLogs[],
+): E.Effect<
+  void,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  const filter = { _id: userId };
+  const update = {
+    $set: {
+      _updated: new Date(),
+    },
+    $push: {
+      logs: {
+        $each: logs,
+      },
+    },
+  };
+  return pipe(
+    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update),
+      catch: (cause) => new DatabaseError({ cause, message: "upsert" }),
     }),
     E.as(void 0),
   );
@@ -182,7 +205,9 @@ export function addAclEntry(
 
   const update: StrictUpdateFilter<OwnedDocumentBase> = {
     // @ts-expect-error
-    $push: { _acl: acl },
+    $push: {
+      _acl: acl,
+    },
   };
 
   return pipe(
@@ -192,8 +217,7 @@ export function addAclEntry(
       collection.toString(),
     ),
     E.tryMapPromise({
-      try: (collection) =>
-        collection.updateOne(filter, update, { upsert: true }),
+      try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "addAclEntry" }),
     }),
   );
@@ -213,13 +237,15 @@ export function removeAclEntry(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   const filter: StrictFilter<OwnedDocumentBase> = {
-    id: document,
+    _id: document,
     _owner: owner,
   };
 
   const update: UpdateFilter<OwnedDocumentBase> = {
     // @ts-expect-error
-    $pull: { _acl: { grantee } },
+    $pull: {
+      _acl: { grantee },
+    },
   };
 
   return pipe(

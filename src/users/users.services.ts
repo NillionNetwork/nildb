@@ -8,6 +8,7 @@ import type {
 } from "#/common/errors";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
+import { UserLoggerMapper } from "#/users/users.mapper";
 import * as UserRepository from "./users.repository";
 import type {
   DataDocumentReference,
@@ -82,12 +83,13 @@ export function grantAccess(
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return UserRepository.addAclEntry(
-    ctx,
-    command.collection,
-    command.document,
-    command.owner,
-    command.acl,
+  const { owner, collection, document, acl } = command;
+  const logs = [UserLoggerMapper.toGrantAccessLog(collection, acl)];
+  return pipe(
+    UserRepository.updateUserLogs(ctx, owner, logs),
+    E.flatMap(() =>
+      UserRepository.addAclEntry(ctx, collection, document, owner, acl),
+    ),
   );
 }
 
@@ -108,11 +110,12 @@ export function revokeAccess(
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return UserRepository.removeAclEntry(
-    ctx,
-    command.collection,
-    command.document,
-    command.grantee,
-    command.owner,
+  const { owner, collection, document, grantee } = command;
+  const logs = [UserLoggerMapper.toRevokeAccessLog(collection, grantee)];
+  return pipe(
+    UserRepository.updateUserLogs(ctx, owner, logs),
+    E.flatMap(() =>
+      UserRepository.removeAclEntry(ctx, collection, document, grantee, owner),
+    ),
   );
 }
