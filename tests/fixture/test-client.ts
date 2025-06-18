@@ -329,8 +329,6 @@ export class BuilderTestClient extends BaseTestClient {
           );
           await new Promise((f) => setTimeout(f, 200));
         }
-      } else {
-        return;
       }
     }
   }

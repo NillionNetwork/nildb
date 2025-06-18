@@ -1,7 +1,7 @@
 {
-  "id": "",
+  "_id": "",
   "name": "wallet.standard.query.json",
-  "schema": "",
+  "collection": "",
   "variables": {},
   "pipeline": [
     {

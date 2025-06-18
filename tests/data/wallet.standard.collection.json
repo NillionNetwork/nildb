@@ -1,7 +1,7 @@
 {
-  "id": "",
+  "_id": "",
   "type": "standard",
-  "name": "wallet.standard.schema.json",
+  "name": "wallet.standard.collection.json",
   "schema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "array",

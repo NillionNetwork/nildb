@@ -1,7 +1,7 @@
 {
-  "id": "",
+  "_id": "",
   "name": "datetime.query.json",
-  "schema": "",
+  "collection": "",
   "variables": {},
   "pipeline": [
     {
