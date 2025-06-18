@@ -27,16 +27,9 @@ export const SetLogLevelResponse = new Response(null, {
 export type SetLogLevelResponse = typeof SetLogLevelResponse;
 
 /**
- * Health check response.
- */
-export const HealthCheckResponse = new Response(null, {
-  status: StatusCodes.OK,
-});
-
-/**
  * Health check response type.
  */
-export type HealthCheckResponse = typeof HealthCheckResponse;
+export type HealthCheckResponse = typeof Response;
 
 /**
  * Start maintenance response.

@@ -4,8 +4,8 @@ import type {
   ByIdRequestParams,
   CreateQueryRequest,
   DeleteQueryRequest,
-  GetQueriesResponse,
-  GetQueryRunByIdResponse,
+  ReadQueriesResponse,
+  ReadQueryRunByIdResponse,
   RunQueryRequest,
   RunQueryResponse,
 } from "./queries.dto";
@@ -24,7 +24,7 @@ export const QueriesDataMapper = {
    */
   toQueryDocumentResponse(
     document: QueryDocument,
-  ): GetQueriesResponse["data"][0] {
+  ): ReadQueriesResponse["data"][0] {
     return {
       _id: document._id.toString(),
       name: document.name,
@@ -35,7 +35,7 @@ export const QueriesDataMapper = {
   /**
    * Converts array of query documents to list response DTO.
    */
-  toGetQueriesResponse(documents: QueryDocument[]): GetQueriesResponse {
+  toGetQueriesResponse(documents: QueryDocument[]): ReadQueriesResponse {
     return {
       data: documents.map((doc) => this.toQueryDocumentResponse(doc)),
     };
@@ -76,7 +76,7 @@ export const QueriesDataMapper = {
    */
   toGetQueryRunResultByResponse(
     document: RunQueryJobDocument,
-  ): GetQueryRunByIdResponse {
+  ): ReadQueryRunByIdResponse {
     return {
       data: {
         _id: document._id.toString(),

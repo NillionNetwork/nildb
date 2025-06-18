@@ -22,8 +22,8 @@ import {
   CreateQueryRequest,
   CreateQueryResponse,
   DeleteQueryResponse,
-  GetQueriesResponse,
-  GetQueryRunByIdResponse,
+  ReadQueriesResponse,
+  ReadQueryRunByIdResponse,
   RunQueryRequest,
   RunQueryResponse,
 } from "./queries.dto";
@@ -126,7 +126,7 @@ export function readQueries(options: ControllerOptions): void {
           description: "OK",
           content: {
             "application/json": {
-              schema: resolver(GetQueriesResponse),
+              schema: resolver(ReadQueriesResponse),
             },
           },
         },
@@ -142,7 +142,7 @@ export function readQueries(options: ControllerOptions): void {
       return pipe(
         QueriesService.findQueries(c.env, builder._id),
         E.map((documents) => QueriesDataMapper.toGetQueriesResponse(documents)),
-        E.map((response) => c.json<GetQueriesResponse>(response)),
+        E.map((response) => c.json<ReadQueriesResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -180,7 +180,6 @@ export function readQueryById(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.read),
     async (c) => {
-      // TODO: Implement getQueryById
       return c.text("NOT_IMPLEMENTED", StatusCodes.NOT_IMPLEMENTED);
     },
   );
@@ -250,7 +249,7 @@ export function getQueryRunResultById(options: ControllerOptions): void {
           description: "OK",
           content: {
             "application/json": {
-              schema: resolver(GetQueryRunByIdResponse),
+              schema: resolver(ReadQueryRunByIdResponse),
             },
           },
         },
@@ -272,7 +271,7 @@ export function getQueryRunResultById(options: ControllerOptions): void {
           pipe(
             enforceQueryOwnership(builder, run.query),
             E.map(() => QueriesDataMapper.toGetQueryRunResultByResponse(run)),
-            E.map((response) => c.json<GetQueryRunByIdResponse>(response)),
+            E.map((response) => c.json<ReadQueryRunByIdResponse>(response)),
           ),
         ),
         handleTaggedErrors(c),

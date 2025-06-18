@@ -1,7 +1,7 @@
 {
-  "id": "",
+  "_id": "",
   "name": "simple.query.json",
-  "schema": "",
+  "collection": "",
   "variables": {
     "name": {
       "description": "The name value",

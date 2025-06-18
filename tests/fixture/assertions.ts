@@ -3,7 +3,7 @@ import type { BuilderDocument } from "#/builders/builders.types";
 import type { ApiErrorResponse, ApiSuccessResponse } from "#/common/handler";
 import { CollectionName } from "#/common/mongo";
 import type { Did, UuidDto } from "#/common/types";
-import type { GetQueryRunByIdResponse } from "#/queries/queries.dto";
+import type { ReadQueryRunByIdResponse } from "#/queries/queries.dto";
 import type { FixtureContext } from "./fixture";
 
 export function assertDefined<T>(
@@ -80,7 +80,7 @@ export async function assertDocumentCount(
 export function waitForQueryRun(
   c: FixtureContext,
   run: UuidDto,
-): Promise<GetQueryRunByIdResponse> {
+): Promise<ReadQueryRunByIdResponse> {
   const { expect, builder } = c;
 
   return vi.waitFor(

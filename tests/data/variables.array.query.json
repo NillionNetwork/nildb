@@ -1,7 +1,7 @@
 {
-  "id": "",
+  "_id": "",
   "name": "variables.array.query.json",
-  "schema": "",
+  "collection": "",
   "variables": {
     "values": {
       "description": "The values to find",

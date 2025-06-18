@@ -20,7 +20,6 @@ import {
 } from "#/middleware/capability.middleware";
 import packageJson from "../../package.json";
 import {
-  HealthCheckResponse,
   ReadAboutNodeResponse,
   ReadLogLevelResponse,
   SetLogLevelRequest,
@@ -94,7 +93,7 @@ export function readNodeHealth(options: ControllerOptions): void {
         },
       },
     }),
-    async (_c) => HealthCheckResponse,
+    async (c) => c.text("OK"),
   );
 }
 

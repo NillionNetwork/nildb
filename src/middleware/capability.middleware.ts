@@ -66,7 +66,6 @@ export function loadSubjectAndVerifyAsAdmin<
   const { log } = bindings;
   return async (c, next) => {
     try {
-      // TODO check that node has delegated admin permissions
       c.get("envelope").validateSignatures();
       return next();
     } catch (cause) {
