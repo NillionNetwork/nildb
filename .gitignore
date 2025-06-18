@@ -8,3 +8,9 @@ tmp
 node_modules
 dist
 **/coverage
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+samconfig.*
+.aws-sam
