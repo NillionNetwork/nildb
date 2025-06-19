@@ -9,7 +9,11 @@ import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
 } from "#/common/openapi";
-import { checkRevokeAccess, enforceDataOwnership } from "#/common/ownership";
+import {
+  checkGrantAccess,
+  checkRevokeAccess,
+  enforceDataOwnership,
+} from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import { UpdateDataResponse } from "#/data/data.dto";
@@ -286,6 +290,10 @@ export function grantAccess(options: ControllerOptions): void {
 
       return pipe(
         enforceDataOwnership(user, command.document, command.collection),
+        E.flatMap(() => BuildersService.find(c.env, command.acl.grantee)),
+        E.flatMap((builder) =>
+          checkGrantAccess(builder, command.collection, command.acl),
+        ),
         E.flatMap(() => UserService.grantAccess(c.env, command)),
         E.map((_result) => GrantAccessToDataResponse),
         handleTaggedErrors(c),

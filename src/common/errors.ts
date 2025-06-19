@@ -3,6 +3,7 @@ import type { JsonObject } from "type-fest";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import type { Did } from "#/common/types";
+import type { Acl } from "#/users/users.types";
 
 export class DuplicateEntryError extends Data.TaggedError(
   "DuplicateEntryError",
@@ -132,11 +133,33 @@ export class TimeoutError extends Data.TaggedError("TimeoutError")<{
   }
 }
 
+export class GrantAccessError extends Data.TaggedError("GrantAccessError")<{
+  type: string;
+  id: string;
+  acl: Acl;
+}> {
+  humanize(): string[] {
+    return [
+      this._tag,
+      `type: ${this.type}`,
+      `object: ${this.id}`,
+      `grantee: ${this.acl.grantee}`,
+      `${this.acl}: [r=${this.acl.read}, w=${this.acl.write}, x=${this.acl.execute}]`,
+    ];
+  }
+}
+
 export class RevokeAccessError extends Data.TaggedError("RevokeAccessError")<{
   type: string;
   id: string;
+  grantee: Did;
 }> {
   humanize(): string[] {
-    return [this._tag, `type: ${this.type}`, `object: ${this.id}`];
+    return [
+      this._tag,
+      `type: ${this.type}`,
+      `object: ${this.id}`,
+      `grantee: ${this.grantee}`,
+    ];
   }
 }

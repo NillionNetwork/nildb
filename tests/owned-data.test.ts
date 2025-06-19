@@ -52,6 +52,33 @@ describe("owned-data.test.ts", () => {
     age: number;
   };
 
+  it("can't upload data with insufficient access", async ({ c }) => {
+    const { builder, user } = c;
+
+    const data: Record[] = [
+      {
+        _id: createUuidDto(),
+        wallet: "0x1",
+        country: "GBR",
+        age: 20,
+      },
+    ];
+
+    await builder
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
+        data,
+        acl: {
+          grantee: builder.did,
+          read: false,
+          write: false,
+          execute: false,
+        },
+      })
+      .expectFailure(StatusCodes.UNAUTHORIZED);
+  });
+
   it("can upload data", async ({ c }) => {
     const { expect, bindings, builder, user } = c;
 
@@ -423,6 +450,33 @@ describe("owned-data.test.ts", () => {
     expect(result.data._acl[1]?.read).toBe(false);
     expect(result.data._acl[1]?.write).toBe(false);
     expect(result.data._acl[1]?.execute).toBe(false);
+  });
+
+  it("insufficient access cannot be granted to the collection owner", async ({
+    c,
+  }) => {
+    const { bindings, user, builder } = c;
+
+    const expected = await bindings.db.data
+      .collection<OwnedDocumentBase>(collection.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    const documentId = expected.map((document) => document._id.toString())[0];
+
+    await user
+      .grantAccess(c, {
+        collection: collection.id.toString(),
+        document: documentId.toString(),
+        acl: {
+          grantee: builder.did,
+          read: false,
+          write: false,
+          execute: false,
+        },
+      })
+      .expectFailure(StatusCodes.UNAUTHORIZED);
   });
 
   it("can revoke access", async ({ c }) => {
