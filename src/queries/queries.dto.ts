@@ -68,6 +68,16 @@ export const ReadQueriesResponse = ApiSuccessResponse(
 export type ReadQueriesResponse = z.infer<typeof ReadQueriesResponse>;
 
 /**
+ * Read query response.
+ */
+export const ReadQueryResponse = ApiSuccessResponse(
+  QueryDocumentResponse,
+).openapi({
+  ref: "ReadQueryResponse",
+});
+export type ReadQueryResponse = z.infer<typeof ReadQueryResponse>;
+
+/**
  * Query ID path parameters.
  */
 export const ByIdRequestParams = z

@@ -77,3 +77,10 @@ export type DeleteQueryCommand = {
 export type GetQueryRunByIdCommand = {
   _id: UUID;
 };
+
+/**
+ * Get query by id command.
+ */
+export type ReadQueryByIdCommand = {
+  _id: UUID;
+};

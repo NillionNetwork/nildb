@@ -26,6 +26,7 @@ import type {
   GetQueryRunByIdCommand,
   QueryDocument,
   QueryVariable,
+  ReadQueryByIdCommand,
   RunQueryCommand,
   RunQueryJobDocument,
 } from "./queries.types";
@@ -170,6 +171,22 @@ export function getRunQueryJob(
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return RunQueryJobsRepository.findOne(ctx, { _id: command._id });
+}
+
+/**
+ * Get query by id.
+ */
+export function getQueryById(
+  ctx: AppBindings,
+  command: ReadQueryByIdCommand,
+): E.Effect<
+  QueryDocument,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return QueriesRepository.findOne(ctx, { _id: command._id });
 }
 
 /**

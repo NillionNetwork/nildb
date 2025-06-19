@@ -1,7 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
-import { StatusCodes } from "http-status-codes";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
@@ -23,6 +22,7 @@ import {
   CreateQueryResponse,
   DeleteQueryResponse,
   ReadQueriesResponse,
+  type ReadQueryResponse,
   ReadQueryRunByIdResponse,
   RunQueryRequest,
   RunQueryResponse,
@@ -180,7 +180,18 @@ export function readQueryById(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.read),
     async (c) => {
-      return c.text("NOT_IMPLEMENTED", StatusCodes.NOT_IMPLEMENTED);
+      const builder = c.get("builder") as BuilderDocument;
+      const params = c.req.valid("param");
+      const command = QueriesDataMapper.toReadQueryByIdCommand(params);
+
+      return pipe(
+        enforceQueryOwnership(builder, command._id),
+        E.flatMap(() => QueriesService.getQueryById(c.env, command)),
+        E.map((document) => QueriesDataMapper.toReadQueryResponse(document)),
+        E.map((response) => c.json<ReadQueryResponse>(response)),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
     },
   );
 }
