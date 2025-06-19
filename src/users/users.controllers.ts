@@ -2,13 +2,18 @@ import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
+import * as BuildersService from "#/builders/builders.services";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
 } from "#/common/openapi";
-import { enforceDataOwnership } from "#/common/ownership";
+import {
+  checkGrantAccess,
+  checkRevokeAccess,
+  enforceDataOwnership,
+} from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import { UpdateDataResponse } from "#/data/data.dto";
@@ -152,12 +157,12 @@ export function readData(options: ControllerOptions): void {
     async (c) => {
       const user = c.get("user");
       const params = c.req.valid("param");
-      const command = UserDataMapper.toFindDataCommand(user, params);
+      const command = UserDataMapper.toReadDataCommand(user, params);
 
       return pipe(
         enforceDataOwnership(user, command.document, command.collection),
-        E.flatMap(() => DataService.readRecords(c.env, command)),
-        E.map((documents) => documents as OwnedDocumentBase[]),
+        E.flatMap(() => DataService.readRecord(c.env, command)),
+        E.map((documents) => documents as OwnedDocumentBase),
         E.map((document) => UserDataMapper.toReadDataResponse(document)),
         E.map((response) => c.json(response)),
         handleTaggedErrors(c),
@@ -285,6 +290,10 @@ export function grantAccess(options: ControllerOptions): void {
 
       return pipe(
         enforceDataOwnership(user, command.document, command.collection),
+        E.flatMap(() => BuildersService.find(c.env, command.acl.grantee)),
+        E.flatMap((builder) =>
+          checkGrantAccess(builder, command.collection, command.acl),
+        ),
         E.flatMap(() => UserService.grantAccess(c.env, command)),
         E.map((_result) => GrantAccessToDataResponse),
         handleTaggedErrors(c),
@@ -324,6 +333,8 @@ export function revokeAccess(options: ControllerOptions): void {
 
       return pipe(
         enforceDataOwnership(user, command.document, command.collection),
+        E.flatMap(() => BuildersService.find(c.env, command.grantee)),
+        E.flatMap((builder) => checkRevokeAccess(builder, command.collection)),
         E.flatMap(() => UserService.revokeAccess(c.env, command)),
         E.map((_response) => RevokeAccessToDataResponse),
         handleTaggedErrors(c),

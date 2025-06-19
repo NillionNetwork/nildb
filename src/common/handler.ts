@@ -10,9 +10,11 @@ import type {
   DataValidationError,
   DocumentNotFoundError,
   DuplicateEntryError,
+  GrantAccessError,
   IndexNotFoundError,
   InvalidIndexOptionsError,
   ResourceAccessDeniedError,
+  RevokeAccessError,
   VariableInjectionError,
 } from "#/common/errors";
 import type { AppEnv } from "#/env";
@@ -45,7 +47,9 @@ type KnownError =
   | IndexNotFoundError
   | InvalidIndexOptionsError
   | ResourceAccessDeniedError
-  | VariableInjectionError;
+  | VariableInjectionError
+  | GrantAccessError
+  | RevokeAccessError;
 
 export function handleTaggedErrors(c: Context<AppEnv>) {
   const toResponse = (
@@ -79,6 +83,8 @@ export function handleTaggedErrors(c: Context<AppEnv>) {
         InvalidIndexOptionsError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
         ResourceAccessDeniedError: (e) => toResponse(e, StatusCodes.NOT_FOUND),
         VariableInjectionError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
+        GrantAccessError: (e) => toResponse(e, StatusCodes.UNAUTHORIZED),
+        RevokeAccessError: (e) => toResponse(e, StatusCodes.UNAUTHORIZED),
       }),
     );
 }

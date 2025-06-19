@@ -17,11 +17,13 @@ import {
   type CollectionNotFoundError,
   DatabaseError,
   type DataValidationError,
+  DocumentNotFoundError,
   InvalidIndexOptionsError,
 } from "#/common/errors";
 import {
   addDocumentBaseCoercions,
   applyCoercions,
+  CollectionName,
   checkCollectionExists,
   type DocumentBase,
   isMongoError,
@@ -403,5 +405,41 @@ export function findMany(
         collection.find(documentFilter).sort({ _created: -1 }).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
     }),
+  );
+}
+
+/**
+ * Find one record.
+ */
+export function findOne(
+  ctx: AppBindings,
+  collection: UUID,
+  filter: Filter<DocumentBase>,
+): E.Effect<
+  DocumentBase,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return pipe(
+    E.all([
+      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
+      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
+    ]),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) => collection.findOne(documentFilter),
+      catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
+    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Collections,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
   );
 }

@@ -1,11 +1,7 @@
 import type { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
 import type { Did } from "#/common/types";
-import type {
-  DeleteDataCommand,
-  FindDataCommand,
-  UpdateDataCommand,
-} from "#/data/data.types";
+import type { DeleteDataCommand, UpdateDataCommand } from "#/data/data.types";
 import type { UserDataLogs } from "#/users/users.dto";
 
 /**
@@ -41,13 +37,6 @@ export type DataDocumentReference = {
 export type UserDocument = DocumentBase<Did> & {
   data: DataDocumentReference[];
   log: UserDataLogs[];
-};
-
-/**
- * Read data command.
- */
-export type ReadDataCommand = FindDataCommand & {
-  document: UUID;
 };
 
 /**

@@ -9,7 +9,11 @@ import queryJson from "./data/wallet.query.json";
 import { waitForQueryRun } from "./fixture/assertions";
 import type { CollectionFixture, QueryFixture } from "./fixture/fixture";
 import { createTestFixtureExtension } from "./fixture/it";
-import { createUserTestClient } from "./fixture/test-client";
+import {
+  type BuilderTestClient,
+  createBuilderTestClient,
+  createUserTestClient,
+} from "./fixture/test-client";
 
 describe("owned-data.test.ts", () => {
   const collection = collectionJson as unknown as CollectionFixture;
@@ -18,7 +22,27 @@ describe("owned-data.test.ts", () => {
     collection,
     query,
   });
-  beforeAll(async (_c) => {});
+
+  let builderB: BuilderTestClient;
+  beforeAll(async (c) => {
+    const { builder, bindings, app } = c;
+    builderB = await createBuilderTestClient({
+      app,
+      keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!),
+      chainUrl: process.env.APP_NILCHAIN_JSON_RPC!,
+      nilauthBaseUrl: bindings.config.nilauthBaseUrl,
+      nodePublicKey: builder._options.nodePublicKey,
+    });
+
+    await builderB
+      .register(c, {
+        did: builderB.did,
+        name: "builderB",
+      })
+      .expectSuccess();
+
+    await builderB.ensureSubscriptionActive();
+  });
   afterAll(async (_c) => {});
 
   type Record = {
@@ -27,6 +51,33 @@ describe("owned-data.test.ts", () => {
     country: string;
     age: number;
   };
+
+  it("can't upload data with insufficient access", async ({ c }) => {
+    const { builder, user } = c;
+
+    const data: Record[] = [
+      {
+        _id: createUuidDto(),
+        wallet: "0x1",
+        country: "GBR",
+        age: 20,
+      },
+    ];
+
+    await builder
+      .createOwnedData(c, {
+        owner: user.did,
+        collection: collection.id,
+        data,
+        acl: {
+          grantee: builder.did,
+          read: false,
+          write: false,
+          execute: false,
+        },
+      })
+      .expectFailure(StatusCodes.UNAUTHORIZED);
+  });
 
   it("can upload data", async ({ c }) => {
     const { expect, bindings, builder, user } = c;
@@ -321,11 +372,10 @@ describe("owned-data.test.ts", () => {
       .readData(c, collection.id.toString(), documentId.toString())
       .expectSuccess();
 
-    const userData = result.data[0];
-    expect(userData?._acl).toHaveLength(1);
-    expect(userData?._acl[0]?.read).toBe(true);
-    expect(userData?._acl[0]?.write).toBe(false);
-    expect(userData?._acl[0]?.execute).toBe(false);
+    expect(result.data._acl).toHaveLength(1);
+    expect(result.data._acl[0]?.read).toBe(true);
+    expect(result.data._acl[0]?.write).toBe(false);
+    expect(result.data._acl[0]?.execute).toBe(false);
   });
 
   it("user cannot access data they are not the owner of", async ({ c }) => {
@@ -368,7 +418,6 @@ describe("owned-data.test.ts", () => {
       .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
 
-  const targetDid = Keypair.generate().toDidString();
   it("can grant access", async ({ c }) => {
     const { expect, bindings, user } = c;
 
@@ -385,7 +434,7 @@ describe("owned-data.test.ts", () => {
         collection: collection.id.toString(),
         document: documentId.toString(),
         acl: {
-          grantee: targetDid,
+          grantee: builderB.did,
           read: false,
           write: false,
           execute: false,
@@ -397,11 +446,37 @@ describe("owned-data.test.ts", () => {
       .readData(c, collection.id.toString(), documentId.toString())
       .expectSuccess();
 
-    const userData = result.data[0];
-    expect(userData?._acl).toHaveLength(2);
-    expect(userData?._acl[1]?.read).toBe(false);
-    expect(userData?._acl[1]?.write).toBe(false);
-    expect(userData?._acl[1]?.execute).toBe(false);
+    expect(result.data._acl).toHaveLength(2);
+    expect(result.data._acl[1]?.read).toBe(false);
+    expect(result.data._acl[1]?.write).toBe(false);
+    expect(result.data._acl[1]?.execute).toBe(false);
+  });
+
+  it("insufficient access cannot be granted to the collection owner", async ({
+    c,
+  }) => {
+    const { bindings, user, builder } = c;
+
+    const expected = await bindings.db.data
+      .collection<OwnedDocumentBase>(collection.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    const documentId = expected.map((document) => document._id.toString())[0];
+
+    await user
+      .grantAccess(c, {
+        collection: collection.id.toString(),
+        document: documentId.toString(),
+        acl: {
+          grantee: builder.did,
+          read: false,
+          write: false,
+          execute: false,
+        },
+      })
+      .expectFailure(StatusCodes.UNAUTHORIZED);
   });
 
   it("can revoke access", async ({ c }) => {
@@ -419,7 +494,7 @@ describe("owned-data.test.ts", () => {
       .revokeAccess(c, {
         collection: collection.id.toString(),
         document: documentId.toString(),
-        grantee: targetDid,
+        grantee: builderB.did,
       })
       .expectSuccess();
 
@@ -427,6 +502,26 @@ describe("owned-data.test.ts", () => {
       .readData(c, collection.id.toString(), documentId.toString())
       .expectSuccess();
 
-    expect(result.data[0]?._acl).toHaveLength(1);
+    expect(result.data._acl).toHaveLength(1);
+  });
+
+  it("cannot revoke access", async ({ c }) => {
+    const { bindings, user, builder } = c;
+
+    const expected = await bindings.db.data
+      .collection<OwnedDocumentBase>(collection.id.toString())
+      .find({})
+      .limit(1)
+      .toArray();
+
+    const documentId = expected.map((document) => document._id.toString())[0];
+
+    await user
+      .revokeAccess(c, {
+        collection: collection.id.toString(),
+        document: documentId.toString(),
+        grantee: builder.did,
+      })
+      .expectFailure(StatusCodes.UNAUTHORIZED);
   });
 });

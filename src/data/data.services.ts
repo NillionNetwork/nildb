@@ -22,6 +22,7 @@ import type {
   FlushDataCommand,
   OwnedDocumentBase,
   PartialDataDocumentDto,
+  ReadDataCommand,
   RecentDataCommand,
   StandardDocumentBase,
   UpdateDataCommand,
@@ -154,16 +155,34 @@ export function updateRecords(
   };
   return pipe(
     DataRepository.findMany(ctx, collection, filter),
+    // This returns the owned documents grouped by owner, the standard documents are skipped.
     E.map((documents) => groupByOwner(documents)),
-    E.flatMap((documents) => updateUserLogs(documents)),
+    E.flatMap((ownedDocuments) => updateUserLogs(ownedDocuments)),
+    // This updates both owned and standard documents.
     E.flatMap(() => DataRepository.updateMany(ctx, collection, filter, update)),
   );
 }
 
 /**
- * Read records.
+ * Read record.
  */
-export function readRecords(
+export function readRecord(
+  ctx: AppBindings,
+  command: ReadDataCommand,
+): E.Effect<
+  DocumentBase,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return DataRepository.findOne(ctx, command.collection, command.filter);
+}
+
+/**
+ * Find records.
+ */
+export function findRecords(
   ctx: AppBindings,
   command: FindDataCommand,
 ): E.Effect<
@@ -197,8 +216,10 @@ export function deleteData(
 
   return pipe(
     DataRepository.findMany(ctx, command.collection, command.filter),
+    // This returns the owned documents grouped by owner, the standard documents are skipped.
     E.map((documents) => groupByOwner(documents)),
-    E.flatMap((documents) => deleteAllUserDataReferences(documents)),
+    E.flatMap((ownedDocuments) => deleteAllUserDataReferences(ownedDocuments)),
+    // This updates both owned and standard documents.
     E.flatMap(() =>
       DataRepository.deleteMany(ctx, command.collection, command.filter),
     ),

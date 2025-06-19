@@ -1,11 +1,15 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
+import * as BuildersService from "#/builders/builders.services";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { OpenApiSpecCommonErrorResponses } from "#/common/openapi";
-import { enforceCollectionOwnership } from "#/common/ownership";
+import {
+  checkGrantAccess,
+  enforceCollectionOwnership,
+} from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
@@ -153,7 +157,7 @@ export function findData(options: ControllerOptions): void {
 
       return pipe(
         enforceCollectionOwnership(builder, command.collection),
-        E.flatMap(() => DataService.readRecords(c.env, command)),
+        E.flatMap(() => DataService.findRecords(c.env, command)),
         E.map((documents) => DataMapper.toFindDataResponse(documents)),
         E.map((response) => c.json<FindDataResponse>(response)),
         handleTaggedErrors(c),
@@ -293,6 +297,10 @@ export function createOwnedData(options: ControllerOptions): void {
 
       return pipe(
         enforceCollectionOwnership(builder, command.collection),
+        E.flatMap(() => BuildersService.find(c.env, command.acl.grantee)),
+        E.flatMap((builder) =>
+          checkGrantAccess(builder, command.collection, command.acl),
+        ),
         E.flatMap(() => DataService.createOwnedRecords(c.env, command)),
         E.map((result) => DataMapper.toCreateDataResponse(result)),
         E.map((response) => c.json<CreateDataResponse>(response)),

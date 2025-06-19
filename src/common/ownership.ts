@@ -1,8 +1,12 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import type { BuilderDocument } from "#/builders/builders.types";
-import { ResourceAccessDeniedError } from "#/common/errors";
-import type { UserDocument } from "#/users/users.types";
+import {
+  GrantAccessError,
+  ResourceAccessDeniedError,
+  RevokeAccessError,
+} from "#/common/errors";
+import type { Acl, UserDocument } from "#/users/users.types";
 
 export function enforceQueryOwnership(
   builder: BuilderDocument,
@@ -67,6 +71,52 @@ export function enforceDataOwnership(
               type: "collection",
               id: document.toString(),
               user: user._id,
+            }),
+          );
+    }),
+  );
+}
+
+export function checkGrantAccess(
+  builder: BuilderDocument,
+  document: UUID,
+  acl: Acl,
+): E.Effect<void, GrantAccessError> {
+  return pipe(
+    E.succeed(
+      builder.collections.some((s) => s.toString() === document.toString()),
+    ),
+    E.flatMap((isOwner) => {
+      // if we don't grant access to the owner collection for read, write or execute, we throw an error
+      return isOwner && !(acl.read || acl.write || acl.execute)
+        ? E.fail(
+            new GrantAccessError({
+              type: "collection",
+              id: document.toString(),
+              acl,
+            }),
+          )
+        : E.succeed(void 0);
+    }),
+  );
+}
+
+export function checkRevokeAccess(
+  builder: BuilderDocument,
+  document: UUID,
+): E.Effect<void, RevokeAccessError> {
+  return pipe(
+    E.succeed(
+      builder.collections.some((s) => s.toString() === document.toString()),
+    ),
+    E.flatMap((isOwner) => {
+      return !isOwner
+        ? E.succeed(void 0)
+        : E.fail(
+            new RevokeAccessError({
+              type: "collection",
+              id: document.toString(),
+              grantee: builder._id,
             }),
           );
     }),
