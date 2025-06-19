@@ -5,6 +5,7 @@ import type {
   CreateQueryRequest,
   DeleteQueryRequest,
   ReadQueriesResponse,
+  ReadQueryResponse,
   ReadQueryRunByIdResponse,
   RunQueryRequest,
   RunQueryResponse,
@@ -14,6 +15,7 @@ import type {
   DeleteQueryCommand,
   GetQueryRunByIdCommand,
   QueryDocument,
+  ReadQueryByIdCommand,
   RunQueryCommand,
   RunQueryJobDocument,
 } from "./queries.types";
@@ -138,6 +140,24 @@ export const QueriesDataMapper = {
   toDeleteQueryByIdCommand(params: ByIdRequestParams): DeleteQueryCommand {
     return {
       _id: new UUID(params.id),
+    };
+  },
+
+  /**
+   * Converts query ID params to read query command.
+   */
+  toReadQueryByIdCommand(params: ByIdRequestParams): ReadQueryByIdCommand {
+    return {
+      _id: new UUID(params.id),
+    };
+  },
+
+  /**
+   * Converts a query document to response DTO.
+   */
+  toReadQueryResponse(document: QueryDocument): ReadQueryResponse {
+    return {
+      data: this.toQueryDocumentResponse(document),
     };
   },
 };

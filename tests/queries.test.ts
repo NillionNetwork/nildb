@@ -48,6 +48,12 @@ describe("query.test.ts", () => {
     expect(data).toHaveLength(1);
   });
 
+  it("can read a query", async ({ c }) => {
+    const { builder } = c;
+
+    await builder.getQuery(c, query.id.toString()).expectSuccess();
+  });
+
   it("can delete a query", async ({ c }) => {
     const { expect, bindings, builder } = c;
 
