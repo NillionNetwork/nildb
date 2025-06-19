@@ -1,4 +1,3 @@
-import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
 import { LogLevel } from "#/common/logger";
@@ -17,14 +16,8 @@ export type SetLogLevelRequest = z.infer<typeof SetLogLevelRequest>;
 /**
  * Log level update response.
  */
-export const SetLogLevelResponse = new Response(null, {
-  status: StatusCodes.OK,
-});
-
-/**
- * Log level update response type.
- */
-export type SetLogLevelResponse = typeof SetLogLevelResponse;
+export const SetLogLevelResponse = z.string();
+export type SetLogLevelResponse = z.infer<typeof SetLogLevelResponse>;
 
 /**
  * Health check response type.
@@ -34,26 +27,14 @@ export type HealthCheckResponse = typeof Response;
 /**
  * Start maintenance response.
  */
-export const StartMaintenanceResponse = new Response(null, {
-  status: StatusCodes.OK,
-});
-
-/**
- * Start maintenance response type.
- */
-export type StartMaintenanceResponse = typeof StartMaintenanceResponse;
+export const StartMaintenanceResponse = z.string();
+export type StartMaintenanceResponse = z.infer<typeof StartMaintenanceResponse>;
 
 /**
  * Stop maintenance response.
  */
-export const StopMaintenanceResponse = new Response(null, {
-  status: StatusCodes.OK,
-});
-
-/**
- * Stop maintenance response type.
- */
-export type StopMaintenanceResponse = typeof StopMaintenanceResponse;
+export const StopMaintenanceResponse = z.string();
+export type StopMaintenanceResponse = z.infer<typeof StopMaintenanceResponse>;
 
 /**
  * Node information response.

@@ -1,4 +1,3 @@
-import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
 
@@ -65,9 +64,10 @@ export type DropCollectionIndexParams = z.infer<
 /**
  * Drop collection index response.
  */
-export const DropCollectionIndexResponse = new Response(null, {
-  status: StatusCodes.NO_CONTENT,
-});
+export const DropCollectionIndexResponse = z.string();
+export type DropCollectionIndexResponse = z.infer<
+  typeof DropCollectionIndexResponse
+>;
 
 /**
  * Collection creation request.
@@ -86,9 +86,8 @@ export type CreateCollectionRequest = z.infer<typeof CreateCollectionRequest>;
 /**
  * Collection creation response.
  */
-export const CreateCollectionResponse = new Response(null, {
-  status: StatusCodes.CREATED,
-});
+export const CreateCollectionResponse = z.string();
+export type CreateCollectionResponse = z.infer<typeof CreateCollectionResponse>;
 
 /**
  * Collection deletion parameters.
@@ -106,9 +105,8 @@ export type DeleteCollectionRequestParams = z.infer<
 /**
  * Collection deletion response.
  */
-export const DeleteCollectionResponse = new Response(null, {
-  status: StatusCodes.NO_CONTENT,
-});
+export const DeleteCollectionResponse = z.string();
+export type DeleteCollectionResponse = z.infer<typeof DeleteCollectionResponse>;
 
 /**
  * Collection metadata read parameters.
@@ -121,6 +119,14 @@ export const ReadCollectionMetadataRequestParams = z
 
 export type ReadCollectionMetadataRequestParams = z.infer<
   typeof ReadCollectionMetadataRequestParams
+>;
+
+/**
+ * Collection creation index response.
+ */
+export const CreateCollectionIndexResponse = z.string();
+export type CreateCollectionIndexResponse = z.infer<
+  typeof CreateCollectionIndexResponse
 >;
 
 /**

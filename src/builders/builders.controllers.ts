@@ -1,6 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { StatusCodes } from "http-status-codes";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import {
@@ -15,12 +16,12 @@ import {
   requireNucNamespace,
 } from "#/middleware/capability.middleware";
 import {
-  DeleteBuilderResponse,
+  type DeleteBuilderResponse,
   ReadProfileResponse,
   RegisterBuilderRequest,
-  RegisterBuilderResponse,
+  type RegisterBuilderResponse,
   UpdateProfileRequest,
-  UpdateProfileResponse,
+  type UpdateProfileResponse,
 } from "./builders.dto";
 import { BuilderDataMapper } from "./builders.mapper";
 import * as BuilderService from "./builders.services";
@@ -50,7 +51,7 @@ export function register(options: ControllerOptions): void {
 
       return pipe(
         BuilderService.createBuilder(c.env, command),
-        E.map(() => RegisterBuilderResponse),
+        E.map(() => c.text<RegisterBuilderResponse>("", StatusCodes.CREATED)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -126,7 +127,7 @@ export function deleteBuilder(options: ControllerOptions): void {
 
       return pipe(
         BuilderService.remove(c.env, builder._id),
-        E.map(() => DeleteBuilderResponse),
+        E.map(() => c.text<DeleteBuilderResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -166,7 +167,7 @@ export function updateProfile(options: ControllerOptions): void {
 
       return pipe(
         BuilderService.updateProfile(c.env, command),
-        E.map(() => UpdateProfileResponse),
+        E.map(() => c.text<UpdateProfileResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );

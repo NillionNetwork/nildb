@@ -1,4 +1,3 @@
-import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
 import { Did } from "#/common/types";
@@ -17,10 +16,8 @@ export type RegisterBuilderRequest = z.infer<typeof RegisterBuilderRequest>;
 /**
  * Builder registration response.
  */
-export const RegisterBuilderResponse = new Response(null, {
-  status: StatusCodes.CREATED,
-});
-export type RegisterBuilderResponse = typeof RegisterBuilderResponse;
+export const RegisterBuilderResponse = z.string();
+export type RegisterBuilderResponse = z.infer<typeof RegisterBuilderResponse>;
 
 /**
  * Builder profile data.
@@ -45,10 +42,8 @@ export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
 /**
  * Builder deletion response.
  */
-export const DeleteBuilderResponse = new Response(null, {
-  status: StatusCodes.NO_CONTENT,
-});
-export type DeleteBuilderResponse = typeof DeleteBuilderResponse;
+export const DeleteBuilderResponse = z.string();
+export type DeleteBuilderResponse = z.infer<typeof DeleteBuilderResponse>;
 
 /**
  * Profile update request.
@@ -63,7 +58,5 @@ export type UpdateProfileRequest = z.infer<typeof UpdateProfileRequest>;
 /**
  * Profile update response.
  */
-export const UpdateProfileResponse = new Response(null, {
-  status: StatusCodes.NO_CONTENT,
-});
-export type UpdateProfileResponse = typeof UpdateProfileResponse;
+export const UpdateProfileResponse = z.string();
+export type UpdateProfileResponse = z.infer<typeof UpdateProfileResponse>;

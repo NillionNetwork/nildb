@@ -20,12 +20,13 @@ import {
 } from "#/middleware/capability.middleware";
 import {
   CreateCollectionIndexRequest,
+  type CreateCollectionIndexResponse,
   CreateCollectionRequest,
-  CreateCollectionResponse,
+  type CreateCollectionResponse,
   DeleteCollectionRequestParams,
-  DeleteCollectionResponse,
+  type DeleteCollectionResponse,
   DropCollectionIndexParams,
-  DropCollectionIndexResponse,
+  type DropCollectionIndexResponse,
   ListCollectionsResponse,
   ReadCollectionMetadataRequestParams,
   ReadCollectionMetadataResponse,
@@ -109,7 +110,7 @@ export function createCollection(options: ControllerOptions): void {
 
       return pipe(
         CollectionsService.addCollection(c.env, command),
-        E.map(() => CreateCollectionResponse),
+        E.map(() => c.text<CreateCollectionResponse>("", StatusCodes.CREATED)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -149,7 +150,7 @@ export function deleteCollectionById(options: ControllerOptions): void {
       return pipe(
         enforceCollectionOwnership(builder, command._id),
         E.flatMap(() => CollectionsService.deleteCollection(c.env, command)),
-        E.map(() => DeleteCollectionResponse),
+        E.map(() => c.text<DeleteCollectionResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -239,7 +240,7 @@ export function createCollectionIndex(options: ControllerOptions): void {
       return pipe(
         enforceCollectionOwnership(builder, command.collection),
         E.flatMap(() => CollectionsService.createIndex(c.env, command)),
-        E.map(() => new Response(null, { status: StatusCodes.CREATED })),
+        E.map(() => c.text<CreateCollectionIndexResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -279,7 +280,7 @@ export function dropCollectionIndex(options: ControllerOptions): void {
       return pipe(
         enforceCollectionOwnership(builder, command.collection),
         E.flatMap(() => CollectionsService.dropIndex(c.env, command)),
-        E.map(() => DropCollectionIndexResponse),
+        E.map(() => c.text<DropCollectionIndexResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );

@@ -1,7 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
-import { getReasonPhrase, StatusCodes } from "http-status-codes";
 import * as BuildersService from "#/builders/builders.services";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
@@ -27,14 +26,15 @@ import {
 } from "#/middleware/capability.middleware";
 import {
   DeleteDocumentRequestParams,
+  type DeleteDocumentResponse,
   GrantAccessToDataRequest,
-  GrantAccessToDataResponse,
+  type GrantAccessToDataResponse,
   ListDataReferencesResponse,
   ReadDataRequestParams,
   ReadDataResponse,
   ReadProfileResponse,
   RevokeAccessToDataRequest,
-  RevokeAccessToDataResponse,
+  type RevokeAccessToDataResponse,
   UpdateUserDataRequest,
 } from "#/users/users.dto";
 import { UserDataMapper } from "#/users/users.mapper";
@@ -248,12 +248,7 @@ export function deleteData(options: ControllerOptions): void {
       return pipe(
         enforceDataOwnership(user, command.document, command.collection),
         E.flatMap(() => DataService.deleteData(c.env, command)),
-        E.map(() =>
-          c.text(
-            getReasonPhrase(StatusCodes.NOT_IMPLEMENTED),
-            StatusCodes.NOT_IMPLEMENTED,
-          ),
-        ),
+        E.map(() => c.text<DeleteDocumentResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -295,7 +290,7 @@ export function grantAccess(options: ControllerOptions): void {
           checkGrantAccess(builder, command.collection, command.acl),
         ),
         E.flatMap(() => UserService.grantAccess(c.env, command)),
-        E.map((_result) => GrantAccessToDataResponse),
+        E.map(() => c.text<GrantAccessToDataResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -336,7 +331,7 @@ export function revokeAccess(options: ControllerOptions): void {
         E.flatMap(() => BuildersService.find(c.env, command.grantee)),
         E.flatMap((builder) => checkRevokeAccess(builder, command.collection)),
         E.flatMap(() => UserService.revokeAccess(c.env, command)),
-        E.map((_response) => RevokeAccessToDataResponse),
+        E.map(() => c.text<RevokeAccessToDataResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );
