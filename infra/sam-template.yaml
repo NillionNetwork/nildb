@@ -37,7 +37,7 @@ Parameters:
   AppEnabledFeatures:
     Type: String
     NoEcho: false
-    Default: openapi-spec,metrics,migrations
+    Default: openapi,migrations
   AppNodeSecretKey:
     Type: String
     NoEcho: true

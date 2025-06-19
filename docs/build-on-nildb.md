@@ -4,7 +4,7 @@ This section outlines specific builder-related tasks and is deliberately utilita
 
 ## Documentation
 
-An OpenAPI documentation site is available at `{APP_NODE_PUBLIC_ENDPOINT}/openapi.json` when the node is running and the `openapi-spec` feature is enabled.
+An OpenAPI documentation site is available at `{APP_NODE_PUBLIC_ENDPOINT}/openapi.json` when the node is running and the `openapi` feature is enabled.
 
 
 ## Running nilDB Locally
