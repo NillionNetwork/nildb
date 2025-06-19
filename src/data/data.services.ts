@@ -22,6 +22,7 @@ import type {
   FlushDataCommand,
   OwnedDocumentBase,
   PartialDataDocumentDto,
+  ReadDataCommand,
   RecentDataCommand,
   StandardDocumentBase,
   UpdateDataCommand,
@@ -163,9 +164,25 @@ export function updateRecords(
 }
 
 /**
- * Read records.
+ * Read record.
  */
-export function readRecords(
+export function readRecord(
+  ctx: AppBindings,
+  command: ReadDataCommand,
+): E.Effect<
+  DocumentBase,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return DataRepository.findOne(ctx, command.collection, command.filter);
+}
+
+/**
+ * Find records.
+ */
+export function findRecords(
   ctx: AppBindings,
   command: FindDataCommand,
 ): E.Effect<

@@ -58,13 +58,6 @@ export const DataMapper = {
   },
 
   /**
-   * Converts array of data documents to find response.
-   */
-  toFindDataResponse(documents: DocumentBase[]): FindDataResponse {
-    return { data: documents };
-  },
-
-  /**
    * Converts MongoDB delete result to response.
    */
   toDeleteDataResponse(result: DeleteResult): DeleteDataResponse {
@@ -140,6 +133,13 @@ export const DataMapper = {
       collection: new UUID(dto.collection),
       filter: dto.filter,
     };
+  },
+
+  /**
+   * Converts array of data documents to find response.
+   */
+  toFindDataResponse(documents: DocumentBase[]): FindDataResponse {
+    return { data: documents };
   },
 
   /**

@@ -1,6 +1,6 @@
 import { UUID } from "mongodb";
 import { Did } from "#/common/types";
-import type { OwnedDocumentBase } from "#/data/data.types";
+import type { OwnedDocumentBase, ReadDataCommand } from "#/data/data.types";
 import type {
   DeleteDocumentRequestParams,
   GrantAccessToDataRequest,
@@ -20,7 +20,6 @@ import type {
   DeleteUserDataCommand,
   GrantAccessToDataCommand,
   ReadDataAclCommand,
-  ReadDataCommand,
   RevokeAccessToDataCommand,
   UpdateUserDataCommand,
   UserDocument,
@@ -158,9 +157,9 @@ export const UserDataMapper = {
   },
 
   /**
-   * Convert read params to find command.
+   * Convert read params to read command.
    */
-  toFindDataCommand(
+  toReadDataCommand(
     user: UserDocument,
     body: ReadDataRequestParams,
   ): ReadDataCommand {
@@ -175,16 +174,16 @@ export const UserDataMapper = {
   },
 
   /**
-   * Convert documents to read response.
+   * Convert document to read response.
    */
-  toReadDataResponse(documents: OwnedDocumentBase[]): ReadDataResponse {
+  toReadDataResponse(document: OwnedDocumentBase): ReadDataResponse {
     return {
-      data: documents.map((d) => ({
-        ...d,
-        _id: d._id.toString(),
-        _created: d._created.toISOString(),
-        _updated: d._updated.toISOString(),
-      })),
+      data: {
+        ...document,
+        _id: document._id.toString(),
+        _created: document._created.toISOString(),
+        _updated: document._updated.toISOString(),
+      },
     };
   },
 } as const;

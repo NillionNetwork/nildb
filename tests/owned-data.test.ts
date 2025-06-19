@@ -321,11 +321,10 @@ describe("owned-data.test.ts", () => {
       .readData(c, collection.id.toString(), documentId.toString())
       .expectSuccess();
 
-    const userData = result.data[0];
-    expect(userData?._acl).toHaveLength(1);
-    expect(userData?._acl[0]?.read).toBe(true);
-    expect(userData?._acl[0]?.write).toBe(false);
-    expect(userData?._acl[0]?.execute).toBe(false);
+    expect(result.data._acl).toHaveLength(1);
+    expect(result.data._acl[0]?.read).toBe(true);
+    expect(result.data._acl[0]?.write).toBe(false);
+    expect(result.data._acl[0]?.execute).toBe(false);
   });
 
   it("user cannot access data they are not the owner of", async ({ c }) => {
@@ -397,11 +396,10 @@ describe("owned-data.test.ts", () => {
       .readData(c, collection.id.toString(), documentId.toString())
       .expectSuccess();
 
-    const userData = result.data[0];
-    expect(userData?._acl).toHaveLength(2);
-    expect(userData?._acl[1]?.read).toBe(false);
-    expect(userData?._acl[1]?.write).toBe(false);
-    expect(userData?._acl[1]?.execute).toBe(false);
+    expect(result.data._acl).toHaveLength(2);
+    expect(result.data._acl[1]?.read).toBe(false);
+    expect(result.data._acl[1]?.write).toBe(false);
+    expect(result.data._acl[1]?.execute).toBe(false);
   });
 
   it("can revoke access", async ({ c }) => {
@@ -427,6 +425,6 @@ describe("owned-data.test.ts", () => {
       .readData(c, collection.id.toString(), documentId.toString())
       .expectSuccess();
 
-    expect(result.data[0]?._acl).toHaveLength(1);
+    expect(result.data._acl).toHaveLength(1);
   });
 });

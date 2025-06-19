@@ -153,7 +153,7 @@ export function findData(options: ControllerOptions): void {
 
       return pipe(
         enforceCollectionOwnership(builder, command.collection),
-        E.flatMap(() => DataService.readRecords(c.env, command)),
+        E.flatMap(() => DataService.findRecords(c.env, command)),
         E.map((documents) => DataMapper.toFindDataResponse(documents)),
         E.map((response) => c.json<FindDataResponse>(response)),
         handleTaggedErrors(c),

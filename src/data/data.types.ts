@@ -71,6 +71,15 @@ export type UpdateDataCommand = {
 };
 
 /**
+ * Read data command.
+ */
+export type ReadDataCommand = {
+  document: UUID;
+  collection: UUID;
+  filter: Record<string, unknown>;
+};
+
+/**
  * Find data command.
  */
 export type FindDataCommand = {
