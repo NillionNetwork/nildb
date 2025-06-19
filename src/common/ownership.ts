@@ -87,8 +87,8 @@ export function checkGrantAccess(
       builder.collections.some((s) => s.toString() === document.toString()),
     ),
     E.flatMap((isOwner) => {
-      // if we don't grant access to the owner collection for read or execute, we throw an error
-      return isOwner && !acl.read && !acl.execute
+      // if we don't grant access to the owner collection for read, write or execute, we throw an error
+      return isOwner && !(acl.read || acl.write || acl.execute)
         ? E.fail(
             new GrantAccessError({
               type: "collection",
