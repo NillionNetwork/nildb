@@ -1,7 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type { UUID } from "mongodb";
 import type { BuilderDocument } from "#/builders/builders.types";
-import { ResourceAccessDeniedError } from "#/common/errors";
+import { ResourceAccessDeniedError, RevokeAccessError } from "#/common/errors";
 import type { UserDocument } from "#/users/users.types";
 
 export function enforceQueryOwnership(
@@ -67,6 +67,27 @@ export function enforceDataOwnership(
               type: "collection",
               id: document.toString(),
               user: user._id,
+            }),
+          );
+    }),
+  );
+}
+
+export function checkRevokeAccess(
+  builder: BuilderDocument,
+  document: UUID,
+): E.Effect<void, RevokeAccessError> {
+  return pipe(
+    E.succeed(
+      builder.collections.some((s) => s.toString() === document.toString()),
+    ),
+    E.flatMap((isOwner) => {
+      return !isOwner
+        ? E.succeed(void 0)
+        : E.fail(
+            new RevokeAccessError({
+              type: "collection",
+              id: document.toString(),
             }),
           );
     }),

@@ -131,3 +131,12 @@ export class TimeoutError extends Data.TaggedError("TimeoutError")<{
     return [this._tag, this.message];
   }
 }
+
+export class RevokeAccessError extends Data.TaggedError("RevokeAccessError")<{
+  type: string;
+  id: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, `type: ${this.type}`, `object: ${this.id}`];
+  }
+}

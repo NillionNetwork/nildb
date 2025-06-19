@@ -13,6 +13,7 @@ import type {
   IndexNotFoundError,
   InvalidIndexOptionsError,
   ResourceAccessDeniedError,
+  RevokeAccessError,
   VariableInjectionError,
 } from "#/common/errors";
 import type { AppEnv } from "#/env";
@@ -45,7 +46,8 @@ type KnownError =
   | IndexNotFoundError
   | InvalidIndexOptionsError
   | ResourceAccessDeniedError
-  | VariableInjectionError;
+  | VariableInjectionError
+  | RevokeAccessError;
 
 export function handleTaggedErrors(c: Context<AppEnv>) {
   const toResponse = (
@@ -79,6 +81,7 @@ export function handleTaggedErrors(c: Context<AppEnv>) {
         InvalidIndexOptionsError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
         ResourceAccessDeniedError: (e) => toResponse(e, StatusCodes.NOT_FOUND),
         VariableInjectionError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
+        RevokeAccessError: (e) => toResponse(e, StatusCodes.UNAUTHORIZED),
       }),
     );
 }

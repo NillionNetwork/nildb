@@ -2,13 +2,14 @@ import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
+import * as BuildersService from "#/builders/builders.services";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
 } from "#/common/openapi";
-import { enforceDataOwnership } from "#/common/ownership";
+import { checkRevokeAccess, enforceDataOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import { UpdateDataResponse } from "#/data/data.dto";
@@ -324,6 +325,8 @@ export function revokeAccess(options: ControllerOptions): void {
 
       return pipe(
         enforceDataOwnership(user, command.document, command.collection),
+        E.flatMap(() => BuildersService.find(c.env, command.grantee)),
+        E.flatMap((builder) => checkRevokeAccess(builder, command.collection)),
         E.flatMap(() => UserService.revokeAccess(c.env, command)),
         E.map((_response) => RevokeAccessToDataResponse),
         handleTaggedErrors(c),
