@@ -3,6 +3,7 @@ import { Effect as E, pipe } from "effect";
 import { Hono } from "hono";
 import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { StatusCodes } from "http-status-codes";
 import { handleTaggedErrors } from "#/common/handler";
 import type { LogLevel } from "#/common/logger";
 import { NucCmd } from "#/common/nuc-cmd-tree";
@@ -18,14 +19,14 @@ import {
   loadSubjectAndVerifyAsAdmin,
   requireNucNamespace,
 } from "#/middleware/capability.middleware";
+import type { DeleteQueryResponse } from "#/queries/queries.dto";
 import packageJson from "../../package.json";
 import {
   ReadAboutNodeResponse,
   ReadLogLevelResponse,
   SetLogLevelRequest,
-  SetLogLevelResponse,
-  StartMaintenanceResponse,
-  StopMaintenanceResponse,
+  type StartMaintenanceResponse,
+  type StopMaintenanceResponse,
 } from "./system.dto";
 import { SystemDataMapper } from "./system.mapper";
 import * as SystemService from "./system.services";
@@ -187,7 +188,7 @@ export function startMaintenance(options: ControllerOptions): void {
 
       return pipe(
         SystemService.startMaintenance(c.env, command),
-        E.map(() => StartMaintenanceResponse),
+        E.map(() => c.text<StartMaintenanceResponse>("", StatusCodes.OK)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -221,7 +222,7 @@ export function stopMaintenance(options: ControllerOptions): void {
 
       return pipe(
         SystemService.stopMaintenance(c.env, command),
-        E.map(() => StopMaintenanceResponse),
+        E.map(() => c.text<StopMaintenanceResponse>("", StatusCodes.OK)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -257,7 +258,7 @@ export function setLogLevel(options: ControllerOptions): void {
 
       return pipe(
         SystemService.setLogLevel(c.env, command),
-        E.map(() => SetLogLevelResponse),
+        E.map(() => c.text<DeleteQueryResponse>("", StatusCodes.OK)),
         handleTaggedErrors(c),
         E.runPromise,
       );

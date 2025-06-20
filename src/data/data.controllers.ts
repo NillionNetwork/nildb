@@ -26,6 +26,7 @@ import {
   DeleteDataResponse,
   FindDataRequest,
   FindDataResponse,
+  type FlushDataResponse,
   TailDataRequestParams,
   TailDataRequestQuery,
   TailDataResponse,
@@ -113,7 +114,7 @@ export function flushData(options: ControllerOptions): void {
       return pipe(
         enforceCollectionOwnership(builder, command.collection),
         E.flatMap(() => DataService.flushCollection(c.env, command)),
-        E.map(() => new Response(null, { status: 204 })),
+        E.map(() => c.text<FlushDataResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );

@@ -1,6 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { StatusCodes } from "http-status-codes";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
@@ -19,8 +20,8 @@ import {
 import {
   ByIdRequestParams,
   CreateQueryRequest,
-  CreateQueryResponse,
-  DeleteQueryResponse,
+  type CreateQueryResponse,
+  type DeleteQueryResponse,
   ReadQueriesResponse,
   type ReadQueryResponse,
   ReadQueryRunByIdResponse,
@@ -62,7 +63,7 @@ export function createQuery(options: ControllerOptions): void {
 
       return pipe(
         QueriesService.addQuery(c.env, command),
-        E.map(() => CreateQueryResponse),
+        E.map(() => c.text<CreateQueryResponse>("", StatusCodes.CREATED)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -100,7 +101,7 @@ export function deleteQuery(options: ControllerOptions): void {
       return pipe(
         enforceQueryOwnership(builder, command._id),
         E.flatMap(() => QueriesService.removeQuery(c.env, command)),
-        E.map(() => DeleteQueryResponse),
+        E.map(() => c.text<DeleteQueryResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
       );

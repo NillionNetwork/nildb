@@ -1,4 +1,3 @@
-import { StatusCodes } from "http-status-codes";
 import z from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
 
@@ -43,10 +42,8 @@ export type CreateQueryRequest = z.infer<typeof CreateQueryRequest>;
 /**
  * Query creation response.
  */
-export const CreateQueryResponse = new Response(null, {
-  status: StatusCodes.CREATED,
-});
-export type CreateQueryResponse = typeof CreateQueryResponse;
+export const CreateQueryResponse = z.string();
+export type CreateQueryResponse = z.infer<typeof CreateQueryResponse>;
 
 /**
  * Query document data.
@@ -100,10 +97,8 @@ export type DeleteQueryRequest = z.infer<typeof DeleteQueryRequest>;
 /**
  * Query deletion response.
  */
-export const DeleteQueryResponse = new Response(null, {
-  status: StatusCodes.NO_CONTENT,
-});
-export type DeleteQueryResponse = typeof DeleteQueryResponse;
+export const DeleteQueryResponse = z.string();
+export type DeleteQueryResponse = z.infer<typeof DeleteQueryResponse>;
 
 /**
  * Query execution request.
