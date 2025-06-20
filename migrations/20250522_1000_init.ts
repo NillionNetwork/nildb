@@ -26,7 +26,7 @@ export class init_collections implements MigrationInterface {
           primary.createCollection(CollectionName.Collections),
           primary.createCollection(CollectionName.Config),
           primary.createCollection(CollectionName.QueryRuns),
-          primary.createCollection(CollectionName.User),
+          primary.createCollection(CollectionName.Users),
         ]);
 
         await primary.collection(CollectionName.QueryRuns).createIndexes([
@@ -53,7 +53,7 @@ export class init_collections implements MigrationInterface {
         primary.dropCollection(CollectionName.Collections),
         primary.dropCollection(CollectionName.Config),
         primary.dropCollection(CollectionName.QueryRuns),
-        primary.dropCollection(CollectionName.User),
+        primary.dropCollection(CollectionName.Users),
       ]);
     } finally {
       await session.endSession();
