@@ -72,7 +72,7 @@ export function upsert(
   const updateOptions: UpdateOptions = { upsert: true };
 
   return pipe(
-    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
+    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.Users),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update, updateOptions),
       catch: (cause) => new DatabaseError({ cause, message: "upsert" }),
@@ -113,7 +113,7 @@ export function removeData(
   };
 
   return pipe(
-    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
+    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.Users),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "remove data" }),
@@ -145,7 +145,7 @@ export function updateUserLogs(
     },
   };
   return pipe(
-    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
+    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.Users),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "upsert" }),
@@ -167,7 +167,7 @@ export function findById(
   const filter: StrictFilter<UserDocument> = { _id: user };
 
   return pipe(
-    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.User),
+    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.Users),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findById" }),
@@ -176,7 +176,7 @@ export function findById(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.User,
+              collection: CollectionName.Users,
               filter,
             }),
           )

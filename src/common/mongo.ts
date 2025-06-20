@@ -67,7 +67,7 @@ export enum CollectionName {
   Queries = "queries",
   QueryRuns = "query_runs",
   Config = "config",
-  User = "user",
+  Users = "users",
 }
 
 export async function mongoMigrateUp(
