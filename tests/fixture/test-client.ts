@@ -7,6 +7,7 @@ import {
   NilauthClient,
   NucTokenBuilder,
   type NucTokenEnvelope,
+  NucTokenEnvelopeSchema,
   type Payer,
   PayerBuilder,
 } from "@nillion/nuc";
@@ -78,6 +79,7 @@ type BaseTestClientOptions = {
  */
 type AdminTestClientOptions = BaseTestClientOptions & {
   type: "admin";
+  nodeDelegation: NucTokenEnvelope;
 };
 
 /**
@@ -106,25 +108,17 @@ type UserTestClientOptions = BaseTestClientOptions & {
 };
 
 /**
- * Union type for all test client configuration options.
- */
-export type TestClientOptions =
-  | AdminTestClientOptions
-  | BuilderTestClientOptions
-  | UserTestClientOptions;
-
-/**
  * Base HTTP test client for NilDB API operations.
  *
  * Provides core functionality for making authenticated API requests
  * during integration testing. Handles token creation, request formatting,
  * and response processing.
  */
-abstract class BaseTestClient {
+abstract class BaseTestClient<Options extends BaseTestClientOptions> {
   /**
    * Creates a new test client instance.
    */
-  constructor(public _options: TestClientOptions) {}
+  constructor(public _options: Options) {}
 
   /**
    * Gets the Hono application instance for making requests.
@@ -209,18 +203,17 @@ abstract class BaseTestClient {
  * maintenance mode control. They create self-signed tokens and don't require
  * subscription management.
  */
-export class AdminTestClient extends BaseTestClient {
+export class AdminTestClient extends BaseTestClient<AdminTestClientOptions> {
   /**
    * Creates a self-signed authentication token for admin operations.
    */
   protected async createToken(): Promise<string> {
     const audience = Did.fromHex(this._options.nodePublicKey);
-    const subject = Did.fromHex(this.keypair.publicKey("hex"));
 
-    return NucTokenBuilder.invocation({})
+    return NucTokenBuilder.extending(this._options.nodeDelegation)
+      .body(new InvocationBody({}))
       .command(NucCmd.nil.db.root)
       .audience(audience)
-      .subject(subject)
       .build(this.keypair.privateKey());
   }
 
@@ -278,7 +271,7 @@ export class AdminTestClient extends BaseTestClient {
  * execution, schema definition, and builder management endpoints. These clients
  * represent builder that build applications on top of NilDB.
  */
-export class BuilderTestClient extends BaseTestClient {
+export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> {
   constructor(private options: BuilderTestClientOptions) {
     super(options);
   }
@@ -696,7 +689,7 @@ export class BuilderTestClient extends BaseTestClient {
  * self-signed tokens without requiring subscriptions. Users control the
  * permissions applied to the data they upload.
  */
-export class UserTestClient extends BaseTestClient {
+export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
   constructor(private options: UserTestClientOptions) {
     super(options);
   }
@@ -851,12 +844,11 @@ export async function createAdminTestClient(opts: {
   app: App;
   keypair: Keypair;
   nodePublicKey: string;
+  nodeDelegation: NucTokenEnvelope;
 }): Promise<AdminTestClient> {
   return new AdminTestClient({
     type: "admin",
-    app: opts.app,
-    keypair: opts.keypair,
-    nodePublicKey: opts.nodePublicKey,
+    ...opts,
   });
 }
 
@@ -905,4 +897,17 @@ export async function createUserTestClient(opts: {
     keypair: opts.keypair,
     nodePublicKey: opts.nodePublicKey,
   });
+}
+
+export function selfSignedDelegationToken(opts: {
+  keypair: Keypair;
+  audience: Did;
+}): NucTokenEnvelope {
+  return NucTokenEnvelopeSchema.parse(
+    NucTokenBuilder.delegation([])
+      .command(NucCmd.nil.db.root)
+      .subject(opts.audience)
+      .audience(opts.audience)
+      .build(opts.keypair.privateKey()),
+  );
 }
