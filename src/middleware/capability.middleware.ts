@@ -64,9 +64,16 @@ export function loadSubjectAndVerifyAsAdmin<
   E extends AppEnv = AppEnv,
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log } = bindings;
+
+  const nildbNodeDid = Did.fromHex(bindings.node.keypair.publicKey("hex"));
+
+  const validationParameters = new ValidationParameters();
+  const validator = new NucTokenValidator([nildbNodeDid]);
+
   return async (c, next) => {
     try {
-      c.get("envelope").validateSignatures();
+      const envelope = c.get("envelope");
+      validator.validate(envelope, validationParameters);
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {

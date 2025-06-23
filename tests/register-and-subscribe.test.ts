@@ -13,6 +13,7 @@ import {
   createAdminTestClient,
   createBuilderTestClient,
   createUserTestClient,
+  selfSignedDelegationToken,
 } from "./fixture/test-client";
 
 /**
@@ -53,10 +54,15 @@ describe("bootstrap.test.ts", () => {
       process.env.APP_NILCHAIN_PRIVATE_KEY_1!,
     );
 
+    const adminKeypair = Keypair.generate();
     const system = await createAdminTestClient({
       app,
-      keypair: nodeKeypair,
+      keypair: adminKeypair,
       nodePublicKey: nodeKeypair.publicKey("hex"),
+      nodeDelegation: selfSignedDelegationToken({
+        keypair: nodeKeypair,
+        audience: adminKeypair.toDid(),
+      }),
     });
     const builder = await createBuilderTestClient({
       app,

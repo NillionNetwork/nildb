@@ -23,6 +23,7 @@ import {
   createAdminTestClient,
   createBuilderTestClient,
   createUserTestClient,
+  selfSignedDelegationToken,
   type UserTestClient,
 } from "./test-client";
 
@@ -98,10 +99,15 @@ export async function buildFixture(
   const nilauthBaseUrl = bindings.config.nilauthBaseUrl;
 
   // Create system client - uses node's keypair for system administration
+  const adminKeypair = Keypair.generate();
   const system = await createAdminTestClient({
     app,
-    keypair: node.keypair,
+    keypair: adminKeypair,
     nodePublicKey: node.keypair.publicKey("hex"),
+    nodeDelegation: selfSignedDelegationToken({
+      keypair: node.keypair,
+      audience: adminKeypair.toDid(),
+    }),
   });
 
   // Create builder client with subscription and nilauth
