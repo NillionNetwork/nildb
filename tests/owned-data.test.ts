@@ -524,4 +524,16 @@ describe("owned-data.test.ts", () => {
       })
       .expectFailure(StatusCodes.UNAUTHORIZED);
   });
+
+  it("remove users if all their data have been deleted", async ({ c }) => {
+    const { builder, user } = c;
+    const result = await user.listDataReferences(c).expectSuccess();
+    await builder
+      .deleteData(c, {
+        collection: collection.id,
+        filter: { _id: { $in: result.data.map((ref) => ref.document) } },
+      })
+      .expectSuccess();
+    await user.listDataReferences(c).expectStatusCode(StatusCodes.UNAUTHORIZED);
+  });
 });

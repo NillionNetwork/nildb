@@ -1,13 +1,18 @@
 import { Effect as E, pipe } from "effect";
+import * as CollectionsRepository from "#/collections/collections.repository";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
+  type DataValidationError,
   type DocumentNotFoundError,
   DuplicateEntryError,
 } from "#/common/errors";
 import type { Did } from "#/common/types";
+import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import * as BuilderRepository from "./builders.repository";
+import * as QueriesRepository from "#/queries/queries.repository";
+import * as UserRepository from "#/users/users.repository";
+import * as BuildersRepository from "./builders.repository";
 import type {
   BuilderDocument,
   CreateBuilderCommand,
@@ -24,7 +29,7 @@ export function find(
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return BuilderRepository.findOne(ctx, did);
+  return BuildersRepository.findOne(ctx, did);
 }
 
 /**
@@ -57,7 +62,7 @@ export function createBuilder(
         queries: [],
       };
     }),
-    E.flatMap((document) => BuilderRepository.insert(ctx, document)),
+    E.flatMap((document) => BuildersRepository.insert(ctx, document)),
   );
 }
 
@@ -69,9 +74,30 @@ export function remove(
   id: Did,
 ): E.Effect<
   void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
-  return BuilderRepository.deleteOneById(ctx, id);
+  return BuildersRepository.findOne(ctx, id).pipe(
+    E.flatMap((document) =>
+      E.all([
+        BuildersRepository.deleteOneById(ctx, id),
+        CollectionsRepository.deleteMany(ctx, {
+          _id: { $in: document.collections },
+        }),
+        QueriesRepository.deleteMany(ctx, { _id: { $in: document.queries } }),
+        E.forEach(document.collections, (collectionId) =>
+          pipe(
+            // This deletes the owned documents from the users, the standard documents are skipped.
+            UserRepository.deleteUserDataReferences(ctx, collectionId, {}),
+            E.flatMap(() => DataRepository.deleteCollection(ctx, collectionId)),
+          ),
+        ),
+      ]),
+    ),
+    E.as(void 0),
+  );
 }
 
 /**
@@ -84,5 +110,5 @@ export function updateProfile(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return BuilderRepository.update(ctx, command.builder, command.updates);
+  return BuildersRepository.update(ctx, command.builder, command.updates);
 }

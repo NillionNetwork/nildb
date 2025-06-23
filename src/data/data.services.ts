@@ -20,11 +20,9 @@ import type {
   DeleteDataCommand,
   FindDataCommand,
   FlushDataCommand,
-  OwnedDocumentBase,
   PartialDataDocumentDto,
   ReadDataCommand,
   RecentDataCommand,
-  StandardDocumentBase,
   UpdateDataCommand,
   UploadResult,
 } from "./data.types";
@@ -105,28 +103,6 @@ export function createStandardRecords(
   );
 }
 
-// This endpoint can be invoked against a standard and owned collections,
-// meaning that when the target is an owned collection we also need to
-// update the user's document
-function groupByOwner(
-  documents: StandardDocumentBase[],
-): Record<string, UUID[]> {
-  return documents.reduce<Record<string, UUID[]>>((acc, data) => {
-    if ("_owner" in data) {
-      const document = data as OwnedDocumentBase;
-      const { _owner } = document;
-
-      if (!acc[_owner]) {
-        acc[_owner] = [];
-      }
-
-      acc[_owner].push(data._id);
-    }
-
-    return acc;
-  }, {});
-}
-
 /**
  * Update records.
  */
@@ -153,10 +129,14 @@ export function updateRecords(
       ),
     );
   };
+  const findFilter = {
+    ...command.filter,
+    _owner: { $exists: true }, // Ensure we only update owned documents
+  };
   return pipe(
-    DataRepository.findMany(ctx, collection, filter),
+    DataRepository.findMany(ctx, command.collection, findFilter),
     // This returns the owned documents grouped by owner, the standard documents are skipped.
-    E.map((documents) => groupByOwner(documents)),
+    E.map((documents) => UserRepository.groupByOwner(documents)),
     E.flatMap((ownedDocuments) => updateUserLogs(ownedDocuments)),
     // This updates both owned and standard documents.
     E.flatMap(() => DataRepository.updateMany(ctx, collection, filter, update)),
@@ -203,22 +183,13 @@ export function deleteData(
   CollectionNotFoundError | DatabaseError | DataValidationError,
   never
 > {
-  const deleteAllUserDataReferences = (
-    documents: Record<Did, UUID[]>,
-  ): E.Effect<
-    void,
-    CollectionNotFoundError | DatabaseError | DataValidationError
-  > => {
-    return E.forEach(Object.entries(documents), ([owner, ids]) =>
-      UserRepository.removeData(ctx, Did.parse(owner), ids),
-    );
-  };
-
   return pipe(
-    DataRepository.findMany(ctx, command.collection, command.filter),
-    // This returns the owned documents grouped by owner, the standard documents are skipped.
-    E.map((documents) => groupByOwner(documents)),
-    E.flatMap((ownedDocuments) => deleteAllUserDataReferences(ownedDocuments)),
+    // This deletes the owned documents from the users, the standard documents are skipped.
+    UserRepository.deleteUserDataReferences(
+      ctx,
+      command.collection,
+      command.filter,
+    ),
     // This updates both owned and standard documents.
     E.flatMap(() =>
       DataRepository.deleteMany(ctx, command.collection, command.filter),
@@ -232,8 +203,17 @@ export function deleteData(
 export function flushCollection(
   ctx: AppBindings,
   command: FlushDataCommand,
-): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError, never> {
-  return pipe(DataRepository.flushCollection(ctx, command.collection));
+): E.Effect<
+  DeleteResult,
+  DataValidationError | CollectionNotFoundError | DatabaseError,
+  never
+> {
+  return pipe(
+    // This deletes the owned documents from the users, the standard documents are skipped.
+    UserRepository.deleteUserDataReferences(ctx, command.collection, {}),
+    // This updates both owned and standard documents.
+    E.flatMap(() => DataRepository.flushCollection(ctx, command.collection)),
+  );
 }
 
 /**

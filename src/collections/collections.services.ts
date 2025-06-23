@@ -22,6 +22,7 @@ import type {
 import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
+import * as UserRepository from "#/users/users.repository";
 import * as CollectionsRepository from "./collections.repository";
 
 /**
@@ -96,7 +97,11 @@ export function deleteCollection(
       E.all([
         E.succeed(ctx.cache.builders.taint(collection.owner)),
         BuildersRepository.removeCollection(ctx, collection.owner, command._id),
-        DataRepository.deleteCollection(ctx, command._id),
+        pipe(
+          // This deletes the owned documents from the users, the standard documents are skipped.
+          UserRepository.deleteUserDataReferences(ctx, command._id, {}),
+          E.flatMap(() => DataRepository.deleteCollection(ctx, command._id)),
+        ),
       ]),
     ),
     E.as(void 0),

@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { StrictFilter } from "mongodb";
+import type { DeleteResult, StrictFilter } from "mongodb";
 import type { Filter } from "mongodb/lib/beta";
 import {
   type CollectionNotFoundError,
@@ -69,7 +69,7 @@ export function findMany(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Collections,
+              collection: CollectionName.Queries,
               filter,
             }),
           )
@@ -111,7 +111,7 @@ export function findOne(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Collections,
+              collection: CollectionName.Queries,
               filter,
             }),
           )
@@ -152,7 +152,47 @@ export function findOneAndDelete(
       result === null
         ? E.fail(
             new DocumentNotFoundError({
-              collection: CollectionName.Collections,
+              collection: CollectionName.Queries,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
+  );
+}
+
+/**
+ * Delete many queries.
+ */
+export function deleteMany(
+  ctx: AppBindings,
+  filter: StrictFilter<QueryDocument>,
+): E.Effect<
+  DeleteResult,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return pipe(
+    E.all([
+      checkCollectionExists<QueryDocument>(
+        ctx,
+        "primary",
+        CollectionName.Queries,
+      ),
+      applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
+    ]),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) =>
+        collection.deleteMany(documentFilter),
+      catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
+    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Queries,
               filter,
             }),
           )
