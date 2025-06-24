@@ -15,8 +15,69 @@ import type {
   DataDocumentReference,
   GrantAccessToDataCommand,
   RevokeAccessToDataCommand,
+  UpsertUserCommand,
   UserDocument,
 } from "./users.types";
+
+/**
+ * Update or create a user document in the database.
+ *
+ * This function will either update an existing user document
+ * or create a new one if it does not exist.
+ * It will also update the user's data references
+ * and access control list (ACL) if provided.
+ *
+ * @param ctx - Application context and bindings
+ * @param command - Command containing user data and ACL
+ * @returns Effect that resolves to void or an error
+ */
+export function upsertUser(
+  ctx: AppBindings,
+  command: UpsertUserCommand,
+): E.Effect<
+  void,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return UserRepository.upsert(ctx, command.user, command.data, command.acl);
+}
+
+/**
+ * Updates user data logs based on the provided filter.
+ *
+ * This function retrieves all documents that match the filter,
+ * groups them by owner, and updates the user logs
+ * for each owner with the document IDs.
+ *
+ * @param ctx - Application context and bindings
+ * @param collection - UUID of the collection to search in
+ * @param filter - Filter to find owned documents
+ * @return Effect that resolves to void or an error
+ */
+export function updateUserData(
+  ctx: AppBindings,
+  collection: UUID,
+  filter: Record<string, unknown>,
+): E.Effect<
+  void,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return DataService.findRecords(ctx, {
+    collection,
+    filter: { ...filter, _owner: { $exists: true } },
+  }).pipe(
+    // This returns the owned documents grouped by owner, the standard documents are skipped.
+    E.map((documents) => UserDataMapper.groupByOwner(documents)),
+    E.flatMap((documents) =>
+      E.forEach(Object.entries(documents), ([owner, ids]) =>
+        UserRepository.updateUserLogs(
+          ctx,
+          owner as Did,
+          UserLoggerMapper.toUpdateDataLogs(ids),
+        ),
+      ),
+    ),
+  );
+}
 
 /**
  * Retrieves a user document by DID.

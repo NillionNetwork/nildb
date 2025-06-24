@@ -74,3 +74,9 @@ export type RevokeAccessToDataCommand = {
   grantee: Did;
   owner: Did;
 };
+
+export type UpsertUserCommand = {
+  user: Did;
+  data: DataDocumentReference[];
+  acl?: Acl;
+};

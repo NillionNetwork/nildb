@@ -25,24 +25,18 @@ import type {
   UserDocument,
 } from "#/users/users.types";
 
-type UpsertOptions = {
-  user: Did;
-  data: DataDocumentReference[];
-  acl?: Acl;
-};
-
 /**
  * Upsert user document.
  */
 export function upsert(
   ctx: AppBindings,
-  options: UpsertOptions,
+  user: Did,
+  data: DataDocumentReference[],
+  acl?: Acl,
 ): E.Effect<
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  const { user, data, acl } = options;
-
   const documents = data.map((d) => d.document);
   const createDataLogs = UserLoggerMapper.toCreateDataLogs(documents);
   // Add auth when acl provided

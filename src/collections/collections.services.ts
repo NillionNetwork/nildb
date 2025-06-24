@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { CreateIndexesOptions, IndexSpecification } from "mongodb";
-import * as BuildersRepository from "#/builders/builders.repository";
+import * as BuildersService from "#/builders/builders.services";
 import type {
   CollectionDocument,
   CollectionMetadata,
@@ -20,7 +20,6 @@ import type {
 } from "#/common/errors";
 import type { Did } from "#/common/types";
 import { validateSchema } from "#/common/validator";
-import * as DataRepository from "#/data/data.repository";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
 import * as CollectionsRepository from "./collections.repository";
@@ -71,11 +70,30 @@ export function addCollection(
     E.flatMap(() => CollectionsRepository.insert(ctx, collection)),
     E.map(() => ctx.cache.builders.taint(collection.owner)),
     E.flatMap(() =>
-      BuildersRepository.addCollection(ctx, command.owner, collection._id),
+      BuildersService.addCollection(ctx, {
+        did: collection.owner,
+        collection: command._id,
+      }),
     ),
-    E.flatMap(() => DataRepository.createCollection(ctx, collection._id)),
+    E.flatMap(() => DataService.create(ctx, collection._id)),
     E.as(void 0),
   );
+}
+
+/**
+ * Find a collection
+ */
+export function find(
+  ctx: AppBindings,
+  filter: Record<string, unknown>,
+): E.Effect<
+  CollectionDocument,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return CollectionsRepository.findOne(ctx, filter);
 }
 
 /**
@@ -96,8 +114,11 @@ export function deleteCollection(
     E.tap((collection) => ctx.cache.builders.taint(collection.owner)),
     E.flatMap((collection) =>
       E.all([
-        BuildersRepository.removeCollection(ctx, collection.owner, command._id),
-        DataService.deleteCollection(ctx, collection._id),
+        BuildersService.removeCollection(ctx, {
+          did: collection.owner,
+          collection: command._id,
+        }),
+        DataService.drop(ctx, collection._id),
       ]),
     ),
     E.as(void 0),
@@ -122,7 +143,7 @@ export function deleteBuilderCollections(
     E.tap(() => ctx.cache.builders.taint(builder)),
     E.flatMap((collections) =>
       E.forEach(collections, (collection) =>
-        DataService.deleteCollection(ctx, collection._id),
+        DataService.drop(ctx, collection._id),
       ),
     ),
     E.flatMap(() => CollectionsRepository.deleteMany(ctx, { owner: builder })),
