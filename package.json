@@ -17,7 +17,7 @@
     "@hono/node-server": "^1.14.4",
     "@hono/prometheus": "^1.0.2",
     "@hono/zod-validator": "^0.7.0",
-    "@nillion/nuc": "0.1.0-rc.8",
+    "@nillion/nuc": "0.1.0-rc.10",
     "@noble/hashes": "^1.8.0",
     "@noble/secp256k1": "^2.3.0",
     "ajv": "^8.17.1",
@@ -29,8 +29,8 @@
     "docker-compose": "^1.2.0",
     "dotenv": "^16.5.0",
     "eciesjs": "^0.4.15",
-    "effect": "^3.16.8",
-    "hono": "^4.8.1",
+    "effect": "^3.16.9",
+    "hono": "^4.8.2",
     "hono-openapi": "^0.4.8",
     "http-status-codes": "^2.3.0",
     "js-yaml": "^4.1.0",
@@ -45,7 +45,7 @@
     "zod-validation-error": "^3.5.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.0.0",
+    "@biomejs/biome": "2.0.5",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/types": "^19.8.1",
@@ -57,7 +57,7 @@
     "pino-pretty": "^13.0.0",
     "type-fest": "^4.41.0",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5",
+    "vite": "^7.0.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "3.2.4"
   },
