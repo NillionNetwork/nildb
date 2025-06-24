@@ -35,3 +35,35 @@ export type UpdateProfileCommand = {
     name: string;
   }>;
 };
+
+/**
+ * Create collection command.
+ */
+export type AddBuilderCollectionCommand = {
+  did: Did;
+  collection: UUID;
+};
+
+/**
+ * Create collection command.
+ */
+export type RemoveBuilderCollectionCommand = {
+  did: Did;
+  collection: UUID;
+};
+
+/**
+ * Create query command.
+ */
+export type AddBuilderQueryCommand = {
+  did: Did;
+  query: UUID;
+};
+
+/**
+ * Create query command.
+ */
+export type RemoveBuilderQueryCommand = {
+  did: Did;
+  query: UUID;
+};

@@ -1,18 +1,23 @@
 import { Effect as E, pipe } from "effect";
-import { type DeleteResult, type UpdateResult, UUID } from "mongodb";
-import * as CollectionsRepository from "#/collections/collections.repository";
+import {
+  type DeleteResult,
+  type Document,
+  type UpdateResult,
+  UUID,
+} from "mongodb";
+import type { JsonObject } from "type-fest";
+import * as CollectionsService from "#/collections/collections.services";
 import type {
   CollectionNotFoundError,
   DatabaseError,
   DataValidationError,
   DocumentNotFoundError,
+  InvalidIndexOptionsError,
 } from "#/common/errors";
 import type { DocumentBase } from "#/common/mongo";
-import { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
-import { UserDataMapper, UserLoggerMapper } from "#/users/users.mapper";
-import * as UsersRepository from "#/users/users.repository";
+import type { QueryDocument } from "#/queries/queries.types";
 import * as UsersService from "#/users/users.services";
 import * as DataRepository from "./data.repository";
 import type {
@@ -44,7 +49,7 @@ export function createOwnedRecords(
   return pipe(
     E.Do,
     E.bind("document", () =>
-      CollectionsRepository.findOne(ctx, {
+      CollectionsService.find(ctx, {
         _id: command.collection,
         type: "owned",
       }),
@@ -59,7 +64,7 @@ export function createOwnedRecords(
     ),
     E.flatMap(({ result, document }) =>
       pipe(
-        UsersRepository.upsert(ctx, {
+        UsersService.upsertUser(ctx, {
           user: command.owner,
           data: result.created.map((id) => ({
             builder: document.owner,
@@ -90,7 +95,7 @@ export function createStandardRecords(
   return pipe(
     E.Do,
     E.bind("document", () =>
-      CollectionsRepository.findOne(ctx, {
+      CollectionsService.find(ctx, {
         _id: command.collection,
         type: "standard",
       }),
@@ -115,31 +120,7 @@ export function updateRecords(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   const { collection, filter, update } = command;
-
-  const updateUserLogs = (
-    documents: Record<Did, UUID[]>,
-  ): E.Effect<
-    void,
-    CollectionNotFoundError | DatabaseError | DataValidationError
-  > => {
-    return E.forEach(Object.entries(documents), ([owner, ids]) =>
-      UsersRepository.updateUserLogs(
-        ctx,
-        Did.parse(owner),
-        UserLoggerMapper.toUpdateDataLogs(ids),
-      ),
-    );
-  };
-  const findFilter = {
-    ...command.filter,
-    _owner: { $exists: true }, // Ensure we only update owned documents
-  };
-  return pipe(
-    DataRepository.findMany(ctx, command.collection, findFilter),
-    // This returns the owned documents grouped by owner, the standard documents are skipped.
-    E.map((documents) => UserDataMapper.groupByOwner(documents)),
-    E.flatMap((ownedDocuments) => updateUserLogs(ownedDocuments)),
-    // This updates both owned and standard documents.
+  return UsersService.updateUserData(ctx, collection, filter).pipe(
     E.flatMap(() => DataRepository.updateMany(ctx, collection, filter, update)),
   );
 }
@@ -199,9 +180,19 @@ export function deleteData(
 }
 
 /**
- * Delete data records.
+ * Create data collection.
  */
-export function deleteCollection(
+export function create(
+  ctx: AppBindings,
+  collection: UUID,
+): E.Effect<void, InvalidIndexOptionsError | DatabaseError, never> {
+  return DataRepository.createCollection(ctx, collection);
+}
+
+/**
+ * Drop data collection.
+ */
+export function drop(
   ctx: AppBindings,
   collection: UUID,
 ): E.Effect<
@@ -213,7 +204,7 @@ export function deleteCollection(
     // This deletes the owned documents from the users, the standard documents are skipped.
     UsersService.deleteUserDataReferences(ctx, collection, {}),
     // This updates both owned and standard documents.
-    E.flatMap(() => DataRepository.deleteCollection(ctx, collection)),
+    E.flatMap(() => DataRepository.drop(ctx, collection)),
   );
 }
 
@@ -246,4 +237,19 @@ export function tailData(
   return pipe(
     DataRepository.tailCollection(ctx, command.collection, command.limit),
   );
+}
+
+/**
+ * Run aggregation pipeline on a collection.
+ *
+ * @param ctx - Application context containing bindings and services.
+ * @param query - Query document containing the collection and other parameters.
+ * @param pipeline - Aggregation pipeline to execute on the collection.
+ */
+export function runAggregation(
+  ctx: AppBindings,
+  query: QueryDocument,
+  pipeline: Document[],
+): E.Effect<JsonObject[], CollectionNotFoundError | DatabaseError> {
+  return DataRepository.runAggregation(ctx, query, pipeline);
 }

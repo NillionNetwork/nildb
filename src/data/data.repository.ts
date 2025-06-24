@@ -119,9 +119,9 @@ export function tailCollection(
 }
 
 /**
- * Delete data collection.
+ * Drop data collection.
  */
-export function deleteCollection(
+export function drop(
   ctx: AppBindings,
   collection: UUID,
 ): E.Effect<void, CollectionNotFoundError | DatabaseError> {

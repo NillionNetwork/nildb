@@ -2,7 +2,7 @@ import { Effect as E, pipe } from "effect";
 import type { Document, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { z } from "zod";
-import * as BuildersRepository from "#/builders/builders.repository";
+import * as BuildersService from "#/builders/builders.services";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
@@ -15,7 +15,7 @@ import {
 import { applyCoercions } from "#/common/mongo";
 import type { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
-import * as DataRepository from "#/data/data.repository";
+import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
 import pipelineSchema from "./mongodb_pipeline.json";
 import * as RunQueryJobsRepository from "./queries.jobs.repository";
@@ -79,7 +79,10 @@ export function addQuery(
     E.flatMap(() => QueriesRepository.insert(ctx, document)),
     E.flatMap(() => {
       ctx.cache.builders.taint(document.owner);
-      return BuildersRepository.addQuery(ctx, document.owner, document._id);
+      return BuildersService.addQuery(ctx, {
+        did: document.owner,
+        query: document._id,
+      });
     }),
     E.as(void 0),
   );
@@ -131,7 +134,7 @@ export function runQueryInBackground(
           ),
         ),
         E.flatMap(({ query, pipeline }) =>
-          DataRepository.runAggregation(ctx, query, pipeline),
+          DataService.runAggregation(ctx, query, pipeline),
         ),
         E.timeoutFail({
           duration: "30 minutes",
@@ -238,7 +241,10 @@ export function removeQuery(
     QueriesRepository.findOneAndDelete(ctx, { _id: command._id }),
     E.tap((document) => ctx.cache.builders.taint(document.owner)),
     E.flatMap((document) =>
-      BuildersRepository.removeQuery(ctx, document.owner, command._id),
+      BuildersService.removeQuery(ctx, {
+        did: document.owner,
+        query: command._id,
+      }),
     ),
     E.as(void 0),
   );
