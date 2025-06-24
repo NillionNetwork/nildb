@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import * as CollectionsRepository from "#/collections/collections.repository";
+import * as CollectionsService from "#/collections/collections.services";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
@@ -8,10 +8,8 @@ import {
   DuplicateEntryError,
 } from "#/common/errors";
 import type { Did } from "#/common/types";
-import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
-import * as QueriesRepository from "#/queries/queries.repository";
-import * as UserRepository from "#/users/users.repository";
+import * as QueriesService from "#/queries/queries.services";
 import * as BuildersRepository from "./builders.repository";
 import type {
   BuilderDocument,
@@ -79,25 +77,11 @@ export function remove(
   | DatabaseError
   | DataValidationError
 > {
-  return BuildersRepository.findOne(ctx, id).pipe(
-    E.flatMap((document) =>
-      E.all([
-        BuildersRepository.deleteOneById(ctx, id),
-        CollectionsRepository.deleteMany(ctx, {
-          _id: { $in: document.collections },
-        }),
-        QueriesRepository.deleteMany(ctx, { _id: { $in: document.queries } }),
-        E.forEach(document.collections, (collectionId) =>
-          pipe(
-            // This deletes the owned documents from the users, the standard documents are skipped.
-            UserRepository.deleteUserDataReferences(ctx, collectionId, {}),
-            E.flatMap(() => DataRepository.deleteCollection(ctx, collectionId)),
-          ),
-        ),
-      ]),
-    ),
-    E.as(void 0),
-  );
+  return E.all([
+    BuildersRepository.deleteOneById(ctx, id),
+    CollectionsService.deleteBuilderCollections(ctx, id),
+    QueriesService.deleteBuilderQueries(ctx, id),
+  ]);
 }
 
 /**

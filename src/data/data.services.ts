@@ -11,8 +11,9 @@ import type { DocumentBase } from "#/common/mongo";
 import { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
-import { UserLoggerMapper } from "#/users/users.mapper";
-import * as UserRepository from "#/users/users.repository";
+import { UserDataMapper, UserLoggerMapper } from "#/users/users.mapper";
+import * as UsersRepository from "#/users/users.repository";
+import * as UsersService from "#/users/users.services";
 import * as DataRepository from "./data.repository";
 import type {
   CreateOwnedDataCommand,
@@ -58,7 +59,7 @@ export function createOwnedRecords(
     ),
     E.flatMap(({ result, document }) =>
       pipe(
-        UserRepository.upsert(ctx, {
+        UsersRepository.upsert(ctx, {
           user: command.owner,
           data: result.created.map((id) => ({
             builder: document.owner,
@@ -122,7 +123,7 @@ export function updateRecords(
     CollectionNotFoundError | DatabaseError | DataValidationError
   > => {
     return E.forEach(Object.entries(documents), ([owner, ids]) =>
-      UserRepository.updateUserLogs(
+      UsersRepository.updateUserLogs(
         ctx,
         Did.parse(owner),
         UserLoggerMapper.toUpdateDataLogs(ids),
@@ -136,7 +137,7 @@ export function updateRecords(
   return pipe(
     DataRepository.findMany(ctx, command.collection, findFilter),
     // This returns the owned documents grouped by owner, the standard documents are skipped.
-    E.map((documents) => UserRepository.groupByOwner(documents)),
+    E.map((documents) => UserDataMapper.groupByOwner(documents)),
     E.flatMap((ownedDocuments) => updateUserLogs(ownedDocuments)),
     // This updates both owned and standard documents.
     E.flatMap(() => DataRepository.updateMany(ctx, collection, filter, update)),
@@ -185,7 +186,7 @@ export function deleteData(
 > {
   return pipe(
     // This deletes the owned documents from the users, the standard documents are skipped.
-    UserRepository.deleteUserDataReferences(
+    UsersService.deleteUserDataReferences(
       ctx,
       command.collection,
       command.filter,
@@ -194,6 +195,25 @@ export function deleteData(
     E.flatMap(() =>
       DataRepository.deleteMany(ctx, command.collection, command.filter),
     ),
+  );
+}
+
+/**
+ * Delete data records.
+ */
+export function deleteCollection(
+  ctx: AppBindings,
+  collection: UUID,
+): E.Effect<
+  void,
+  CollectionNotFoundError | DatabaseError | DataValidationError,
+  never
+> {
+  return pipe(
+    // This deletes the owned documents from the users, the standard documents are skipped.
+    UsersService.deleteUserDataReferences(ctx, collection, {}),
+    // This updates both owned and standard documents.
+    E.flatMap(() => DataRepository.deleteCollection(ctx, collection)),
   );
 }
 
@@ -210,7 +230,7 @@ export function flushCollection(
 > {
   return pipe(
     // This deletes the owned documents from the users, the standard documents are skipped.
-    UserRepository.deleteUserDataReferences(ctx, command.collection, {}),
+    UsersService.deleteUserDataReferences(ctx, command.collection, {}),
     // This updates both owned and standard documents.
     E.flatMap(() => DataRepository.flushCollection(ctx, command.collection)),
   );

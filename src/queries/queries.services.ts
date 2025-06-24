@@ -32,6 +32,22 @@ import type {
 } from "./queries.types";
 
 /**
+ * Get builder queries.
+ */
+export function getBuilderQueries(
+  ctx: AppBindings,
+  id: Did,
+): E.Effect<
+  QueryDocument[],
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return QueriesRepository.findMany(ctx, { owner: id });
+}
+
+/**
  * Add query.
  */
 export function addQuery(
@@ -225,6 +241,24 @@ export function removeQuery(
       BuildersRepository.removeQuery(ctx, document.owner, command._id),
     ),
     E.as(void 0),
+  );
+}
+
+/**
+ * Remove query.
+ */
+export function deleteBuilderQueries(
+  ctx: AppBindings,
+  builder: Did,
+): E.Effect<
+  void,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return QueriesRepository.deleteMany(ctx, { owner: builder }).pipe(
+    E.tap(() => ctx.cache.builders.taint(builder)),
   );
 }
 

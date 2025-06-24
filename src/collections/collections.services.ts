@@ -1,7 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { CreateIndexesOptions, IndexSpecification } from "mongodb";
 import * as BuildersRepository from "#/builders/builders.repository";
-import type { BuilderDocument } from "#/builders/builders.types";
 import type {
   CollectionDocument,
   CollectionMetadata,
@@ -19,10 +18,11 @@ import type {
   IndexNotFoundError,
   InvalidIndexOptionsError,
 } from "#/common/errors";
+import type { Did } from "#/common/types";
 import { validateSchema } from "#/common/validator";
 import * as DataRepository from "#/data/data.repository";
+import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
-import * as UserRepository from "#/users/users.repository";
 import * as CollectionsRepository from "./collections.repository";
 
 /**
@@ -30,7 +30,7 @@ import * as CollectionsRepository from "./collections.repository";
  */
 export function getBuilderCollections(
   ctx: AppBindings,
-  builder: BuilderDocument,
+  id: Did,
 ): E.Effect<
   CollectionDocument[],
   | DocumentNotFoundError
@@ -38,7 +38,7 @@ export function getBuilderCollections(
   | DatabaseError
   | DataValidationError
 > {
-  return CollectionsRepository.findMany(ctx, { owner: builder._id });
+  return CollectionsRepository.findMany(ctx, { owner: id });
 }
 
 /**
@@ -93,18 +93,39 @@ export function deleteCollection(
 > {
   return pipe(
     CollectionsRepository.deleteOne(ctx, { _id: command._id }),
+    E.tap((collection) => ctx.cache.builders.taint(collection.owner)),
     E.flatMap((collection) =>
       E.all([
-        E.succeed(ctx.cache.builders.taint(collection.owner)),
         BuildersRepository.removeCollection(ctx, collection.owner, command._id),
-        pipe(
-          // This deletes the owned documents from the users, the standard documents are skipped.
-          UserRepository.deleteUserDataReferences(ctx, command._id, {}),
-          E.flatMap(() => DataRepository.deleteCollection(ctx, command._id)),
-        ),
+        DataService.deleteCollection(ctx, collection._id),
       ]),
     ),
     E.as(void 0),
+  );
+}
+
+/**
+ * Delete builder collections.
+ */
+export function deleteBuilderCollections(
+  ctx: AppBindings,
+  builder: Did,
+): E.Effect<
+  void,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return pipe(
+    getBuilderCollections(ctx, builder),
+    E.tap(() => ctx.cache.builders.taint(builder)),
+    E.flatMap((collections) =>
+      E.forEach(collections, (collection) =>
+        DataService.deleteCollection(ctx, collection._id),
+      ),
+    ),
+    E.flatMap(() => CollectionsRepository.deleteMany(ctx, { owner: builder })),
   );
 }
 

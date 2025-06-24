@@ -14,12 +14,8 @@ import {
   DocumentNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
-import { Did } from "#/common/types";
-import * as DataRepository from "#/data/data.repository";
-import type {
-  OwnedDocumentBase,
-  StandardDocumentBase,
-} from "#/data/data.types";
+import type { Did } from "#/common/types";
+import type { OwnedDocumentBase } from "#/data/data.types";
 import type { AppBindings } from "#/env";
 import type { UserDataLogs } from "#/users/users.dto";
 import { UserLoggerMapper } from "#/users/users.mapper";
@@ -82,65 +78,6 @@ export function upsert(
       catch: (cause) => new DatabaseError({ cause, message: "upsert" }),
     }),
     E.as(void 0),
-  );
-}
-
-// This endpoint can be invoked against a standard and owned collections,
-// meaning that when the target is an owned collection we also need to
-// update the user's document
-export function groupByOwner(
-  documents: StandardDocumentBase[],
-): Record<string, UUID[]> {
-  return documents.reduce<Record<string, UUID[]>>((acc, data) => {
-    if ("_owner" in data) {
-      const document = data as OwnedDocumentBase;
-      const { _owner } = document;
-
-      if (!acc[_owner]) {
-        acc[_owner] = [];
-      }
-
-      acc[_owner].push(data._id);
-    }
-
-    return acc;
-  }, {});
-}
-
-export function deleteUserDataReferences(
-  ctx: AppBindings,
-  collection: UUID,
-  filter: Record<string, unknown>,
-): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DataValidationError,
-  never
-> {
-  function deleteDataReferences(
-    ctx: AppBindings,
-    documents: Record<Did, UUID[]>,
-  ): E.Effect<
-    void,
-    CollectionNotFoundError | DatabaseError | DataValidationError
-  > {
-    return E.forEach(Object.entries(documents), ([owner, ids]) => {
-      const user = Did.parse(owner);
-      return pipe(
-        removeData(ctx, user, ids),
-        E.flatMap(() => removeUser(ctx, { _id: user, data: { $size: 0 } })),
-      );
-    });
-  }
-
-  const findFilter = {
-    ...filter,
-    _owner: { $exists: true }, // Ensure we only update owned documents
-  };
-  return pipe(
-    DataRepository.findMany(ctx, collection, findFilter),
-    // This returns the owned documents grouped by owner, the standard documents are skipped.
-    E.map((documents) => groupByOwner(documents)),
-    E.flatMap((ownedDocuments) => deleteDataReferences(ctx, ownedDocuments)),
   );
 }
 

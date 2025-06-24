@@ -1,5 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import type { UpdateResult } from "mongodb";
+import type { UpdateResult, UUID } from "mongodb";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -7,8 +7,9 @@ import type {
   DocumentNotFoundError,
 } from "#/common/errors";
 import type { Did } from "#/common/types";
+import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
-import { UserLoggerMapper } from "#/users/users.mapper";
+import { UserDataMapper, UserLoggerMapper } from "#/users/users.mapper";
 import * as UserRepository from "./users.repository";
 import type {
   DataDocumentReference,
@@ -47,9 +48,6 @@ export function find(
  * @param did - User's decentralized identifier
  * @returns Array of data documents owned by the user
  */
-/**
- * List user data references.
- */
 export function listUserDataReferences(
   ctx: AppBindings,
   did: Did,
@@ -63,6 +61,47 @@ export function listUserDataReferences(
   return pipe(
     find(ctx, did),
     E.map((user) => user.data),
+  );
+}
+
+/**
+ * Deletes data documents owned by a user.
+ *
+ * This function finds all documents that the user owns and removes them
+ * from the database. It also removes the user from the user repository
+ * if they have no remaining data.
+ *
+ * @param ctx - Application context and bindings
+ * @param collection - Collection UUID
+ * @param filter - Filter to find owned documents
+ * @returns Effect that resolves to void or an error
+ */
+export function deleteUserDataReferences(
+  ctx: AppBindings,
+  collection: UUID,
+  filter: Record<string, unknown>,
+): E.Effect<
+  void,
+  CollectionNotFoundError | DatabaseError | DataValidationError,
+  never
+> {
+  return pipe(
+    DataService.findRecords(ctx, {
+      collection,
+      filter: { ...filter, _owner: { $exists: true } },
+    }),
+    // This returns the owned documents grouped by owner, the standard documents are skipped.
+    E.map((documents) => UserDataMapper.groupByOwner(documents)),
+    E.flatMap((documents) =>
+      E.forEach(Object.entries(documents), ([owner, ids]) => {
+        return pipe(
+          UserRepository.removeData(ctx, owner as Did, ids),
+          E.flatMap(() =>
+            UserRepository.removeUser(ctx, { _id: owner, data: { $size: 0 } }),
+          ),
+        );
+      }),
+    ),
   );
 }
 
