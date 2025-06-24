@@ -1,6 +1,10 @@
 import { UUID } from "mongodb";
 import { Did } from "#/common/types";
-import type { OwnedDocumentBase, ReadDataCommand } from "#/data/data.types";
+import type {
+  OwnedDocumentBase,
+  ReadDataCommand,
+  StandardDocumentBase,
+} from "#/data/data.types";
 import type {
   DeleteDocumentRequestParams,
   GrantAccessToDataRequest,
@@ -185,6 +189,28 @@ export const UserDataMapper = {
         _updated: document._updated.toISOString(),
       },
     };
+  },
+
+  /**
+   * Groups documents by their owner.
+   * @param documents - Array of documents to group
+   * @return Record where keys are owner IDs and values are arrays of document IDs
+   */
+  groupByOwner(documents: StandardDocumentBase[]): Record<Did, UUID[]> {
+    return documents.reduce<Record<Did, UUID[]>>((acc, data) => {
+      if ("_owner" in data) {
+        const document = data as OwnedDocumentBase;
+        const { _owner } = document;
+
+        if (!acc[_owner]) {
+          acc[_owner] = [];
+        }
+
+        acc[_owner].push(data._id);
+      }
+
+      return acc;
+    }, {});
   },
 } as const;
 

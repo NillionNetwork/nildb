@@ -82,6 +82,26 @@ export function upsert(
 }
 
 /**
+ * Remove user.
+ */
+export function removeUser(
+  ctx: AppBindings,
+  filter: Record<string, unknown>,
+): E.Effect<
+  void,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return pipe(
+    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.Users),
+    E.tryMapPromise({
+      try: (collection) => collection.deleteOne(filter),
+      catch: (cause) => new DatabaseError({ cause, message: "remove data" }),
+    }),
+    E.as(void 0),
+  );
+}
+
+/**
  * Remove user data.
  */
 export function removeData(

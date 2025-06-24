@@ -1,13 +1,16 @@
 import { Effect as E, pipe } from "effect";
+import * as CollectionsService from "#/collections/collections.services";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
+  type DataValidationError,
   type DocumentNotFoundError,
   DuplicateEntryError,
 } from "#/common/errors";
 import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
-import * as BuilderRepository from "./builders.repository";
+import * as QueriesService from "#/queries/queries.services";
+import * as BuildersRepository from "./builders.repository";
 import type {
   BuilderDocument,
   CreateBuilderCommand,
@@ -24,7 +27,7 @@ export function find(
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return BuilderRepository.findOne(ctx, did);
+  return BuildersRepository.findOne(ctx, did);
 }
 
 /**
@@ -57,7 +60,7 @@ export function createBuilder(
         queries: [],
       };
     }),
-    E.flatMap((document) => BuilderRepository.insert(ctx, document)),
+    E.flatMap((document) => BuildersRepository.insert(ctx, document)),
   );
 }
 
@@ -69,9 +72,16 @@ export function remove(
   id: Did,
 ): E.Effect<
   void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
 > {
-  return BuilderRepository.deleteOneById(ctx, id);
+  return E.all([
+    BuildersRepository.deleteOneById(ctx, id),
+    CollectionsService.deleteBuilderCollections(ctx, id),
+    QueriesService.deleteBuilderQueries(ctx, id),
+  ]);
 }
 
 /**
@@ -84,5 +94,5 @@ export function updateProfile(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return BuilderRepository.update(ctx, command.builder, command.updates);
+  return BuildersRepository.update(ctx, command.builder, command.updates);
 }

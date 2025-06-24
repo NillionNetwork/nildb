@@ -58,6 +58,13 @@ export type DeleteCollectionCommand = {
 };
 
 /**
+ * Delete collection command.
+ */
+export type DeleteManyCollectionsCommand = {
+  collections: UUID[];
+};
+
+/**
  * Create index command.
  */
 export type CreateIndexCommand = {

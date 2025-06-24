@@ -65,7 +65,7 @@ export function readCollections(options: ControllerOptions): void {
       const builder = c.get("builder") as BuilderDocument;
 
       return pipe(
-        CollectionsService.getBuilderCollections(c.env, builder),
+        CollectionsService.getBuilderCollections(c.env, builder._id),
         E.map((collection) =>
           CollectionsDataMapper.toListCollectionsResponse(collection),
         ),

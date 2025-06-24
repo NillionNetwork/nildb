@@ -105,11 +105,11 @@ export function createCollection(
  */
 export function tailCollection(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
   limit: number,
 ): E.Effect<DocumentBase[], CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
       try: (collection) =>
         collection.find().sort({ _created: -1 }).limit(limit).toArray(),
@@ -123,10 +123,10 @@ export function tailCollection(
  */
 export function deleteCollection(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
 ): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
       try: (collection) =>
         ctx.db.data.dropCollection(collection.collectionName),
@@ -142,10 +142,10 @@ export function deleteCollection(
  */
 export function flushCollection(
   ctx: AppBindings,
-  schema: UUID,
+  collection: UUID,
 ): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DocumentBase>(ctx, "data", schema.toString()),
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.deleteMany(),
       catch: (cause) =>

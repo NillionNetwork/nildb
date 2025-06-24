@@ -1,6 +1,7 @@
 import { Effect as E, pipe } from "effect";
 import type {
   CreateIndexesOptions,
+  DeleteResult,
   Document,
   IndexSpecification,
   StrictFilter,
@@ -158,6 +159,48 @@ export function deleteOne(
       try: ([collection, documentFilter]) =>
         collection.findOneAndDelete(documentFilter),
       catch: (cause) => new DatabaseError({ cause, message: "deleteOne" }),
+    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Collections,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
+  );
+}
+
+/**
+ * Delete many collection.
+ */
+export function deleteMany(
+  ctx: AppBindings,
+  filter: StrictFilter<CollectionDocument>,
+): E.Effect<
+  DeleteResult,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return pipe(
+    E.all([
+      checkCollectionExists<CollectionDocument>(
+        ctx,
+        "primary",
+        CollectionName.Collections,
+      ),
+      applyCoercions<Filter<CollectionDocument>>(
+        addCollectionDocumentCoercions(filter),
+      ),
+    ]),
+    E.tryMapPromise({
+      try: ([collection, documentFilter]) =>
+        collection.deleteMany(documentFilter),
+      catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
     }),
     E.flatMap((result) =>
       result === null
