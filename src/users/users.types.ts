@@ -36,7 +36,7 @@ export type DataDocumentReference = {
  */
 export type UserDocument = DocumentBase<Did> & {
   data: DataDocumentReference[];
-  log: UserDataLogs[];
+  logs: UserDataLogs[];
 };
 
 /**
