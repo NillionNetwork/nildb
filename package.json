@@ -29,8 +29,8 @@
     "docker-compose": "^1.2.0",
     "dotenv": "^16.5.0",
     "eciesjs": "^0.4.15",
-    "effect": "^3.16.9",
-    "hono": "^4.8.2",
+    "effect": "^3.16.10",
+    "hono": "^4.8.3",
     "hono-openapi": "^0.4.8",
     "http-status-codes": "^2.3.0",
     "js-yaml": "^4.1.0",
@@ -61,5 +61,5 @@
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "3.2.4"
   },
-  "packageManager": "pnpm@10.12.1"
+  "packageManager": "pnpm@10.12.3"
 }
