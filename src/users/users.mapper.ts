@@ -73,7 +73,7 @@ export const UserDataMapper = {
         _id: user._id,
         _created: user._created.toISOString(),
         _updated: user._updated.toISOString(),
-        log: user.log,
+        logs: user.logs,
         data: user.data.map((d) => ({
           collection: d.collection.toString(),
           id: d.document.toString(),

@@ -50,7 +50,7 @@ const UserProfileData = z.object({
   _id: Did,
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
-  log: z.array(UserDataLogs),
+  logs: z.array(UserDataLogs),
   data: z.array(
     z.object({
       collection: z.string().uuid(),
