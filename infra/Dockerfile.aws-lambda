@@ -1,0 +1,29 @@
+FROM node:24-alpine
+
+WORKDIR /var/task
+COPY . .
+
+# fix up corepack so that it works in lambda restricted environment
+ENV PATH="/opt/bin:$PATH"
+RUN export PNPM_VERSION=$(node -p "require('./package.json').packageManager.match(/^pnpm@([^+]+)/)[1]") \
+ && npm install -g pnpm@$PNPM_VERSION --prefix=/opt \
+ && corepack enable pnpm \
+ && LEFTHOOK=0 pnpm install --frozen-lockfile --prod
+
+# cert bundle for using DocumentDB
+ADD https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /var/task/rds-combined-ca-bundle.pem
+RUN chmod 644 /var/task/rds-combined-ca-bundle.pem
+
+# tool up aws lambda
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
+ENV AWS_LWA_PORT="8081"
+ENV AWS_LWA_READINESS_CHECK_PATH="/health"
+ENV AWS_LWA_ASYNC_INIT="true"
+ENV AWS_LWA_ENABLE_COMPRESSION="true"
+
+# settings for nildb
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+ENV APP_PORT="8081"
+ENV APP_LOG_LEVEL="debug"
+
+CMD [ "pnpm", "run", "start" ]

@@ -1,0 +1,13 @@
+version: 0.1
+default:
+  deploy:
+    parameters:
+      stack_name: <your stack name>
+      resolve_s3: true
+      s3_prefix: <prefix for your sam deployment>
+      resolve_image_repos: true
+      region: <your aws region>
+      confirm_changeset: true
+      capabilities: CAPABILITY_IAM
+      disable_rollback: true
+      parameter_overrides: AppEnv="testnet" AppDbNameBase="<your collection name>" AppLogLevel="<info | debug>" AppNilAuthBaseUrl="<nilauth base url>" AppNilAuthPublicKey="<nilauth public key>" DomainName="<your desired domain>" Route53ZoneId="<the route53 zone for your domain>" AppNodeSecretKey="<your node secret key>"
