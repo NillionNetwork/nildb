@@ -39,6 +39,7 @@ export const CollectionsDataMapper = {
           name: index.name,
           unique: index.unique,
         })),
+        schema: metadata.schema,
       },
     };
   },

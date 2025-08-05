@@ -221,7 +221,10 @@ export function deleteMany(
 export function getCollectionStats(
   ctx: AppBindings,
   _id: UUID,
-): E.Effect<CollectionMetadata, CollectionNotFoundError | DatabaseError> {
+): E.Effect<
+  Omit<CollectionMetadata, "schema">,
+  CollectionNotFoundError | DatabaseError
+> {
   return pipe(
     checkCollectionExists(ctx, "data", _id.toString()),
     E.flatMap((collection) =>

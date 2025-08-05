@@ -194,9 +194,7 @@ export function readCollectionById(options: ControllerOptions): void {
 
       return pipe(
         enforceCollectionOwnership(builder, command.id),
-        E.flatMap(() =>
-          CollectionsService.getCollectionMetadata(c.env, command),
-        ),
+        E.flatMap(() => CollectionsService.getCollectionById(c.env, command)),
         E.map((metadata) =>
           CollectionsDataMapper.toReadMetadataResponse(metadata),
         ),
