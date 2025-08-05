@@ -1,6 +1,5 @@
 import type { IndexDirection, UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
-import type { Did } from "#/common/types";
 
 /**
  * Collection type.
@@ -11,7 +10,7 @@ export type CollectionType = "standard" | "owned";
  * Collection document.
  */
 export type CollectionDocument = DocumentBase & {
-  owner: Did;
+  owner: string;
   name: string;
   schema: Record<string, unknown>;
   type: CollectionType;
@@ -45,7 +44,7 @@ export type CollectionIndex = {
 export type CreateCollectionCommand = {
   _id: UUID;
   type: CollectionType;
-  owner: Did;
+  owner: string;
   name: string;
   schema: Record<string, unknown>;
 };

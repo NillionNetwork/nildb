@@ -13,7 +13,6 @@ import {
   VariableInjectionError,
 } from "#/common/errors";
 import { applyCoercions } from "#/common/mongo";
-import type { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
@@ -36,7 +35,7 @@ import type {
  */
 export function getBuilderQueries(
   ctx: AppBindings,
-  id: Did,
+  id: string,
 ): E.Effect<
   QueryDocument[],
   | DocumentNotFoundError
@@ -213,7 +212,7 @@ export function getQueryById(
  */
 export function findQueries(
   ctx: AppBindings,
-  owner: Did,
+  owner: string,
 ): E.Effect<
   QueryDocument[],
   | DocumentNotFoundError
@@ -255,7 +254,7 @@ export function removeQuery(
  */
 export function deleteBuilderQueries(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
 ): E.Effect<
   void,
   | DocumentNotFoundError

@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
 import { faker } from "@faker-js/faker";
-import { Keypair } from "@nillion/nuc";
+import { Builder, Did, Keypair, Signer } from "@nillion/nuc";
 import dotenv from "dotenv";
 import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
@@ -8,6 +8,7 @@ import * as vitest from "vitest";
 import { type App, buildApp } from "#/app";
 import type { CollectionType } from "#/collections/collections.types";
 import { mongoMigrateUp } from "#/common/mongo";
+import { NucCmd } from "#/common/nuc-cmd-tree";
 import { createUuidDto, type UuidDto } from "#/common/types";
 import {
   type AppBindings,
@@ -23,7 +24,6 @@ import {
   createAdminTestClient,
   createBuilderTestClient,
   createUserTestClient,
-  selfSignedDelegationToken,
   type UserTestClient,
 } from "./test-client";
 
@@ -100,14 +100,16 @@ export async function buildFixture(
 
   // Create system client - uses node's keypair for system administration
   const adminKeypair = Keypair.generate();
+  const nodeDelegation = await Builder.delegation()
+    .subject(adminKeypair.toDid())
+    .command(NucCmd.nil.db.root)
+    .audience(adminKeypair.toDid())
+    .build(Signer.fromKeypair(node.keypair));
   const system = await createAdminTestClient({
     app,
     keypair: adminKeypair,
-    nodePublicKey: node.keypair.publicKey("hex"),
-    nodeDelegation: selfSignedDelegationToken({
-      keypair: node.keypair,
-      audience: adminKeypair.toDid(),
-    }),
+    nodePublicKey: node.keypair.publicKey(),
+    nodeDelegation,
   });
 
   // Create builder client with subscription and nilauth
@@ -116,14 +118,14 @@ export async function buildFixture(
     keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_0!),
     chainUrl,
     nilauthBaseUrl,
-    nodePublicKey: node.keypair.publicKey("hex"),
+    nodePublicKey: node.keypair.publicKey(),
   });
 
   // Create user client - data owner with self-signed tokens
   const user = await createUserTestClient({
     app,
     keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!),
-    nodePublicKey: node.keypair.publicKey("hex"),
+    nodePublicKey: node.keypair.publicKey(),
   });
 
   // this global expect gets replaced by the test effect
@@ -141,11 +143,11 @@ export async function buildFixture(
 
   // Register the builder
   await builder.ensureSubscriptionActive();
-  log.info({ did: builder.did }, "Builder subscription active");
+  log.info({ did: Did.serialize(builder.did) }, "Builder subscription active");
 
   await builder
     .register(c, {
-      did: builder.did,
+      did: Did.serialize(builder.did),
       name: faker.person.fullName(),
     })
     .expectSuccess();

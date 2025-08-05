@@ -1,13 +1,4 @@
-import {
-  DelegationBody,
-  Did,
-  Equals,
-  InvocationBody,
-  NucTokenBuilder,
-  type NucTokenEnvelope,
-  NucTokenEnvelopeSchema,
-  SelectorSchema,
-} from "@nillion/nuc";
+import { Builder, Did, type Envelope, Signer } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { NucCmd } from "#/common/nuc-cmd-tree";
@@ -25,26 +16,20 @@ describe("update data", () => {
     query,
   });
 
-  let root: NucTokenEnvelope;
-  let delegation: NucTokenEnvelope;
+  let root: Envelope;
+  let delegation: Envelope;
 
   beforeAll(async (c) => {
     const { builder, user } = c;
 
-    const audience = Did.fromHex(user._options.keypair.publicKey("hex"));
+    const audience = user._options.keypair.toDid();
     root = await builder.getRootToken();
 
-    const delegationRaw = NucTokenBuilder.extending(root)
+    delegation = await Builder.delegating(root)
       .command(NucCmd.nil.db.builders.read)
-      .body(
-        new DelegationBody([
-          new Equals(SelectorSchema.parse("$.req.headers.origin"), "good.com"),
-        ]),
-      )
+      .addPolicy(["==", "$.req.headers.origin", "good.com"])
       .audience(audience)
-      .build(builder.keypair.privateKey());
-
-    delegation = NucTokenEnvelopeSchema.parse(delegationRaw);
+      .build(Signer.fromKeypair(builder.keypair));
   });
 
   afterAll(async (_c) => {});
@@ -52,12 +37,11 @@ describe("update data", () => {
   it("rejects if origin policy fails", async ({ c }) => {
     const { expect, user } = c;
 
-    const audience = Did.fromHex(user._options.nodePublicKey);
+    const audience = Did.fromPublicKey(user._options.nodePublicKey);
 
-    const invocation = NucTokenBuilder.extending(delegation)
+    const invocation = await Builder.invoking(delegation)
       .audience(audience)
-      .body(new InvocationBody({}))
-      .build(user.keypair.privateKey());
+      .signAndSerialize(Signer.fromKeypair(user.keypair));
 
     const response = await user.app.request(PathsV1.builders.me, {
       headers: {
@@ -73,12 +57,9 @@ describe("update data", () => {
   it("accepts if correct origin passes", async ({ c }) => {
     const { expect, user } = c;
 
-    const audience = Did.fromHex(user._options.nodePublicKey);
-
-    const invocation = NucTokenBuilder.extending(delegation)
-      .audience(audience)
-      .body(new InvocationBody({}))
-      .build(user.keypair.privateKey());
+    const invocation = await Builder.invoking(delegation)
+      .audience(Did.fromPublicKey(user._options.nodePublicKey))
+      .signAndSerialize(Signer.fromKeypair(user.keypair));
 
     const response = await user.app.request(PathsV1.builders.me, {
       headers: {

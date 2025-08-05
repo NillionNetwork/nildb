@@ -1,13 +1,12 @@
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { Did } from "#/common/types";
 
 /**
  * Builder registration request.
  */
 export const RegisterBuilderRequest = z
   .object({
-    did: Did,
+    did: z.string(),
     name: z.string().min(1).max(255),
   })
   .openapi({ ref: "RegisterBuilderRequest" });
@@ -23,7 +22,7 @@ export type RegisterBuilderResponse = z.infer<typeof RegisterBuilderResponse>;
  * Builder profile data.
  */
 const ProfileDto = z.object({
-  _id: Did,
+  _id: z.string(),
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
   name: z.string(),

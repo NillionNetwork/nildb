@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { Did } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import collectionJson from "./data/simple.collection.json";
@@ -21,7 +22,7 @@ describe("builders.test.ts", () => {
   it("builder can read its profile", async ({ c }) => {
     const { builder } = c;
     const { data } = await builder.getProfile(c).expectSuccess();
-    c.expect(data._id).toBe(builder.did);
+    c.expect(data._id).toBe(Did.serialize(builder.did));
   });
 
   it("builder can update its profile", async ({ c }) => {

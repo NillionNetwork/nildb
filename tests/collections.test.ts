@@ -55,7 +55,7 @@ describe("collections.test.ts", () => {
 
     const result = await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data: [
           {
@@ -65,7 +65,12 @@ describe("collections.test.ts", () => {
             age: 42,
           },
         ],
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectSuccess();
 
@@ -110,7 +115,7 @@ describe("collections.test.ts", () => {
 
     expect(collectionDocument).toBeNull();
 
-    const builderDocument = await expectBuilder(c, builder.did);
+    const builderDocument = await expectBuilder(c, builder.did.didString);
     expect(builderDocument.collections).toHaveLength(0);
 
     await assertDocumentCount(c, id, 0);

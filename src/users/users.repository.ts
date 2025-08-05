@@ -14,7 +14,6 @@ import {
   DocumentNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
-import type { Did } from "#/common/types";
 import type { OwnedDocumentBase } from "#/data/data.types";
 import type { AppBindings } from "#/env";
 import type { UserDataLogs } from "#/users/users.dto";
@@ -30,7 +29,7 @@ import type {
  */
 export function upsert(
   ctx: AppBindings,
-  user: Did,
+  user: string,
   data: DataDocumentReference[],
   acl?: Acl,
 ): E.Effect<
@@ -100,13 +99,13 @@ export function removeUser(
  */
 export function removeData(
   ctx: AppBindings,
-  user: Did,
+  userDid: string,
   data: UUID[],
 ): E.Effect<
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  const filter: StrictFilter<UserDocument> = { _id: user };
+  const filter: StrictFilter<UserDocument> = { _id: userDid };
 
   const update: UpdateFilter<UserDocument> = {
     $set: {
@@ -141,7 +140,7 @@ export function removeData(
  */
 export function updateUserLogs(
   ctx: AppBindings,
-  userId: Did,
+  userId: string,
   logs: UserDataLogs[],
 ): E.Effect<
   void,
@@ -173,7 +172,7 @@ export function updateUserLogs(
  */
 export function findById(
   ctx: AppBindings,
-  user: Did,
+  user: string,
 ): E.Effect<
   UserDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
@@ -206,7 +205,7 @@ export function addAclEntry(
   ctx: AppBindings,
   collection: UUID,
   document: UUID,
-  owner: Did,
+  owner: string,
   acl: Acl,
 ): E.Effect<
   UpdateResult,
@@ -244,8 +243,8 @@ export function removeAclEntry(
   ctx: AppBindings,
   collection: UUID,
   document: UUID,
-  grantee: Did,
-  owner: Did,
+  grantee: string,
+  owner: string,
 ): E.Effect<
   UpdateResult,
   CollectionNotFoundError | DatabaseError | DataValidationError

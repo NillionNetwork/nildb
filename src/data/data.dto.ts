@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { Did } from "#/common/types";
 import { AclDto } from "#/users/users.dto";
 
 /**
@@ -8,7 +7,7 @@ import { AclDto } from "#/users/users.dto";
  */
 export const CreateOwnedDataRequest = z
   .object({
-    owner: Did,
+    owner: z.string(),
     collection: z.string().uuid(),
     data: z.array(z.record(z.string(), z.unknown())).min(1),
     acl: AclDto,

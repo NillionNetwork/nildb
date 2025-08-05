@@ -65,7 +65,7 @@ describe("query.test.ts", () => {
 
     expect(queryDocument).toBeNull();
 
-    const builderDocument = await expectBuilder(c, builder.did);
+    const builderDocument = await expectBuilder(c, builder.did.didString);
     expect(builderDocument.queries).toHaveLength(0);
   });
 });

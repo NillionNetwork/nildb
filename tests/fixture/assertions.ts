@@ -2,7 +2,7 @@ import { vi } from "vitest";
 import type { BuilderDocument } from "#/builders/builders.types";
 import type { ApiErrorResponse, ApiSuccessResponse } from "#/common/handler";
 import { CollectionName } from "#/common/mongo";
-import type { Did, UuidDto } from "#/common/types";
+import type { UuidDto } from "#/common/types";
 import type { ReadQueryRunByIdResponse } from "#/queries/queries.dto";
 import type { FixtureContext } from "./fixture";
 
@@ -52,7 +52,7 @@ export async function expectErrorResponse(
 
 export async function expectBuilder(
   c: FixtureContext,
-  _id: Did,
+  _id: string,
 ): Promise<BuilderDocument> {
   const document = await c.bindings.db.primary
     .collection<BuilderDocument>(CollectionName.Builders)

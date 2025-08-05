@@ -18,7 +18,7 @@ describe("system.test.ts", () => {
 
     const { build, public_key } = await system.about(c).expectSuccess();
     expect(build.version).toBe("0.0.0");
-    expect(public_key).toBe(bindings.node.keypair.publicKey("hex"));
+    expect(public_key).toBe(bindings.node.keypair.publicKey());
   });
 
   it("serves /openapi.json", async ({ c }) => {

@@ -29,7 +29,7 @@ import {
   isMongoError,
   MongoErrorCode,
 } from "#/common/mongo";
-import type { Did, UuidDto } from "#/common/types";
+import type { UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { Acl } from "#/users/users.types";
@@ -161,7 +161,7 @@ export function insertOwnedData(
   ctx: AppBindings,
   collection: CollectionDocument,
   data: PartialDataDocumentDto[],
-  owner: Did,
+  owner: string,
   acl: Acl[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
