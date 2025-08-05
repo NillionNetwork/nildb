@@ -153,11 +153,29 @@ export function deleteBuilderCollections(
 /**
  * Get collection metadata.
  */
-export function getCollectionMetadata(
+export function getCollectionById(
   ctx: AppBindings,
   command: ReadCollectionByIdCommand,
-): E.Effect<CollectionMetadata, CollectionNotFoundError | DatabaseError> {
-  return CollectionsRepository.getCollectionStats(ctx, command.id);
+): E.Effect<
+  CollectionMetadata,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return pipe(
+    E.Do,
+    E.bind("metadata", () =>
+      CollectionsRepository.getCollectionStats(ctx, command.id),
+    ),
+    E.bind("schema", () =>
+      pipe(
+        CollectionsRepository.findOne(ctx, { _id: command.id }),
+        E.map((collection) => collection.schema),
+      ),
+    ),
+    E.map(({ metadata, schema }) => ({ ...metadata, schema })),
+  );
 }
 
 /**

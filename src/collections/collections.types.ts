@@ -27,6 +27,7 @@ export type CollectionMetadata = {
   firstWrite: Date;
   lastWrite: Date;
   indexes: CollectionIndex[];
+  schema: Record<string, unknown>;
 };
 
 /**
