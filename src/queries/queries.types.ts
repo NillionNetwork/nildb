@@ -1,4 +1,3 @@
-import type { DidString } from "@nillion/nuc";
 import type { UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import type { DocumentBase } from "#/common/mongo";
@@ -21,7 +20,7 @@ export type QueryJobStatus = "pending" | "running" | "complete" | "error";
  * Query document.
  */
 export type QueryDocument = DocumentBase<UUID> & {
-  owner: DidString;
+  owner: string;
   name: string;
   collection: UUID;
   variables: Record<string, QueryVariable>;
@@ -53,7 +52,7 @@ export type AddQueryCommand = {
   collection: UUID;
   variables: Record<string, QueryVariable>;
   pipeline: Record<string, unknown>[];
-  owner: DidString;
+  owner: string;
 };
 
 /**

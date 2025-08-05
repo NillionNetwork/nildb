@@ -46,7 +46,7 @@ async function main() {
     () => {
       bindings.log.info(`Node public endpoint ${bindings.node.endpoint}`);
       bindings.log.info(
-        `Node identifier ${bindings.node.keypair.toDidString()}`,
+        `Node identifier ${bindings.node.keypair.toDid().didString}`,
       );
       bindings.log.info(`App on :${bindings.config.webPort}`);
     },

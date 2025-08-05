@@ -1,4 +1,3 @@
-import type { Did } from "#/common/types";
 import type {
   ReadProfileResponse,
   RegisterBuilderRequest,
@@ -45,7 +44,7 @@ export const BuilderDataMapper = {
    */
   toUpdateProfileCommand(
     dto: UpdateProfileRequest,
-    builder: Did,
+    builder: string,
   ): UpdateProfileCommand {
     return {
       builder,

@@ -1,6 +1,5 @@
 import z from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { Did } from "#/common/types";
 
 /**
  * Generic ID path parameter.
@@ -16,7 +15,7 @@ export type ByIdRequestParams = z.infer<typeof ByIdRequestParams>;
  * Access control list entry.
  */
 export const AclDto = z.object({
-  grantee: Did,
+  grantee: z.string(),
   read: z.boolean(),
   write: z.boolean(),
   execute: z.boolean(),
@@ -38,7 +37,7 @@ const UserDataLogs = z.discriminatedUnion("op", [
   z.object({
     op: z.literal("revoke-access"),
     collection: z.string().uuid(),
-    grantee: Did,
+    grantee: z.string(),
   }),
 ]);
 export type UserDataLogs = z.infer<typeof UserDataLogs>;
@@ -47,7 +46,7 @@ export type UserDataLogs = z.infer<typeof UserDataLogs>;
  * User profile data.
  */
 const UserProfileData = z.object({
-  _id: Did,
+  _id: z.string(),
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
   logs: z.array(UserDataLogs),
@@ -86,7 +85,7 @@ const OwnedDataDto = z
     _id: z.string().uuid(),
     _created: z.string().datetime(),
     _updated: z.string().datetime(),
-    _owner: Did,
+    _owner: z.string(),
     _acl: z.array(AclDto),
   })
   // Allow all keys through since each collection will follow a different schema
@@ -101,7 +100,7 @@ export type ReadDataResponse = z.infer<typeof ReadDataResponse>;
  * Data document reference.
  */
 const DataDocumentReference = z.object({
-  builder: Did,
+  builder: z.string(),
   collection: z.string().uuid(),
   document: z.string().uuid(),
 });
@@ -175,7 +174,7 @@ export type GrantAccessToDataResponse = z.infer<
  */
 export const RevokeAccessToDataRequest = z
   .object({
-    grantee: Did,
+    grantee: z.string(),
     collection: z.string().uuid(),
     document: z.string().uuid(),
   })

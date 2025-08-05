@@ -1,4 +1,3 @@
-import type { DidString } from "@nillion/nuc";
 import { UUID } from "mongodb";
 import type {
   ByIdRequestParams,
@@ -97,7 +96,7 @@ export const QueriesDataMapper = {
    */
   fromCreateQueryRequest(
     request: CreateQueryRequest,
-    owner: DidString,
+    owner: string,
   ): Omit<QueryDocument, "_id" | "_created" | "_updated"> {
     return {
       owner,
@@ -113,7 +112,7 @@ export const QueriesDataMapper = {
    */
   toCreateQueryCommand(
     body: CreateQueryRequest,
-    owner: DidString,
+    owner: string,
   ): AddQueryCommand {
     return {
       _id: new UUID(body._id),

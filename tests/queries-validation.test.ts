@@ -1,4 +1,4 @@
-import { Did } from "@nillion/nuc";
+import { Keypair } from "@nillion/nuc";
 import { Effect as E, Either, pipe } from "effect";
 import { UUID } from "mongodb";
 import { describe, it } from "vitest";
@@ -188,7 +188,7 @@ function buildQuery(
     _id: new UUID(),
     _created: new Date(),
     _updated: new Date(),
-    owner: new Did(Uint8Array.from(Array(33).fill(0xaa))).toString(),
+    owner: Keypair.generate().toDid().didString,
     name: "variables.wallet.query.json",
     collection: new UUID(),
     variables,

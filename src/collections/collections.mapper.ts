@@ -1,5 +1,4 @@
 import { type IndexDirection, UUID } from "mongodb";
-import type { Did } from "#/common/types";
 import type {
   CreateCollectionIndexRequest,
   CreateCollectionRequest,
@@ -64,7 +63,7 @@ export const CollectionsDataMapper = {
    */
   toCreateCollectionCommand(
     body: CreateCollectionRequest,
-    owner: Did,
+    owner: string,
   ): CreateCollectionCommand {
     return {
       _id: new UUID(body._id),

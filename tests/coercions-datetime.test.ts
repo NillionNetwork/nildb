@@ -27,10 +27,15 @@ describe("coercions-datetime.test", () => {
 
     const result = await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectSuccess();
 
@@ -57,11 +62,11 @@ describe("coercions-datetime.test", () => {
     for (const invalid of data) {
       await builder
         .createOwnedData(c, {
-          owner: user.did,
+          owner: user.did.didString,
           collection: collection.id,
           data: [invalid],
           acl: {
-            grantee: builder.did,
+            grantee: builder.did.didString,
             read: true,
             write: false,
             execute: false,

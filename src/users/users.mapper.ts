@@ -1,5 +1,4 @@
 import { UUID } from "mongodb";
-import { Did } from "#/common/types";
 import type {
   OwnedDocumentBase,
   ReadDataCommand,
@@ -55,7 +54,7 @@ export const UserDataMapper = {
     params: DeleteDocumentRequestParams,
   ): DeleteUserDataCommand {
     return {
-      owner: Did.parse(user._id),
+      owner: user._id,
       collection: new UUID(params.collection),
       document: new UUID(params.document),
       filter: {
@@ -156,7 +155,7 @@ export const UserDataMapper = {
       collection: new UUID(body.collection),
       document: new UUID(body.document),
       grantee: body.grantee,
-      owner: user._id as Did,
+      owner: user._id,
     };
   },
 
@@ -196,8 +195,8 @@ export const UserDataMapper = {
    * @param documents - Array of documents to group
    * @return Record where keys are owner IDs and values are arrays of document IDs
    */
-  groupByOwner(documents: StandardDocumentBase[]): Record<Did, UUID[]> {
-    return documents.reduce<Record<Did, UUID[]>>((acc, data) => {
+  groupByOwner(documents: StandardDocumentBase[]): Record<string, UUID[]> {
+    return documents.reduce<Record<string, UUID[]>>((acc, data) => {
       if ("_owner" in data) {
         const document = data as OwnedDocumentBase;
         const { _owner } = document;
@@ -259,7 +258,7 @@ export const UserLoggerMapper = {
     };
   },
 
-  toRevokeAccessLog(collection: UUID, grantee: Did): UserDataLogs {
+  toRevokeAccessLog(collection: UUID, grantee: string): UserDataLogs {
     return {
       op: "revoke-access",
       collection: collection.toString(),

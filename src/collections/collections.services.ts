@@ -18,7 +18,6 @@ import type {
   IndexNotFoundError,
   InvalidIndexOptionsError,
 } from "#/common/errors";
-import type { Did } from "#/common/types";
 import { validateSchema } from "#/common/validator";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
@@ -29,7 +28,7 @@ import * as CollectionsRepository from "./collections.repository";
  */
 export function getBuilderCollections(
   ctx: AppBindings,
-  id: Did,
+  id: string,
 ): E.Effect<
   CollectionDocument[],
   | DocumentNotFoundError
@@ -130,7 +129,7 @@ export function deleteCollection(
  */
 export function deleteBuilderCollections(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
 ): E.Effect<
   void,
   | DocumentNotFoundError

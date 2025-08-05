@@ -1,11 +1,10 @@
 import {
-  type Command,
+  Codec,
   Did,
-  InvocationRequirement,
+  type Envelope,
   NilauthClient,
-  NucTokenEnvelopeSchema,
-  NucTokenValidator,
-  ValidationParameters,
+  Payload,
+  Validator,
 } from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
@@ -31,16 +30,7 @@ export function loadNucToken<
         );
       }
 
-      const nucEnvelopeParseResult =
-        NucTokenEnvelopeSchema.safeParse(tokenString);
-      if (!nucEnvelopeParseResult.success) {
-        log.debug("Failed to parse nuc envelope: %s", tokenString);
-        return c.text(
-          getReasonPhrase(StatusCodes.UNAUTHORIZED),
-          StatusCodes.UNAUTHORIZED,
-        );
-      }
-      const envelope = nucEnvelopeParseResult.data;
+      const envelope = Codec.decodeBase64Url(tokenString);
       c.set("envelope", envelope);
 
       return next();
@@ -65,15 +55,12 @@ export function loadSubjectAndVerifyAsAdmin<
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log } = bindings;
 
-  const nildbNodeDid = Did.fromHex(bindings.node.keypair.publicKey("hex"));
-
-  const validationParameters = new ValidationParameters();
-  const validator = new NucTokenValidator([nildbNodeDid]);
+  const nildbNodeDid = bindings.node.keypair.toDid();
 
   return async (c, next) => {
     try {
       const envelope = c.get("envelope");
-      validator.validate(envelope, validationParameters);
+      Validator.validate(envelope, { rootIssuers: [nildbNodeDid.didString] });
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
@@ -96,19 +83,11 @@ export function loadSubjectAndVerifyAsBuilder<
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
 
-  const nilauthDid = Did.fromHex(config.nilauthPubKey);
-  const nildbNodeDid = Did.fromHex(bindings.node.keypair.publicKey("hex"));
-
-  const defaultValidationParameters = new ValidationParameters({
-    tokenRequirements: new InvocationRequirement(nildbNodeDid),
-  });
-  const validateNucWithSubscription = new NucTokenValidator([nilauthDid]);
-
   return async (c, next) => {
     try {
-      const envelope = c.get("envelope");
-      const token = envelope.token.token;
-      const subject = token.subject.toString();
+      const envelope: Envelope = c.get("envelope");
+      const token = envelope.nuc.payload;
+      const subject = Did.serialize(token.sub);
 
       // load builder
       const builder = await pipe(
@@ -131,7 +110,6 @@ export function loadSubjectAndVerifyAsBuilder<
           path: c.req.path,
           headers: c.req.header(),
         },
-        token: token.toJson(),
         payload: {
           // @ts-expect-error requires zValidator to run before the capability middleware but we cannot straightforwardly bring types into this scope
           body: c.req.valid("json") ?? {},
@@ -142,23 +120,34 @@ export function loadSubjectAndVerifyAsBuilder<
         },
       };
 
-      validateNucWithSubscription.validate(
-        envelope,
-        defaultValidationParameters,
+      // TODO: Update when nilauth supports did:key
+      const nilauthDid = Did.fromPublicKey(config.nilauthPubKey, "nil");
+      const nildbNodeDid = bindings.node.keypair.toDid();
+
+      Validator.validate(envelope, {
+        rootIssuers: [nilauthDid.didString],
+        params: {
+          tokenRequirements: {
+            type: "invocation",
+            audience: nildbNodeDid.didString,
+          },
+        },
         context,
-      );
+      });
 
       // check revocations last because it's costly (in terms of network RTT)
-      const { revoked } = await NilauthClient.findRevocationsInProofChain(
-        config.nilauthBaseUrl,
-        envelope,
-      );
+      const nilauthClient = await NilauthClient.create({
+        baseUrl: config.nilauthBaseUrl,
+      });
+      const { revoked } =
+        await nilauthClient.findRevocationsInProofChain(envelope);
+
       if (revoked.length !== 0) {
         const hashes = revoked.map((r) => r.tokenHash).join(",");
         log.warn(
           "Token revoked: revoked_hashes=(%s) auth_token=%O",
           hashes,
-          token.token.toJson(),
+          token,
         );
         return c.text(
           getReasonPhrase(StatusCodes.UNAUTHORIZED),
@@ -201,9 +190,9 @@ export function loadSubjectAndVerifyAsUser<
 
   return async (c, next) => {
     try {
-      const envelope = c.get("envelope");
-      const token = envelope.token.token;
-      const subject = token.subject.toString();
+      const envelope: Envelope = c.get("envelope");
+      const token = envelope.nuc.payload;
+      const subject = token.sub.didString;
       // load user
       const user = await pipe(
         UserRepository.findById(bindings, subject),
@@ -218,7 +207,9 @@ export function loadSubjectAndVerifyAsUser<
           StatusCodes.UNAUTHORIZED,
         );
       }
-      envelope.validateSignatures();
+      Validator.validate(envelope, {
+        rootIssuers: [subject],
+      });
       c.set("user", user);
       return next();
     } catch (cause) {
@@ -235,18 +226,19 @@ export function loadSubjectAndVerifyAsUser<
   };
 }
 
-export function requireNucNamespace(cmd: Command): MiddlewareHandler {
+export function requireNucNamespace(cmd: string): MiddlewareHandler {
   return async (c, next) => {
     const { log } = c.env;
-    const { token } = c.get("envelope").token;
+    const envelope: Envelope = c.get("envelope");
+    const token = envelope.nuc.payload;
 
-    const isValidCommand = cmd.isAttenuationOf(token.command);
+    const isValidCommand = Payload.isCommandAttenuationOf(cmd, token.cmd);
     if (!isValidCommand) {
       log.debug(
         "Nuc does not grant access to access %s: token command '%s' is not an attenuation of '%s'",
         c.req.path,
-        token.command.toString(),
-        cmd.toString(),
+        token.cmd,
+        cmd,
       );
       return c.text(
         getReasonPhrase(StatusCodes.FORBIDDEN),

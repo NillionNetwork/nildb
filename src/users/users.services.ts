@@ -6,7 +6,6 @@ import type {
   DataValidationError,
   DocumentNotFoundError,
 } from "#/common/errors";
-import type { Did } from "#/common/types";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
 import { UserDataMapper, UserLoggerMapper } from "#/users/users.mapper";
@@ -71,7 +70,7 @@ export function updateUserData(
       E.forEach(Object.entries(documents), ([owner, ids]) =>
         UserRepository.updateUserLogs(
           ctx,
-          owner as Did,
+          owner,
           UserLoggerMapper.toUpdateDataLogs(ids),
         ),
       ),
@@ -91,7 +90,7 @@ export function updateUserData(
  */
 export function find(
   ctx: AppBindings,
-  did: Did,
+  did: string,
 ): E.Effect<
   UserDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
@@ -111,7 +110,7 @@ export function find(
  */
 export function listUserDataReferences(
   ctx: AppBindings,
-  did: Did,
+  did: string,
 ): E.Effect<
   DataDocumentReference[],
   | DocumentNotFoundError
@@ -156,7 +155,7 @@ export function deleteUserDataReferences(
     E.flatMap((documents) =>
       E.forEach(Object.entries(documents), ([owner, ids]) => {
         return pipe(
-          UserRepository.removeData(ctx, owner as Did, ids),
+          UserRepository.removeData(ctx, owner, ids),
           E.flatMap(() =>
             UserRepository.removeUser(ctx, { _id: owner, data: { $size: 0 } }),
           ),

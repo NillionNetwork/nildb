@@ -33,11 +33,11 @@ describe("access-controls", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
         acl: {
-          grantee: builder.did,
+          grantee: builder.did.didString,
           read: true,
           write: false,
           execute: false,
@@ -55,7 +55,7 @@ describe("access-controls", () => {
 
     await builderB
       .register(c, {
-        did: builderB.did,
+        did: builderB.did.didString,
         name: "builderB",
       })
       .expectSuccess();
@@ -68,7 +68,7 @@ describe("access-controls", () => {
 
     await builderB
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data: [
           {
@@ -77,7 +77,7 @@ describe("access-controls", () => {
           },
         ],
         acl: {
-          grantee: builder.did,
+          grantee: builder.did.didString,
           read: true,
           write: false,
           execute: false,

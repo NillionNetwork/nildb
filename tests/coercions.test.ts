@@ -276,10 +276,15 @@ describe("coercions.test.ts", () => {
 
     const response = await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectSuccess();
 
@@ -315,10 +320,15 @@ describe("coercions.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,
@@ -344,10 +354,15 @@ describe("coercions.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,
@@ -373,10 +388,15 @@ describe("coercions.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,

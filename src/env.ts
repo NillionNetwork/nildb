@@ -1,11 +1,10 @@
-import { Keypair, type NucTokenEnvelope } from "@nillion/nuc";
+import { type Envelope, Keypair } from "@nillion/nuc";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { Cache } from "#/common/cache";
 import { createLogger, LogLevel } from "#/common/logger";
-import type { Did } from "#/common/types";
 import { initAndCreateDbClients } from "./common/mongo";
 import type { UserDocument } from "./users/users.types";
 
@@ -51,7 +50,7 @@ export type AppBindings = {
     data: Db;
   };
   cache: {
-    builders: Cache<Did, BuilderDocument>;
+    builders: Cache<string, BuilderDocument>;
   };
   log: Logger;
   node: {
@@ -84,7 +83,7 @@ declare global {
 // health, about). However, narrowing the type here to avoid use in those edge cases would cascade to
 // the majority of routes, which require auth. So the risk is accepted here to avoid the type complexity cascade.
 export type AppVariables = {
-  envelope: NucTokenEnvelope;
+  envelope: Envelope;
   builder: BuilderDocument;
   user: UserDocument;
 };
@@ -97,7 +96,7 @@ export async function loadBindings(
   return {
     config,
     cache: {
-      builders: new Cache<Did, BuilderDocument>(),
+      builders: new Cache<string, BuilderDocument>(),
     },
     db: await initAndCreateDbClients(config),
     log: createLogger(config.logLevel),

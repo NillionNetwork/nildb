@@ -1,6 +1,6 @@
 import type { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
-import type { Did, UuidDto } from "#/common/types";
+import type { UuidDto } from "#/common/types";
 import type { Acl } from "#/users/users.types";
 
 /**
@@ -16,7 +16,7 @@ export type StandardDocumentBase<
 export type OwnedDocumentBase<
   T extends Record<string, unknown> = Record<string, unknown>,
 > = StandardDocumentBase<T> & {
-  _owner: Did;
+  _owner: string;
   _acl: Acl[];
 };
 
@@ -48,7 +48,7 @@ export type PartialDataDocumentDto = Record<string, unknown>[] & {
  */
 export type CreateOwnedDataCommand = {
   collection: UUID;
-  owner: Did;
+  owner: string;
   acl: Acl;
   data: Record<string, unknown>[];
 };

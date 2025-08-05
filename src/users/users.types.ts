@@ -1,6 +1,5 @@
 import type { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
-import type { Did } from "#/common/types";
 import type { DeleteDataCommand, UpdateDataCommand } from "#/data/data.types";
 import type { UserDataLogs } from "#/users/users.dto";
 
@@ -8,7 +7,7 @@ import type { UserDataLogs } from "#/users/users.dto";
  * Access control list entry.
  */
 export type Acl = {
-  grantee: Did;
+  grantee: string;
   read: boolean;
   write: boolean;
   execute: boolean;
@@ -18,7 +17,7 @@ export type Acl = {
  * Delete data command.
  */
 export type DeleteUserDataCommand = DeleteDataCommand & {
-  owner: Did;
+  owner: string;
   document: UUID;
 };
 
@@ -26,7 +25,7 @@ export type DeleteUserDataCommand = DeleteDataCommand & {
  * Data document reference.
  */
 export type DataDocumentReference = {
-  builder: Did;
+  builder: string;
   collection: UUID;
   document: UUID;
 };
@@ -34,7 +33,7 @@ export type DataDocumentReference = {
 /**
  * User document.
  */
-export type UserDocument = DocumentBase<Did> & {
+export type UserDocument = DocumentBase<string> & {
   data: DataDocumentReference[];
   logs: UserDataLogs[];
 };
@@ -50,7 +49,7 @@ export type UpdateUserDataCommand = UpdateDataCommand & {
  * Read data ACL command.
  */
 export type ReadDataAclCommand = {
-  owner: Did;
+  owner: string;
   collection: UUID;
   document: UUID;
 };
@@ -61,7 +60,7 @@ export type ReadDataAclCommand = {
 export type GrantAccessToDataCommand = {
   collection: UUID;
   document: UUID;
-  owner: Did;
+  owner: string;
   acl: Acl;
 };
 
@@ -71,12 +70,12 @@ export type GrantAccessToDataCommand = {
 export type RevokeAccessToDataCommand = {
   collection: UUID;
   document: UUID;
-  grantee: Did;
-  owner: Did;
+  grantee: string;
+  owner: string;
 };
 
 export type UpsertUserCommand = {
-  user: Did;
+  user: string;
   data: DataDocumentReference[];
   acl?: Acl;
 };
