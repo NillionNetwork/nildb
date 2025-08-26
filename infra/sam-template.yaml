@@ -1,0 +1,384 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  nildb-infrastructure-and-application
+
+  Complete stack with VPC, DocumentDB, and Lambda application
+  
+Globals:
+  Function:
+    Timeout: 29
+
+Parameters:
+  # DocumentDB Parameters
+  DocumentDbUsername:
+    Type: String
+    Default: dbadmin
+    NoEcho: false
+
+  # Lambda Application Parameters
+  AppNodePublicEndpoint:
+    Type: String
+    NoEcho: false
+  AppEnv:
+    Type: String
+    NoEcho: false
+  AppDbNameBase:
+    Type: String
+    NoEcho: false
+  AppPort:
+    Type: String
+    NoEcho: false
+    Default: 8081
+  AppLogLevel:
+    Type: String
+    NoEcho: false
+    Default: info
+  AppEnabledFeatures:
+    Type: String
+    NoEcho: false
+    Default: openapi,migrations
+  AppNodeSecretKey:
+    Type: String
+    NoEcho: true
+  AppNilAuthBaseUrl:
+    Type: String
+    NoEcho: false
+  AppNilAuthPublicKey:
+    Type: String
+    NoEcho: false
+
+  # Domain Parameters
+  Route53ZoneId:
+    Type: String
+    Description: Route 53 Hosted Zone ID for the domain
+    NoEcho: false
+  DomainName:
+    Type: String
+    Description: Full domain name (e.g., 'api.example.com')
+    NoEcho: false
+
+Resources:
+  # Secrets
+  DocumentDbSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${AWS::StackName}-documentdb-credentials"
+      Description: DocumentDB credentials
+      GenerateSecretString:
+        SecretStringTemplate: !Sub '{"username": "${DocumentDbUsername}"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+        ExcludeCharacters: '!@#$%^&*()+=[]{}|:;"''\\,<>`?/'
+
+  # VPC Resources
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-vpc"
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: 10.0.1.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-private-subnet-1"
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: 10.0.2.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-private-subnet-2"
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-private-routes"
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet2
+
+  # Security Groups
+  DocumentDbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for DocumentDB cluster
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-documentdb-sg"
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Lambda function
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-sg"
+
+  # Security Group Rules (defined after both security groups exist)
+  DocumentDbSecurityGroupIngressFromLambda:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DocumentDbSecurityGroup
+      IpProtocol: tcp
+      FromPort: 27017
+      ToPort: 27017
+      SourceSecurityGroupId: !Ref LambdaSecurityGroup
+      Description: Allow Lambda function to access DocumentDB
+
+  DocumentDbSecurityGroupIngressFromVPC:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DocumentDbSecurityGroup
+      IpProtocol: tcp
+      FromPort: 27017
+      ToPort: 27017
+      CidrIp: 10.0.0.0/16
+      Description: Allow VPC access to DocumentDB
+
+  # DocumentDB Resources
+  DocumentDbSubnetGroup:
+    Type: AWS::DocDB::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for DocumentDB cluster
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-documentdb-subnet-group"
+
+  DocumentDbClusterParameterGroup:
+    Type: AWS::DocDB::DBClusterParameterGroup
+    Properties:
+      Description: Parameter group for minimal DocumentDB cluster
+      Family: docdb5.0
+      Parameters:
+        audit_logs: disabled
+        profiler: disabled
+        profiler_threshold_ms: 100
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-documentdb-params"
+
+  DocumentDbCluster:
+    Type: AWS::DocDB::DBCluster
+    DeletionPolicy: Delete
+    Properties:
+      DBClusterIdentifier: !Sub "${AWS::StackName}-documentdb"
+      MasterUsername: !Ref DocumentDbUsername
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${DocumentDbSecret}:SecretString:password}}"
+      EngineVersion: "5.0.0"
+      Port: 27017
+      VpcSecurityGroupIds:
+        - !Ref DocumentDbSecurityGroup
+      DBSubnetGroupName: !Ref DocumentDbSubnetGroup
+      DBClusterParameterGroupName: !Ref DocumentDbClusterParameterGroup
+      BackupRetentionPeriod: 1
+      PreferredBackupWindow: "03:00-04:00"
+      PreferredMaintenanceWindow: "sun:04:00-sun:05:00"
+      StorageEncrypted: false
+      DeletionProtection: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-documentdb-cluster"
+
+  DocumentDbInstance:
+    Type: AWS::DocDB::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub "${AWS::StackName}-documentdb-instance"
+      DBClusterIdentifier: !Ref DocumentDbCluster
+      DBInstanceClass: db.t4g.medium
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-documentdb-instance"
+
+  # Lambda Function
+  NilDbFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          APP_ENABLED_FEATURES: !Ref AppEnabledFeatures
+          APP_NODE_PUBLIC_ENDPOINT: !Sub "https://${DomainName}"
+          APP_METRICS_PORT: "9999"
+          APP_ENV: !Ref AppEnv
+          APP_DB_NAME_BASE: !Ref AppDbNameBase
+          APP_NILAUTH_BASE_URL: !Ref AppNilAuthBaseUrl
+          APP_NILAUTH_PUBLIC_KEY: !Ref AppNilAuthPublicKey
+          APP_PORT: !Ref AppPort
+          APP_LOG_LEVEL: !Ref AppLogLevel
+          APP_NODE_SECRET_KEY: !Ref AppNodeSecretKey
+          APP_DB_URI: !Sub 
+            - "mongodb://${username}:${password}@${endpoint}:${port}/?tls=true&tlsCAFile=/var/task/rds-combined-ca-bundle.pem&retryWrites=false"
+            - username: !Ref DocumentDbUsername
+              password: !Sub "{{resolve:secretsmanager:${DocumentDbSecret}:SecretString:password}}"
+              endpoint: !GetAtt DocumentDbCluster.Endpoint
+              port: !GetAtt DocumentDbCluster.Port
+      MemorySize: 1024
+      PackageType: Image
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+      Policies:
+        - VPCAccessPolicy: {}
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref DocumentDbSecret
+      Events:
+        RootEvent:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: any
+        ProxyEvent:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: any
+    Metadata:
+      DockerTag: v1
+      DockerContext: ..
+      Dockerfile: infra/Dockerfile.aws-lambda
+
+  # SSL Certificate for custom domain
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref Route53ZoneId
+      ValidationMethod: DNS
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-certificate"
+
+  # Custom Domain for API Gateway
+  CustomDomain:
+    Type: AWS::ApiGatewayV2::DomainName
+    Properties:
+      DomainName: !Ref DomainName
+      DomainNameConfigurations:
+        - CertificateArn: !Ref Certificate
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+      Tags:
+        Name: !Sub "${AWS::StackName}-custom-domain"
+
+  # API Mapping to connect custom domain to API Gateway
+  ApiMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Properties:
+      DomainName: !Ref CustomDomain
+      ApiId: !Ref ServerlessHttpApi
+      Stage: "$default"
+
+  # Route 53 Record for custom domain
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref Route53ZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CustomDomain.RegionalDomainName
+        HostedZoneId: !GetAtt CustomDomain.RegionalHostedZoneId
+        EvaluateTargetHealth: false
+      
+Outputs:
+  # VPC Outputs
+  VpcId:
+    Description: "VPC ID"
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VPC-ID"
+  
+  PrivateSubnet1Id:
+    Description: "Private Subnet 1 ID"
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnet1-ID"
+  
+  PrivateSubnet2Id:
+    Description: "Private Subnet 2 ID"
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnet2-ID"
+  
+  # DocumentDB Outputs
+  DocumentDbEndpoint:
+    Description: "DocumentDB cluster endpoint"
+    Value: !GetAtt DocumentDbCluster.Endpoint
+    Export:
+      Name: !Sub "${AWS::StackName}-DocumentDB-Endpoint"
+  
+  DocumentDbPort:
+    Description: "DocumentDB cluster port"
+    Value: !GetAtt DocumentDbCluster.Port
+    Export:
+      Name: !Sub "${AWS::StackName}-DocumentDB-Port"
+  
+  DocumentDbSecretArn:
+    Description: "ARN of the DocumentDB credentials in Secrets Manager"
+    Value: !Ref DocumentDbSecret
+    Export:
+      Name: !Sub "${AWS::StackName}-DocumentDB-Secret-ARN"
+  
+  DocumentDbUsername:
+    Description: "DocumentDB username"
+    Value: !Ref DocumentDbUsername
+    Export:
+      Name: !Sub "${AWS::StackName}-DocumentDB-Username"
+
+  DocumentDbSecurityGroupId:
+    Description: "Security Group ID for DocumentDB"
+    Value: !Ref DocumentDbSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-DocumentDB-SecurityGroup-ID"
+
+  # Lambda Outputs
+  NilDbFunctionURL:
+    Description: "API Gateway endpoint URL for nildb"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/"
+
+  # Custom Domain Output
+  CustomDomainURL:
+    Description: "Custom domain URL for nildb"
+    Value: !Sub "https://${DomainName}/"

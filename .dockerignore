@@ -6,4 +6,11 @@ README.md
 tests
 **/.terragrunt-cache
 **/.terraform
-.env
+.env*
+.git
+.github
+docker/
+local/
+.aws-sam
+template.yaml
+docs/
