@@ -1,15 +1,11 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator as zValidator } from "hono-openapi/zod";
-import * as BuildersService from "#/builders/builders.services";
 import type { BuilderDocument } from "#/builders/builders.types";
+import { GrantAccessError } from "#/common/errors";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
 import { OpenApiSpecCommonErrorResponses } from "#/common/openapi";
-import {
-  checkGrantAccess,
-  enforceCollectionOwnership,
-} from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
@@ -68,11 +64,10 @@ export function deleteData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
-      const command = DataMapper.toDeleteDataCommand(payload);
+      const command = DataMapper.toDeleteDataCommand(payload, builder._id);
 
       return pipe(
-        enforceCollectionOwnership(builder, command.collection),
-        E.flatMap(() => DataService.deleteData(c.env, command)),
+        DataService.deleteData(c.env, command),
         E.map((result) => DataMapper.toDeleteDataResponse(result)),
         E.map((response) => c.json<DeleteDataResponse>(response)),
         handleTaggedErrors(c),
@@ -109,11 +104,10 @@ export function flushData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder");
       const params = c.req.valid("param");
-      const command = DataMapper.toFlushDataCommand(params);
+      const command = DataMapper.toFlushDataCommand(params, builder._id);
 
       return pipe(
-        enforceCollectionOwnership(builder, command.collection),
-        E.flatMap(() => DataService.flushCollection(c.env, command)),
+        DataService.flushCollection(c.env, command),
         E.map(() => c.text<FlushDataResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
@@ -154,11 +148,10 @@ export function findData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
-      const command = DataMapper.toFindDataCommand(payload);
+      const command = DataMapper.toFindDataCommand(payload, builder._id);
 
       return pipe(
-        enforceCollectionOwnership(builder, command.collection),
-        E.flatMap(() => DataService.findRecords(c.env, command)),
+        DataService.findRecords(c.env, command),
         E.map((documents) => DataMapper.toFindDataResponse(documents)),
         E.map((response) => c.json<FindDataResponse>(response)),
         handleTaggedErrors(c),
@@ -202,11 +195,10 @@ export function tailData(options: ControllerOptions): void {
       const builder = c.get("builder") as BuilderDocument;
       const param = c.req.valid("param");
       const query = c.req.valid("query");
-      const command = DataMapper.toRecentDataCommand(param, query);
+      const command = DataMapper.toRecentDataCommand(param, query, builder._id);
 
       return pipe(
-        enforceCollectionOwnership(builder, command.collection),
-        E.flatMap(() => DataService.tailData(c.env, command)),
+        DataService.tailData(c.env, command),
         E.map((documents) => DataMapper.toTailDataResponse(documents)),
         E.map((response) => c.json<TailDataResponse>(response)),
         handleTaggedErrors(c),
@@ -248,11 +240,10 @@ export function updateData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = DataMapper.toUpdateDataCommand(payload);
+      const command = DataMapper.toUpdateDataCommand(payload, builder._id);
 
       return pipe(
-        enforceCollectionOwnership(builder, command.collection),
-        E.flatMap(() => DataService.updateRecords(c.env, command)),
+        DataService.updateRecords(c.env, command),
         E.map((result) => DataMapper.toUpdateDataResponse(result)),
         E.map((response) => c.json<UpdateDataResponse>(response)),
         handleTaggedErrors(c),
@@ -294,15 +285,28 @@ export function createOwnedData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = DataMapper.toCreateOwnedRecordsCommand(payload);
+      const command = DataMapper.toCreateOwnedRecordsCommand(
+        payload,
+        builder._id,
+      );
+
+      // Validate that at least one permission is granted
+      if (!command.acl.read && !command.acl.write && !command.acl.execute) {
+        return pipe(
+          E.fail(
+            new GrantAccessError({
+              type: "collection",
+              id: command.collection.toString(),
+              acl: command.acl,
+            }),
+          ),
+          handleTaggedErrors(c),
+          E.runPromise,
+        );
+      }
 
       return pipe(
-        enforceCollectionOwnership(builder, command.collection),
-        E.flatMap(() => BuildersService.find(c.env, command.acl.grantee)),
-        E.flatMap((builder) =>
-          checkGrantAccess(builder, command.collection, command.acl),
-        ),
-        E.flatMap(() => DataService.createOwnedRecords(c.env, command)),
+        DataService.createOwnedRecords(c.env, command),
         E.map((result) => DataMapper.toCreateDataResponse(result)),
         E.map((response) => c.json<CreateDataResponse>(response)),
         handleTaggedErrors(c),
@@ -344,11 +348,13 @@ export function createStandardData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = DataMapper.toCreateStandardRecordsCommand(payload);
+      const command = DataMapper.toCreateStandardRecordsCommand(
+        payload,
+        builder._id,
+      );
 
       return pipe(
-        enforceCollectionOwnership(builder, command.collection),
-        E.flatMap(() => DataService.createStandardRecords(c.env, command)),
+        DataService.createStandardRecords(c.env, command),
         E.map((result) => DataMapper.toCreateDataResponse(result)),
         E.map((response) => c.json<CreateDataResponse>(response)),
         handleTaggedErrors(c),

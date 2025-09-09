@@ -79,16 +79,21 @@ export const CollectionsDataMapper = {
    */
   toDeleteCollectionCommand(
     dto: DeleteCollectionRequestParams,
+    requesterId: Did,
   ): DeleteCollectionCommand {
     return {
       _id: new UUID(dto.id),
+      requesterId,
     };
   },
 
   /**
    *
    */
-  toCreateIndexCommand(dto: CreateCollectionIndexRequest): CreateIndexCommand {
+  toCreateIndexCommand(
+    dto: CreateCollectionIndexRequest,
+    requesterId: Did,
+  ): CreateIndexCommand {
     // Convert keys array to Record<string, IndexDirection>
     const keys: Record<string, IndexDirection> = {};
     for (const keyObj of dto.keys) {
@@ -103,16 +108,21 @@ export const CollectionsDataMapper = {
       keys,
       unique: dto.unique,
       ttl: dto.ttl,
+      requesterId,
     };
   },
 
   /**
    *
    */
-  toDropIndexCommand(body: DropCollectionIndexParams): DropIndexCommand {
+  toDropIndexCommand(
+    body: DropCollectionIndexParams,
+    requesterId: Did,
+  ): DropIndexCommand {
     return {
       collection: new UUID(body.id),
       name: body.name,
+      requesterId,
     };
   },
 
@@ -121,9 +131,11 @@ export const CollectionsDataMapper = {
    */
   toReadCollectionById(
     params: ReadCollectionMetadataRequestParams,
+    requesterId: Did,
   ): ReadCollectionByIdCommand {
     return {
       id: new UUID(params.id),
+      requesterId,
     };
   },
 };

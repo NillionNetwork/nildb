@@ -4,6 +4,11 @@ import type { DeleteDataCommand, UpdateDataCommand } from "#/data/data.types";
 import type { UserDataLogs } from "#/users/users.dto";
 
 /**
+ * Permission type for ACL operations.
+ */
+export type Permission = "read" | "write" | "execute";
+
+/**
  * Access control list entry.
  */
 export type Acl = {
@@ -16,7 +21,9 @@ export type Acl = {
 /**
  * Delete data command.
  */
-export type DeleteUserDataCommand = DeleteDataCommand & {
+export type DeleteUserDataCommand = {
+  collection: UUID;
+  filter: Record<string, unknown>;
   owner: string;
   document: UUID;
 };
@@ -41,7 +48,10 @@ export type UserDocument = DocumentBase<string> & {
 /**
  * Update data command.
  */
-export type UpdateUserDataCommand = UpdateDataCommand & {
+export type UpdateUserDataCommand = {
+  collection: UUID;
+  filter: Record<string, unknown>;
+  update: Record<string, unknown>;
   document: UUID;
 };
 

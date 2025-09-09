@@ -55,6 +55,7 @@ export type CreateCollectionCommand = {
  */
 export type DeleteCollectionCommand = {
   _id: UUID;
+  requesterId: Did;
 };
 
 /**
@@ -73,6 +74,7 @@ export type CreateIndexCommand = {
   keys: Record<string, IndexDirection>;
   unique: boolean;
   ttl?: number;
+  requesterId: Did;
 };
 
 /**
@@ -81,6 +83,7 @@ export type CreateIndexCommand = {
 export type DropIndexCommand = {
   collection: UUID;
   name: string;
+  requesterId: Did;
 };
 
 /**
@@ -88,4 +91,5 @@ export type DropIndexCommand = {
  */
 export type ReadCollectionByIdCommand = {
   id: UUID;
+  requesterId: Did;
 };

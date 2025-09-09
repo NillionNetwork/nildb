@@ -1,6 +1,7 @@
 import type { UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import type { DocumentBase } from "#/common/mongo";
+import type { Did } from "#/common/types";
 
 /**
  * Query variable configuration.
@@ -61,6 +62,7 @@ export type AddQueryCommand = {
 export type RunQueryCommand = {
   _id: UUID;
   variables: Record<string, unknown>;
+  requesterId: Did;
 };
 
 /**
@@ -68,6 +70,7 @@ export type RunQueryCommand = {
  */
 export type DeleteQueryCommand = {
   _id: UUID;
+  requesterId: Did;
 };
 
 /**
@@ -82,4 +85,5 @@ export type GetQueryRunByIdCommand = {
  */
 export type ReadQueryByIdCommand = {
   _id: UUID;
+  requesterId: Did;
 };

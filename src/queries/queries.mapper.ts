@@ -1,4 +1,5 @@
 import { UUID } from "mongodb";
+import type { Did } from "#/common/types";
 import type {
   ByIdRequestParams,
   CreateQueryRequest,
@@ -45,10 +46,11 @@ export const QueriesDataMapper = {
   /**
    * Converts execute query request DTO to domain command.
    */
-  toRunQueryCommand(dto: RunQueryRequest): RunQueryCommand {
+  toRunQueryCommand(dto: RunQueryRequest, requesterId: Did): RunQueryCommand {
     return {
       _id: new UUID(dto._id),
       variables: dto.variables,
+      requesterId,
     };
   },
 
@@ -127,27 +129,39 @@ export const QueriesDataMapper = {
   /**
    * Converts delete query request DTO to domain command.
    */
-  toDeleteQueryCommand(dto: DeleteQueryRequest): DeleteQueryCommand {
+  toDeleteQueryCommand(
+    dto: DeleteQueryRequest,
+    requesterId: Did,
+  ): DeleteQueryCommand {
     return {
       _id: new UUID(dto.id),
+      requesterId,
     };
   },
 
   /**
    * Converts query ID params to delete command.
    */
-  toDeleteQueryByIdCommand(params: ByIdRequestParams): DeleteQueryCommand {
+  toDeleteQueryByIdCommand(
+    params: ByIdRequestParams,
+    requesterId: Did,
+  ): DeleteQueryCommand {
     return {
       _id: new UUID(params.id),
+      requesterId,
     };
   },
 
   /**
    * Converts query ID params to read query command.
    */
-  toReadQueryByIdCommand(params: ByIdRequestParams): ReadQueryByIdCommand {
+  toReadQueryByIdCommand(
+    params: ByIdRequestParams,
+    requesterId: Did,
+  ): ReadQueryByIdCommand {
     return {
       _id: new UUID(params.id),
+      requesterId,
     };
   },
 

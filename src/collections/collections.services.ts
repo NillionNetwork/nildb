@@ -10,6 +10,7 @@ import type {
   DropIndexCommand,
   ReadCollectionByIdCommand,
 } from "#/collections/collections.types";
+import { enforceBuilderOwnership } from "#/common/acl";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -17,6 +18,7 @@ import type {
   DocumentNotFoundError,
   IndexNotFoundError,
   InvalidIndexOptionsError,
+  ResourceAccessDeniedError,
 } from "#/common/errors";
 import { validateSchema } from "#/common/validator";
 import * as DataService from "#/data/data.services";
@@ -107,9 +109,19 @@ export function deleteCollection(
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
+  | ResourceAccessDeniedError
 > {
   return pipe(
-    CollectionsRepository.deleteOne(ctx, { _id: command._id }),
+    CollectionsRepository.findOne(ctx, { _id: command._id }),
+    E.tap((collection) =>
+      enforceBuilderOwnership(
+        command.requesterId,
+        collection.owner,
+        "collection",
+        command._id,
+      ),
+    ),
+    E.flatMap(() => CollectionsRepository.deleteOne(ctx, { _id: command._id })),
     E.tap((collection) => ctx.cache.builders.taint(collection.owner)),
     E.flatMap((collection) =>
       E.all([
@@ -161,19 +173,28 @@ export function getCollectionById(
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
+  | ResourceAccessDeniedError
 > {
   return pipe(
     E.Do,
+    E.bind("collection", () =>
+      CollectionsRepository.findOne(ctx, { _id: command.id }),
+    ),
+    E.tap(({ collection }) =>
+      enforceBuilderOwnership(
+        command.requesterId,
+        collection.owner,
+        "collection",
+        command.id,
+      ),
+    ),
     E.bind("metadata", () =>
       CollectionsRepository.getCollectionStats(ctx, command.id),
     ),
-    E.bind("schema", () =>
-      pipe(
-        CollectionsRepository.findOne(ctx, { _id: command.id }),
-        E.map((collection) => collection.schema),
-      ),
-    ),
-    E.map(({ metadata, schema }) => ({ ...metadata, schema })),
+    E.map(({ collection, metadata }) => ({
+      ...metadata,
+      schema: collection.schema,
+    })),
   );
 }
 
@@ -185,25 +206,41 @@ export function createIndex(
   command: CreateIndexCommand,
 ): E.Effect<
   void,
-  InvalidIndexOptionsError | CollectionNotFoundError | DatabaseError
+  | InvalidIndexOptionsError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DocumentNotFoundError
+  | DataValidationError
+  | ResourceAccessDeniedError
 > {
-  const specification: IndexSpecification = command.keys;
-  const options: CreateIndexesOptions = {
-    name: command.name,
-    unique: command.unique,
-  };
-
-  if (command.ttl) {
-    options.expireAfterSeconds = command.ttl;
-  }
-
   return pipe(
-    CollectionsRepository.createIndex(
-      ctx,
-      command.collection,
-      specification,
-      options,
+    CollectionsRepository.findOne(ctx, { _id: command.collection }),
+    E.tap((collection) =>
+      enforceBuilderOwnership(
+        command.requesterId,
+        collection.owner,
+        "collection",
+        command.collection,
+      ),
     ),
+    E.flatMap((collection) => {
+      const specification: IndexSpecification = command.keys;
+      const options: CreateIndexesOptions = {
+        name: command.name,
+        unique: command.unique,
+      };
+
+      if (command.ttl) {
+        options.expireAfterSeconds = command.ttl;
+      }
+
+      return CollectionsRepository.createIndex(
+        ctx,
+        collection._id,
+        specification,
+        options,
+      );
+    }),
     E.as(void 0),
   );
 }
@@ -216,10 +253,26 @@ export function dropIndex(
   command: DropIndexCommand,
 ): E.Effect<
   void,
-  IndexNotFoundError | CollectionNotFoundError | DatabaseError
+  | IndexNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DocumentNotFoundError
+  | DataValidationError
+  | ResourceAccessDeniedError
 > {
   return pipe(
-    CollectionsRepository.dropIndex(ctx, command.collection, command.name),
+    CollectionsRepository.findOne(ctx, { _id: command.collection }),
+    E.tap((collection) =>
+      enforceBuilderOwnership(
+        command.requesterId,
+        collection.owner,
+        "collection",
+        command.collection,
+      ),
+    ),
+    E.flatMap((collection) =>
+      CollectionsRepository.dropIndex(ctx, collection._id, command.name),
+    ),
     E.as(void 0),
   );
 }

@@ -7,7 +7,6 @@ import type {
   StrictFilter,
   UUID,
 } from "mongodb";
-import type { Filter } from "mongodb/lib/beta";
 import type {
   CollectionDocument,
   CollectionMetadata,
@@ -22,7 +21,6 @@ import {
 } from "#/common/errors";
 import {
   addDocumentBaseCoercions,
-  applyCoercions,
   CollectionName,
   checkCollectionExists,
   isMongoError,
@@ -72,19 +70,13 @@ export function findMany(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<CollectionDocument>(
-        ctx,
-        "primary",
-        CollectionName.Collections,
-      ),
-      applyCoercions<Filter<CollectionDocument>>(
-        addCollectionDocumentCoercions(filter),
-      ),
-    ]),
+    checkCollectionExists<CollectionDocument>(
+      ctx,
+      "primary",
+      CollectionName.Collections,
+    ),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.find(documentFilter).toArray(),
+      try: (collection) => collection.find(filter).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
     }),
   );
@@ -104,18 +96,13 @@ export function findOne(
   | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<CollectionDocument>(
-        ctx,
-        "primary",
-        CollectionName.Collections,
-      ),
-      applyCoercions<Filter<CollectionDocument>>(
-        addCollectionDocumentCoercions(filter),
-      ),
-    ]),
+    checkCollectionExists<CollectionDocument>(
+      ctx,
+      "primary",
+      CollectionName.Collections,
+    ),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) => collection.findOne(documentFilter),
+      try: (collection) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
     }),
     E.flatMap((result) =>
@@ -145,19 +132,13 @@ export function deleteOne(
   | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<CollectionDocument>(
-        ctx,
-        "primary",
-        CollectionName.Collections,
-      ),
-      applyCoercions<Filter<CollectionDocument>>(
-        addCollectionDocumentCoercions(filter),
-      ),
-    ]),
+    checkCollectionExists<CollectionDocument>(
+      ctx,
+      "primary",
+      CollectionName.Collections,
+    ),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.findOneAndDelete(documentFilter),
+      try: (collection) => collection.findOneAndDelete(filter),
       catch: (cause) => new DatabaseError({ cause, message: "deleteOne" }),
     }),
     E.flatMap((result) =>
@@ -187,19 +168,13 @@ export function deleteMany(
   | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<CollectionDocument>(
-        ctx,
-        "primary",
-        CollectionName.Collections,
-      ),
-      applyCoercions<Filter<CollectionDocument>>(
-        addCollectionDocumentCoercions(filter),
-      ),
-    ]),
+    checkCollectionExists<CollectionDocument>(
+      ctx,
+      "primary",
+      CollectionName.Collections,
+    ),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.deleteMany(documentFilter),
+      try: (collection) => collection.deleteMany(filter),
       catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
     }),
     E.flatMap((result) =>

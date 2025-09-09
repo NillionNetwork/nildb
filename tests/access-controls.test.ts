@@ -128,4 +128,95 @@ describe("access-controls", () => {
       .tailData(c, collection.id)
       .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
   });
+
+  // Test permission granularity with cross-builder access
+  it("allows authorized read via findData after granting permission", async ({
+    c,
+  }) => {
+    const { user } = c;
+
+    // Grant builderB read permission on data[0]
+    await user
+      .grantAccess(c, {
+        collection: collection.id,
+        document: data[0]._id,
+        acl: {
+          grantee: builderB.did,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      })
+      .expectSuccess();
+
+    // Now builderB should be able to read data[0]
+    await builderB
+      .findData(c, {
+        collection: collection.id,
+        filter: { _id: data[0]._id },
+      })
+      .expectSuccess();
+
+    // But still can't read other documents
+    await builderB
+      .findData(c, {
+        collection: collection.id,
+        filter: { _id: data[1]._id },
+      })
+      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
+  });
+
+  it("prevents unauthorized update even with read permission", async ({
+    c,
+  }) => {
+    const { user } = c;
+
+    // Grant builderB only read permission on data[2]
+    await user
+      .grantAccess(c, {
+        collection: collection.id,
+        document: data[2]._id,
+        acl: {
+          grantee: builderB.did,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      })
+      .expectSuccess();
+
+    // builderB should NOT be able to update even with read permission
+    await builderB
+      .updateData(c, {
+        collection: collection.id,
+        filter: { _id: data[2]._id },
+        update: { name: "hacked" },
+      })
+      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
+  });
+
+  it("allows authorized query execution with execute permission", async ({
+    c,
+  }) => {
+    const { user } = c;
+
+    // Grant builderB execute permission on data[3]
+    await user
+      .grantAccess(c, {
+        collection: collection.id,
+        document: data[3]._id,
+        acl: {
+          grantee: builderB.did,
+          read: false,
+          write: false,
+          execute: true,
+        },
+      })
+      .expectSuccess();
+
+    // builderB should be able to run queries that would access data[3]
+    await builderB
+      .runQuery(c, { _id: query.id, variables: {} })
+      .expectSuccess();
+  });
 });

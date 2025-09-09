@@ -36,7 +36,7 @@ describe("owned-data.test.ts", () => {
 
     await builderB
       .register(c, {
-        did: builderB.did.didString,
+        did: builderB.did,
         name: "builderB",
       })
       .expectSuccess();
@@ -52,7 +52,7 @@ describe("owned-data.test.ts", () => {
     age: number;
   };
 
-  it("can't upload data with insufficient access", async ({ c }) => {
+  it("can't upload data with invalid permissions", async ({ c }) => {
     const { builder, user } = c;
 
     const data: Record[] = [
@@ -66,11 +66,11 @@ describe("owned-data.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did.didString,
+        owner: user.did,
         collection: collection.id,
         data,
         acl: {
-          grantee: builder.did.didString,
+          grantee: builder.did,
           read: false,
           write: false,
           execute: false,
@@ -105,15 +105,10 @@ describe("owned-data.test.ts", () => {
 
     const result = await builder
       .createOwnedData(c, {
-        owner: user.did.didString,
+        owner: user.did,
         collection: collection.id,
         data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
+        acl: { grantee: builder.did, read: true, write: true, execute: true },
       })
       .expectSuccess();
 
@@ -141,15 +136,10 @@ describe("owned-data.test.ts", () => {
 
     const result = await builder
       .createOwnedData(c, {
-        owner: user.did.didString,
+        owner: user.did,
         collection: collection.id,
         data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
 
@@ -183,15 +173,10 @@ describe("owned-data.test.ts", () => {
 
     const result = await builder
       .createOwnedData(c, {
-        owner: user.did.didString,
+        owner: user.did,
         collection: collection.id,
         data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
 
@@ -220,15 +205,10 @@ describe("owned-data.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did.didString,
+        owner: user.did,
         collection: collection.id,
         data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
 
@@ -254,15 +234,10 @@ describe("owned-data.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did.didString,
+        owner: user.did,
         collection: collection.id,
         data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
   });
@@ -399,8 +374,8 @@ describe("owned-data.test.ts", () => {
 
     expect(result.data._acl).toHaveLength(1);
     expect(result.data._acl[0]?.read).toBe(true);
-    expect(result.data._acl[0]?.write).toBe(false);
-    expect(result.data._acl[0]?.execute).toBe(false);
+    expect(result.data._acl[0]?.write).toBe(true);
+    expect(result.data._acl[0]?.execute).toBe(true);
   });
 
   it("user cannot access data they are not the owner of", async ({ c }) => {
@@ -431,21 +406,16 @@ describe("owned-data.test.ts", () => {
     // Enforce register user
     await builder
       .createOwnedData(c, {
-        owner: otherUser.did.didString,
+        owner: otherUser.did,
         collection: collection.id,
         data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
+        acl: { grantee: builder.did, read: true, write: false, execute: false },
       })
       .expectSuccess();
 
     await otherUser
       .readData(c, collection.id.toString(), documentId.toString())
-      .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
+      .expectFailure(StatusCodes.NOT_FOUND, "DocumentNotFoundError");
   });
 
   it("can grant access", async ({ c }) => {
@@ -464,8 +434,8 @@ describe("owned-data.test.ts", () => {
         collection: collection.id.toString(),
         document: documentId.toString(),
         acl: {
-          grantee: builderB.did.didString,
-          read: false,
+          grantee: builderB.did,
+          read: true,
           write: false,
           execute: false,
         },
@@ -477,7 +447,7 @@ describe("owned-data.test.ts", () => {
       .expectSuccess();
 
     expect(result.data._acl).toHaveLength(2);
-    expect(result.data._acl[1]?.read).toBe(false);
+    expect(result.data._acl[1]?.read).toBe(true);
     expect(result.data._acl[1]?.write).toBe(false);
     expect(result.data._acl[1]?.execute).toBe(false);
   });
@@ -500,7 +470,7 @@ describe("owned-data.test.ts", () => {
         collection: collection.id.toString(),
         document: documentId.toString(),
         acl: {
-          grantee: builder.did.didString,
+          grantee: builder.did,
           read: false,
           write: false,
           execute: false,
@@ -524,7 +494,7 @@ describe("owned-data.test.ts", () => {
       .revokeAccess(c, {
         collection: collection.id.toString(),
         document: documentId.toString(),
-        grantee: builderB.did.didString,
+        grantee: builderB.did,
       })
       .expectSuccess();
 
@@ -550,9 +520,12 @@ describe("owned-data.test.ts", () => {
       .revokeAccess(c, {
         collection: collection.id.toString(),
         document: documentId.toString(),
-        grantee: builder.did.didString,
+        grantee: builder.did,
       })
-      .expectFailure(StatusCodes.UNAUTHORIZED);
+      .expectFailure(
+        StatusCodes.BAD_REQUEST,
+        "Collection owners cannot have their access revoked",
+      );
   });
 
   it("remove users if all their data have been deleted", async ({ c }) => {

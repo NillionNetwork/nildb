@@ -51,6 +51,7 @@ export type CreateOwnedDataCommand = {
   owner: string;
   acl: Acl;
   data: Record<string, unknown>[];
+  requesterId: Did;
 };
 
 /**
@@ -59,6 +60,7 @@ export type CreateOwnedDataCommand = {
 export type CreateStandardDataCommand = {
   collection: UUID;
   data: Record<string, unknown>[];
+  requesterId: Did;
 };
 
 /**
@@ -68,6 +70,7 @@ export type UpdateDataCommand = {
   collection: UUID;
   filter: Record<string, unknown>;
   update: Record<string, unknown>;
+  requesterId: Did;
 };
 
 /**
@@ -85,6 +88,7 @@ export type ReadDataCommand = {
 export type FindDataCommand = {
   collection: UUID;
   filter: Record<string, unknown>;
+  requesterId: Did;
 };
 
 /**
@@ -93,6 +97,7 @@ export type FindDataCommand = {
 export type DeleteDataCommand = {
   collection: UUID;
   filter: Record<string, unknown>;
+  requesterId: Did;
 };
 
 /**
@@ -100,6 +105,7 @@ export type DeleteDataCommand = {
  */
 export type FlushDataCommand = {
   collection: UUID;
+  requesterId: Did;
 };
 
 /**
@@ -108,4 +114,5 @@ export type FlushDataCommand = {
 export type RecentDataCommand = {
   collection: UUID;
   limit: number;
+  requesterId: Did;
 };

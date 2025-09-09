@@ -36,7 +36,7 @@ describe("update data", () => {
         acl: {
           grantee: builder.did.didString,
           read: true,
-          write: false,
+          write: true,
           execute: false,
         },
       })

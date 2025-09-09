@@ -29,28 +29,40 @@ describe("query-variables.test.ts", () => {
     count: number;
   };
 
+  // Use a deterministic start date to avoid test flakiness so that data generation and
+  // the query filter operate against a shared time reference
+  const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+
   beforeAll(async (c) => {
     const data: Record[] = Array.from({ length: 10 }, () => ({
       _id: createUuidDto(),
       wallet: faker.finance.ethereumAddress(),
       amount: faker.number.int({ min: 100, max: 1000 }),
       status: faker.helpers.arrayElement(["pending", "completed", "failed"]),
-      timestamp: faker.date.recent().toISOString(),
+      timestamp: faker.date
+        .between({ from: startDate, to: new Date() })
+        .toISOString(),
     }));
+
+    // Manually add at least one record to match the query variables to ensure the job's
+    // result is not empty (otherwise the test is flakey). The element status must be both
+    // "complete" and the timestamp > startDate
+    data.push({
+      _id: createUuidDto(),
+      wallet: faker.finance.ethereumAddress(),
+      amount: 750,
+      status: "completed",
+      timestamp: new Date(startDate.getTime() + 1000).toISOString(),
+    });
 
     const { builder, user } = c;
 
     await builder
       .createOwnedData(c, {
-        owner: user.did.didString,
+        owner: user.did,
         collection: collection.id,
         data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
+        acl: { grantee: builder.did, read: false, write: false, execute: true },
       })
       .expectSuccess();
   });
@@ -63,7 +75,8 @@ describe("query-variables.test.ts", () => {
     const variables = {
       minAmount: 500,
       status: "completed",
-      startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      // use the shared start date to ensure there is at least one record in the result
+      startDate: startDate.toISOString(),
       $coerce: {
         startDate: "date",
       },
@@ -82,7 +95,7 @@ describe("query-variables.test.ts", () => {
     expect(data.status).toBe("complete");
     const [result] = data.result as [QueryResult];
 
-    expect(result.totalAmount).toBeGreaterThanOrEqual(500 * result.count);
+    expect(result.totalAmount).toBeGreaterThanOrEqual(750);
     expect(result.count).toBeGreaterThan(0);
   });
 
@@ -91,7 +104,7 @@ describe("query-variables.test.ts", () => {
 
     const variables = {
       minAmount: 500,
-      status: { value: "completed" }, // objects are not supported as runtime variables
+      status: { value: "completed" },
       startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       $coerce: {
         startDate: "date",

@@ -3,12 +3,14 @@ import type { Document, UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
 import { z } from "zod";
 import * as BuildersService from "#/builders/builders.services";
+import { enforceBuilderOwnership } from "#/common/acl";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
   DataValidationError,
   type DocumentNotFoundError,
   type QueryValidationError,
+  type ResourceAccessDeniedError,
   TimeoutError,
   VariableInjectionError,
 } from "#/common/errors";
@@ -100,81 +102,99 @@ export function runQueryInBackground(
   | DatabaseError
   | DataValidationError
   | VariableInjectionError
+  | ResourceAccessDeniedError
 > {
   return pipe(
-    E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(command._id)),
-    E.flatMap((document) => RunQueryJobsRepository.insert(ctx, document)),
-    E.flatMap((run) => {
-      const runId = run.insertedId;
-
-      // Run query in background (fire and forget)
-      const backgroundJob = pipe(
-        E.Do,
-        E.bind("job", () =>
-          RunQueryJobsRepository.findOne(ctx, { _id: runId }),
-        ),
-        E.bind("query", ({ job }) =>
-          QueriesRepository.findOne(ctx, { _id: job.query }),
-        ),
-        E.bind("variables", ({ query }) =>
-          validateVariables(query.variables, command.variables),
-        ),
-        E.bind("update", ({ job }) =>
-          RunQueryJobsRepository.updateOne(ctx, job._id, {
-            status: "running",
-            started: new Date(),
-          }),
-        ),
-        E.bind("pipeline", ({ query, variables }) =>
-          injectVariablesIntoAggregation(
-            query.variables,
-            query.pipeline,
-            variables,
-          ),
-        ),
-        E.flatMap(({ query, pipeline }) =>
-          DataService.runAggregation(ctx, query, pipeline),
-        ),
-        E.timeoutFail({
-          duration: "30 minutes",
-          onTimeout: () =>
-            new TimeoutError({
-              message: "Run query job timed out after 30 minutes.",
-            }),
-        }),
-        E.flatMap((result) =>
-          RunQueryJobsRepository.updateOne(ctx, runId, {
-            status: "complete",
-            completed: new Date(),
-            result,
-          }),
-        ),
-        E.catchAll((error) =>
-          RunQueryJobsRepository.updateOne(ctx, runId, {
-            status: "error",
-            completed: new Date(),
-            errors: error.humanize(),
-          }),
-        ),
-        E.runPromiseExit,
-      );
-
-      backgroundJob
-        .then((exit) => {
-          ctx.log.info(
-            { run: runId.toString(), result: exit._tag },
-            "Query run finished",
-          );
-        })
-        .catch((error: unknown) => {
-          ctx.log.warn(
-            { run: runId.toString(), error },
-            "Query run threw an unhandled error: ",
-          );
-        });
-
-      return E.succeed(runId);
+    QueriesRepository.findOne(ctx, {
+      _id: command._id,
     }),
+    E.tap((query) =>
+      enforceBuilderOwnership(
+        command.requesterId,
+        query.owner,
+        "query",
+        command._id,
+      ),
+    ),
+    E.flatMap((query) =>
+      pipe(
+        E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(query._id)),
+        E.flatMap((document) => RunQueryJobsRepository.insert(ctx, document)),
+        E.flatMap((run) => {
+          const runId = run.insertedId;
+
+          // Run query in background (fire and forget)
+          const backgroundJob = pipe(
+            E.Do,
+            E.bind("job", () =>
+              RunQueryJobsRepository.findOne(ctx, { _id: runId }),
+            ),
+            E.bind("variables", () =>
+              validateVariables(query.variables, command.variables),
+            ),
+            E.bind("update", ({ job }) =>
+              RunQueryJobsRepository.updateOne(ctx, job._id, {
+                status: "running",
+                started: new Date(),
+              }),
+            ),
+            E.bind("pipeline", ({ variables }) =>
+              injectVariablesIntoAggregation(
+                query.variables,
+                query.pipeline,
+                variables,
+              ),
+            ),
+            E.flatMap(({ pipeline }) =>
+              DataService.runAggregation(
+                ctx,
+                query,
+                pipeline,
+                command.requesterId,
+              ),
+            ),
+            E.timeoutFail({
+              duration: "30 minutes",
+              onTimeout: () =>
+                new TimeoutError({
+                  message: "Run query job timed out after 30 minutes.",
+                }),
+            }),
+            E.flatMap((result) =>
+              RunQueryJobsRepository.updateOne(ctx, runId, {
+                status: "complete",
+                completed: new Date(),
+                result,
+              }),
+            ),
+            E.catchAll((error) =>
+              RunQueryJobsRepository.updateOne(ctx, runId, {
+                status: "error",
+                completed: new Date(),
+                errors: error.humanize(),
+              }),
+            ),
+            E.runPromiseExit,
+          );
+
+          backgroundJob
+            .then((exit) => {
+              ctx.log.info(
+                { run: runId.toString(), result: exit._tag },
+                "Query run finished",
+              );
+            })
+            .catch((error: unknown) => {
+              ctx.log.warn(
+                { run: runId.toString(), error },
+                "Query run threw an unhandled error: ",
+              );
+            });
+
+          return E.succeed(runId);
+        }),
+      ),
+    ),
   );
 }
 
@@ -203,8 +223,21 @@ export function getQueryById(
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
+  | ResourceAccessDeniedError
 > {
-  return QueriesRepository.findOne(ctx, { _id: command._id });
+  return pipe(
+    QueriesRepository.findOne(ctx, {
+      _id: command._id,
+    }),
+    E.tap((query) =>
+      enforceBuilderOwnership(
+        command.requesterId,
+        query.owner,
+        "query",
+        command._id,
+      ),
+    ),
+  );
 }
 
 /**
@@ -235,15 +268,31 @@ export function removeQuery(
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
+  | ResourceAccessDeniedError
 > {
   return pipe(
-    QueriesRepository.findOneAndDelete(ctx, { _id: command._id }),
-    E.tap((document) => ctx.cache.builders.taint(document.owner)),
+    QueriesRepository.findOne(ctx, {
+      _id: command._id,
+    }),
+    E.tap((document) =>
+      enforceBuilderOwnership(
+        command.requesterId,
+        document.owner,
+        "query",
+        command._id,
+      ),
+    ),
     E.flatMap((document) =>
-      BuildersService.removeQuery(ctx, {
-        did: document.owner,
-        query: command._id,
-      }),
+      pipe(
+        QueriesRepository.findOneAndDelete(ctx, { _id: document._id }),
+        E.tap(() => ctx.cache.builders.taint(document.owner)),
+        E.flatMap(() =>
+          BuildersService.removeQuery(ctx, {
+            did: document.owner,
+            query: command._id,
+          }),
+        ),
+      ),
     ),
     E.as(void 0),
   );

@@ -38,14 +38,9 @@ describe("delete-by-filter.data.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did.didString,
+        owner: user.did,
         collection: collection.id,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
+        acl: { grantee: builder.did, read: true, write: true, execute: false },
         data: shuffledData,
       })
       .expectSuccess();

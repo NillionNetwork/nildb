@@ -326,14 +326,13 @@ export function updateMany(
   return pipe(
     E.all([
       checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
       applyCoercions<UpdateFilter<DocumentBase>>(
         addDocumentBaseCoercions(update),
       ),
     ]),
     E.tryMapPromise({
-      try: ([collection, documentFilter, documentUpdate]) =>
-        collection.updateMany(documentFilter, documentUpdate),
+      try: ([collection, documentUpdate]) =>
+        collection.updateMany(filter, documentUpdate),
       catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
     }),
   );
@@ -351,13 +350,9 @@ export function deleteMany(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
-    ]),
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.deleteMany(documentFilter),
+      try: (collection) => collection.deleteMany(filter),
       catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
     }),
   );
@@ -396,13 +391,10 @@ export function findMany(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
-    ]),
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.find(documentFilter).sort({ _created: -1 }).toArray(),
+      try: (collection) =>
+        collection.find(filter).sort({ _created: -1 }).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
     }),
   );
@@ -423,12 +415,9 @@ export function findOne(
   | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
-    ]),
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) => collection.findOne(documentFilter),
+      try: (collection) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
     }),
     E.flatMap((result) =>
