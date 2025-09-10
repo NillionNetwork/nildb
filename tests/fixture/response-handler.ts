@@ -9,7 +9,6 @@ export class ResponseHandler<TSuccess = unknown> {
     private c: FixtureContext,
     private request: () => Promise<Response> | Response,
     private successStatus: StatusCodes,
-    // biome-ignore lint/suspicious/noExplicitAny: these enable more ergonomic types in the test client
     private successSchema?: z.ZodType<TSuccess, any, any>,
   ) {}
 
