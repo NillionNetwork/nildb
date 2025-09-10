@@ -1,22 +1,11 @@
 import { Effect as E, Either, pipe } from "effect";
-import { StatusCodes } from "http-status-codes";
 import { UUID } from "mongodb";
-import { describe } from "vitest";
+import { describe, it } from "vitest";
 import { applyCoercions } from "#/common/mongo";
-import { type CoercibleMap, createUuidDto } from "#/common/types";
-import collectionJson from "./data/coercions.collection.json";
-import type { CollectionFixture } from "./fixture/fixture";
-import { createTestFixtureExtension } from "./fixture/it";
+import type { CoercibleMap } from "#/common/types";
 
 describe("coercions.test.ts", () => {
-  const collection = collectionJson as unknown as CollectionFixture;
-  const { it, beforeAll, afterAll } = createTestFixtureExtension({
-    collection,
-  });
-  beforeAll(async (_c) => {});
-  afterAll(async (_c) => {});
-
-  it("coerces primitive values implicitly", async ({ expect }) => {
+  it("coerces primitive values implicitly", ({ expect }) => {
     const _id = "string";
     const amount = 50;
     const isActive = true;
@@ -31,7 +20,7 @@ describe("coercions.test.ts", () => {
     expect(coercedData.isActive).toStrictEqual(isActive);
   });
 
-  it("coerces primitive values to string", async ({ expect }) => {
+  it("coerces primitive values to string", ({ expect }) => {
     const _id = "string";
     const amount = 50;
     const isActive = true;
@@ -51,7 +40,7 @@ describe("coercions.test.ts", () => {
     expect(coercedData.isActive).toStrictEqual(`${isActive}`);
   });
 
-  it("coerces primitive values to number", async ({ expect }) => {
+  it("coerces primitive values to number", ({ expect }) => {
     const _id = "100";
     const amount = 50;
     const isActive = true;
@@ -71,7 +60,7 @@ describe("coercions.test.ts", () => {
     expect(coercedData.isActive).toStrictEqual(Number(isActive));
   });
 
-  it("reject coercion from string values to number", async ({ expect }) => {
+  it("reject coercion from string values to number", ({ expect }) => {
     const _id = "foo";
     const data: CoercibleMap = {
       _id,
@@ -83,7 +72,7 @@ describe("coercions.test.ts", () => {
     expect(Either.isLeft(result)).toBe(true);
   });
 
-  it("coerces primitive values to boolean", async ({ expect }) => {
+  it("coerces primitive values to boolean", ({ expect }) => {
     const _id = "true";
     const amount = 1;
     const isActive = true;
@@ -103,7 +92,7 @@ describe("coercions.test.ts", () => {
     expect(coercedData.isActive).toStrictEqual(isActive);
   });
 
-  it("reject coercion from string to boolean", async ({ expect }) => {
+  it("reject coercion from string to boolean", ({ expect }) => {
     const _id = "foo";
     const data: CoercibleMap = {
       _id,
@@ -115,7 +104,7 @@ describe("coercions.test.ts", () => {
     expect(Either.isLeft(result)).toBe(true);
   });
 
-  it("reject coercion from number to boolean", async ({ expect }) => {
+  it("reject coercion from number to boolean", ({ expect }) => {
     const amount = 100;
     const data: CoercibleMap = {
       amount,
@@ -127,7 +116,7 @@ describe("coercions.test.ts", () => {
     expect(Either.isLeft(result)).toBe(true);
   });
 
-  it("coerces single uuid", async ({ expect }) => {
+  it("coerces single uuid", ({ expect }) => {
     const _id = "3f5c92dd-214a-49b5-a129-e56c29fe5d3a";
     const expected = new UUID(_id);
     const data: CoercibleMap = {
@@ -140,7 +129,7 @@ describe("coercions.test.ts", () => {
     expect(coercedData._id).toStrictEqual(expected);
   });
 
-  it("coerces multiple uuid", async ({ expect }) => {
+  it("coerces multiple uuid", ({ expect }) => {
     const _ids = [
       "3f5c92dd-214a-49b5-a129-e56c29fe5d3a",
       "3f5c92dd-214a-49b5-a129-e56c29fe5d3a",
@@ -159,7 +148,7 @@ describe("coercions.test.ts", () => {
     expect(coercedIds.$in).toStrictEqual(expected);
   });
 
-  it("coerces single date", async ({ expect }) => {
+  it("coerces single date", ({ expect }) => {
     const _created = "2025-02-24T17:09:00.267Z";
     const expected = new Date(_created);
     const data: CoercibleMap = {
@@ -172,7 +161,7 @@ describe("coercions.test.ts", () => {
     expect(coercedData._created).toStrictEqual(expected);
   });
 
-  it("coerces eq date", async ({ expect }) => {
+  it("coerces eq date", ({ expect }) => {
     const _created = "2025-02-24T17:09:00.267Z";
     const expected = new Date(_created);
     const data: CoercibleMap = {
@@ -189,7 +178,7 @@ describe("coercions.test.ts", () => {
     );
   });
 
-  it("coerces multiple dates", async ({ expect }) => {
+  it("coerces multiple dates", ({ expect }) => {
     const _created = ["2025-02-24T17:09:00.267Z", "2025-02-24T17:09:00.267Z"];
     const expected = _created.map((date) => new Date(date));
     const data: CoercibleMap = {
@@ -205,7 +194,7 @@ describe("coercions.test.ts", () => {
     expect(coercedDates.$in).toStrictEqual(expected);
   });
 
-  it("coerces mixed values", async ({ expect }) => {
+  it("coerces mixed values", ({ expect }) => {
     const identifiers = [
       "3f5c92dd-214a-49b5-a129-e56c29fe5d3a",
       "3f5c92dd-214a-49b5-a129-e56c29fe5d3a",
@@ -232,7 +221,7 @@ describe("coercions.test.ts", () => {
     expect(coercedDates.$in).toStrictEqual(expectedDates);
   });
 
-  it("do not coerce value", async ({ expect }) => {
+  it("do not coerce value", ({ expect }) => {
     const _created = ["2025-02-24T17:09:00.267Z", "2025-02-24T17:09:00.267Z"];
     const data: CoercibleMap = {
       _created: {
@@ -244,7 +233,7 @@ describe("coercions.test.ts", () => {
     expect(coercedDates.$in).toStrictEqual(_created);
   });
 
-  it("coercible value is not defined", async ({ expect }) => {
+  it("coercible value is not defined", ({ expect }) => {
     const _created = ["2025-02-24T17:09:00.267Z", "2025-02-24T17:09:00.267Z"];
     const data: CoercibleMap = {
       _created: {
@@ -257,151 +246,5 @@ describe("coercions.test.ts", () => {
     const coercedData = pipe(applyCoercions(data), E.runSync) as CoercibleMap;
     const coercedDates = coercedData._created as Record<string, unknown>;
     expect(coercedDates.$in).toStrictEqual(_created);
-  });
-
-  it("coerces valid data", async ({ c }) => {
-    const { expect, builder, bindings, user } = c;
-
-    const testId = createUuidDto();
-    const testDate = new Date().toISOString();
-    const testDouble = "123.45";
-
-    const data = [
-      {
-        _id: testId,
-        date_from_string: testDate,
-        numeric_from_string: testDouble,
-      },
-    ];
-
-    const response = await builder
-      .createOwnedData(c, {
-        owner: user.did.didString,
-        collection: collection.id,
-        data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
-      })
-      .expectSuccess();
-
-    expect(response.data.created).toHaveLength(1);
-    expect(response.data.errors).toHaveLength(0);
-
-    const documents = await bindings.db.data
-      .collection(collection.id.toString())
-      .find({})
-      .toArray();
-
-    const document = documents[0];
-
-    expect(document._id.toString()).toBe(testId);
-    expect(document.date_from_string.toISOString()).toBe(testDate);
-    expect(document.numeric_from_string).toBe(Number(testDouble));
-  });
-
-  it("rejects invalid date-time strings", async ({ c }) => {
-    const { builder, user } = c;
-
-    const testId = createUuidDto();
-    const notADate = new Date().toISOString().split("T")[0]; // just take date
-    const testDouble = "123.45";
-
-    const data = [
-      {
-        _id: testId,
-        date_from_string: notADate,
-        numeric_from_string: testDouble,
-      },
-    ];
-
-    await builder
-      .createOwnedData(c, {
-        owner: user.did.didString,
-        collection: collection.id,
-        data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
-      })
-      .expectFailure(
-        StatusCodes.BAD_REQUEST,
-        "DataValidationError",
-        '/0/date_from_string: must match format "date-time"',
-      );
-  });
-
-  it("rejects invalid numeric strings", async ({ c }) => {
-    const { builder, user } = c;
-
-    const testId = createUuidDto();
-    const notADate = new Date().toISOString();
-    const testDouble = "abcde"; // not numeric
-
-    const data = [
-      {
-        _id: testId,
-        date_from_string: notADate,
-        numeric_from_string: testDouble,
-      },
-    ];
-
-    await builder
-      .createOwnedData(c, {
-        owner: user.did.didString,
-        collection: collection.id,
-        data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
-      })
-      .expectFailure(
-        StatusCodes.BAD_REQUEST,
-        "DataValidationError",
-        '/0/numeric_from_string: must match format "numeric"',
-      );
-  });
-
-  it("rejects invalid uuid strings", async ({ c }) => {
-    const { builder, user } = c;
-
-    const testId = "xxxx-xxxx";
-    const notADate = new Date().toISOString();
-    const testDouble = "42";
-
-    const data = [
-      {
-        _id: testId,
-        date_from_string: notADate,
-        numeric_from_string: testDouble,
-      },
-    ];
-
-    await builder
-      .createOwnedData(c, {
-        owner: user.did.didString,
-        collection: collection.id,
-        data,
-        acl: {
-          grantee: builder.did.didString,
-          read: true,
-          write: false,
-          execute: false,
-        },
-      })
-      .expectFailure(
-        StatusCodes.BAD_REQUEST,
-        "DataValidationError",
-        '/0/_id: must match format "uuid"',
-      );
   });
 });
