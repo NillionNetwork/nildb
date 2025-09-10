@@ -11,7 +11,9 @@
     "lint": "pnpm exec biome lint  --fix --unsafe",
     "fmt": "pnpm exec biome format --fix",
     "start": "tsx src/main.ts",
-    "test": "vitest --run tests/",
+    "test": "pnpm run test:unit && pnpm run test:integration",
+    "test:unit": "vitest --run tests/01-unit",
+    "test:integration": "vitest --run tests/02-integration",
     "migrate": "tsx bin/migrate.ts",
     "install-hooks": "lefthook install"
   },

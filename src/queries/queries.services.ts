@@ -71,21 +71,13 @@ export function addQuery(
       ),
     ),
     E.flatMap(() => QueriesRepository.insert(ctx, document)),
-    E.tap(() => ctx.cache.builders.taint(document.owner)),
     E.flatMap(() =>
       BuildersService.addQuery(ctx, {
         did: document.owner,
         query: document._id,
       }),
     ),
-    E.flatMap(() => QueriesRepository.insert(ctx, document)),
     E.tap(() => ctx.cache.builders.taint(document.owner)),
-    E.flatMap(() =>
-      BuildersService.addQuery(ctx, {
-        did: document.owner,
-        query: document._id,
-      }),
-    ),
     E.as(void 0),
   );
 }

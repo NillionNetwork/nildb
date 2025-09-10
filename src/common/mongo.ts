@@ -26,13 +26,29 @@ export function addDocumentBaseCoercions(
 ): CoercibleMap {
   const { $coerce, ...document } = coercibleMap;
   const { _id, _updated, _created, ...remainingCoercions } = $coerce ?? {};
+
+  const newCoercions: Record<
+    string,
+    "string" | "number" | "boolean" | "date" | "uuid"
+  > = {
+    ...remainingCoercions,
+    _created: "date",
+    _updated: "date",
+  };
+
+  // Only add coercion if the field exists and is a string that needs to be converted.
+  // This prevents incorrect coercion of UUID objects or query operator objects.
+  if (typeof document._id === "string") {
+    newCoercions._id = "uuid";
+  }
+  if (typeof document._created === "string") {
+    newCoercions._created = "date";
+  }
+  if (typeof document._updated === "string") {
+    newCoercions._updated = "date";
+  }
   return {
-    $coerce: {
-      ...remainingCoercions,
-      _id: "uuid",
-      _created: "date",
-      _updated: "date",
-    },
+    $coerce: newCoercions,
     ...document,
   };
 }

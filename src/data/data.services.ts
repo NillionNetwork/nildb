@@ -378,7 +378,7 @@ export function flushCollection(
         ),
         // This updates both owned and standard documents.
         E.flatMap(() =>
-          DataRepository.flushCollection(ctx, command.collection),
+          DataRepository.deleteMany(ctx, command.collection, secureFilter),
         ),
       ),
     ),
@@ -408,8 +408,13 @@ export function tailData(
       "read",
       {},
     ),
-    E.flatMap(() =>
-      DataRepository.tailCollection(ctx, command.collection, command.limit),
+    E.flatMap((secureFilter) =>
+      DataRepository.tailCollection(
+        ctx,
+        command.collection,
+        command.limit,
+        secureFilter,
+      ),
     ),
   );
 }

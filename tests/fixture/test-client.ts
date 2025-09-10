@@ -233,7 +233,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
     const { token: rootToken } = response;
 
-    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey);
+    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey, "nil");
 
     // Builder *invokes* the capability granted by nilauth, targeting the node.
     return await Builder.invoking(rootToken)
@@ -553,11 +553,11 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
 
   protected async createToken(): Promise<string> {
     // Self-signed invocation targeting the node.
-    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey);
+    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey, "nil");
     return await Builder.invocation()
       .command(NucCmd.nil.db.users.root)
       .audience(nodeDid)
-      .subject(this.keypair.toDid())
+      .subject(this.keypair.toDid("nil"))
       .signAndSerialize(this.signer);
   }
 
