@@ -11,6 +11,7 @@ import type {
   CollectionDocument,
   CollectionMetadata,
 } from "#/collections/collections.types";
+import type { CoercibleMap } from "#/common/coercion";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -26,7 +27,6 @@ import {
   isMongoError,
   MongoErrorCode,
 } from "#/common/mongo";
-import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
 
 /**

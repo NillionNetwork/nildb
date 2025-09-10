@@ -4,6 +4,7 @@ import type { JsonValue } from "type-fest";
 import { z } from "zod";
 import * as BuildersService from "#/builders/builders.services";
 import { enforceBuilderOwnership } from "#/common/acl";
+import { applyCoercions } from "#/common/coercion";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
@@ -14,7 +15,6 @@ import {
   TimeoutError,
   VariableInjectionError,
 } from "#/common/errors";
-import { applyCoercions } from "#/common/mongo";
 import { validateData } from "#/common/validator";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
@@ -390,12 +390,16 @@ export function validateVariables(
     return E.fail(error);
   }
 
-  return E.forEach(Object.entries(values), ([key, value]) => {
-    if (Array.isArray(value)) {
-      return validateArray(key, value as unknown[]).pipe(E.map(() => value));
-    }
-    return primitiveType(key, value).pipe(E.map(() => value));
-  }).pipe(E.andThen(() => applyCoercions<QueryRuntimeVariables>(provided)));
+  return pipe(
+    E.forEach(Object.entries(values), ([key, value]) => {
+      if (Array.isArray(value)) {
+        return validateArray(key, value as unknown[]).pipe(E.map(() => value));
+      }
+      return primitiveType(key, value).pipe(E.map(() => value));
+    }),
+    E.flatMap(() => applyCoercions(provided)),
+    E.map((r) => r as QueryRuntimeVariables),
+  );
 }
 
 function validateArray<T = unknown>(

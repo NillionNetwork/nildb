@@ -13,6 +13,7 @@ import {
 } from "mongodb/lib/beta";
 import type { JsonObject } from "type-fest";
 import type { CollectionDocument } from "#/collections/collections.types";
+import { applyCoercions } from "#/common/coercion";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -22,7 +23,6 @@ import {
 } from "#/common/errors";
 import {
   addDocumentBaseCoercions,
-  applyCoercions,
   CollectionName,
   checkCollectionExists,
   type DocumentBase,
@@ -326,9 +326,7 @@ export function updateMany(
   return pipe(
     E.all([
       checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-      applyCoercions<UpdateFilter<DocumentBase>>(
-        addDocumentBaseCoercions(update),
-      ),
+      applyCoercions(addDocumentBaseCoercions(update)),
     ]),
     E.tryMapPromise({
       try: ([collection, documentUpdate]) =>

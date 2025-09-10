@@ -11,6 +11,7 @@ import {
   buildAccessControlledFilter,
   enforceBuilderOwnership,
 } from "#/common/acl";
+import { applyCoercions } from "#/common/coercion";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -19,11 +20,7 @@ import type {
   InvalidIndexOptionsError,
   ResourceAccessDeniedError,
 } from "#/common/errors";
-import {
-  addDocumentBaseCoercions,
-  applyCoercions,
-  type DocumentBase,
-} from "#/common/mongo";
+import { addDocumentBaseCoercions, type DocumentBase } from "#/common/mongo";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
@@ -156,7 +153,7 @@ export function updateRecords(
 > {
   const { collection, filter, update, requesterId } = command;
   return pipe(
-    applyCoercions<Record<string, unknown>>(addDocumentBaseCoercions(filter)),
+    applyCoercions(addDocumentBaseCoercions(filter)),
     E.flatMap((coercedFilter) =>
       buildAccessControlledFilter(
         ctx,
@@ -188,7 +185,7 @@ export function updateRecordsAsOwner(
 > {
   const { collection, filter, update } = command;
   return pipe(
-    applyCoercions<Record<string, unknown>>(addDocumentBaseCoercions(filter)),
+    applyCoercions(addDocumentBaseCoercions(filter)),
     E.flatMap((coercedFilter) =>
       UsersService.updateUserData(ctx, collection, coercedFilter).pipe(
         E.flatMap(() =>
@@ -230,9 +227,7 @@ export function findRecords(
   | DocumentNotFoundError
 > {
   return pipe(
-    applyCoercions<Record<string, unknown>>(
-      addDocumentBaseCoercions(command.filter),
-    ),
+    applyCoercions(addDocumentBaseCoercions(command.filter)),
     E.flatMap((coercedFilter) =>
       buildAccessControlledFilter(
         ctx,
@@ -264,9 +259,7 @@ export function deleteData(
   never
 > {
   return pipe(
-    applyCoercions<Record<string, unknown>>(
-      addDocumentBaseCoercions(command.filter),
-    ),
+    applyCoercions(addDocumentBaseCoercions(command.filter)),
     E.flatMap((coercedFilter) =>
       buildAccessControlledFilter(
         ctx,
@@ -305,9 +298,7 @@ export function deleteDataAsOwner(
   never
 > {
   return pipe(
-    applyCoercions<Record<string, unknown>>(
-      addDocumentBaseCoercions(command.filter),
-    ),
+    applyCoercions(addDocumentBaseCoercions(command.filter)),
     E.flatMap((coercedFilter) =>
       pipe(
         // This deletes the owned documents from the users, the standard documents are skipped.

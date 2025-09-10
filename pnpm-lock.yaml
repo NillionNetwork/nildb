@@ -59,6 +59,9 @@ importers:
       effect:
         specifier: ^3.17.13
         version: 3.17.13
+      es-toolkit:
+        specifier: ^1.39.10
+        version: 1.39.10
       hono:
         specifier: ^4.9.6
         version: 4.9.6

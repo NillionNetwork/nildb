@@ -24,35 +24,6 @@ export function createUuidDto(): UuidDto {
 }
 
 /**
- * Coercible types schema.
- */
-export const CoercibleTypesSchema = z.enum([
-  "string",
-  "number",
-  "boolean",
-  "date",
-  "uuid",
-] as const);
-export type CoercibleTypes = z.infer<typeof CoercibleTypesSchema>;
-
-/**
- * Coercible values schema.
- */
-export const CoercibleValuesSchema = z.record(z.string(), z.unknown());
-export type CoercibleValues = z.infer<typeof CoercibleValuesSchema>;
-
-/**
- * Coercible map schema.
- */
-export const CoercibleMapSchema = z.intersection(
-  CoercibleValuesSchema,
-  z.object({
-    $coerce: z.record(z.string(), CoercibleTypesSchema).optional(),
-  }),
-);
-export type CoercibleMap = z.infer<typeof CoercibleMapSchema>;
-
-/**
  * Controller options.
  */
 export type ControllerOptions = {
