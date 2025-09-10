@@ -9,7 +9,7 @@ export const RegisterBuilderRequest = z
     did: z.string(),
     name: z.string().min(1).max(255),
   })
-  .openapi({ ref: "RegisterBuilderRequest" });
+  .meta({ ref: "RegisterBuilderRequest" });
 export type RegisterBuilderRequest = z.infer<typeof RegisterBuilderRequest>;
 
 /**
@@ -26,14 +26,14 @@ const ProfileDto = z.object({
   _created: z.string().datetime(),
   _updated: z.string().datetime(),
   name: z.string(),
-  collections: z.array(z.string().uuid()),
-  queries: z.array(z.string().uuid()),
+  collections: z.array(z.uuid()),
+  queries: z.array(z.uuid()),
 });
 
 /**
  * Profile retrieval response.
  */
-export const ReadProfileResponse = ApiSuccessResponse(ProfileDto).openapi({
+export const ReadProfileResponse = ApiSuccessResponse(ProfileDto).meta({
   ref: "GetProfileResponse",
 });
 export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
@@ -51,7 +51,7 @@ export const UpdateProfileRequest = z
   .object({
     name: z.string().min(1).max(255),
   })
-  .openapi({ ref: "UpdateProfileRequest" });
+  .meta({ ref: "UpdateProfileRequest" });
 export type UpdateProfileRequest = z.infer<typeof UpdateProfileRequest>;
 
 /**

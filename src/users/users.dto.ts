@@ -6,9 +6,9 @@ import { ApiSuccessResponse } from "#/common/handler";
  */
 export const ByIdRequestParams = z
   .object({
-    id: z.string().uuid(),
+    id: z.uuid(),
   })
-  .openapi({ ref: "ByIdRequestParams" });
+  .meta({ ref: "ByIdRequestParams" });
 export type ByIdRequestParams = z.infer<typeof ByIdRequestParams>;
 
 /**
@@ -26,17 +26,17 @@ export type AclDto = z.infer<typeof AclDto>;
  * User operation log entry.
  */
 const UserDataLogs = z.discriminatedUnion("op", [
-  z.object({ op: z.literal("create-data"), collection: z.string().uuid() }),
-  z.object({ op: z.literal("update-data"), collection: z.string().uuid() }),
-  z.object({ op: z.literal("delete-data"), collection: z.string().uuid() }),
+  z.object({ op: z.literal("create-data"), collection: z.uuid() }),
+  z.object({ op: z.literal("update-data"), collection: z.uuid() }),
+  z.object({ op: z.literal("delete-data"), collection: z.uuid() }),
   z.object({
     op: z.literal("grant-access"),
-    collection: z.string().uuid(),
+    collection: z.uuid(),
     acl: AclDto,
   }),
   z.object({
     op: z.literal("revoke-access"),
-    collection: z.string().uuid(),
+    collection: z.uuid(),
     grantee: z.string(),
   }),
 ]);
@@ -52,8 +52,8 @@ const UserProfileData = z.object({
   logs: z.array(UserDataLogs),
   data: z.array(
     z.object({
-      collection: z.string().uuid(),
-      id: z.string().uuid(),
+      collection: z.uuid(),
+      id: z.uuid(),
     }),
   ),
 });
@@ -61,7 +61,7 @@ const UserProfileData = z.object({
 /**
  * User profile response.
  */
-export const ReadProfileResponse = ApiSuccessResponse(UserProfileData).openapi({
+export const ReadProfileResponse = ApiSuccessResponse(UserProfileData).meta({
   ref: "ReadProfileResponse",
 });
 export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
@@ -71,10 +71,10 @@ export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
  */
 export const ReadDataRequestParams = z
   .object({
-    collection: z.string().uuid(),
-    document: z.string().uuid(),
+    collection: z.uuid(),
+    document: z.uuid(),
   })
-  .openapi({
+  .meta({
     ref: "ReadDataRequestParams",
   });
 
@@ -82,7 +82,7 @@ export type ReadDataRequestParams = z.infer<typeof ReadDataRequestParams>;
 
 const OwnedDataDto = z
   .object({
-    _id: z.string().uuid(),
+    _id: z.uuid(),
     _created: z.string().datetime(),
     _updated: z.string().datetime(),
     _owner: z.string(),
@@ -91,7 +91,7 @@ const OwnedDataDto = z
   // Allow all keys through since each collection will follow a different schema
   .passthrough();
 
-export const ReadDataResponse = ApiSuccessResponse(OwnedDataDto).openapi({
+export const ReadDataResponse = ApiSuccessResponse(OwnedDataDto).meta({
   ref: "ReadDataResponse",
 });
 export type ReadDataResponse = z.infer<typeof ReadDataResponse>;
@@ -101,8 +101,8 @@ export type ReadDataResponse = z.infer<typeof ReadDataResponse>;
  */
 const DataDocumentReference = z.object({
   builder: z.string(),
-  collection: z.string().uuid(),
-  document: z.string().uuid(),
+  collection: z.uuid(),
+  document: z.uuid(),
 });
 
 /**
@@ -110,7 +110,7 @@ const DataDocumentReference = z.object({
  */
 export const ListDataReferencesResponse = ApiSuccessResponse(
   z.array(DataDocumentReference),
-).openapi({ ref: "ListDataReferencesResponse" });
+).meta({ ref: "ListDataReferencesResponse" });
 
 export type ListDataReferencesResponse = z.infer<
   typeof ListDataReferencesResponse
@@ -121,10 +121,10 @@ export type ListDataReferencesResponse = z.infer<
  */
 export const ReadDataAclRequestParams = z
   .object({
-    collection: z.string().uuid(),
-    document: z.string().uuid(),
+    collection: z.uuid(),
+    document: z.uuid(),
   })
-  .openapi({ ref: "ReadDataAclRequestParams" });
+  .meta({ ref: "ReadDataAclRequestParams" });
 export type ReadDataAclRequestParams = z.infer<typeof ReadDataAclRequestParams>;
 
 /**
@@ -132,19 +132,17 @@ export type ReadDataAclRequestParams = z.infer<typeof ReadDataAclRequestParams>;
  */
 export const UpdateUserDataRequest = z
   .object({
-    document: z.string().uuid(),
-    collection: z.string().uuid(),
+    document: z.uuid(),
+    collection: z.uuid(),
     update: z.record(z.string(), z.unknown()),
   })
-  .openapi({ ref: "UpdateUserDataRequest" });
+  .meta({ ref: "UpdateUserDataRequest" });
 export type UpdateUserDataRequest = z.infer<typeof UpdateUserDataRequest>;
 
 /**
  * Data access response.
  */
-export const ReadDataAccessResponse = ApiSuccessResponse(
-  z.array(AclDto),
-).openapi({
+export const ReadDataAccessResponse = ApiSuccessResponse(z.array(AclDto)).meta({
   ref: "ReadDataAccessResponse",
 });
 export type ReadDataAccessResponse = z.infer<typeof ReadDataAccessResponse>;
@@ -154,11 +152,11 @@ export type ReadDataAccessResponse = z.infer<typeof ReadDataAccessResponse>;
  */
 export const GrantAccessToDataRequest = z
   .object({
-    collection: z.string().uuid(),
-    document: z.string().uuid(),
+    collection: z.uuid(),
+    document: z.uuid(),
     acl: AclDto,
   })
-  .openapi({ ref: "GrantAccessToDataRequest" });
+  .meta({ ref: "GrantAccessToDataRequest" });
 export type GrantAccessToDataRequest = z.infer<typeof GrantAccessToDataRequest>;
 
 /**
@@ -175,10 +173,10 @@ export type GrantAccessToDataResponse = z.infer<
 export const RevokeAccessToDataRequest = z
   .object({
     grantee: z.string(),
-    collection: z.string().uuid(),
-    document: z.string().uuid(),
+    collection: z.uuid(),
+    document: z.uuid(),
   })
-  .openapi({ ref: "RevokeAccessToDataRequest" });
+  .meta({ ref: "RevokeAccessToDataRequest" });
 export type RevokeAccessToDataRequest = z.infer<
   typeof RevokeAccessToDataRequest
 >;
@@ -196,10 +194,10 @@ export type RevokeAccessToDataResponse = z.infer<
  */
 export const DeleteDocumentRequestParams = z
   .object({
-    collection: z.string().uuid(),
-    document: z.string().uuid(),
+    collection: z.uuid(),
+    document: z.uuid(),
   })
-  .openapi({ ref: "DeleteDocumentRequestParams" });
+  .meta({ ref: "DeleteDocumentRequestParams" });
 
 export type DeleteDocumentRequestParams = z.infer<
   typeof DeleteDocumentRequestParams

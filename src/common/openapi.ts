@@ -1,4 +1,4 @@
-import { resolver } from "hono-openapi/zod";
+import { resolver } from "hono-openapi";
 import { ReasonPhrases } from "http-status-codes";
 import { ApiErrorResponse } from "#/common/handler";
 

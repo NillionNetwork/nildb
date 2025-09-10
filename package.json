@@ -20,6 +20,7 @@
   "dependencies": {
     "@hono/node-server": "^1.19.2",
     "@hono/prometheus": "^1.0.2",
+    "@hono/standard-validator": "^0.1.5",
     "@hono/zod-validator": "^0.7.2",
     "@nillion/nuc": "file:/Users/tim/projects/NillionNetwork/nuc-ts/nillion-nuc-0.2.0-rc.5.tgz",
     "@noble/hashes": "^2.0.0",

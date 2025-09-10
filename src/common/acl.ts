@@ -39,8 +39,8 @@ export function enforceDataOwnership(
 }
 
 export function enforceBuilderOwnership(
-  requesterId: Did,
-  resourceOwnerId: Did,
+  requesterId: string,
+  resourceOwnerId: string,
   resourceType: "collection" | "query",
   resourceId: UUID,
 ): E.Effect<void, ResourceAccessDeniedError> {

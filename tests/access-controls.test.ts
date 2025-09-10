@@ -141,7 +141,7 @@ describe("access-controls", () => {
         collection: collection.id,
         document: data[0]._id,
         acl: {
-          grantee: builderB.did,
+          grantee: builderB.did.didString,
           read: true,
           write: false,
           execute: false,
@@ -177,7 +177,7 @@ describe("access-controls", () => {
         collection: collection.id,
         document: data[2]._id,
         acl: {
-          grantee: builderB.did,
+          grantee: builderB.did.didString,
           read: true,
           write: false,
           execute: false,
@@ -206,7 +206,7 @@ describe("access-controls", () => {
         collection: collection.id,
         document: data[3]._id,
         acl: {
-          grantee: builderB.did,
+          grantee: builderB.did.didString,
           read: false,
           write: false,
           execute: true,

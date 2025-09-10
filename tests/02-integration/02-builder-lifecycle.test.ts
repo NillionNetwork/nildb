@@ -1,12 +1,11 @@
 import { faker } from "@faker-js/faker";
-import { Command, Did, NucTokenBuilder } from "@nillion/nuc";
+import { Builder, Signer } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { PathsV1 } from "#/common/paths";
 import { createTestFixtureExtension } from "#tests/fixture/it";
 
 describe("02-builder-lifecycle.test.ts", () => {
-  // Use a fixture, but don't seed it with any collections or queries.
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
 
   beforeAll(async (_c) => {});
@@ -21,11 +20,11 @@ describe("02-builder-lifecycle.test.ts", () => {
   it("self-signed tokens are rejected from paid route", async ({ c }) => {
     const { expect, builder, system } = c;
 
-    const selfSignedToken = NucTokenBuilder.invocation({})
-      .command(new Command(["nil", "db"]))
-      .audience(Did.fromHex(system.keypair.publicKey("hex")))
-      .subject(Did.fromHex(builder.keypair.publicKey("hex")))
-      .build(builder.keypair.privateKey());
+    const selfSignedToken = await Builder.invocation()
+      .command("/nil/db")
+      .audience(system.keypair.toDid("nil"))
+      .subject(builder.keypair.toDid("nil"))
+      .signAndSerialize(Signer.fromKeypair(builder.keypair));
 
     const response = await builder.app.request(PathsV1.collections.root, {
       headers: {
@@ -36,7 +35,7 @@ describe("02-builder-lifecycle.test.ts", () => {
     expect(response.status).toBe(StatusCodes.PAYMENT_REQUIRED);
   });
 
-  it("builder can access paid routes with a subscription", async ({ c }) => {
+  it("builder can access paid routes", async ({ c }) => {
     const { builder } = c;
     await builder.ensureSubscriptionActive();
     await builder.readCollections(c).expectSuccess();
@@ -45,7 +44,7 @@ describe("02-builder-lifecycle.test.ts", () => {
   it("builder can read its profile", async ({ c }) => {
     const { builder, expect } = c;
     const { data } = await builder.getProfile(c).expectSuccess();
-    expect(data._id).toBe(builder.did);
+    expect(data._id).toBe(builder.did.didString);
   });
 
   it("builder can update its profile", async ({ c }) => {

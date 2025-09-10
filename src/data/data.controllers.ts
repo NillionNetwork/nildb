@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import { describeRoute } from "hono-openapi";
-import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { resolver, validator as zValidator } from "hono-openapi";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { GrantAccessError } from "#/common/errors";
 import { handleTaggedErrors } from "#/common/handler";

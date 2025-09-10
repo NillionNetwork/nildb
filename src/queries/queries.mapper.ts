@@ -1,5 +1,4 @@
 import { UUID } from "mongodb";
-import type { Did } from "#/common/types";
 import type {
   ByIdRequestParams,
   CreateQueryRequest,
@@ -15,6 +14,7 @@ import type {
   DeleteQueryCommand,
   GetQueryRunByIdCommand,
   QueryDocument,
+  QueryVariable,
   ReadQueryByIdCommand,
   RunQueryCommand,
   RunQueryJobDocument,
@@ -46,7 +46,10 @@ export const QueriesDataMapper = {
   /**
    * Converts execute query request DTO to domain command.
    */
-  toRunQueryCommand(dto: RunQueryRequest, requesterId: Did): RunQueryCommand {
+  toRunQueryCommand(
+    dto: RunQueryRequest,
+    requesterId: string,
+  ): RunQueryCommand {
     return {
       _id: new UUID(dto._id),
       variables: dto.variables,
@@ -104,7 +107,7 @@ export const QueriesDataMapper = {
       owner,
       name: request.name,
       collection: new UUID(request.collection),
-      variables: request.variables,
+      variables: request.variables as Record<string, QueryVariable>,
       pipeline: request.pipeline,
     };
   },
@@ -120,7 +123,7 @@ export const QueriesDataMapper = {
       _id: new UUID(body._id),
       name: body.name,
       collection: new UUID(body.collection),
-      variables: body.variables,
+      variables: body.variables as Record<string, QueryVariable>,
       pipeline: body.pipeline,
       owner,
     };
@@ -131,7 +134,7 @@ export const QueriesDataMapper = {
    */
   toDeleteQueryCommand(
     dto: DeleteQueryRequest,
-    requesterId: Did,
+    requesterId: string,
   ): DeleteQueryCommand {
     return {
       _id: new UUID(dto.id),
@@ -144,7 +147,7 @@ export const QueriesDataMapper = {
    */
   toDeleteQueryByIdCommand(
     params: ByIdRequestParams,
-    requesterId: Did,
+    requesterId: string,
   ): DeleteQueryCommand {
     return {
       _id: new UUID(params.id),
@@ -157,7 +160,7 @@ export const QueriesDataMapper = {
    */
   toReadQueryByIdCommand(
     params: ByIdRequestParams,
-    requesterId: Did,
+    requesterId: string,
   ): ReadQueryByIdCommand {
     return {
       _id: new UUID(params.id),

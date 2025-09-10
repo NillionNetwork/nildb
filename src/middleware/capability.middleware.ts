@@ -104,7 +104,6 @@ export function loadSubjectAndVerifyAsBuilder<
         );
       }
 
-      // @ts-ignore
       const context = {
         req: {
           path: c.req.path,

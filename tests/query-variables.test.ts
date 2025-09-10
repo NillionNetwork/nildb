@@ -59,10 +59,15 @@ describe("query-variables.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: false, write: false, execute: true },
+        acl: {
+          grantee: builder.did.didString,
+          read: false,
+          write: false,
+          execute: true,
+        },
       })
       .expectSuccess();
   });

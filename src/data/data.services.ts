@@ -24,7 +24,6 @@ import {
   applyCoercions,
   type DocumentBase,
 } from "#/common/mongo";
-import type { Did } from "#/common/types";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
@@ -436,7 +435,7 @@ export function runAggregation(
   ctx: AppBindings,
   query: QueryDocument,
   pipeline: Document[],
-  requesterId: Did,
+  requesterId: string,
 ): E.Effect<
   JsonObject[],
   | CollectionNotFoundError

@@ -11,7 +11,6 @@ import {
   type ResourceAccessDeniedError,
 } from "#/common/errors";
 import * as DataRepository from "#/data/data.repository";
-import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
 import { UserDataMapper, UserLoggerMapper } from "#/users/users.mapper";
 import * as UserRepository from "./users.repository";

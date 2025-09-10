@@ -210,7 +210,7 @@ export function insertOwnedData(
                 created.add(id.toString() as UuidDto);
               }
 
-              result.getWriteErrors().map((writeError) => {
+              result.getWriteErrors().forEach((writeError) => {
                 const document = batch[writeError.index];
                 created.delete(document._id.toString() as UuidDto);
                 errors.push({
@@ -286,7 +286,7 @@ export function insertStandardData(
                 created.add(id.toString() as UuidDto);
               }
 
-              result.getWriteErrors().map((writeError) => {
+              result.getWriteErrors().forEach((writeError) => {
                 const document = batch[writeError.index];
                 created.delete(document._id.toString() as UuidDto);
                 errors.push({

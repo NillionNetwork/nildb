@@ -9,7 +9,7 @@ export const SetLogLevelRequest = z
   .object({
     level: LogLevel,
   })
-  .openapi({ ref: "SetLogLevelRequest" });
+  .meta({ ref: "SetLogLevelRequest" });
 
 export type SetLogLevelRequest = z.infer<typeof SetLogLevelRequest>;
 
@@ -54,14 +54,14 @@ export const ReadAboutNodeResponse = z
       started_at: z.string().datetime(),
     }),
   })
-  .openapi({ ref: "ReadAboutNodeResponse" });
+  .meta({ ref: "ReadAboutNodeResponse" });
 
 export type ReadAboutNodeResponse = z.infer<typeof ReadAboutNodeResponse>;
 
 /**
  * Log level retrieval response.
  */
-export const ReadLogLevelResponse = ApiSuccessResponse(LogLevel).openapi({
+export const ReadLogLevelResponse = ApiSuccessResponse(LogLevel).meta({
   ref: "ReadLogLevelResponse",
 });
 

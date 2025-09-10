@@ -36,7 +36,7 @@ describe("owned-data.test.ts", () => {
 
     await builderB
       .register(c, {
-        did: builderB.did,
+        did: builderB.did.didString,
         name: "builderB",
       })
       .expectSuccess();
@@ -66,11 +66,11 @@ describe("owned-data.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
         acl: {
-          grantee: builder.did,
+          grantee: builder.did.didString,
           read: false,
           write: false,
           execute: false,
@@ -105,10 +105,15 @@ describe("owned-data.test.ts", () => {
 
     const result = await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: true, execute: true },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: true,
+          execute: true,
+        },
       })
       .expectSuccess();
 
@@ -136,10 +141,15 @@ describe("owned-data.test.ts", () => {
 
     const result = await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectSuccess();
 
@@ -173,10 +183,15 @@ describe("owned-data.test.ts", () => {
 
     const result = await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectSuccess();
 
@@ -205,10 +220,15 @@ describe("owned-data.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectSuccess();
 
@@ -234,10 +254,15 @@ describe("owned-data.test.ts", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did,
+        owner: user.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
   });
@@ -406,10 +431,15 @@ describe("owned-data.test.ts", () => {
     // Enforce register user
     await builder
       .createOwnedData(c, {
-        owner: otherUser.did,
+        owner: otherUser.did.didString,
         collection: collection.id,
         data,
-        acl: { grantee: builder.did, read: true, write: false, execute: false },
+        acl: {
+          grantee: builder.did.didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
       })
       .expectSuccess();
 
@@ -434,7 +464,7 @@ describe("owned-data.test.ts", () => {
         collection: collection.id.toString(),
         document: documentId.toString(),
         acl: {
-          grantee: builderB.did,
+          grantee: builderB.did.didString,
           read: true,
           write: false,
           execute: false,
@@ -470,7 +500,7 @@ describe("owned-data.test.ts", () => {
         collection: collection.id.toString(),
         document: documentId.toString(),
         acl: {
-          grantee: builder.did,
+          grantee: builder.did.didString,
           read: false,
           write: false,
           execute: false,
@@ -494,7 +524,7 @@ describe("owned-data.test.ts", () => {
       .revokeAccess(c, {
         collection: collection.id.toString(),
         document: documentId.toString(),
-        grantee: builderB.did,
+        grantee: builderB.did.didString,
       })
       .expectSuccess();
 
@@ -520,7 +550,7 @@ describe("owned-data.test.ts", () => {
       .revokeAccess(c, {
         collection: collection.id.toString(),
         document: documentId.toString(),
-        grantee: builder.did,
+        grantee: builder.did.didString,
       })
       .expectFailure(
         StatusCodes.BAD_REQUEST,

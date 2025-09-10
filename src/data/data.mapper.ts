@@ -1,7 +1,6 @@
 import type { DeleteResult, UpdateResult } from "mongodb";
 import { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
-import type { Did } from "#/common/types";
 import type {
   CreateDataResponse,
   CreateOwnedDataRequest,
@@ -94,7 +93,7 @@ export const DataMapper = {
    */
   toCreateOwnedRecordsCommand(
     body: CreateOwnedDataRequest,
-    requesterId: Did,
+    requesterId: string,
   ): CreateOwnedDataCommand {
     return {
       owner: body.owner,
@@ -110,7 +109,7 @@ export const DataMapper = {
    */
   toCreateStandardRecordsCommand(
     body: CreateStandardDataRequest,
-    requesterId: Did,
+    requesterId: string,
   ): CreateStandardDataCommand {
     return {
       collection: new UUID(body.collection),
@@ -124,7 +123,7 @@ export const DataMapper = {
    */
   toUpdateDataCommand(
     dto: UpdateDataRequest,
-    requesterId: Did,
+    requesterId: string,
   ): UpdateDataCommand {
     return {
       collection: new UUID(dto.collection),
@@ -137,7 +136,10 @@ export const DataMapper = {
   /**
    * Converts read data request DTO to domain command.
    */
-  toFindDataCommand(dto: FindDataRequest, requesterId: Did): FindDataCommand {
+  toFindDataCommand(
+    dto: FindDataRequest,
+    requesterId: string,
+  ): FindDataCommand {
     return {
       collection: new UUID(dto.collection),
       filter: dto.filter,
@@ -157,7 +159,7 @@ export const DataMapper = {
    */
   toDeleteDataCommand(
     dto: DeleteDataRequest,
-    requesterId: Did,
+    requesterId: string,
   ): DeleteDataCommand {
     return {
       collection: new UUID(dto.collection),
@@ -171,7 +173,7 @@ export const DataMapper = {
    */
   toFlushCollectionCommand(
     params: FlushDataRequest,
-    requesterId: Did,
+    requesterId: string,
   ): FlushDataCommand {
     return {
       collection: new UUID(params.collection),
@@ -184,7 +186,7 @@ export const DataMapper = {
    */
   toFlushDataCommand(
     params: DataSchemaByIdRequestParams,
-    requesterId: Did,
+    requesterId: string,
   ): FlushDataCommand {
     return {
       collection: new UUID(params.id),
@@ -198,7 +200,7 @@ export const DataMapper = {
   toRecentDataCommand(
     params: TailDataRequestParams,
     query: TailDataRequestQuery,
-    requesterId: Did,
+    requesterId: string,
   ): RecentDataCommand {
     return {
       collection: new UUID(params.id),

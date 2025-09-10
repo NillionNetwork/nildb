@@ -428,15 +428,15 @@ function primitiveType(
     | { data: QueryPrimitive; success: true }
     | { success: false; error: z.ZodError };
 
-  result = z.string().safeParse(value, { path: [key] });
+  result = z.string().safeParse(value, { error: (_iss) => key });
   if (result.success) {
     return E.succeed("string");
   }
-  result = z.number().safeParse(value, { path: [key] });
+  result = z.number().safeParse(value, { error: (_iss) => key });
   if (result.success) {
     return E.succeed("number");
   }
-  result = z.boolean().safeParse(value, { path: [key] });
+  result = z.boolean().safeParse(value, { error: (_iss) => key });
   if (result.success) {
     return E.succeed("boolean");
   }

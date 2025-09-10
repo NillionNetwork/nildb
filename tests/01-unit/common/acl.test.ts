@@ -4,16 +4,15 @@ import { describe, expect, it, type Mock, vi } from "vitest";
 import * as CollectionsService from "#/collections/collections.services";
 import type { CollectionDocument } from "#/collections/collections.types";
 import { buildAccessControlledFilter } from "#/common/acl";
-import type { Did } from "#/common/types";
 
 // Mock the entire collections service module
 vi.mock("#/collections/collections.services");
 
 describe("buildAccessControlledFilter", () => {
   const collectionId = new UUID();
-  const builderOwnerDid = "did:nil:owner" as Did;
-  const requestingBuilderDid = "did:nil:requester" as Did;
-  const otherBuilderDid = "did:nil:other" as Did;
+  const builderOwnerDid = "did:nil:zowner";
+  const requestingBuilderDid = "did:nil:zrequester";
+  const otherBuilderDid = "did:nil:zother";
 
   describe("for a standard collection", () => {
     const mockStandardCollection: CollectionDocument = {

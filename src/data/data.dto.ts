@@ -8,11 +8,11 @@ import { AclDto } from "#/users/users.dto";
 export const CreateOwnedDataRequest = z
   .object({
     owner: z.string(),
-    collection: z.string().uuid(),
+    collection: z.uuid(),
     data: z.array(z.record(z.string(), z.unknown())).min(1),
     acl: AclDto,
   })
-  .openapi({ ref: "CreateOwnedDataRequest" });
+  .meta({ ref: "CreateOwnedDataRequest" });
 export type CreateOwnedDataRequest = z.infer<typeof CreateOwnedDataRequest>;
 
 /**
@@ -20,10 +20,10 @@ export type CreateOwnedDataRequest = z.infer<typeof CreateOwnedDataRequest>;
  */
 export const CreateStandardDataRequest = z
   .object({
-    collection: z.string().uuid(),
+    collection: z.uuid(),
     data: z.array(z.record(z.string(), z.unknown())).min(1),
   })
-  .openapi({ ref: "CreateStandardDataRequest" });
+  .meta({ ref: "CreateStandardDataRequest" });
 export type CreateStandardDataRequest = z.infer<
   typeof CreateStandardDataRequest
 >;
@@ -33,7 +33,7 @@ export type CreateStandardDataRequest = z.infer<
  */
 export const CreateDataResponse = ApiSuccessResponse(
   z.object({
-    created: z.array(z.string().uuid()),
+    created: z.array(z.uuid()),
     errors: z.array(
       z.object({
         error: z.string(),
@@ -41,7 +41,7 @@ export const CreateDataResponse = ApiSuccessResponse(
       }),
     ),
   }),
-).openapi({ ref: "CreateDataResponse" });
+).meta({ ref: "CreateDataResponse" });
 export type CreateDataResponse = z.infer<typeof CreateDataResponse>;
 
 /**
@@ -49,11 +49,11 @@ export type CreateDataResponse = z.infer<typeof CreateDataResponse>;
  */
 export const UpdateDataRequest = z
   .object({
-    collection: z.string().uuid(),
+    collection: z.uuid(),
     filter: z.record(z.string(), z.unknown()),
     update: z.record(z.string(), z.unknown()),
   })
-  .openapi({ ref: "UpdateDataRequest" });
+  .meta({ ref: "UpdateDataRequest" });
 export type UpdateDataRequest = z.infer<typeof UpdateDataRequest>;
 
 /**
@@ -67,7 +67,7 @@ export const UpdateDataResponse = ApiSuccessResponse(
     upserted: z.number().int().min(0),
     upserted_id: z.string().nullable(),
   }),
-).openapi({ ref: "UpdateDataResponse" });
+).meta({ ref: "UpdateDataResponse" });
 export type UpdateDataResponse = z.infer<typeof UpdateDataResponse>;
 
 /**
@@ -75,10 +75,10 @@ export type UpdateDataResponse = z.infer<typeof UpdateDataResponse>;
  */
 export const FindDataRequest = z
   .object({
-    collection: z.string().uuid(),
+    collection: z.uuid(),
     filter: z.record(z.string(), z.unknown()),
   })
-  .openapi({ ref: "FindDataRequest" });
+  .meta({ ref: "FindDataRequest" });
 export type FindDataRequest = z.infer<typeof FindDataRequest>;
 
 /**
@@ -86,7 +86,7 @@ export type FindDataRequest = z.infer<typeof FindDataRequest>;
  */
 export const FindDataResponse = ApiSuccessResponse(
   z.array(z.record(z.string(), z.unknown())),
-).openapi({ ref: "FindDataResponse" });
+).meta({ ref: "FindDataResponse" });
 export type FindDataResponse = z.infer<typeof FindDataResponse>;
 
 /**
@@ -94,12 +94,12 @@ export type FindDataResponse = z.infer<typeof FindDataResponse>;
  */
 export const DeleteDataRequest = z
   .object({
-    collection: z.string().uuid(),
+    collection: z.uuid(),
     filter: z
       .record(z.string(), z.unknown())
       .refine((obj) => Object.keys(obj).length > 0, "Filter cannot be empty"),
   })
-  .openapi({ ref: "DeleteDataRequest" });
+  .meta({ ref: "DeleteDataRequest" });
 export type DeleteDataRequest = z.infer<typeof DeleteDataRequest>;
 
 /**
@@ -110,7 +110,7 @@ export const DeleteDataResponse = ApiSuccessResponse(
     acknowledged: z.boolean(),
     deletedCount: z.number().int().min(0),
   }),
-).openapi({ ref: "DeleteDataResponse" });
+).meta({ ref: "DeleteDataResponse" });
 export type DeleteDataResponse = z.infer<typeof DeleteDataResponse>;
 
 /**
@@ -118,9 +118,9 @@ export type DeleteDataResponse = z.infer<typeof DeleteDataResponse>;
  */
 export const FlushDataRequest = z
   .object({
-    collection: z.string().uuid(),
+    collection: z.uuid(),
   })
-  .openapi({ ref: "FlushDataRequest" });
+  .meta({ ref: "FlushDataRequest" });
 export type FlushDataRequest = z.infer<typeof FlushDataRequest>;
 
 /**
@@ -137,7 +137,7 @@ export const DropDataResponse = ApiSuccessResponse(
     acknowledged: z.boolean(),
     deletedCount: z.number().int().min(0),
   }),
-).openapi({ ref: "DropDataResponse" });
+).meta({ ref: "DropDataResponse" });
 export type DropDataResponse = z.infer<typeof DropDataResponse>;
 
 /**
@@ -145,9 +145,9 @@ export type DropDataResponse = z.infer<typeof DropDataResponse>;
  */
 export const DataSchemaByIdRequestParams = z
   .object({
-    id: z.string().uuid(),
+    id: z.uuid(),
   })
-  .openapi({ ref: "DataSchemaByIdRequestParams" });
+  .meta({ ref: "DataSchemaByIdRequestParams" });
 export type DataSchemaByIdRequestParams = z.infer<
   typeof DataSchemaByIdRequestParams
 >;
@@ -157,9 +157,9 @@ export type DataSchemaByIdRequestParams = z.infer<
  */
 export const TailDataRequestParams = z
   .object({
-    id: z.string().uuid(),
+    id: z.uuid(),
   })
-  .openapi({ ref: "TailDataRequestParams" });
+  .meta({ ref: "TailDataRequestParams" });
 export type TailDataRequestParams = z.infer<typeof TailDataRequestParams>;
 
 /**
@@ -169,7 +169,7 @@ export const TailDataRequestQuery = z
   .object({
     limit: z.coerce.number().max(1_000).optional().default(25),
   })
-  .openapi({ ref: "TailDataRequestQuery" });
+  .meta({ ref: "TailDataRequestQuery" });
 export type TailDataRequestQuery = z.infer<typeof TailDataRequestQuery>;
 
 /**
@@ -177,5 +177,5 @@ export type TailDataRequestQuery = z.infer<typeof TailDataRequestQuery>;
  */
 export const TailDataResponse = ApiSuccessResponse(
   z.array(z.record(z.string(), z.unknown())),
-).openapi({ ref: "TailDataResponse" });
+).meta({ ref: "TailDataResponse" });
 export type TailDataResponse = z.infer<typeof TailDataResponse>;

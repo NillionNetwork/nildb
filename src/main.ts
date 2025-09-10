@@ -1,5 +1,3 @@
-import "./effects";
-
 import { type ServerType, serve } from "@hono/node-server";
 import { Command } from "commander";
 import dotenv from "dotenv";

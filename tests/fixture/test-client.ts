@@ -10,6 +10,7 @@ import {
   Signer,
 } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
+import { vi } from "vitest";
 import type { App } from "#/app";
 import {
   ReadProfileResponse,
@@ -104,7 +105,7 @@ abstract class BaseTestClient<Options extends BaseTestClientOptions> {
   }
 
   get did(): Did {
-    return this._options.keypair.toDid();
+    return this._options.keypair.toDid("nil");
   }
 
   get keypair(): Keypair {
@@ -215,7 +216,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
   }
 
   override get did(): Did {
-    return this._options.keypair.toDid();
+    return this._options.keypair.toDid("nil");
   }
 
   get nilauth(): NilauthClient {
@@ -241,26 +242,28 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
   }
 
   async ensureSubscriptionActive(): Promise<void> {
-    for (let retry = 0; retry < 5; retry++) {
+    const checkSubscription = async () => {
       const response = await this.options.nilauth.subscriptionStatus(
         this.options.keypair.publicKey(),
         "nildb",
       );
-      if (!response.subscribed) {
-        try {
-          await this.options.nilauth.payAndValidate(
-            this.options.keypair.publicKey(),
-            "nildb",
-          );
-          return;
-        } catch (_error) {
-          console.log(
-            "Retrying to pay and validate the subscription after 200ms",
-          );
-          await new Promise((f) => setTimeout(f, 200));
-        }
-      }
-    }
+      if (response.subscribed) return;
+
+      // If not subscribed, attempt to pay. This may fail if a payment is already processing,
+      // which is fine. We will re-check the status in the next poll interval.
+      await this.options.nilauth
+        .payAndValidate(this.options.keypair.publicKey(), "nildb")
+        // Ignore errors since we will return
+        .catch(() => {});
+
+      // Throw to signal vi.waitFor to continue polling
+      throw new Error("Subscription not yet active");
+    };
+
+    await vi.waitFor(checkSubscription, {
+      timeout: 10000,
+      interval: 500,
+    });
   }
 
   async getRootToken(): Promise<Envelope> {

@@ -79,7 +79,7 @@ export const CollectionsDataMapper = {
    */
   toDeleteCollectionCommand(
     dto: DeleteCollectionRequestParams,
-    requesterId: Did,
+    requesterId: string,
   ): DeleteCollectionCommand {
     return {
       _id: new UUID(dto.id),
@@ -92,7 +92,7 @@ export const CollectionsDataMapper = {
    */
   toCreateIndexCommand(
     dto: CreateCollectionIndexRequest,
-    requesterId: Did,
+    requesterId: string,
   ): CreateIndexCommand {
     // Convert keys array to Record<string, IndexDirection>
     const keys: Record<string, IndexDirection> = {};
@@ -117,7 +117,7 @@ export const CollectionsDataMapper = {
    */
   toDropIndexCommand(
     body: DropCollectionIndexParams,
-    requesterId: Did,
+    requesterId: string,
   ): DropIndexCommand {
     return {
       collection: new UUID(body.id),
@@ -131,7 +131,7 @@ export const CollectionsDataMapper = {
    */
   toReadCollectionById(
     params: ReadCollectionMetadataRequestParams,
-    requesterId: Did,
+    requesterId: string,
   ): ReadCollectionByIdCommand {
     return {
       id: new UUID(params.id),
