@@ -1,8 +1,9 @@
 import { Effect as E, pipe } from "effect";
+import { cloneDeep, set } from "es-toolkit/compat";
 import type { Document, UUID } from "mongodb";
-import type { JsonValue } from "type-fest";
 import { z } from "zod";
 import * as BuildersService from "#/builders/builders.services";
+import * as CollectionsService from "#/collections/collections.services";
 import { enforceBuilderOwnership } from "#/common/acl";
 import { applyCoercions } from "#/common/coercion";
 import {
@@ -10,10 +11,9 @@ import {
   type DatabaseError,
   DataValidationError,
   type DocumentNotFoundError,
-  type QueryValidationError,
   type ResourceAccessDeniedError,
   TimeoutError,
-  VariableInjectionError,
+  type VariableInjectionError,
 } from "#/common/errors";
 import { validateData } from "#/common/validator";
 import * as DataService from "#/data/data.services";
@@ -33,22 +33,6 @@ import type {
 } from "./queries.types";
 
 /**
- * Get builder queries.
- */
-export function getBuilderQueries(
-  ctx: AppBindings,
-  id: string,
-): E.Effect<
-  QueryDocument[],
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
-  return QueriesRepository.findMany(ctx, { owner: id });
-}
-
-/**
  * Add query.
  */
 export function addQuery(
@@ -61,6 +45,7 @@ export function addQuery(
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
+  | ResourceAccessDeniedError
 > {
   const now = new Date();
   const document: QueryDocument = {
@@ -75,17 +60,110 @@ export function addQuery(
   };
 
   return pipe(
-    validateQuery(document),
-    E.flatMap((_document) => validateData(pipelineSchema, document.pipeline)),
+    validateData(pipelineSchema, document.pipeline),
+    E.flatMap(() => CollectionsService.find(ctx, { _id: document.collection })),
+    E.flatMap((collection) =>
+      enforceBuilderOwnership(
+        document.owner,
+        collection.owner,
+        "collection",
+        collection._id,
+      ),
+    ),
     E.flatMap(() => QueriesRepository.insert(ctx, document)),
-    E.flatMap(() => {
-      ctx.cache.builders.taint(document.owner);
-      return BuildersService.addQuery(ctx, {
+    E.tap(() => ctx.cache.builders.taint(document.owner)),
+    E.flatMap(() =>
+      BuildersService.addQuery(ctx, {
         did: document.owner,
         query: document._id,
-      });
-    }),
+      }),
+    ),
+    E.flatMap(() => QueriesRepository.insert(ctx, document)),
+    E.tap(() => ctx.cache.builders.taint(document.owner)),
+    E.flatMap(() =>
+      BuildersService.addQuery(ctx, {
+        did: document.owner,
+        query: document._id,
+      }),
+    ),
     E.as(void 0),
+  );
+}
+
+/**
+ * Execute an effect in the background (fire and forget).
+ */
+function executeInBackground(
+  ctx: AppBindings,
+  runId: UUID,
+  effect: E.Effect<
+    void,
+    DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+  >,
+): void {
+  pipe(effect, E.runPromiseExit)
+    .then((exit) => {
+      ctx.log.info(
+        { run: runId.toString(), result: exit._tag },
+        "Query run finished",
+      );
+    })
+    .catch((error: unknown) => {
+      ctx.log.warn(
+        { run: runId.toString(), error },
+        "Query run threw an unhandled error",
+      );
+    });
+}
+
+/**
+ * Process and run a query.
+ */
+function processAndRunQuery(
+  ctx: AppBindings,
+  query: QueryDocument,
+  runId: UUID,
+  command: RunQueryCommand,
+): E.Effect<
+  void,
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  return pipe(
+    E.Do,
+    E.bind("variables", () =>
+      validateVariables(query.variables, command.variables),
+    ),
+    E.bind("pipeline", ({ variables }) =>
+      injectVariablesIntoAggregation(
+        query.variables,
+        query.pipeline,
+        variables,
+      ),
+    ),
+    E.flatMap(({ pipeline }) =>
+      DataService.runAggregation(ctx, query, pipeline, command.requesterId),
+    ),
+    E.timeoutFail({
+      duration: "30 minutes",
+      onTimeout: () =>
+        new TimeoutError({
+          message: "Run query job timed out after 30 minutes.",
+        }),
+    }),
+    E.flatMap((result) =>
+      RunQueryJobsRepository.updateOne(ctx, runId, {
+        status: "complete",
+        completed: new Date(),
+        result,
+      }),
+    ),
+    E.catchAll((error) =>
+      RunQueryJobsRepository.updateOne(ctx, runId, {
+        status: "error",
+        completed: new Date(),
+        errors: error.humanize(),
+      }),
+    ),
   );
 }
 
@@ -105,9 +183,7 @@ export function runQueryInBackground(
   | ResourceAccessDeniedError
 > {
   return pipe(
-    QueriesRepository.findOne(ctx, {
-      _id: command._id,
-    }),
+    QueriesRepository.findOne(ctx, { _id: command._id }),
     E.tap((query) =>
       enforceBuilderOwnership(
         command.requesterId,
@@ -120,79 +196,18 @@ export function runQueryInBackground(
       pipe(
         E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(query._id)),
         E.flatMap((document) => RunQueryJobsRepository.insert(ctx, document)),
-        E.flatMap((run) => {
+        E.tap((run) =>
+          RunQueryJobsRepository.updateOne(ctx, run.insertedId, {
+            status: "running",
+            started: new Date(),
+          }),
+        ),
+        E.tap((run) => {
           const runId = run.insertedId;
-
-          // Run query in background (fire and forget)
-          const backgroundJob = pipe(
-            E.Do,
-            E.bind("job", () =>
-              RunQueryJobsRepository.findOne(ctx, { _id: runId }),
-            ),
-            E.bind("variables", () =>
-              validateVariables(query.variables, command.variables),
-            ),
-            E.bind("update", ({ job }) =>
-              RunQueryJobsRepository.updateOne(ctx, job._id, {
-                status: "running",
-                started: new Date(),
-              }),
-            ),
-            E.bind("pipeline", ({ variables }) =>
-              injectVariablesIntoAggregation(
-                query.variables,
-                query.pipeline,
-                variables,
-              ),
-            ),
-            E.flatMap(({ pipeline }) =>
-              DataService.runAggregation(
-                ctx,
-                query,
-                pipeline,
-                command.requesterId,
-              ),
-            ),
-            E.timeoutFail({
-              duration: "30 minutes",
-              onTimeout: () =>
-                new TimeoutError({
-                  message: "Run query job timed out after 30 minutes.",
-                }),
-            }),
-            E.flatMap((result) =>
-              RunQueryJobsRepository.updateOne(ctx, runId, {
-                status: "complete",
-                completed: new Date(),
-                result,
-              }),
-            ),
-            E.catchAll((error) =>
-              RunQueryJobsRepository.updateOne(ctx, runId, {
-                status: "error",
-                completed: new Date(),
-                errors: error.humanize(),
-              }),
-            ),
-            E.runPromiseExit,
-          );
-
-          backgroundJob
-            .then((exit) => {
-              ctx.log.info(
-                { run: runId.toString(), result: exit._tag },
-                "Query run finished",
-              );
-            })
-            .catch((error: unknown) => {
-              ctx.log.warn(
-                { run: runId.toString(), error },
-                "Query run threw an unhandled error: ",
-              );
-            });
-
-          return E.succeed(runId);
+          const effect = processAndRunQuery(ctx, query, runId, command);
+          executeInBackground(ctx, runId, effect);
         }),
+        E.map((run) => run.insertedId),
       ),
     ),
   );
@@ -316,39 +331,6 @@ export function deleteBuilderQueries(
   );
 }
 
-/**
- * Validate query.
- */
-export function validateQuery(
-  query: QueryDocument,
-): E.Effect<QueryDocument, QueryValidationError> {
-  const { variables, pipeline } = query;
-
-  const validateVariableDefinition: (
-    key: string,
-    variable: QueryVariable,
-  ) => E.Effect<QueryVariable, QueryValidationError> = (key, variable) => {
-    return pipe(
-      pathSegments(variable.path),
-      E.andThen((segments) => getAggregationField(pipeline, segments)),
-      E.andThen((value) => {
-        if (Array.isArray(value)) {
-          return validateArray(key, value as unknown[]).pipe(
-            E.andThen(() => E.succeed(variable)),
-          );
-        }
-        return primitiveType(key, value).pipe(
-          E.andThen(() => E.succeed(variable)),
-        );
-      }),
-    );
-  };
-
-  return E.forEach(Object.entries(variables), ([key, variable]) =>
-    validateVariableDefinition(key, variable),
-  ).pipe(E.map(() => query));
-}
-
 export type QueryPrimitive = string | number | boolean | Date | UUID;
 
 export type QueryRuntimeVariables = Record<
@@ -452,36 +434,6 @@ function primitiveType(
   return E.fail(error);
 }
 
-function getAggregationField(
-  aggregation: unknown,
-  variablePath: string[],
-): E.Effect<unknown, VariableInjectionError> {
-  let field = aggregation;
-  const getField = (
-    segment: string,
-  ): E.Effect<unknown, VariableInjectionError, never> => {
-    if (typeof field === "object") {
-      const obj = field as Record<string, unknown>;
-      field = obj[segment];
-    } else if (Array.isArray(field)) {
-      field = field[Number(segment)];
-    } else {
-      field = undefined;
-    }
-    if (field === undefined) {
-      return E.fail(
-        new VariableInjectionError({
-          message: `Variable path not found: ${variablePath}`,
-        }),
-      );
-    }
-    return E.succeed(field);
-  };
-  return E.forEach(variablePath, getField).pipe(
-    E.map((fields) => fields.pop()),
-  );
-}
-
 /**
  * Inject variables into aggregation.
  */
@@ -490,75 +442,17 @@ export function injectVariablesIntoAggregation(
   aggregation: Record<string, unknown>[],
   variables: QueryRuntimeVariables,
 ): E.Effect<Document[], VariableInjectionError> {
-  const injectVariables = (
-    path: string,
-    value: QueryPrimitive | QueryPrimitive[],
-  ): E.Effect<
-    QueryPrimitive | QueryPrimitive[],
-    VariableInjectionError,
-    never
-  > => {
-    return E.Do.pipe(
-      E.bind("segments", () => pathSegments(path)),
-      E.bind("lastSegment", ({ segments }) => {
-        const lastField = segments.pop();
-        if (!segments || !lastField) {
-          return E.fail(
-            new VariableInjectionError({ message: "Invalid field path" }),
-          );
-        }
-        return E.succeed(lastField);
-      }),
-      E.bind("container", ({ segments }) =>
-        getAggregationField(aggregation, segments),
-      ),
-      E.map(({ container, lastSegment }) => {
-        if (typeof container === "object") {
-          const obj = container as Record<string, unknown>;
-          obj[lastSegment] = value;
-        } else if (Array.isArray(container)) {
-          container[Number(lastSegment)] = value;
-        } else {
-          return E.fail(
-            new VariableInjectionError({
-              message: `Variable path not found: ${path}`,
-            }),
-          );
-        }
-        return E.succeed(value);
-      }),
-      E.runSync,
-    );
-  };
+  const pipeline = cloneDeep(aggregation);
 
-  return E.forEach(Object.entries(variables), ([key, value]) =>
-    injectVariables(queryVariables[key].path, value),
-  ).pipe(E.map((_) => aggregation as JsonValue as Document[]));
-}
+  for (const key in variables) {
+    if (Object.hasOwn(variables, key)) {
+      const variableInfo = queryVariables[key];
+      const value = variables[key];
 
-function pathSegments(
-  path: string,
-): E.Effect<string[], VariableInjectionError> {
-  const segments = path
-    .split(".")
-    .flatMap((segment) => segment.replace("]", "").split("["));
-  const root = segments.shift();
-  if (root && root !== "$") {
-    return E.fail(
-      new VariableInjectionError({
-        message:
-          "Relative path is not supported, the path must start by the root ($)",
-      }),
-    );
+      // The path from the query definition uses `$.pipeline` which we need to remove
+      const path = variableInfo.path.replace("$.pipeline", "");
+      set(pipeline, path, value);
+    }
   }
-  const pipeline = segments.shift();
-  if (pipeline && pipeline !== "pipeline") {
-    return E.fail(
-      new VariableInjectionError({
-        message: `Path for pipeline not found ${pipeline}`,
-      }),
-    );
-  }
-
-  return E.succeed(segments.filter(Boolean));
+  return E.succeed(pipeline as Document[]);
 }

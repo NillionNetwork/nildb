@@ -1,128 +1,13 @@
 import { Effect as E, Either, pipe } from "effect";
-import type { Document } from "mongodb";
-import { UUID } from "mongodb";
 import { describe, it } from "vitest";
 import {
   injectVariablesIntoAggregation,
   type QueryRuntimeVariables,
-  validateQuery,
   validateVariables,
 } from "#/queries/queries.services";
-import type { QueryDocument, QueryVariable } from "#/queries/queries.types";
+import type { QueryVariable } from "#/queries/queries.types";
 
 describe("queries.services.ts", () => {
-  describe("validateQuery", () => {
-    it("should succeed for a valid query", ({ expect }) => {
-      const variables: Record<string, QueryVariable> = {
-        minAmount: { path: "$.pipeline[0].$match.amount.$gte" },
-        status: { path: "$.pipeline[0].$match.status" },
-        startDate: { path: "$.pipeline[0].$match.timestamp.$gte" },
-      };
-      const pipeline = [
-        {
-          $match: {
-            amount: { $gte: 0 },
-            status: "",
-            timestamp: { $gte: "1970-01-01T00:00:00.000Z" },
-          },
-        },
-      ];
-      const result = pipe(
-        validateQuery(buildQuery(variables, pipeline)),
-        E.either,
-        E.runSync,
-      );
-      expect(Either.isRight(result)).toBe(true);
-    });
-
-    it("should succeed for a valid array query", ({ expect }) => {
-      const variables: Record<string, QueryVariable> = {
-        values: { path: "$.pipeline[0].$match.values" },
-      };
-      const pipeline = [{ $match: { values: [1, 2, 3, 4, 5] } }];
-      const result = pipe(
-        validateQuery(buildQuery(variables, pipeline)),
-        E.either,
-        E.runSync,
-      );
-      expect(Either.isRight(result)).toBe(true);
-    });
-
-    it("should fail for an unsupported type in the pipeline", ({ expect }) => {
-      const variables: Record<string, QueryVariable> = {
-        minAmount: { path: "$.pipeline[0].$match.amount.$gte" },
-      };
-      const pipeline = [{ $match: { amount: { $gte: new Date() } } }];
-      const result = pipe(
-        validateQuery(buildQuery(variables, pipeline)),
-        E.either,
-        E.runSync,
-      );
-      expect(Either.isLeft(result)).toBe(true);
-      if (Either.isLeft(result)) {
-        const error = result.left.humanize();
-        expect(error[0]).toBe("DataValidationError");
-        expect(error[1]).toBe("Unsupported value type");
-      }
-    });
-
-    it("should fail for an unsupported inner type in an array", ({
-      expect,
-    }) => {
-      const variables: Record<string, QueryVariable> = {
-        values: { path: "$.pipeline[0].$match.values" },
-      };
-      const pipeline = [{ $match: { values: [1, 2, { value: 3 }] } }];
-      const result = pipe(
-        validateQuery(buildQuery(variables, pipeline)),
-        E.either,
-        E.runSync,
-      );
-      expect(Either.isLeft(result)).toBe(true);
-      if (Either.isLeft(result)) {
-        const error = result.left.humanize();
-        expect(error[0]).toBe("DataValidationError");
-        expect(error[1]).toBe("Unsupported value type");
-      }
-    });
-
-    it("should fail if a variable path is not found in the pipeline", ({
-      expect,
-    }) => {
-      const variables: Record<string, QueryVariable> = {
-        status: { path: "$.pipeline[0].$match.status" },
-      };
-      const pipeline = [{ $match: { amount: { $gte: 0 } } }];
-      const result = pipe(
-        validateQuery(buildQuery(variables, pipeline)),
-        E.either,
-        E.runSync,
-      );
-      expect(Either.isLeft(result)).toBe(true);
-      if (Either.isLeft(result)) {
-        const error = result.left.humanize();
-        expect(error[0]).toBe("VariableInjectionError");
-        expect(error[1]).contains("Variable path not found");
-      }
-    });
-
-    function buildQuery(
-      variables: Record<string, QueryVariable>,
-      pipeline: Record<string, unknown>[],
-    ): QueryDocument {
-      return {
-        _id: new UUID(),
-        _created: new Date(),
-        _updated: new Date(),
-        owner: "did:nil:fake",
-        name: "test-query",
-        collection: new UUID(),
-        variables,
-        pipeline,
-      };
-    }
-  });
-
   describe("validateVariables", () => {
     it("should fail for unexpected variables", ({ expect }) => {
       const queryVariables: Record<string, QueryVariable> = {
@@ -169,7 +54,7 @@ describe("queries.services.ts", () => {
     ) {
       return E.Do.pipe(
         E.bind("variables", () =>
-          validateVariables(queryVariables as Document, requestVariables),
+          validateVariables(queryVariables, requestVariables),
         ),
         E.bind("pipeline", ({ variables }) =>
           injectVariablesIntoAggregation(queryVariables, pipeline, variables),
