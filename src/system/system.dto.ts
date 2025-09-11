@@ -9,7 +9,7 @@ export const SetLogLevelRequest = z
   .object({
     level: LogLevel,
   })
-  .openapi({ ref: "SetLogLevelRequest" });
+  .meta({ ref: "SetLogLevelRequest" });
 
 export type SetLogLevelRequest = z.infer<typeof SetLogLevelRequest>;
 
@@ -41,9 +41,9 @@ export type StopMaintenanceResponse = z.infer<typeof StopMaintenanceResponse>;
  */
 export const ReadAboutNodeResponse = z
   .object({
-    started: z.string().datetime(),
+    started: z.iso.datetime(),
     build: z.object({
-      time: z.string().datetime(),
+      time: z.iso.datetime(),
       commit: z.string(),
       version: z.string(),
     }),
@@ -51,17 +51,17 @@ export const ReadAboutNodeResponse = z
     url: z.string().url(),
     maintenance: z.object({
       active: z.boolean(),
-      started_at: z.string().datetime(),
+      started_at: z.iso.datetime(),
     }),
   })
-  .openapi({ ref: "ReadAboutNodeResponse" });
+  .meta({ ref: "ReadAboutNodeResponse" });
 
 export type ReadAboutNodeResponse = z.infer<typeof ReadAboutNodeResponse>;
 
 /**
  * Log level retrieval response.
  */
-export const ReadLogLevelResponse = ApiSuccessResponse(LogLevel).openapi({
+export const ReadLogLevelResponse = ApiSuccessResponse(LogLevel).meta({
   ref: "ReadLogLevelResponse",
 });
 

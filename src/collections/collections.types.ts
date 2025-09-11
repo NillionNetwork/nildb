@@ -1,6 +1,5 @@
 import type { IndexDirection, UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
-import type { Did } from "#/common/types";
 
 /**
  * Collection type.
@@ -11,7 +10,7 @@ export type CollectionType = "standard" | "owned";
  * Collection document.
  */
 export type CollectionDocument = DocumentBase & {
-  owner: Did;
+  owner: string;
   name: string;
   schema: Record<string, unknown>;
   type: CollectionType;
@@ -46,7 +45,7 @@ export type CollectionIndex = {
 export type CreateCollectionCommand = {
   _id: UUID;
   type: CollectionType;
-  owner: Did;
+  owner: string;
   name: string;
   schema: Record<string, unknown>;
 };
@@ -56,6 +55,7 @@ export type CreateCollectionCommand = {
  */
 export type DeleteCollectionCommand = {
   _id: UUID;
+  requesterId: string;
 };
 
 /**
@@ -74,6 +74,7 @@ export type CreateIndexCommand = {
   keys: Record<string, IndexDirection>;
   unique: boolean;
   ttl?: number;
+  requesterId: string;
 };
 
 /**
@@ -82,6 +83,7 @@ export type CreateIndexCommand = {
 export type DropIndexCommand = {
   collection: UUID;
   name: string;
+  requesterId: string;
 };
 
 /**
@@ -89,4 +91,5 @@ export type DropIndexCommand = {
  */
 export type ReadCollectionByIdCommand = {
   id: UUID;
+  requesterId: string;
 };

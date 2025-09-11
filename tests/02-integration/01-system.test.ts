@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { PathsV1 } from "#/common/paths";
-import { createTestFixtureExtension } from "./fixture/it";
+import { createTestFixtureExtension } from "#tests/fixture/it";
 
 describe("system.test.ts", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
@@ -18,7 +18,7 @@ describe("system.test.ts", () => {
 
     const { build, public_key } = await system.about(c).expectSuccess();
     expect(build.version).toBe("0.0.0");
-    expect(public_key).toBe(bindings.node.keypair.publicKey("hex"));
+    expect(public_key).toBe(bindings.node.keypair.publicKey());
   });
 
   it("serves /openapi.json", async ({ c }) => {

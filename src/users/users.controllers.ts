@@ -1,6 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import { describeRoute } from "hono-openapi";
-import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 import * as BuildersService from "#/builders/builders.services";
 import { handleTaggedErrors } from "#/common/handler";
 import { NucCmd } from "#/common/nuc-cmd-tree";
@@ -8,11 +7,6 @@ import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
 } from "#/common/openapi";
-import {
-  checkGrantAccess,
-  checkRevokeAccess,
-  enforceDataOwnership,
-} from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import { UpdateDataResponse } from "#/data/data.dto";
@@ -32,7 +26,7 @@ import {
   ListDataReferencesResponse,
   ReadDataRequestParams,
   ReadDataResponse,
-  ReadProfileResponse,
+  ReadUserProfileResponse,
   RevokeAccessToDataRequest,
   type RevokeAccessToDataResponse,
   UpdateUserDataRequest,
@@ -58,7 +52,7 @@ export function readProfile(options: ControllerOptions): void {
           description: "OK",
           content: {
             "application/json": {
-              schema: resolver(ReadProfileResponse),
+              schema: resolver(ReadUserProfileResponse),
             },
           },
         },
@@ -74,7 +68,7 @@ export function readProfile(options: ControllerOptions): void {
       return pipe(
         UserService.find(c.env, user._id),
         E.map((profile) => UserDataMapper.toReadProfileResponse(profile)),
-        E.map((response) => c.json<ReadProfileResponse>(response)),
+        E.map((response) => c.json<ReadUserProfileResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -160,8 +154,7 @@ export function readData(options: ControllerOptions): void {
       const command = UserDataMapper.toReadDataCommand(user, params);
 
       return pipe(
-        enforceDataOwnership(user, command.document, command.collection),
-        E.flatMap(() => DataService.readRecord(c.env, command)),
+        DataService.readRecord(c.env, command),
         E.map((documents) => documents as OwnedDocumentBase),
         E.map((document) => UserDataMapper.toReadDataResponse(document)),
         E.map((response) => c.json(response)),
@@ -202,13 +195,11 @@ export function updateData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsUser(bindings),
     requireNucNamespace(NucCmd.nil.db.users.update),
     async (c) => {
-      const user = c.get("user");
       const payload = c.req.valid("json");
       const command = UserDataMapper.toUpdateDataCommand(payload);
 
       return pipe(
-        enforceDataOwnership(user, command.document, command.collection),
-        E.flatMap(() => DataService.updateRecords(c.env, command)),
+        DataService.updateRecordsAsOwner(c.env, command),
         E.map((result) => DataMapper.toUpdateDataResponse(result)),
         E.map((response) => c.json<UpdateDataResponse>(response)),
         handleTaggedErrors(c),
@@ -246,8 +237,7 @@ export function deleteData(options: ControllerOptions): void {
       const command = UserDataMapper.toDeleteDataCommand(user, params);
 
       return pipe(
-        enforceDataOwnership(user, command.document, command.collection),
-        E.flatMap(() => DataService.deleteData(c.env, command)),
+        DataService.deleteDataAsOwner(c.env, command),
         E.map(() => c.text<DeleteDocumentResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
@@ -284,11 +274,7 @@ export function grantAccess(options: ControllerOptions): void {
       const command = UserDataMapper.toGrantDataAccessCommand(user, payload);
 
       return pipe(
-        enforceDataOwnership(user, command.document, command.collection),
-        E.flatMap(() => BuildersService.find(c.env, command.acl.grantee)),
-        E.flatMap((builder) =>
-          checkGrantAccess(builder, command.collection, command.acl),
-        ),
+        BuildersService.find(c.env, command.acl.grantee),
         E.flatMap(() => UserService.grantAccess(c.env, command)),
         E.map(() => c.text<GrantAccessToDataResponse>("")),
         handleTaggedErrors(c),
@@ -327,9 +313,7 @@ export function revokeAccess(options: ControllerOptions): void {
       const command = UserDataMapper.toRevokeDataAccessCommand(user, payload);
 
       return pipe(
-        enforceDataOwnership(user, command.document, command.collection),
-        E.flatMap(() => BuildersService.find(c.env, command.grantee)),
-        E.flatMap((builder) => checkRevokeAccess(builder, command.collection)),
+        BuildersService.find(c.env, command.grantee),
         E.flatMap(() => UserService.revokeAccess(c.env, command)),
         E.map(() => c.text<RevokeAccessToDataResponse>("")),
         handleTaggedErrors(c),

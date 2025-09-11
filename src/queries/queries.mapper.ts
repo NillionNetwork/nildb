@@ -1,9 +1,9 @@
-import type { DidString } from "@nillion/nuc";
 import { UUID } from "mongodb";
 import type {
   ByIdRequestParams,
   CreateQueryRequest,
   DeleteQueryRequest,
+  QueryDocumentResponse,
   ReadQueriesResponse,
   ReadQueryResponse,
   ReadQueryRunByIdResponse,
@@ -15,6 +15,7 @@ import type {
   DeleteQueryCommand,
   GetQueryRunByIdCommand,
   QueryDocument,
+  QueryVariable,
   ReadQueryByIdCommand,
   RunQueryCommand,
   RunQueryJobDocument,
@@ -24,9 +25,7 @@ export const QueriesDataMapper = {
   /**
    * Converts a query document to response DTO.
    */
-  toQueryDocumentResponse(
-    document: QueryDocument,
-  ): ReadQueriesResponse["data"][0] {
+  toQueryDocumentResponse(document: QueryDocument): QueryDocumentResponse {
     return {
       _id: document._id.toString(),
       name: document.name,
@@ -46,10 +45,14 @@ export const QueriesDataMapper = {
   /**
    * Converts execute query request DTO to domain command.
    */
-  toRunQueryCommand(dto: RunQueryRequest): RunQueryCommand {
+  toRunQueryCommand(
+    dto: RunQueryRequest,
+    requesterId: string,
+  ): RunQueryCommand {
     return {
       _id: new UUID(dto._id),
       variables: dto.variables,
+      requesterId,
     };
   },
 
@@ -97,13 +100,13 @@ export const QueriesDataMapper = {
    */
   fromCreateQueryRequest(
     request: CreateQueryRequest,
-    owner: DidString,
+    owner: string,
   ): Omit<QueryDocument, "_id" | "_created" | "_updated"> {
     return {
       owner,
       name: request.name,
       collection: new UUID(request.collection),
-      variables: request.variables,
+      variables: request.variables as Record<string, QueryVariable>,
       pipeline: request.pipeline,
     };
   },
@@ -113,13 +116,13 @@ export const QueriesDataMapper = {
    */
   toCreateQueryCommand(
     body: CreateQueryRequest,
-    owner: DidString,
+    owner: string,
   ): AddQueryCommand {
     return {
       _id: new UUID(body._id),
       name: body.name,
       collection: new UUID(body.collection),
-      variables: body.variables,
+      variables: body.variables as Record<string, QueryVariable>,
       pipeline: body.pipeline,
       owner,
     };
@@ -128,27 +131,39 @@ export const QueriesDataMapper = {
   /**
    * Converts delete query request DTO to domain command.
    */
-  toDeleteQueryCommand(dto: DeleteQueryRequest): DeleteQueryCommand {
+  toDeleteQueryCommand(
+    dto: DeleteQueryRequest,
+    requesterId: string,
+  ): DeleteQueryCommand {
     return {
       _id: new UUID(dto.id),
+      requesterId,
     };
   },
 
   /**
    * Converts query ID params to delete command.
    */
-  toDeleteQueryByIdCommand(params: ByIdRequestParams): DeleteQueryCommand {
+  toDeleteQueryByIdCommand(
+    params: ByIdRequestParams,
+    requesterId: string,
+  ): DeleteQueryCommand {
     return {
       _id: new UUID(params.id),
+      requesterId,
     };
   },
 
   /**
    * Converts query ID params to read query command.
    */
-  toReadQueryByIdCommand(params: ByIdRequestParams): ReadQueryByIdCommand {
+  toReadQueryByIdCommand(
+    params: ByIdRequestParams,
+    requesterId: string,
+  ): ReadQueryByIdCommand {
     return {
       _id: new UUID(params.id),
+      requesterId,
     };
   },
 

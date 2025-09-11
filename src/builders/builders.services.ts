@@ -7,7 +7,6 @@ import {
   type DocumentNotFoundError,
   DuplicateEntryError,
 } from "#/common/errors";
-import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import * as QueriesService from "#/queries/queries.services";
 import * as BuildersRepository from "./builders.repository";
@@ -26,7 +25,7 @@ import type {
  */
 export function find(
   ctx: AppBindings,
-  did: Did,
+  did: string,
 ): E.Effect<
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
@@ -47,7 +46,7 @@ export function createBuilder(
   return pipe(
     E.succeed(command),
     E.filterOrFail(
-      (cmd) => cmd.did !== ctx.node.keypair.toDidString(),
+      (cmd) => cmd.did !== ctx.node.keypair.toDid().didString,
       (cmd) =>
         new DuplicateEntryError({
           document: { name: cmd.name, did: cmd.did },
@@ -73,7 +72,7 @@ export function createBuilder(
  */
 export function remove(
   ctx: AppBindings,
-  id: Did,
+  id: string,
 ): E.Effect<
   void,
   | DocumentNotFoundError

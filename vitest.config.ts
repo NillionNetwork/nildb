@@ -4,8 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
-    globalSetup: "./tests/fixture/global-setup.ts",
-    setupFiles: ["./tests/fixture/test-setup.ts"],
+    globalSetup: "./vitest.global-setup.ts",
     testTimeout: 0,
     env: {
       DEBUG: "@nillion*",

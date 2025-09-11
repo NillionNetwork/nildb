@@ -93,12 +93,14 @@ export const DataMapper = {
    */
   toCreateOwnedRecordsCommand(
     body: CreateOwnedDataRequest,
+    requesterId: string,
   ): CreateOwnedDataCommand {
     return {
       owner: body.owner,
       collection: new UUID(body.collection),
       data: body.data,
       acl: body.acl,
+      requesterId,
     };
   },
 
@@ -107,31 +109,41 @@ export const DataMapper = {
    */
   toCreateStandardRecordsCommand(
     body: CreateStandardDataRequest,
+    requesterId: string,
   ): CreateStandardDataCommand {
     return {
       collection: new UUID(body.collection),
       data: body.data,
+      requesterId,
     };
   },
 
   /**
    * Converts update data request DTO to domain command.
    */
-  toUpdateDataCommand(dto: UpdateDataRequest): UpdateDataCommand {
+  toUpdateDataCommand(
+    dto: UpdateDataRequest,
+    requesterId: string,
+  ): UpdateDataCommand {
     return {
       collection: new UUID(dto.collection),
       filter: dto.filter,
       update: dto.update,
+      requesterId,
     };
   },
 
   /**
    * Converts read data request DTO to domain command.
    */
-  toFindDataCommand(dto: FindDataRequest): FindDataCommand {
+  toFindDataCommand(
+    dto: FindDataRequest,
+    requesterId: string,
+  ): FindDataCommand {
     return {
       collection: new UUID(dto.collection),
       filter: dto.filter,
+      requesterId,
     };
   },
 
@@ -145,28 +157,40 @@ export const DataMapper = {
   /**
    * Converts delete data request DTO to domain command.
    */
-  toDeleteDataCommand(dto: DeleteDataRequest): DeleteDataCommand {
+  toDeleteDataCommand(
+    dto: DeleteDataRequest,
+    requesterId: string,
+  ): DeleteDataCommand {
     return {
       collection: new UUID(dto.collection),
       filter: dto.filter,
+      requesterId,
     };
   },
 
   /**
    * Converts flush data request DTO to domain command.
    */
-  toFlushCollectionCommand(params: FlushDataRequest): FlushDataCommand {
+  toFlushCollectionCommand(
+    params: FlushDataRequest,
+    requesterId: string,
+  ): FlushDataCommand {
     return {
       collection: new UUID(params.collection),
+      requesterId,
     };
   },
 
   /**
    * Converts path parameter to flush collection data command.
    */
-  toFlushDataCommand(params: DataSchemaByIdRequestParams): FlushDataCommand {
+  toFlushDataCommand(
+    params: DataSchemaByIdRequestParams,
+    requesterId: string,
+  ): FlushDataCommand {
     return {
       collection: new UUID(params.id),
+      requesterId,
     };
   },
 
@@ -176,10 +200,12 @@ export const DataMapper = {
   toRecentDataCommand(
     params: TailDataRequestParams,
     query: TailDataRequestQuery,
+    requesterId: string,
   ): RecentDataCommand {
     return {
       collection: new UUID(params.id),
       limit: query.limit,
+      requesterId,
     };
   },
 };

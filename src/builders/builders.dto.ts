@@ -1,16 +1,15 @@
 import { z } from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
-import { Did } from "#/common/types";
 
 /**
  * Builder registration request.
  */
 export const RegisterBuilderRequest = z
   .object({
-    did: Did,
+    did: z.string(),
     name: z.string().min(1).max(255),
   })
-  .openapi({ ref: "RegisterBuilderRequest" });
+  .meta({ ref: "RegisterBuilderRequest" });
 export type RegisterBuilderRequest = z.infer<typeof RegisterBuilderRequest>;
 
 /**
@@ -23,18 +22,18 @@ export type RegisterBuilderResponse = z.infer<typeof RegisterBuilderResponse>;
  * Builder profile data.
  */
 const ProfileDto = z.object({
-  _id: Did,
-  _created: z.string().datetime(),
-  _updated: z.string().datetime(),
+  _id: z.string(),
+  _created: z.iso.datetime(),
+  _updated: z.iso.datetime(),
   name: z.string(),
-  collections: z.array(z.string().uuid()),
-  queries: z.array(z.string().uuid()),
+  collections: z.array(z.uuid()),
+  queries: z.array(z.uuid()),
 });
 
 /**
  * Profile retrieval response.
  */
-export const ReadProfileResponse = ApiSuccessResponse(ProfileDto).openapi({
+export const ReadProfileResponse = ApiSuccessResponse(ProfileDto).meta({
   ref: "GetProfileResponse",
 });
 export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
@@ -52,7 +51,7 @@ export const UpdateProfileRequest = z
   .object({
     name: z.string().min(1).max(255),
   })
-  .openapi({ ref: "UpdateProfileRequest" });
+  .meta({ ref: "UpdateProfileRequest" });
 export type UpdateProfileRequest = z.infer<typeof UpdateProfileRequest>;
 
 /**

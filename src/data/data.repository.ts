@@ -13,6 +13,7 @@ import {
 } from "mongodb/lib/beta";
 import type { JsonObject } from "type-fest";
 import type { CollectionDocument } from "#/collections/collections.types";
+import { applyCoercions } from "#/common/coercion";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -22,14 +23,13 @@ import {
 } from "#/common/errors";
 import {
   addDocumentBaseCoercions,
-  applyCoercions,
   CollectionName,
   checkCollectionExists,
   type DocumentBase,
   isMongoError,
   MongoErrorCode,
 } from "#/common/mongo";
-import type { Did, UuidDto } from "#/common/types";
+import type { UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
 import type { Acl } from "#/users/users.types";
@@ -107,12 +107,12 @@ export function tailCollection(
   ctx: AppBindings,
   collection: UUID,
   limit: number,
+  filter: Filter<DocumentBase>,
 ): E.Effect<DocumentBase[], CollectionNotFoundError | DatabaseError> {
   return pipe(
     checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: (collection) =>
-        collection.find().sort({ _created: -1 }).limit(limit).toArray(),
+      try: (c) => c.find(filter).sort({ _created: -1 }).limit(limit).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "tailCollection" }),
     }),
   );
@@ -138,30 +138,13 @@ export function drop(
 }
 
 /**
- * Flush collection data.
- */
-export function flushCollection(
-  ctx: AppBindings,
-  collection: UUID,
-): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError> {
-  return pipe(
-    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-    E.tryMapPromise({
-      try: (collection) => collection.deleteMany(),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "flushCollection" }),
-    }),
-  );
-}
-
-/**
  * Insert owned data.
  */
 export function insertOwnedData(
   ctx: AppBindings,
   collection: CollectionDocument,
   data: PartialDataDocumentDto[],
-  owner: Did,
+  owner: string,
   acl: Acl[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
@@ -210,7 +193,7 @@ export function insertOwnedData(
                 created.add(id.toString() as UuidDto);
               }
 
-              result.getWriteErrors().map((writeError) => {
+              result.getWriteErrors().forEach((writeError) => {
                 const document = batch[writeError.index];
                 created.delete(document._id.toString() as UuidDto);
                 errors.push({
@@ -286,7 +269,7 @@ export function insertStandardData(
                 created.add(id.toString() as UuidDto);
               }
 
-              result.getWriteErrors().map((writeError) => {
+              result.getWriteErrors().forEach((writeError) => {
                 const document = batch[writeError.index];
                 created.delete(document._id.toString() as UuidDto);
                 errors.push({
@@ -326,14 +309,11 @@ export function updateMany(
   return pipe(
     E.all([
       checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
-      applyCoercions<UpdateFilter<DocumentBase>>(
-        addDocumentBaseCoercions(update),
-      ),
+      applyCoercions(addDocumentBaseCoercions(update)),
     ]),
     E.tryMapPromise({
-      try: ([collection, documentFilter, documentUpdate]) =>
-        collection.updateMany(documentFilter, documentUpdate),
+      try: ([collection, documentUpdate]) =>
+        collection.updateMany(filter, documentUpdate),
       catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
     }),
   );
@@ -351,13 +331,9 @@ export function deleteMany(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
-    ]),
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.deleteMany(documentFilter),
+      try: (collection) => collection.deleteMany(filter),
       catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
     }),
   );
@@ -396,13 +372,10 @@ export function findMany(
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
-    ]),
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.find(documentFilter).sort({ _created: -1 }).toArray(),
+      try: (collection) =>
+        collection.find(filter).sort({ _created: -1 }).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
     }),
   );
@@ -423,12 +396,9 @@ export function findOne(
   | DataValidationError
 > {
   return pipe(
-    E.all([
-      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
-      applyCoercions<Filter<DocumentBase>>(addDocumentBaseCoercions(filter)),
-    ]),
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) => collection.findOne(documentFilter),
+      try: (collection) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
     }),
     E.flatMap((result) =>

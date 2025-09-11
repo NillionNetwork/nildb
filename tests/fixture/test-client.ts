@@ -1,17 +1,16 @@
 /** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
 import {
+  Builder,
   Did,
-  type DidString,
-  InvocationBody,
+  type Envelope,
   type Keypair,
   NilauthClient,
-  NucTokenBuilder,
-  type NucTokenEnvelope,
-  NucTokenEnvelopeSchema,
   type Payer,
   PayerBuilder,
+  Signer,
 } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
+import { vi } from "vitest";
 import type { App } from "#/app";
 import {
   ReadProfileResponse,
@@ -42,6 +41,7 @@ import {
 import {
   type CreateQueryRequest,
   ReadQueriesResponse,
+  ReadQueryResponse,
   ReadQueryRunByIdResponse,
   type RunQueryRequest,
   RunQueryResponse,
@@ -55,6 +55,7 @@ import {
   type GrantAccessToDataRequest,
   ListDataReferencesResponse,
   ReadDataResponse,
+  ReadUserProfileResponse,
   type RevokeAccessToDataRequest,
   type UpdateUserDataRequest,
 } from "#/users/users.dto";
@@ -72,22 +73,14 @@ type BaseTestClientOptions = {
 
 /**
  * Configuration for admin test clients.
- *
- * Admin clients derive authority from the node's private key and create
- * self-signed tokens. They have access to system administration endpoints
- * and don't require subscription management.
  */
 type AdminTestClientOptions = BaseTestClientOptions & {
   type: "admin";
-  nodeDelegation: NucTokenEnvelope;
+  nodeDelegation: Envelope;
 };
 
 /**
  * Configuration for builder test clients.
- *
- * Builder clients pay subscriptions for access and require nilauth services
- * for token generation. They have access to data, queries, schemas, and
- * builder management endpoints.
  */
 type BuilderTestClientOptions = BaseTestClientOptions & {
   type: "builder";
@@ -97,10 +90,6 @@ type BuilderTestClientOptions = BaseTestClientOptions & {
 
 /**
  * Configuration for user test clients.
- *
- * User clients represent data owners who can upload data to builder collections
- * through NUC delegations. They access their own data with self-signed tokens
- * and don't require subscriptions.
  */
 type UserTestClientOptions = BaseTestClientOptions & {
   type: "user";
@@ -109,46 +98,28 @@ type UserTestClientOptions = BaseTestClientOptions & {
 
 /**
  * Base HTTP test client for NilDB API operations.
- *
- * Provides core functionality for making authenticated API requests
- * during integration testing. Handles token creation, request formatting,
- * and response processing.
  */
 abstract class BaseTestClient<Options extends BaseTestClientOptions> {
-  /**
-   * Creates a new test client instance.
-   */
   constructor(public _options: Options) {}
 
-  /**
-   * Gets the Hono application instance for making requests.
-   */
   get app(): App {
     return this._options.app;
   }
 
-  /**
-   * Gets the client's decentralized identifier (Did).
-   */
-  get did(): DidString {
-    return this._options.keypair.toDidString();
+  get did(): Did {
+    return this._options.keypair.toDid("nil");
   }
 
-  /**
-   * Gets the client's cryptographic keypair.
-   */
-  get keypair() {
+  get keypair(): Keypair {
     return this._options.keypair;
   }
 
-  /**
-   * Creates an authentication token for API requests.
-   */
+  get signer(): Signer {
+    return Signer.fromKeypair(this.keypair);
+  }
+
   protected abstract createToken(): Promise<string>;
 
-  /**
-   * Makes an authenticated HTTP request to the API.
-   */
   async request<T>(
     path: string,
     options: { method?: "GET" | "POST" | "DELETE"; body?: T } = {},
@@ -171,9 +142,6 @@ abstract class BaseTestClient<Options extends BaseTestClientOptions> {
     });
   }
 
-  /**
-   * Checks node health status.
-   */
   health(c: FixtureContext): ResponseHandler {
     return new ResponseHandler(
       c,
@@ -182,9 +150,6 @@ abstract class BaseTestClient<Options extends BaseTestClientOptions> {
     );
   }
 
-  /**
-   * Retrieves comprehensive node information including version and configuration.
-   */
   about(c: FixtureContext): ResponseHandler<ReadAboutNodeResponse> {
     return new ResponseHandler(
       c,
@@ -197,29 +162,19 @@ abstract class BaseTestClient<Options extends BaseTestClientOptions> {
 
 /**
  * Admin test client for system administration operations.
- *
- * Admin clients derive their authority from the node's private key and have
- * access to system management endpoints like log level configuration and
- * maintenance mode control. They create self-signed tokens and don't require
- * subscription management.
  */
 export class AdminTestClient extends BaseTestClient<AdminTestClientOptions> {
   /**
-   * Creates a self-signed authentication token for admin operations.
+   * Creates an invocation token to use the permissions delegated from the node.
    */
   protected async createToken(): Promise<string> {
-    const audience = Did.fromHex(this._options.nodePublicKey);
-
-    return NucTokenBuilder.extending(this._options.nodeDelegation)
-      .body(new InvocationBody({}))
-      .command(NucCmd.nil.db.root)
-      .audience(audience)
-      .build(this.keypair.privateKey());
+    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey);
+    // Admin client *invokes* the capability granted by the node's delegation.
+    return await Builder.invoking(this._options.nodeDelegation)
+      .audience(nodeDid)
+      .signAndSerialize(this.signer);
   }
 
-  /**
-   * Activates maintenance mode on the node.
-   */
   startMaintenance(c: FixtureContext): ResponseHandler {
     return new ResponseHandler(
       c,
@@ -228,9 +183,6 @@ export class AdminTestClient extends BaseTestClient<AdminTestClientOptions> {
     );
   }
 
-  /**
-   * Deactivates maintenance mode on the node.
-   */
   stopMaintenance(c: FixtureContext): ResponseHandler {
     return new ResponseHandler(
       c,
@@ -239,9 +191,6 @@ export class AdminTestClient extends BaseTestClient<AdminTestClientOptions> {
     );
   }
 
-  /**
-   * Retrieves the current log level configuration.
-   */
   getLogLevel(c: FixtureContext): ResponseHandler<ReadLogLevelResponse> {
     return new ResponseHandler(
       c,
@@ -251,9 +200,6 @@ export class AdminTestClient extends BaseTestClient<AdminTestClientOptions> {
     );
   }
 
-  /**
-   * Updates the node's log level configuration.
-   */
   setLogLevel(c: FixtureContext, body: SetLogLevelRequest): ResponseHandler {
     return new ResponseHandler(
       c,
@@ -265,72 +211,64 @@ export class AdminTestClient extends BaseTestClient<AdminTestClientOptions> {
 
 /**
  * Test client for builder operations.
- *
- * Builder clients pay subscriptions for access to the node and require nilauth
- * services for token generation. They have access to data management, query
- * execution, schema definition, and builder management endpoints. These clients
- * represent builder that build applications on top of NilDB.
  */
 export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> {
   constructor(private options: BuilderTestClientOptions) {
     super(options);
   }
 
-  /**
-   * Gets the nilauth client for external authentication services.
-   */
+  override get did(): Did {
+    return this._options.keypair.toDid("nil");
+  }
+
   get nilauth(): NilauthClient {
     return this.options.nilauth;
   }
 
   /**
-   * Creates an invocation token extending a nilauth root token.
+   * Creates an invocation token by using the root token from nilauth.
    */
   protected async createToken(): Promise<string> {
-    const audience = Did.fromHex(this._options.nodePublicKey);
     const response = await this.options.nilauth.requestToken(
       this.options.keypair,
       "nildb",
     );
     const { token: rootToken } = response;
 
-    return NucTokenBuilder.extending(rootToken)
-      .proof(rootToken)
-      .audience(audience)
-      .body(new InvocationBody({}))
-      .build(this.keypair.privateKey());
+    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey, "nil");
+
+    // Builder *invokes* the capability granted by nilauth, targeting the node.
+    return await Builder.invoking(rootToken)
+      .audience(nodeDid)
+      .signAndSerialize(this.signer);
   }
 
-  /**
-   * Ensures the builder has an active subscription for API access.
-   */
   async ensureSubscriptionActive(): Promise<void> {
-    for (let retry = 0; retry < 5; retry++) {
+    const checkSubscription = async () => {
       const response = await this.options.nilauth.subscriptionStatus(
-        this.options.keypair.publicKey("hex"),
+        this.options.keypair.publicKey(),
         "nildb",
       );
-      if (!response.subscribed) {
-        try {
-          await this.options.nilauth.payAndValidate(
-            this.options.keypair.publicKey("hex"),
-            "nildb",
-          );
-          return;
-        } catch (_error) {
-          console.log(
-            "Retrying to pay and validate the subscription after 200ms",
-          );
-          await new Promise((f) => setTimeout(f, 200));
-        }
-      }
-    }
+      if (response.subscribed) return;
+
+      // If not subscribed, attempt to pay. This may fail if a payment is already processing,
+      // which is fine. We will re-check the status in the next poll interval.
+      await this.options.nilauth
+        .payAndValidate(this.options.keypair.publicKey(), "nildb")
+        // Ignore errors since we will return
+        .catch(() => {});
+
+      // Throw to signal vi.waitFor to continue polling
+      throw new Error("Subscription not yet active");
+    };
+
+    await vi.waitFor(checkSubscription, {
+      timeout: 10000,
+      interval: 500,
+    });
   }
 
-  /**
-   * Retrieves the root token from nilauth for token extension.
-   */
-  async getRootToken(): Promise<NucTokenEnvelope> {
+  async getRootToken(): Promise<Envelope> {
     const response = await this.options.nilauth.requestToken(
       this.options.keypair,
       "nildb",
@@ -338,9 +276,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     return response.token;
   }
 
-  /**
-   * Registers a new builder.
-   */
   register(c: FixtureContext, body: RegisterBuilderRequest): ResponseHandler {
     return new ResponseHandler(
       c,
@@ -354,9 +289,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Retrieves the authenticated builder's profile information.
-   */
   getProfile(c: FixtureContext): ResponseHandler<ReadProfileResponse> {
     return new ResponseHandler(
       c,
@@ -366,9 +298,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Updates the authenticated builder's profile information.
-   */
   updateProfile(
     c: FixtureContext,
     body: UpdateProfileRequest,
@@ -376,29 +305,18 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.builders.me, { method: "POST", body }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
-  /**
-   * Deletes the authenticated builder and all associated resources.
-   *
-   * @param c - Test fixture context
-   * @returns Response handler for builder deletion
-   */
   deleteBuilder(c: FixtureContext) {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.builders.me, { method: "DELETE" }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
-  // Collection Management API Methods
-
-  /**
-   * Creates a new collection for data validation.
-   */
   createCollection(
     c: FixtureContext,
     body: CreateCollectionRequest,
@@ -410,9 +328,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Lists all collections owned by the authenticated builder.
-   */
   readCollections(c: FixtureContext): ResponseHandler<ListCollectionsResponse> {
     return new ResponseHandler(
       c,
@@ -422,9 +337,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Deletes a collection by id and all associated data.
-   */
   deleteCollection(c: FixtureContext, collectionId: string) {
     return new ResponseHandler(
       c,
@@ -432,13 +344,10 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
         this.request(PathsV1.collections.byId.replace(":id", collectionId), {
           method: "DELETE",
         }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
-  /**
-   * Retrieves a collection by id including metadata.
-   */
   readCollection(
     c: FixtureContext,
     collectionId: string,
@@ -451,9 +360,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Creates an index on a collection.
-   */
   createCollectionIndex(
     c: FixtureContext,
     collectionId: string,
@@ -469,13 +375,10 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
             body,
           },
         ),
-      StatusCodes.CREATED,
+      StatusCodes.OK,
     );
   }
 
-  /**
-   * Drops an index from a collection.
-   */
   dropCollectionIndex(
     c: FixtureContext,
     collectionId: string,
@@ -490,13 +393,10 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
             .replace(":name", indexName),
           { method: "DELETE" },
         ),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
-  /**
-   * Lists all queries owned by the authenticated builder.
-   */
   getQueries(c: FixtureContext): ResponseHandler<ReadQueriesResponse> {
     return new ResponseHandler(
       c,
@@ -506,20 +406,18 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Retrieves a query by id.
-   */
-  getQuery(c: FixtureContext, queryId: string): ResponseHandler {
+  getQuery(
+    c: FixtureContext,
+    queryId: string,
+  ): ResponseHandler<ReadQueryResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.queries.byId.replace(":id", queryId)),
       StatusCodes.OK,
+      ReadQueryResponse,
     );
   }
 
-  /**
-   * Creates a new MongoDB aggregation query with variable substitution.
-   */
   createQuery(c: FixtureContext, body: CreateQueryRequest): ResponseHandler {
     return new ResponseHandler(
       c,
@@ -528,9 +426,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Deletes a query by id.
-   */
   deleteQuery(c: FixtureContext, queryId: string): ResponseHandler {
     return new ResponseHandler(
       c,
@@ -538,13 +433,10 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
         this.request(PathsV1.queries.byId.replace(":id", queryId), {
           method: "DELETE",
         }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
-  /**
-   * Executes a query with variable substitution.
-   */
   runQuery(
     c: FixtureContext,
     body: RunQueryRequest,
@@ -557,9 +449,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Retrieves the status and results of a background query job.
-   */
   readQueryRunResults(
     c: FixtureContext,
     runId: string,
@@ -572,9 +461,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Uploads owned data records to a schema-validated collection.
-   */
   createOwnedData(
     c: FixtureContext,
     body: CreateOwnedDataRequest,
@@ -587,9 +473,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Uploads standard data records to a schema-validated collection.
-   */
   createStandardData(
     c: FixtureContext,
     body: CreateStandardDataRequest,
@@ -602,9 +485,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Searches for data matching the provided filter.
-   */
   findData(
     c: FixtureContext,
     body: FindDataRequest,
@@ -617,9 +497,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Updates data records matching the provided filter.
-   */
   updateData(
     c: FixtureContext,
     body: UpdateDataRequest,
@@ -632,9 +509,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Deletes data records matching the provided filter.
-   */
   deleteData(
     c: FixtureContext,
     body: DeleteDataRequest,
@@ -647,9 +521,6 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  /**
-   * Removes all data from a collection.
-   */
   flushData(c: FixtureContext, collectionId: string): ResponseHandler {
     return new ResponseHandler(
       c,
@@ -657,13 +528,10 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
         this.request(PathsV1.data.flushById.replace(":id", collectionId), {
           method: "DELETE",
         }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
-  /**
-   * Retrieves the most recent data records from a collection.
-   */
   tailData(
     c: FixtureContext,
     collection: UuidDto,
@@ -683,54 +551,35 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
 
 /**
  * User test client for data owner operations.
- *
- * User clients represent data owners who can upload data to builder collections
- * through NUC delegations. They can access their own data directly with
- * self-signed tokens without requiring subscriptions. Users control the
- * permissions applied to the data they upload.
  */
 export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
   constructor(private options: UserTestClientOptions) {
     super(options);
   }
 
-  /**
-   * Creates a self-signed authentication token for user operations.
-   */
   protected async createToken(): Promise<string> {
-    const audience = Did.fromHex(this._options.nodePublicKey);
-    const subject = Did.fromHex(this.keypair.publicKey("hex"));
-
-    return NucTokenBuilder.invocation({})
+    // Self-signed invocation targeting the node.
+    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey, "nil");
+    return await Builder.invocation()
       .command(NucCmd.nil.db.users.root)
-      .audience(audience)
-      .subject(subject)
-      .build(this.keypair.privateKey());
+      .audience(nodeDid)
+      .subject(this.keypair.toDid("nil"))
+      .signAndSerialize(this.signer);
   }
 
-  /**
-   * Sets a builder delegation token to use when accessing builder-owned resources.
-   */
   async setBuilderDelegation(token: string): Promise<void> {
     this.options.builderDelegation = token;
   }
 
-  // User Domain API Methods
-
-  /**
-   * Retrieves the authenticated user's profile information.
-   */
-  getProfile(c: FixtureContext): ResponseHandler {
+  getProfile(c: FixtureContext): ResponseHandler<ReadUserProfileResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.users.me),
       StatusCodes.OK,
+      ReadUserProfileResponse,
     );
   }
 
-  /**
-   * Lists all data records owned by the authenticated user.
-   */
   listDataReferences(
     c: FixtureContext,
   ): ResponseHandler<ListDataReferencesResponse> {
@@ -742,9 +591,6 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
     );
   }
 
-  /**
-   * Retrieves user-owned data by collection and document id.
-   */
   readData(
     c: FixtureContext,
     collection: string,
@@ -763,9 +609,6 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
     );
   }
 
-  /**
-   * Updates user-owned data by collection and document id.
-   */
   updateData(
     c: FixtureContext,
     body: UpdateUserDataRequest,
@@ -778,9 +621,6 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
     );
   }
 
-  /**
-   * Deletes a user-owned data document.
-   */
   deleteData(
     c: FixtureContext,
     collection: string,
@@ -795,13 +635,10 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
             .replace(":document", document),
           { method: "DELETE" },
         ),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
-  /**
-   * Grants access to user-owned data.
-   */
   grantAccess(
     c: FixtureContext,
     body: GrantAccessToDataRequest,
@@ -810,13 +647,10 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
       c,
       () =>
         this.request(PathsV1.users.data.acl.grant, { method: "POST", body }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
-  /**
-   * Removes access to user-owned data.
-   */
   revokeAccess(
     c: FixtureContext,
     body: RevokeAccessToDataRequest,
@@ -825,26 +659,19 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
       c,
       () =>
         this.request(PathsV1.users.data.acl.revoke, { method: "POST", body }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 }
 
 /**
  * Creates an admin test client for system administration operations.
- *
- * Admin clients derive their authority from the node's private key and have
- * full system access. They don't require subscription management or external
- * authentication services.
- *
- * @param opts - Admin client configuration options
- * @returns Configured admin test client instance
  */
 export async function createAdminTestClient(opts: {
   app: App;
   keypair: Keypair;
   nodePublicKey: string;
-  nodeDelegation: NucTokenEnvelope;
+  nodeDelegation: Envelope;
 }): Promise<AdminTestClient> {
   return new AdminTestClient({
     type: "admin",
@@ -854,10 +681,6 @@ export async function createAdminTestClient(opts: {
 
 /**
  * Creates a test client for builder operations.
- *
- * Builder clients require subscription management and use nilauth for
- * token generation. They automatically handle payment and validation
- * processes for API access.
  */
 export async function createBuilderTestClient(opts: {
   app: App;
@@ -866,12 +689,14 @@ export async function createBuilderTestClient(opts: {
   nilauthBaseUrl: string;
   nodePublicKey: string;
 }): Promise<BuilderTestClient> {
-  const payer = await new PayerBuilder()
-    .keypair(opts.keypair)
+  const payer = await PayerBuilder.fromKeypair(opts.keypair)
     .chainUrl(opts.chainUrl)
     .build();
 
-  const nilauth = await NilauthClient.from(opts.nilauthBaseUrl, payer);
+  const nilauth = await NilauthClient.create({
+    baseUrl: opts.nilauthBaseUrl,
+    payer,
+  });
 
   return new BuilderTestClient({
     type: "builder",
@@ -897,17 +722,4 @@ export async function createUserTestClient(opts: {
     keypair: opts.keypair,
     nodePublicKey: opts.nodePublicKey,
   });
-}
-
-export function selfSignedDelegationToken(opts: {
-  keypair: Keypair;
-  audience: Did;
-}): NucTokenEnvelope {
-  return NucTokenEnvelopeSchema.parse(
-    NucTokenBuilder.delegation([])
-      .command(NucCmd.nil.db.root)
-      .subject(opts.audience)
-      .audience(opts.audience)
-      .build(opts.keypair.privateKey()),
-  );
 }

@@ -11,7 +11,6 @@ import {
   DocumentNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
-import type { Did } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { BuilderDocument } from "./builders.types";
 
@@ -41,7 +40,7 @@ export function insert(
  */
 export function findByIdWithCache(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
 ): E.Effect<
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
@@ -84,7 +83,7 @@ export function findByIdWithCache(
  */
 export function findOne(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
 ): E.Effect<
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
@@ -119,7 +118,7 @@ export function findOne(
  */
 export function deleteOneById(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
 ): E.Effect<
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
@@ -155,7 +154,7 @@ export function deleteOneById(
  */
 export function update(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
   updates: Partial<{ _updated: Date; name: string }>,
 ): E.Effect<
   UpdateResult,
@@ -198,7 +197,7 @@ export function update(
  */
 export function addCollection(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
   collection: UUID,
 ): E.Effect<
   void,
@@ -238,7 +237,7 @@ export function addCollection(
  */
 export function removeCollection(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
   collection: UUID,
 ): E.Effect<
   void,
@@ -279,7 +278,7 @@ export function removeCollection(
  */
 export function addQuery(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
   query: UUID,
 ): E.Effect<
   void,
@@ -318,7 +317,7 @@ export function addQuery(
  */
 export function removeQuery(
   ctx: AppBindings,
-  builder: Did,
+  builder: string,
   query: UUID,
 ): E.Effect<
   void,

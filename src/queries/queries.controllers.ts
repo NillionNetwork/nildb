@@ -1,6 +1,5 @@
 import { Effect as E, pipe } from "effect";
-import { describeRoute } from "hono-openapi";
-import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 import { StatusCodes } from "http-status-codes";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { handleTaggedErrors } from "#/common/handler";
@@ -9,7 +8,6 @@ import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
 } from "#/common/openapi";
-import { enforceQueryOwnership } from "#/common/ownership";
 import { PathsV1 } from "#/common/paths";
 import type { ControllerOptions } from "#/common/types";
 import {
@@ -96,11 +94,13 @@ export function deleteQuery(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
-      const command = QueriesDataMapper.toDeleteQueryByIdCommand(params);
+      const command = QueriesDataMapper.toDeleteQueryByIdCommand(
+        params,
+        builder._id,
+      );
 
       return pipe(
-        enforceQueryOwnership(builder, command._id),
-        E.flatMap(() => QueriesService.removeQuery(c.env, command)),
+        QueriesService.removeQuery(c.env, command),
         E.map(() => c.text<DeleteQueryResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
@@ -183,11 +183,13 @@ export function readQueryById(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
-      const command = QueriesDataMapper.toReadQueryByIdCommand(params);
+      const command = QueriesDataMapper.toReadQueryByIdCommand(
+        params,
+        builder._id,
+      );
 
       return pipe(
-        enforceQueryOwnership(builder, command._id),
-        E.flatMap(() => QueriesService.getQueryById(c.env, command)),
+        QueriesService.getQueryById(c.env, command),
         E.map((document) => QueriesDataMapper.toReadQueryResponse(document)),
         E.map((response) => c.json<ReadQueryResponse>(response)),
         handleTaggedErrors(c),
@@ -229,11 +231,10 @@ export function runQuery(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = QueriesDataMapper.toRunQueryCommand(payload);
+      const command = QueriesDataMapper.toRunQueryCommand(payload, builder._id);
 
       return pipe(
-        enforceQueryOwnership(builder, command._id),
-        E.flatMap(() => QueriesService.runQueryInBackground(c.env, command)),
+        QueriesService.runQueryInBackground(c.env, command),
         E.map((result) => QueriesDataMapper.toRunQueryResponse(result)),
         E.map((response) => c.json<RunQueryResponse>(response)),
         handleTaggedErrors(c),
@@ -273,7 +274,7 @@ export function getQueryRunResultById(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.read),
     async (c) => {
-      const builder = c.get("builder") as BuilderDocument;
+      const _builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
       const command = QueriesDataMapper.toGetQueryRunResultByIdCommand(params);
 
@@ -281,8 +282,7 @@ export function getQueryRunResultById(options: ControllerOptions): void {
         QueriesService.getRunQueryJob(c.env, command),
         E.flatMap((run) =>
           pipe(
-            enforceQueryOwnership(builder, run.query),
-            E.map(() => QueriesDataMapper.toGetQueryRunResultByResponse(run)),
+            E.succeed(QueriesDataMapper.toGetQueryRunResultByResponse(run)),
             E.map((response) => c.json<ReadQueryRunByIdResponse>(response)),
           ),
         ),

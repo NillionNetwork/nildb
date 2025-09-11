@@ -9,14 +9,13 @@ export class ResponseHandler<TSuccess = unknown> {
     private c: FixtureContext,
     private request: () => Promise<Response> | Response,
     private successStatus: StatusCodes,
-    // biome-ignore lint/suspicious/noExplicitAny: these enable more ergonomic types in the test client
     private successSchema?: z.ZodType<TSuccess, any, any>,
   ) {}
 
   async expectSuccess(): Promise<TSuccess> {
     const response = await this.request();
-    // this.c.expect(response.ok).toBe(true);
-    // this.c.expect(response.status).toBe(this.successStatus);
+    this.c.expect(response.ok).toBe(true);
+    this.c.expect(response.status).toBe(this.successStatus);
 
     // if failure try and print the error body
     if (!response.ok) {

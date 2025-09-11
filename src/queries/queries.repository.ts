@@ -1,6 +1,6 @@
 import { Effect as E, pipe } from "effect";
 import type { DeleteResult, StrictFilter } from "mongodb";
-import type { Filter } from "mongodb/lib/beta";
+import { applyCoercions } from "#/common/coercion";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -9,11 +9,9 @@ import {
 } from "#/common/errors";
 import {
   addDocumentBaseCoercions,
-  applyCoercions,
   CollectionName,
   checkCollectionExists,
 } from "#/common/mongo";
-import type { CoercibleMap } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "./queries.types";
 
@@ -58,7 +56,7 @@ export function findMany(
         "primary",
         CollectionName.Queries,
       ),
-      applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
+      applyCoercions(addDocumentBaseCoercions(filter)),
     ]),
     E.tryMapPromise({
       try: ([collection, documentFilter]) =>
@@ -100,9 +98,7 @@ export function findOne(
         CollectionName.Queries,
       ),
     ),
-    E.bind("filter", () =>
-      applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
-    ),
+    E.bind("filter", () => applyCoercions(addDocumentBaseCoercions(filter))),
     E.tryMapPromise({
       try: ({ collection, filter }) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
@@ -140,7 +136,7 @@ export function findOneAndDelete(
         "primary",
         CollectionName.Queries,
       ),
-      applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
+      applyCoercions(addDocumentBaseCoercions(filter)),
     ]),
     E.tryMapPromise({
       try: ([collection, documentFilter]) =>
@@ -181,7 +177,7 @@ export function deleteMany(
         "primary",
         CollectionName.Queries,
       ),
-      applyCoercions<Filter<QueryDocument>>(addDocumentBaseCoercions(filter)),
+      applyCoercions(addDocumentBaseCoercions(filter)),
     ]),
     E.tryMapPromise({
       try: ([collection, documentFilter]) =>
@@ -199,13 +195,4 @@ export function deleteMany(
         : E.succeed(result),
     ),
   );
-}
-
-/**
- * Add query document coercions.
- */
-export function addQueryDocumentCoercions(
-  coercibleMap: CoercibleMap,
-): CoercibleMap {
-  return addDocumentBaseCoercions(coercibleMap);
 }

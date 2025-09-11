@@ -1,5 +1,4 @@
 import { type IndexDirection, UUID } from "mongodb";
-import type { Did } from "#/common/types";
 import type {
   CreateCollectionIndexRequest,
   CreateCollectionRequest,
@@ -64,7 +63,7 @@ export const CollectionsDataMapper = {
    */
   toCreateCollectionCommand(
     body: CreateCollectionRequest,
-    owner: Did,
+    owner: string,
   ): CreateCollectionCommand {
     return {
       _id: new UUID(body._id),
@@ -80,16 +79,21 @@ export const CollectionsDataMapper = {
    */
   toDeleteCollectionCommand(
     dto: DeleteCollectionRequestParams,
+    requesterId: string,
   ): DeleteCollectionCommand {
     return {
       _id: new UUID(dto.id),
+      requesterId,
     };
   },
 
   /**
    *
    */
-  toCreateIndexCommand(dto: CreateCollectionIndexRequest): CreateIndexCommand {
+  toCreateIndexCommand(
+    dto: CreateCollectionIndexRequest,
+    requesterId: string,
+  ): CreateIndexCommand {
     // Convert keys array to Record<string, IndexDirection>
     const keys: Record<string, IndexDirection> = {};
     for (const keyObj of dto.keys) {
@@ -104,16 +108,21 @@ export const CollectionsDataMapper = {
       keys,
       unique: dto.unique,
       ttl: dto.ttl,
+      requesterId,
     };
   },
 
   /**
    *
    */
-  toDropIndexCommand(body: DropCollectionIndexParams): DropIndexCommand {
+  toDropIndexCommand(
+    body: DropCollectionIndexParams,
+    requesterId: string,
+  ): DropIndexCommand {
     return {
       collection: new UUID(body.id),
       name: body.name,
+      requesterId,
     };
   },
 
@@ -122,9 +131,11 @@ export const CollectionsDataMapper = {
    */
   toReadCollectionById(
     params: ReadCollectionMetadataRequestParams,
+    requesterId: string,
   ): ReadCollectionByIdCommand {
     return {
       id: new UUID(params.id),
+      requesterId,
     };
   },
 };

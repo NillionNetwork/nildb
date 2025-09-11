@@ -1,11 +1,10 @@
 import type { UUID } from "mongodb";
-import type { Did } from "#/common/types";
 
 /**
  * Builder document.
  */
 export type BuilderDocument = {
-  _id: Did;
+  _id: string;
   _created: Date;
   _updated: Date;
   name: string;
@@ -21,7 +20,7 @@ export type BuilderDocument = {
  * Create builder command.
  */
 export type CreateBuilderCommand = {
-  did: Did;
+  did: string;
   name: string;
 };
 
@@ -29,7 +28,7 @@ export type CreateBuilderCommand = {
  * Update builder profile command.
  */
 export type UpdateProfileCommand = {
-  builder: Did;
+  builder: string;
   updates: Partial<{
     _updated: Date;
     name: string;
@@ -40,7 +39,7 @@ export type UpdateProfileCommand = {
  * Create collection command.
  */
 export type AddBuilderCollectionCommand = {
-  did: Did;
+  did: string;
   collection: UUID;
 };
 
@@ -48,7 +47,7 @@ export type AddBuilderCollectionCommand = {
  * Create collection command.
  */
 export type RemoveBuilderCollectionCommand = {
-  did: Did;
+  did: string;
   collection: UUID;
 };
 
@@ -56,7 +55,7 @@ export type RemoveBuilderCollectionCommand = {
  * Create query command.
  */
 export type AddBuilderQueryCommand = {
-  did: Did;
+  did: string;
   query: UUID;
 };
 
@@ -64,6 +63,6 @@ export type AddBuilderQueryCommand = {
  * Create query command.
  */
 export type RemoveBuilderQueryCommand = {
-  did: Did;
+  did: string;
   query: UUID;
 };

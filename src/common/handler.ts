@@ -24,7 +24,7 @@ export const ApiErrorResponse = z
     errors: z.array(z.string()),
     ts: z.string(),
   })
-  .openapi({ ref: "ApiErrorResponse" });
+  .meta({ ref: "ApiErrorResponse" });
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponse>;
 
 export const ApiSuccessResponse = <T extends z.ZodType>(dataSchema: T) =>

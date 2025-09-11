@@ -1,5 +1,3 @@
-import "./effects";
-
 import { type ServerType, serve } from "@hono/node-server";
 import { Command } from "commander";
 import dotenv from "dotenv";
@@ -46,7 +44,7 @@ async function main() {
     () => {
       bindings.log.info(`Node public endpoint ${bindings.node.endpoint}`);
       bindings.log.info(
-        `Node identifier ${bindings.node.keypair.toDidString()}`,
+        `Node identifier ${bindings.node.keypair.toDid().didString}`,
       );
       bindings.log.info(`App on :${bindings.config.webPort}`);
     },

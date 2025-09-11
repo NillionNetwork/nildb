@@ -1,8 +1,12 @@
 import { prometheus } from "@hono/prometheus";
 import { Effect as E, pipe } from "effect";
 import { Hono } from "hono";
-import { describeRoute, openAPISpecs } from "hono-openapi";
-import { resolver, validator as zValidator } from "hono-openapi/zod";
+import {
+  describeRoute,
+  openAPIRouteHandler,
+  resolver,
+  validator as zValidator,
+} from "hono-openapi";
 import { StatusCodes } from "http-status-codes";
 import { handleTaggedErrors } from "#/common/handler";
 import type { LogLevel } from "#/common/logger";
@@ -149,7 +153,7 @@ export function getOpenApiJson(options: ControllerOptions): void {
 
   app.get(
     PathsV1.system.openApiJson,
-    openAPISpecs(app, {
+    openAPIRouteHandler(app, {
       documentation: {
         info: {
           title: "nilDB API",

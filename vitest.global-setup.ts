@@ -53,7 +53,7 @@ export async function setup(_project: TestProject) {
     await new Promise((f) => setTimeout(f, 2000));
     log.info("✅ Containers started successfully.");
   } catch (error) {
-    log.error("❌ Error starting containers: ", error);
+    log.error({ error }, "❌ Error starting containers: ");
     process.exit(1);
   }
 }
@@ -70,7 +70,7 @@ export async function teardown(_project: TestProject) {
     await dockerCompose.downAll(composeOptions);
     log.info("✅ Containers removed successfully.");
   } catch (error) {
-    log.error("❌ Error removing containers: ", error);
+    log.error({ error }, "❌ Error removing containers");
     process.exit(1);
   }
 }

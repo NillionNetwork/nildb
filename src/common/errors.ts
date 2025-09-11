@@ -2,7 +2,6 @@ import { Data } from "effect";
 import type { JsonObject } from "type-fest";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
-import type { Did } from "#/common/types";
 import type { Acl } from "#/users/users.types";
 
 export class DuplicateEntryError extends Data.TaggedError(
@@ -20,7 +19,7 @@ export class ResourceAccessDeniedError extends Data.TaggedError(
 )<{
   type: string;
   id: string;
-  user: Did;
+  user: string;
 }> {
   humanize(): string[] {
     return [
@@ -152,7 +151,7 @@ export class GrantAccessError extends Data.TaggedError("GrantAccessError")<{
 export class RevokeAccessError extends Data.TaggedError("RevokeAccessError")<{
   type: string;
   id: string;
-  grantee: Did;
+  grantee: string;
 }> {
   humanize(): string[] {
     return [

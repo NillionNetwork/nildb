@@ -1,13 +1,16 @@
 import { Effect as E, pipe } from "effect";
 import type { UpdateResult, UUID } from "mongodb";
-import type {
-  CollectionNotFoundError,
-  DatabaseError,
+import * as CollectionsService from "#/collections/collections.services";
+import { enforceDataOwnership } from "#/common/acl";
+import {
+  type CollectionNotFoundError,
+  type DatabaseError,
   DataValidationError,
-  DocumentNotFoundError,
+  type DocumentNotFoundError,
+  GrantAccessError,
+  type ResourceAccessDeniedError,
 } from "#/common/errors";
-import type { Did } from "#/common/types";
-import * as DataService from "#/data/data.services";
+import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import { UserDataMapper, UserLoggerMapper } from "#/users/users.mapper";
 import * as UserRepository from "./users.repository";
@@ -61,9 +64,9 @@ export function updateUserData(
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return DataService.findRecords(ctx, {
-    collection,
-    filter: { ...filter, _owner: { $exists: true } },
+  return DataRepository.findMany(ctx, collection, {
+    ...filter,
+    _owner: { $exists: true },
   }).pipe(
     // This returns the owned documents grouped by owner, the standard documents are skipped.
     E.map((documents) => UserDataMapper.groupByOwner(documents)),
@@ -71,7 +74,7 @@ export function updateUserData(
       E.forEach(Object.entries(documents), ([owner, ids]) =>
         UserRepository.updateUserLogs(
           ctx,
-          owner as Did,
+          owner,
           UserLoggerMapper.toUpdateDataLogs(ids),
         ),
       ),
@@ -91,7 +94,7 @@ export function updateUserData(
  */
 export function find(
   ctx: AppBindings,
-  did: Did,
+  did: string,
 ): E.Effect<
   UserDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
@@ -111,7 +114,7 @@ export function find(
  */
 export function listUserDataReferences(
   ctx: AppBindings,
-  did: Did,
+  did: string,
 ): E.Effect<
   DataDocumentReference[],
   | DocumentNotFoundError
@@ -147,16 +150,16 @@ export function deleteUserDataReferences(
   never
 > {
   return pipe(
-    DataService.findRecords(ctx, {
-      collection,
-      filter: { ...filter, _owner: { $exists: true } },
+    DataRepository.findMany(ctx, collection, {
+      ...filter,
+      _owner: { $exists: true },
     }),
     // This returns the owned documents grouped by owner, the standard documents are skipped.
     E.map((documents) => UserDataMapper.groupByOwner(documents)),
     E.flatMap((documents) =>
       E.forEach(Object.entries(documents), ([owner, ids]) => {
         return pipe(
-          UserRepository.removeData(ctx, owner as Did, ids),
+          UserRepository.removeData(ctx, owner, ids),
           E.flatMap(() =>
             UserRepository.removeUser(ctx, { _id: owner, data: { $size: 0 } }),
           ),
@@ -181,12 +184,31 @@ export function grantAccess(
   command: GrantAccessToDataCommand,
 ): E.Effect<
   UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+  | DocumentNotFoundError
+  | GrantAccessError
+  | ResourceAccessDeniedError
 > {
   const { owner, collection, document, acl } = command;
+
+  // Validate that at least one permission is true
+  if (!acl.read && !acl.write && !acl.execute) {
+    return E.fail(
+      new GrantAccessError({
+        type: "document",
+        id: document.toString(),
+        acl,
+      }),
+    );
+  }
+
   const logs = [UserLoggerMapper.toGrantAccessLog(collection, acl)];
   return pipe(
-    UserRepository.updateUserLogs(ctx, owner, logs),
+    find(ctx, owner),
+    E.tap((user) => enforceDataOwnership(user, document, collection)),
+    E.flatMap(() => UserRepository.updateUserLogs(ctx, owner, logs)),
     E.flatMap(() =>
       UserRepository.addAclEntry(ctx, collection, document, owner, acl),
     ),
@@ -208,12 +230,32 @@ export function revokeAccess(
   command: RevokeAccessToDataCommand,
 ): E.Effect<
   UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+  | DocumentNotFoundError
+  | ResourceAccessDeniedError
 > {
   const { owner, collection, document, grantee } = command;
   const logs = [UserLoggerMapper.toRevokeAccessLog(collection, grantee)];
   return pipe(
-    UserRepository.updateUserLogs(ctx, owner, logs),
+    E.Do,
+    E.bind("user", () => find(ctx, owner)),
+    E.bind("collectionDoc", () =>
+      CollectionsService.find(ctx, { _id: collection }),
+    ),
+    E.tap(({ user }) => enforceDataOwnership(user, document, collection)),
+    E.filterOrFail(
+      ({ collectionDoc }) => collectionDoc.owner !== grantee,
+      () =>
+        new DataValidationError({
+          issues: [
+            "Collection owners cannot have their access revoked. To remove data, the data owner must delete it.",
+          ],
+          cause: { collection, grantee },
+        }),
+    ),
+    E.flatMap(() => UserRepository.updateUserLogs(ctx, owner, logs)),
     E.flatMap(() =>
       UserRepository.removeAclEntry(ctx, collection, document, grantee, owner),
     ),

@@ -2,7 +2,7 @@ import Ajv from "ajv";
 import type { DataValidationCxt } from "ajv/dist/types";
 import * as addFormats from "ajv-formats";
 import { Effect as E } from "effect";
-import { type SafeParseReturnType, z } from "zod";
+import { type ZodSafeParseResult, z } from "zod";
 import { DataValidationError } from "#/common/errors";
 import { Uuid } from "#/common/types";
 
@@ -83,7 +83,7 @@ type SupportedCoercions = "date-time" | "uuid" | "numeric";
 function registerCoercions(ajv: Ajv): void {
   const coercers: Record<
     SupportedCoercions,
-    (data: string) => SafeParseReturnType<unknown, unknown>
+    (data: string) => ZodSafeParseResult<unknown>
   > = {
     "date-time": (data) =>
       z
