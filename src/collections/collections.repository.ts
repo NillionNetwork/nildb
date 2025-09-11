@@ -11,7 +11,6 @@ import type {
   CollectionDocument,
   CollectionMetadata,
 } from "#/collections/collections.types";
-import type { CoercibleMap } from "#/common/coercion";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -21,22 +20,12 @@ import {
   InvalidIndexOptionsError,
 } from "#/common/errors";
 import {
-  addDocumentBaseCoercions,
   CollectionName,
   checkCollectionExists,
   isMongoError,
   MongoErrorCode,
 } from "#/common/mongo";
 import type { AppBindings } from "#/env";
-
-/**
- * Add collection document coercions.
- */
-export function addCollectionDocumentCoercions(
-  coercibleMap: CoercibleMap,
-): CoercibleMap {
-  return addDocumentBaseCoercions(coercibleMap);
-}
 
 /**
  * Insert collection document.
@@ -321,7 +310,7 @@ export function createIndex(
             message: cause.message,
           });
         }
-        return new DatabaseError({ cause, message: "Failed to drop index" });
+        return new DatabaseError({ cause, message: "Failed to create index" });
       },
     }),
   );

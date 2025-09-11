@@ -14,8 +14,8 @@ export class ResponseHandler<TSuccess = unknown> {
 
   async expectSuccess(): Promise<TSuccess> {
     const response = await this.request();
-    // this.c.expect(response.ok).toBe(true);
-    // this.c.expect(response.status).toBe(this.successStatus);
+    this.c.expect(response.ok).toBe(true);
+    this.c.expect(response.status).toBe(this.successStatus);
 
     // if failure try and print the error body
     if (!response.ok) {

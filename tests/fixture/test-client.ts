@@ -303,7 +303,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.builders.me, { method: "POST", body }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
@@ -311,7 +311,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.builders.me, { method: "DELETE" }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
@@ -342,7 +342,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
         this.request(PathsV1.collections.byId.replace(":id", collectionId), {
           method: "DELETE",
         }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
@@ -427,7 +427,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
         this.request(PathsV1.queries.byId.replace(":id", queryId), {
           method: "DELETE",
         }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
@@ -522,7 +522,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
         this.request(PathsV1.data.flushById.replace(":id", collectionId), {
           method: "DELETE",
         }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
@@ -628,7 +628,7 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
             .replace(":document", document),
           { method: "DELETE" },
         ),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
@@ -640,7 +640,7 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
       c,
       () =>
         this.request(PathsV1.users.data.acl.grant, { method: "POST", body }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
@@ -652,7 +652,7 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
       c,
       () =>
         this.request(PathsV1.users.data.acl.revoke, { method: "POST", body }),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 }
