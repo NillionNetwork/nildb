@@ -41,6 +41,7 @@ import {
 import {
   type CreateQueryRequest,
   ReadQueriesResponse,
+  ReadQueryResponse,
   ReadQueryRunByIdResponse,
   type RunQueryRequest,
   RunQueryResponse,
@@ -404,11 +405,15 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  getQuery(c: FixtureContext, queryId: string): ResponseHandler {
+  getQuery(
+    c: FixtureContext,
+    queryId: string,
+  ): ResponseHandler<ReadQueryResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.queries.byId.replace(":id", queryId)),
       StatusCodes.OK,
+      ReadQueryResponse,
     );
   }
 

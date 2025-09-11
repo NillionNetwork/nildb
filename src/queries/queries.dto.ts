@@ -43,11 +43,12 @@ export type CreateQueryResponse = z.infer<typeof CreateQueryResponse>;
 /**
  * Query document data.
  */
-const QueryDocumentResponse = z.object({
+export const QueryDocumentResponse = z.object({
   _id: z.uuid(),
   name: z.string().min(1).max(100),
   collection: z.uuid(),
 });
+export type QueryDocumentResponse = z.infer<typeof QueryDocumentResponse>;
 
 /**
  * Queries list response.
@@ -134,7 +135,7 @@ const ReadQueryRunByIdDto = z.object({
   status: RunQueryResultStatus,
   started: z.string().datetime().optional(),
   completed: z.string().datetime().optional(),
-  result: z.unknown().optional(),
+  result: z.any().optional(),
   errors: z.array(z.string()).optional(),
 });
 

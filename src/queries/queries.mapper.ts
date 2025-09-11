@@ -3,6 +3,7 @@ import type {
   ByIdRequestParams,
   CreateQueryRequest,
   DeleteQueryRequest,
+  QueryDocumentResponse,
   ReadQueriesResponse,
   ReadQueryResponse,
   ReadQueryRunByIdResponse,
@@ -24,9 +25,7 @@ export const QueriesDataMapper = {
   /**
    * Converts a query document to response DTO.
    */
-  toQueryDocumentResponse(
-    document: QueryDocument,
-  ): ReadQueriesResponse["data"][0] {
+  toQueryDocumentResponse(document: QueryDocument): QueryDocumentResponse {
     return {
       _id: document._id.toString(),
       name: document.name,
