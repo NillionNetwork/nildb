@@ -47,8 +47,8 @@ export type UserDataLogs = z.infer<typeof UserDataLogs>;
  */
 const UserProfileData = z.object({
   _id: z.string(),
-  _created: z.string().datetime(),
-  _updated: z.string().datetime(),
+  _created: z.iso.datetime(),
+  _updated: z.iso.datetime(),
   logs: z.array(UserDataLogs),
   data: z.array(
     z.object({
@@ -83,8 +83,8 @@ export type ReadDataRequestParams = z.infer<typeof ReadDataRequestParams>;
 const OwnedDataDto = z
   .object({
     _id: z.uuid(),
-    _created: z.string().datetime(),
-    _updated: z.string().datetime(),
+    _created: z.iso.datetime(),
+    _updated: z.iso.datetime(),
     _owner: z.string(),
     _acl: z.array(AclDto),
   })

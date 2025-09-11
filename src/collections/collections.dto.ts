@@ -146,8 +146,8 @@ export const CollectionMetadataDto = z.object({
   _id: z.uuid(),
   count: z.number(),
   size: z.number(),
-  first_write: z.string().datetime(),
-  last_write: z.string().datetime(),
+  first_write: z.iso.datetime(),
+  last_write: z.iso.datetime(),
   indexes: z.array(CollectionIndexDto),
   schema: z.record(z.string(), z.unknown()),
 });

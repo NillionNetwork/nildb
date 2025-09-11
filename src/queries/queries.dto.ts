@@ -133,8 +133,8 @@ const ReadQueryRunByIdDto = z.object({
   _id: z.uuid(),
   query: z.uuid(),
   status: RunQueryResultStatus,
-  started: z.string().datetime().optional(),
-  completed: z.string().datetime().optional(),
+  started: z.iso.datetime().optional(),
+  completed: z.iso.datetime().optional(),
   result: z.any().optional(),
   errors: z.array(z.string()).optional(),
 });

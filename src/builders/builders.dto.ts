@@ -23,8 +23,8 @@ export type RegisterBuilderResponse = z.infer<typeof RegisterBuilderResponse>;
  */
 const ProfileDto = z.object({
   _id: z.string(),
-  _created: z.string().datetime(),
-  _updated: z.string().datetime(),
+  _created: z.iso.datetime(),
+  _updated: z.iso.datetime(),
   name: z.string(),
   collections: z.array(z.uuid()),
   queries: z.array(z.uuid()),
