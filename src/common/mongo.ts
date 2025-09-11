@@ -2,7 +2,6 @@ import { Effect as E, pipe } from "effect";
 import type { Config as MongoMigrateConfig } from "mongo-migrate-ts/lib/config";
 import {
   type Collection,
-  type Db,
   type Document,
   MongoClient,
   MongoError,
@@ -110,33 +109,37 @@ export const MongoErrorCode = {
 
 export function checkCollectionExists<T extends Document>(
   ctx: AppBindings,
-  dbName: string,
-  name: string,
+  dbName: "primary" | "data",
+  collectionName: string,
 ): E.Effect<Collection<T>, CollectionNotFoundError | DatabaseError> {
-  const dbRegister = ctx.db as Record<string, unknown>;
-  if (!(dbName in dbRegister)) {
+  const db = ctx.db[dbName];
+
+  if (!db) {
     return E.fail(
       new CollectionNotFoundError({
         dbName,
-        name: name as UuidDto,
+        name: collectionName as UuidDto,
       }),
     );
   }
-  const db = dbRegister[dbName] as Db;
+
   return pipe(
     E.tryPromise({
-      try: () => db.listCollections({ name }).toArray(),
+      try: () => db.listCollections({ name: collectionName }).toArray(),
       catch: (cause) =>
         new DatabaseError({
           cause,
-          message: `check${name[0].toUpperCase() + name.slice(1)}CollectionExists`,
+          message: `check${collectionName[0].toUpperCase() + collectionName.slice(1)}CollectionExists`,
         }),
     }),
     E.flatMap((result) =>
       result.length === 1
-        ? E.succeed(db.collection<T>(name))
+        ? E.succeed(db.collection<T>(collectionName))
         : E.fail(
-            new CollectionNotFoundError({ dbName, name: name as UuidDto }),
+            new CollectionNotFoundError({
+              dbName,
+              name: collectionName as UuidDto,
+            }),
           ),
     ),
   );

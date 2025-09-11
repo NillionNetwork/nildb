@@ -297,7 +297,7 @@ export function createIndex(
   CollectionNotFoundError | InvalidIndexOptionsError | DatabaseError
 > {
   return pipe(
-    checkCollectionExists(ctx, "primary", collection.toString()),
+    checkCollectionExists(ctx, "data", collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.createIndex(specification, options),
       catch: (cause) => {
@@ -328,7 +328,7 @@ export function dropIndex(
   CollectionNotFoundError | IndexNotFoundError | DatabaseError
 > {
   return pipe(
-    checkCollectionExists(ctx, "primary", collection.toString()),
+    checkCollectionExists(ctx, "data", collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.dropIndex(name),
       catch: (cause) => {

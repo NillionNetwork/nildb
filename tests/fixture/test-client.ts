@@ -373,7 +373,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
             body,
           },
         ),
-      StatusCodes.CREATED,
+      StatusCodes.OK,
     );
   }
 
@@ -391,7 +391,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
             .replace(":name", indexName),
           { method: "DELETE" },
         ),
-      StatusCodes.NO_CONTENT,
+      StatusCodes.OK,
     );
   }
 
