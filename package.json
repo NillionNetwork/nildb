@@ -8,7 +8,7 @@
     "fix": "pnpm exec biome check --fix --unsafe",
     "check": "pnpm typecheck && pnpm lint",
     "typecheck": "tsc --noEmit",
-    "lint": "pnpm exec biome lint  --fix --unsafe",
+    "lint": "pnpm exec biome check  --fix --unsafe",
     "fmt": "pnpm exec biome format --fix",
     "start": "tsx src/main.ts",
     "test": "pnpm run test:unit && pnpm run test:integration",
