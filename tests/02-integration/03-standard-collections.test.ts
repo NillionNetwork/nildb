@@ -16,9 +16,7 @@ describe("Standard Collections and Queries", () => {
 
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
 
-  beforeAll(async (c) => {
-    await c.builder.ensureSubscriptionActive();
-  });
+  beforeAll(async (_c) => {});
   afterAll(async (_c) => {});
 
   // Standard Collection Management Tests
