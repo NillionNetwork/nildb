@@ -12,7 +12,7 @@ import type {
   ReadDataAclRequestParams,
   ReadDataRequestParams,
   ReadDataResponse,
-  ReadProfileResponse,
+  ReadUserProfileResponse,
   RevokeAccessToDataRequest,
   UpdateUserDataRequest,
   UserDataLogs,
@@ -66,7 +66,7 @@ export const UserDataMapper = {
   /**
    * Convert user document to profile response.
    */
-  toReadProfileResponse(user: UserDocument): ReadProfileResponse {
+  toReadProfileResponse(user: UserDocument): ReadUserProfileResponse {
     return {
       data: {
         _id: user._id,

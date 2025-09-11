@@ -61,10 +61,12 @@ const UserProfileData = z.object({
 /**
  * User profile response.
  */
-export const ReadProfileResponse = ApiSuccessResponse(UserProfileData).meta({
-  ref: "ReadProfileResponse",
-});
-export type ReadProfileResponse = z.infer<typeof ReadProfileResponse>;
+export const ReadUserProfileResponse = ApiSuccessResponse(UserProfileData).meta(
+  {
+    ref: "ReadUserProfileResponse",
+  },
+);
+export type ReadUserProfileResponse = z.infer<typeof ReadUserProfileResponse>;
 
 /**
  * Data read request parameters.

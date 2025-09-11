@@ -55,6 +55,7 @@ import {
   type GrantAccessToDataRequest,
   ListDataReferencesResponse,
   ReadDataResponse,
+  ReadUserProfileResponse,
   type RevokeAccessToDataRequest,
   type UpdateUserDataRequest,
 } from "#/users/users.dto";
@@ -570,11 +571,12 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
     this.options.builderDelegation = token;
   }
 
-  getProfile(c: FixtureContext): ResponseHandler {
+  getProfile(c: FixtureContext): ResponseHandler<ReadUserProfileResponse> {
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.users.me),
       StatusCodes.OK,
+      ReadUserProfileResponse,
     );
   }
 

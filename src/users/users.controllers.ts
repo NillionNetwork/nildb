@@ -26,7 +26,7 @@ import {
   ListDataReferencesResponse,
   ReadDataRequestParams,
   ReadDataResponse,
-  ReadProfileResponse,
+  ReadUserProfileResponse,
   RevokeAccessToDataRequest,
   type RevokeAccessToDataResponse,
   UpdateUserDataRequest,
@@ -52,7 +52,7 @@ export function readProfile(options: ControllerOptions): void {
           description: "OK",
           content: {
             "application/json": {
-              schema: resolver(ReadProfileResponse),
+              schema: resolver(ReadUserProfileResponse),
             },
           },
         },
@@ -68,7 +68,7 @@ export function readProfile(options: ControllerOptions): void {
       return pipe(
         UserService.find(c.env, user._id),
         E.map((profile) => UserDataMapper.toReadProfileResponse(profile)),
-        E.map((response) => c.json<ReadProfileResponse>(response)),
+        E.map((response) => c.json<ReadUserProfileResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );
