@@ -12,6 +12,7 @@ import {
   CollectionName,
   checkCollectionExists,
 } from "#/common/mongo";
+import type { PaginationQuery } from "#/common/pagination.dto";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "./queries.types";
 
@@ -37,13 +38,19 @@ export function insert(
 }
 
 /**
- * Find multiple queries.
+ * Finds multiple queries with pagination.
+ *
+ * @param ctx The application bindings.
+ * @param filter The MongoDB filter to apply.
+ * @param pagination The pagination parameters (limit and offset).
+ * @returns A tuple containing an array of found query documents and the total count.
  */
 export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
+  pagination: PaginationQuery,
 ): E.Effect<
-  QueryDocument[],
+  [QueryDocument[], number],
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
@@ -58,20 +65,33 @@ export function findMany(
       ),
       applyCoercions(addDocumentBaseCoercions(filter)),
     ]),
-    E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.find(documentFilter).toArray(),
-      catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
-    }),
-    E.flatMap((result) =>
-      result === null
-        ? E.fail(
+    E.flatMap(([collection, documentFilter]) =>
+      E.all([
+        E.tryPromise({
+          try: () =>
+            collection
+              .find(documentFilter)
+              .limit(pagination.limit)
+              .skip(pagination.offset)
+              .toArray(),
+          catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
+        }),
+        E.tryPromise({
+          try: () => collection.countDocuments(documentFilter),
+          catch: (cause) =>
+            new DatabaseError({ cause, message: "countDocuments" }),
+        }),
+      ]),
+    ),
+    E.flatMap(([result, count]) =>
+      result
+        ? E.succeed([result, count])
+        : E.fail(
             new DocumentNotFoundError({
               collection: CollectionName.Queries,
               filter,
             }),
-          )
-        : E.succeed(result),
+          ),
     ),
   );
 }

@@ -1,4 +1,5 @@
 import { UUID } from "mongodb";
+import type { Paginated } from "#/common/pagination.dto";
 import type {
   ByIdRequestParams,
   CreateQueryRequest,
@@ -34,11 +35,23 @@ export const QueriesDataMapper = {
   },
 
   /**
-   * Converts array of query documents to list response DTO.
+   * Converts a paginated result of query documents into a paginated API response.
+   *
+   * @param paginatedResult The paginated data from the service layer.
+   * @returns The final API response object for listing queries.
    */
-  toGetQueriesResponse(documents: QueryDocument[]): ReadQueriesResponse {
+  toGetQueriesResponse(
+    paginatedResult: Paginated<QueryDocument>,
+  ): ReadQueriesResponse {
     return {
-      data: documents.map((doc) => this.toQueryDocumentResponse(doc)),
+      data: paginatedResult.data.map((doc) =>
+        this.toQueryDocumentResponse(doc),
+      ),
+      pagination: {
+        total: paginatedResult.total,
+        limit: paginatedResult.limit,
+        offset: paginatedResult.offset,
+      },
     };
   },
 

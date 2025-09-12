@@ -1,5 +1,9 @@
 import z from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
+import {
+  PaginatedResponse,
+  PaginationQuerySchema,
+} from "#/common/pagination.dto";
 
 /**
  * MongoDB aggregation pipeline variable validation.
@@ -51,10 +55,16 @@ export const QueryDocumentResponse = z.object({
 export type QueryDocumentResponse = z.infer<typeof QueryDocumentResponse>;
 
 /**
+ * Queries list request query.
+ */
+export const ReadQueriesRequestQuery = PaginationQuerySchema;
+export type ReadQueriesRequestQuery = z.infer<typeof ReadQueriesRequestQuery>;
+
+/**
  * Queries list response.
  */
-export const ReadQueriesResponse = ApiSuccessResponse(
-  z.array(QueryDocumentResponse),
+export const ReadQueriesResponse = PaginatedResponse(
+  QueryDocumentResponse,
 ).meta({
   ref: "ReadQueriesResponse",
 });

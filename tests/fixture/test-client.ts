@@ -420,10 +420,32 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  getQueries(c: FixtureContext): ResponseHandler<ReadQueriesResponse> {
+  /**
+   * Fetches a paginated list of queries for the builder.
+   *
+   * @param c The fixture context.
+   * @param pagination Optional pagination parameters (limit and offset).
+   * @returns A response handler for the API call.
+   */
+  getQueries(
+    c: FixtureContext,
+    pagination?: PaginationQuery,
+  ): ResponseHandler<ReadQueriesResponse> {
+    const query = new URLSearchParams();
+    if (pagination?.limit) {
+      query.set("limit", String(pagination.limit));
+    }
+    if (pagination?.offset) {
+      query.set("offset", String(pagination.offset));
+    }
+    const queryString = query.toString();
+    const path = queryString
+      ? `${PathsV1.queries.root}?${queryString}`
+      : PathsV1.queries.root;
+
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.queries.root),
+      () => this.request(path),
       StatusCodes.OK,
       ReadQueriesResponse,
     );

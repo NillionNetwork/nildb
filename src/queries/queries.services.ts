@@ -15,6 +15,7 @@ import {
   TimeoutError,
   type VariableInjectionError,
 } from "#/common/errors";
+import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import { validateData } from "#/common/validator";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
@@ -248,19 +249,33 @@ export function getQueryById(
 }
 
 /**
- * Find queries by owner.
+ * Finds a paginated list of queries owned by a specific builder.
+ *
+ * @param ctx The application bindings.
+ * @param owner The DID of the builder who owns the queries.
+ * @param pagination The pagination parameters (limit and offset).
+ * @returns A paginated result containing the query documents.
  */
 export function findQueries(
   ctx: AppBindings,
   owner: string,
+  pagination: PaginationQuery,
 ): E.Effect<
-  QueryDocument[],
+  Paginated<QueryDocument>,
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
-  return pipe(QueriesRepository.findMany(ctx, { owner }));
+  return pipe(
+    QueriesRepository.findMany(ctx, { owner }, pagination),
+    E.map(([data, total]) => ({
+      data,
+      total,
+      limit: pagination.limit,
+      offset: pagination.offset,
+    })),
+  );
 }
 
 /**

@@ -20,6 +20,7 @@ import {
   CreateQueryRequest,
   type CreateQueryResponse,
   type DeleteQueryResponse,
+  ReadQueriesRequestQuery,
   ReadQueriesResponse,
   type ReadQueryResponse,
   ReadQueryRunByIdResponse,
@@ -134,14 +135,16 @@ export function readQueries(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
+    zValidator("query", ReadQueriesRequestQuery),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.read),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
+      const pagination = c.req.valid("query");
 
       return pipe(
-        QueriesService.findQueries(c.env, builder._id),
+        QueriesService.findQueries(c.env, builder._id, pagination),
         E.map((documents) => QueriesDataMapper.toGetQueriesResponse(documents)),
         E.map((response) => c.json<ReadQueriesResponse>(response)),
         handleTaggedErrors(c),
