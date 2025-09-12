@@ -10,11 +10,12 @@ import {
   type CollectionNotFoundError,
   type DatabaseError,
   DataValidationError,
-  type DocumentNotFoundError,
+  DocumentNotFoundError,
   type ResourceAccessDeniedError,
   TimeoutError,
   type VariableInjectionError,
 } from "#/common/errors";
+import { CollectionName } from "#/common/mongo";
 import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import { validateData } from "#/common/validator";
 import * as DataService from "#/data/data.services";
@@ -207,16 +208,38 @@ export function runQueryInBackground(
 }
 
 /**
- * Get query run job.
+ * Retrieves a query run job by its ID, with pagination applied to the result set.
+ *
+ * @param ctx The application bindings.
+ * @param command The command containing the query run ID.
+ * @param pagination The pagination parameters for the result set.
+ * @returns A paginated object containing the query run document with a sliced result array.
  */
 export function getRunQueryJob(
   ctx: AppBindings,
   command: GetQueryRunByIdCommand,
+  pagination: PaginationQuery,
 ): E.Effect<
-  RunQueryJobDocument,
+  { document: RunQueryJobDocument; total: number },
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return RunQueryJobsRepository.findOne(ctx, { _id: command._id });
+  return pipe(
+    RunQueryJobsRepository.findRunByIdWithPaginatedResults(
+      ctx,
+      command._id,
+      pagination,
+    ),
+    E.flatMap((result) =>
+      result
+        ? E.succeed({ document: result, total: result.total })
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.QueryRuns,
+              filter: { _id: command._id },
+            }),
+          ),
+    ),
+  );
 }
 
 /**

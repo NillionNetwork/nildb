@@ -91,6 +91,14 @@ export const ByIdRequestParams = z
 export type ByIdRequestParams = z.infer<typeof ByIdRequestParams>;
 
 /**
+ * Query run results request query.
+ */
+export const ReadQueryRunByIdRequestQuery = PaginationQuerySchema;
+export type ReadQueryRunByIdRequestQuery = z.infer<
+  typeof ReadQueryRunByIdRequestQuery
+>;
+
+/**
  * Query deletion request.
  */
 export const DeleteQueryRequest = z
@@ -145,13 +153,25 @@ const ReadQueryRunByIdDto = z.object({
   status: RunQueryResultStatus,
   started: z.iso.datetime().optional(),
   completed: z.iso.datetime().optional(),
-  result: z.any().optional(),
+  result: z.array(z.any()).optional(),
   errors: z.array(z.string()).optional(),
 });
 
-export const ReadQueryRunByIdResponse = ApiSuccessResponse(
-  ReadQueryRunByIdDto,
-).meta({
-  ref: "ReadQueryRunByIdResponse",
-});
+/**
+ * Query run results response.
+ */
+export const ReadQueryRunByIdResponse = z
+  .object({
+    data: ReadQueryRunByIdDto,
+    pagination: z
+      .object({
+        total: z.number().int().min(0),
+        limit: z.number().int().min(1),
+        offset: z.number().int().min(0),
+      })
+      .optional(),
+  })
+  .meta({
+    ref: "ReadQueryRunByIdResponse",
+  });
 export type ReadQueryRunByIdResponse = z.infer<typeof ReadQueryRunByIdResponse>;

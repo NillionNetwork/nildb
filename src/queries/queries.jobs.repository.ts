@@ -11,6 +11,7 @@ import {
   DocumentNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
+import type { PaginationQuery } from "#/common/pagination.dto";
 import type { AppBindings } from "#/env";
 import type { RunQueryJobDocument } from "./queries.types";
 
@@ -86,6 +87,55 @@ export function findOne(
             }),
           ),
     ),
+  );
+}
+
+/**
+ * Finds a query run by ID and paginates its result array using an aggregation pipeline.
+ */
+export function findRunByIdWithPaginatedResults(
+  ctx: AppBindings,
+  _id: UUID,
+  pagination: PaginationQuery,
+): E.Effect<
+  (RunQueryJobDocument & { total: number }) | null,
+  CollectionNotFoundError | DatabaseError
+> {
+  const pipeline = [
+    { $match: { _id } },
+    {
+      $project: {
+        _id: 1,
+        _created: 1,
+        _updated: 1,
+        query: 1,
+        status: 1,
+        started: 1,
+        completed: 1,
+        errors: 1,
+        total: { $size: { $ifNull: ["$result", []] } },
+        result: { $slice: ["$result", pagination.offset, pagination.limit] },
+      },
+    },
+  ];
+
+  return pipe(
+    checkCollectionExists<RunQueryJobDocument>(
+      ctx,
+      "primary",
+      CollectionName.QueryRuns,
+    ),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection
+          .aggregate<RunQueryJobDocument & { total: number }>(pipeline)
+          .next(),
+      catch: (cause) =>
+        new DatabaseError({
+          cause,
+          message: "findRunByIdWithPaginatedResults",
+        }),
+    }),
   );
 }
 

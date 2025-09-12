@@ -23,6 +23,7 @@ import {
   ReadQueriesRequestQuery,
   ReadQueriesResponse,
   type ReadQueryResponse,
+  ReadQueryRunByIdRequestQuery,
   ReadQueryRunByIdResponse,
   RunQueryRequest,
   RunQueryResponse,
@@ -273,22 +274,22 @@ export function getQueryRunResultById(options: ControllerOptions): void {
       },
     }),
     zValidator("param", ByIdRequestParams),
+    zValidator("query", ReadQueryRunByIdRequestQuery),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.read),
     async (c) => {
       const _builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
+      const pagination = c.req.valid("query");
       const command = QueriesDataMapper.toGetQueryRunResultByIdCommand(params);
 
       return pipe(
-        QueriesService.getRunQueryJob(c.env, command),
-        E.flatMap((run) =>
-          pipe(
-            E.succeed(QueriesDataMapper.toGetQueryRunResultByResponse(run)),
-            E.map((response) => c.json<ReadQueryRunByIdResponse>(response)),
-          ),
+        QueriesService.getRunQueryJob(c.env, command, pagination),
+        E.map((run) =>
+          QueriesDataMapper.toGetQueryRunResultByIdResponse(run, pagination),
         ),
+        E.map((response) => c.json<ReadQueryRunByIdResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );

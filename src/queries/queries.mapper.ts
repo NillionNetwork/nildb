@@ -1,5 +1,5 @@
 import { UUID } from "mongodb";
-import type { Paginated } from "#/common/pagination.dto";
+import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import type {
   ByIdRequestParams,
   CreateQueryRequest,
@@ -90,11 +90,17 @@ export const QueriesDataMapper = {
   },
 
   /**
-   * Converts a query job document to response DTO.
+   * Converts the service-layer query run result into the final paginated API response.
+   *
+   * @param serviceResult The result object from the service layer, containing the document and total count.
+   * @param pagination The pagination parameters used for the request.
+   * @returns The final API response object for the query run result.
    */
-  toGetQueryRunResultByResponse(
-    document: RunQueryJobDocument,
+  toGetQueryRunResultByIdResponse(
+    serviceResult: { document: RunQueryJobDocument; total: number },
+    pagination: PaginationQuery,
   ): ReadQueryRunByIdResponse {
+    const { document, total } = serviceResult;
     return {
       data: {
         _id: document._id.toString(),
@@ -102,8 +108,13 @@ export const QueriesDataMapper = {
         status: document.status,
         started: document.started.toISOString(),
         completed: document.completed.toISOString(),
-        result: document.result,
+        result: document.result as unknown[],
         errors: document.errors,
+      },
+      pagination: {
+        total,
+        limit: pagination.limit,
+        offset: pagination.offset,
       },
     };
   },

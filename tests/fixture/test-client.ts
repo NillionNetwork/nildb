@@ -494,13 +494,35 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
+  /**
+   * Fetches the results of a specific query run, with optional pagination.
+   *
+   * @param c The fixture context.
+   * @param runId The ID of the query run.
+   * @param pagination Optional pagination parameters for the result set.
+   * @returns A response handler for the API call.
+   */
   readQueryRunResults(
     c: FixtureContext,
     runId: string,
+    pagination?: { limit?: number; offset?: number },
   ): ResponseHandler<ReadQueryRunByIdResponse> {
+    const url = new URL(
+      PathsV1.queries.runById.replace(":id", runId),
+      "http://localhost",
+    );
+    if (pagination) {
+      if (pagination.limit !== undefined) {
+        url.searchParams.set("limit", pagination.limit.toString());
+      }
+      if (pagination.offset !== undefined) {
+        url.searchParams.set("offset", pagination.offset.toString());
+      }
+    }
+
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.queries.runById.replace(":id", runId)),
+      () => this.request(url.pathname + url.search),
       StatusCodes.OK,
       ReadQueryRunByIdResponse,
     );
