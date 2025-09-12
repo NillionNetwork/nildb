@@ -64,10 +64,11 @@ export function updateUserData(
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return DataRepository.findMany(ctx, collection, {
-    ...filter,
-    _owner: { $exists: true },
-  }).pipe(
+  return pipe(
+    DataRepository.findAll(ctx, collection, {
+      ...filter,
+      _owner: { $exists: true },
+    }),
     // This returns the owned documents grouped by owner, the standard documents are skipped.
     E.map((documents) => UserDataMapper.groupByOwner(documents)),
     E.flatMap((documents) =>
@@ -150,21 +151,21 @@ export function deleteUserDataReferences(
   never
 > {
   return pipe(
-    DataRepository.findMany(ctx, collection, {
+    DataRepository.findAll(ctx, collection, {
       ...filter,
       _owner: { $exists: true },
     }),
     // This returns the owned documents grouped by owner, the standard documents are skipped.
     E.map((documents) => UserDataMapper.groupByOwner(documents)),
     E.flatMap((documents) =>
-      E.forEach(Object.entries(documents), ([owner, ids]) => {
-        return pipe(
+      E.forEach(Object.entries(documents), ([owner, ids]) =>
+        pipe(
           UserRepository.removeData(ctx, owner, ids),
           E.flatMap(() =>
             UserRepository.removeUser(ctx, { _id: owner, data: { $size: 0 } }),
           ),
-        );
-      }),
+        ),
+      ),
     ),
   );
 }

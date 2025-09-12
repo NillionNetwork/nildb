@@ -124,6 +124,25 @@ describe("Standard Collections and Queries", () => {
 
     const actual = result.data[0];
     expect(actual._id).toBe(_id);
+    expect(result.pagination.total).toBe(1);
+  });
+
+  it("can find standard data with pagination", async ({ c }) => {
+    const { expect, builder } = c;
+
+    // Total data count is 3 at this point in the test file
+    const { data, pagination } = await builder
+      .findData(c, {
+        collection: standardCollection.id,
+        filter: {},
+        pagination: { limit: 1, offset: 1 },
+      })
+      .expectSuccess();
+
+    expect(data).toHaveLength(1);
+    expect(pagination.total).toBe(3);
+    expect(pagination.limit).toBe(1);
+    expect(pagination.offset).toBe(1);
   });
 
   it("can update data via filter", async ({ c }) => {

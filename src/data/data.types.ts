@@ -1,5 +1,6 @@
 import type { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
+import type { PaginationQuery } from "#/common/pagination.dto";
 import type { UuidDto } from "#/common/types";
 import type { Acl } from "#/users/users.types";
 
@@ -89,6 +90,7 @@ export type FindDataCommand = {
   collection: UUID;
   filter: Record<string, unknown>;
   requesterId: string;
+  pagination: PaginationQuery;
 };
 
 /**

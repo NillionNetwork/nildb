@@ -21,6 +21,7 @@ import type {
   ResourceAccessDeniedError,
 } from "#/common/errors";
 import { addDocumentBaseCoercions, type DocumentBase } from "#/common/mongo";
+import type { Paginated } from "#/common/pagination.dto";
 import { validateData } from "#/common/validator";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
@@ -219,7 +220,7 @@ export function findRecords(
   ctx: AppBindings,
   command: FindDataCommand,
 ): E.Effect<
-  DocumentBase[],
+  Paginated<DocumentBase>,
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
@@ -238,8 +239,19 @@ export function findRecords(
       ),
     ),
     E.flatMap((secureFilter) =>
-      DataRepository.findMany(ctx, command.collection, secureFilter),
+      DataRepository.findMany(
+        ctx,
+        command.collection,
+        secureFilter,
+        command.pagination,
+      ),
     ),
+    E.map(([data, total]) => ({
+      data,
+      total,
+      limit: command.pagination.limit,
+      offset: command.pagination.offset,
+    })),
   );
 }
 

@@ -386,6 +386,7 @@ describe("Owned Collections", () => {
 
       const actual = result.data[0];
       expect(actual._id).toBe(_id);
+      expect(result.pagination.total).toBe(1);
     });
 
     it("can read data from a list of ids", async ({ c }) => {
@@ -413,6 +414,7 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       expect(result.data).toHaveLength(3);
+      expect(result.pagination.total).toBe(3);
     });
 
     it("can update owned data", async ({ c }) => {
@@ -761,6 +763,7 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       expect(result.data).toHaveLength(0);
+      expect(result.pagination.total).toBe(0);
     });
 
     it("prevents data updates by unauthorized builder", async ({ c }) => {
@@ -849,6 +852,7 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       expect(resultWithAccess.data).toHaveLength(1);
+      expect(resultWithAccess.pagination.total).toBe(1);
 
       // But still can't read other documents
       const resultWithoutAccess = await unauthorizedBuilder
@@ -859,6 +863,25 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       expect(resultWithoutAccess.data).toHaveLength(0);
+      expect(resultWithoutAccess.pagination.total).toBe(0);
+    });
+
+    it("can find owned data with pagination", async ({ c }) => {
+      const { expect, builder } = c;
+
+      // Total data count in simpleCollection is 10 for reading + 10 for unauthorized access testing = 20
+      const { data, pagination } = await builder
+        .findData(c, {
+          collection: simpleCollection.id,
+          filter: {},
+          pagination: { limit: 5, offset: 10 },
+        })
+        .expectSuccess();
+
+      expect(data).toHaveLength(5);
+      expect(pagination.total).toBe(20);
+      expect(pagination.limit).toBe(5);
+      expect(pagination.offset).toBe(10);
     });
 
     it("prevents unauthorized update even with read permission", async ({

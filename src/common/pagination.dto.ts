@@ -33,3 +33,12 @@ export const PaginatedResponse = <T extends z.ZodTypeAny>(dataSchema: T) =>
       offset: z.number().int().min(0),
     }),
   });
+
+/**
+ * Zod schema for an optional pagination object in a request body.
+ */
+export const PaginationBodySchema = z.object({
+  pagination: PaginationQuerySchema.optional(),
+});
+
+export type PaginationBody = z.infer<typeof PaginationBodySchema>;
