@@ -24,6 +24,7 @@ import {
   ReadCollectionMetadataResponse,
 } from "#/collections/collections.dto";
 import { NucCmd } from "#/common/nuc-cmd-tree";
+import type { PaginationQuery } from "#/common/pagination.dto";
 import { PathsV1 } from "#/common/paths";
 import type { UuidDto } from "#/common/types";
 import {
@@ -328,10 +329,32 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  readCollections(c: FixtureContext): ResponseHandler<ListCollectionsResponse> {
+  /**
+   * Fetches a paginated list of the builder's collections.
+   *
+   * @param c The fixture context.
+   * @param pagination Optional pagination parameters (limit and offset — default to 25 and 0 respectively).
+   * @returns A response handler for the API call.
+   */
+  readCollections(
+    c: FixtureContext,
+    pagination?: PaginationQuery,
+  ): ResponseHandler<ListCollectionsResponse> {
+    const query = new URLSearchParams();
+    if (pagination?.limit) {
+      query.set("limit", String(pagination.limit));
+    }
+    if (pagination?.offset) {
+      query.set("offset", String(pagination.offset));
+    }
+    const queryString = query.toString();
+    const path = queryString
+      ? `${PathsV1.collections.root}?${queryString}`
+      : PathsV1.collections.root;
+
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.collections.root),
+      () => this.request(path),
       StatusCodes.OK,
       ListCollectionsResponse,
     );
@@ -397,10 +420,32 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  getQueries(c: FixtureContext): ResponseHandler<ReadQueriesResponse> {
+  /**
+   * Fetches a paginated list of queries for the builder.
+   *
+   * @param c The fixture context.
+   * @param pagination Optional pagination parameters (limit and offset).
+   * @returns A response handler for the API call.
+   */
+  getQueries(
+    c: FixtureContext,
+    pagination?: PaginationQuery,
+  ): ResponseHandler<ReadQueriesResponse> {
+    const query = new URLSearchParams();
+    if (pagination?.limit) {
+      query.set("limit", String(pagination.limit));
+    }
+    if (pagination?.offset) {
+      query.set("offset", String(pagination.offset));
+    }
+    const queryString = query.toString();
+    const path = queryString
+      ? `${PathsV1.queries.root}?${queryString}`
+      : PathsV1.queries.root;
+
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.queries.root),
+      () => this.request(path),
       StatusCodes.OK,
       ReadQueriesResponse,
     );
@@ -449,13 +494,35 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
+  /**
+   * Fetches the results of a specific query run, with optional pagination.
+   *
+   * @param c The fixture context.
+   * @param runId The ID of the query run.
+   * @param pagination Optional pagination parameters for the result set.
+   * @returns A response handler for the API call.
+   */
   readQueryRunResults(
     c: FixtureContext,
     runId: string,
+    pagination?: { limit?: number; offset?: number },
   ): ResponseHandler<ReadQueryRunByIdResponse> {
+    const url = new URL(
+      PathsV1.queries.runById.replace(":id", runId),
+      "http://localhost",
+    );
+    if (pagination) {
+      if (pagination.limit !== undefined) {
+        url.searchParams.set("limit", pagination.limit.toString());
+      }
+      if (pagination.offset !== undefined) {
+        url.searchParams.set("offset", pagination.offset.toString());
+      }
+    }
+
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.queries.runById.replace(":id", runId)),
+      () => this.request(url.pathname + url.search),
       StatusCodes.OK,
       ReadQueryRunByIdResponse,
     );
@@ -580,12 +647,32 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
     );
   }
 
+  /**
+   * Fetches a paginated list of data references for the user.
+   *
+   * @param c The fixture context.
+   * @param pagination Optional pagination parameters (limit and offset — default to 25 and 0 respectively).
+   * @returns A response handler for the API call.
+   */
   listDataReferences(
     c: FixtureContext,
+    pagination?: PaginationQuery,
   ): ResponseHandler<ListDataReferencesResponse> {
+    const query = new URLSearchParams();
+    if (pagination?.limit) {
+      query.set("limit", String(pagination.limit));
+    }
+    if (pagination?.offset) {
+      query.set("offset", String(pagination.offset));
+    }
+    const queryString = query.toString();
+    const path = queryString
+      ? `${PathsV1.users.data.root}?${queryString}`
+      : PathsV1.users.data.root;
+
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.users.data.root),
+      () => this.request(path),
       StatusCodes.OK,
       ListDataReferencesResponse,
     );

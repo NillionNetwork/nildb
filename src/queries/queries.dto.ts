@@ -1,5 +1,9 @@
 import z from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
+import {
+  PaginatedResponse,
+  PaginationQuerySchema,
+} from "#/common/pagination.dto";
 
 /**
  * MongoDB aggregation pipeline variable validation.
@@ -51,10 +55,16 @@ export const QueryDocumentResponse = z.object({
 export type QueryDocumentResponse = z.infer<typeof QueryDocumentResponse>;
 
 /**
+ * Queries list request query.
+ */
+export const ReadQueriesRequestQuery = PaginationQuerySchema;
+export type ReadQueriesRequestQuery = z.infer<typeof ReadQueriesRequestQuery>;
+
+/**
  * Queries list response.
  */
-export const ReadQueriesResponse = ApiSuccessResponse(
-  z.array(QueryDocumentResponse),
+export const ReadQueriesResponse = PaginatedResponse(
+  QueryDocumentResponse,
 ).meta({
   ref: "ReadQueriesResponse",
 });
@@ -79,6 +89,14 @@ export const ByIdRequestParams = z
   })
   .meta({ ref: "ByIdRequestParams" });
 export type ByIdRequestParams = z.infer<typeof ByIdRequestParams>;
+
+/**
+ * Query run results request query.
+ */
+export const ReadQueryRunByIdRequestQuery = PaginationQuerySchema;
+export type ReadQueryRunByIdRequestQuery = z.infer<
+  typeof ReadQueryRunByIdRequestQuery
+>;
 
 /**
  * Query deletion request.
@@ -135,13 +153,25 @@ const ReadQueryRunByIdDto = z.object({
   status: RunQueryResultStatus,
   started: z.iso.datetime().optional(),
   completed: z.iso.datetime().optional(),
-  result: z.any().optional(),
+  result: z.array(z.any()).optional(),
   errors: z.array(z.string()).optional(),
 });
 
-export const ReadQueryRunByIdResponse = ApiSuccessResponse(
-  ReadQueryRunByIdDto,
-).meta({
-  ref: "ReadQueryRunByIdResponse",
-});
+/**
+ * Query run results response.
+ */
+export const ReadQueryRunByIdResponse = z
+  .object({
+    data: ReadQueryRunByIdDto,
+    pagination: z
+      .object({
+        total: z.number().int().min(0),
+        limit: z.number().int().min(1),
+        offset: z.number().int().min(0),
+      })
+      .optional(),
+  })
+  .meta({
+    ref: "ReadQueryRunByIdResponse",
+  });
 export type ReadQueryRunByIdResponse = z.infer<typeof ReadQueryRunByIdResponse>;

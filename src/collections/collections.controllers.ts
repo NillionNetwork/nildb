@@ -25,6 +25,7 @@ import {
   type DeleteCollectionResponse,
   DropCollectionIndexParams,
   type DropCollectionIndexResponse,
+  ListCollectionsRequestQuery,
   ListCollectionsResponse,
   ReadCollectionMetadataRequestParams,
   ReadCollectionMetadataResponse,
@@ -32,7 +33,7 @@ import {
 import * as CollectionsService from "./collections.services";
 
 /**
- * Handle GET /v1/collections
+ * Handle GET /v1/collections?limit={number}&offset={number}
  */
 export function readCollections(options: ControllerOptions): void {
   const { app, bindings } = options;
@@ -56,16 +57,22 @@ export function readCollections(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
+    zValidator("query", ListCollectionsRequestQuery),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.collections.read),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
+      const pagination = c.req.valid("query");
 
       return pipe(
-        CollectionsService.getBuilderCollections(c.env, builder._id),
-        E.map((collection) =>
-          CollectionsDataMapper.toListCollectionsResponse(collection),
+        CollectionsService.getBuilderCollections(
+          c.env,
+          builder._id,
+          pagination,
+        ),
+        E.map((paginatedResult) =>
+          CollectionsDataMapper.toListCollectionsResponse(paginatedResult),
         ),
         E.map((response) => c.json<ListCollectionsResponse>(response)),
         handleTaggedErrors(c),

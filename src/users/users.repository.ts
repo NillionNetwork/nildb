@@ -14,6 +14,7 @@ import {
   DocumentNotFoundError,
 } from "#/common/errors";
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
+import type { PaginationQuery } from "#/common/pagination.dto";
 import type { OwnedDocumentBase } from "#/data/data.types";
 import type { AppBindings } from "#/env";
 import type { UserDataLogs } from "#/users/users.dto";
@@ -271,5 +272,55 @@ export function removeAclEntry(
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "removeAclEntry" }),
     }),
+  );
+}
+
+/**
+ * Finds a paginated list of data references for a specific user using an aggregation pipeline.
+ *
+ * @param ctx The application bindings.
+ * @param user The user's Did.
+ * @param pagination The pagination parameters (limit and offset).
+ * @returns An object containing the sliced data array and the total number of references.
+ */
+export function findDataReferences(
+  ctx: AppBindings,
+  user: string,
+  pagination: PaginationQuery,
+): E.Effect<
+  { data: DataDocumentReference[]; total: number },
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  const pipeline = [
+    { $match: { _id: user } },
+    {
+      $project: {
+        _id: 0,
+        data: { $slice: ["$data", pagination.offset, pagination.limit] },
+        total: { $size: "$data" },
+      },
+    },
+  ];
+
+  return pipe(
+    checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.Users),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection
+          .aggregate<{ data: DataDocumentReference[]; total: number }>(pipeline)
+          .next(),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "findDataReferences" }),
+    }),
+    E.flatMap((result) =>
+      result
+        ? E.succeed(result)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Users,
+              filter: { _id: user },
+            }),
+          ),
+    ),
   );
 }

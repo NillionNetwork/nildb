@@ -1,6 +1,7 @@
 import type { DeleteResult, UpdateResult } from "mongodb";
 import { UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
+import type { Paginated } from "#/common/pagination.dto";
 import type {
   CreateDataResponse,
   CreateOwnedDataRequest,
@@ -144,14 +145,27 @@ export const DataMapper = {
       collection: new UUID(dto.collection),
       filter: dto.filter,
       requesterId,
+      pagination: {
+        limit: dto.pagination?.limit ?? 25,
+        offset: dto.pagination?.offset ?? 0,
+      },
     };
   },
 
   /**
    * Converts array of data documents to find response.
    */
-  toFindDataResponse(documents: DocumentBase[]): FindDataResponse {
-    return { data: documents };
+  toFindDataResponse(
+    paginatedResult: Paginated<DocumentBase>,
+  ): FindDataResponse {
+    return {
+      data: paginatedResult.data,
+      pagination: {
+        total: paginatedResult.total,
+        limit: paginatedResult.limit,
+        offset: paginatedResult.offset,
+      },
+    };
   },
 
   /**

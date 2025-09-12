@@ -1,4 +1,5 @@
 import { UUID } from "mongodb";
+import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import type {
   ByIdRequestParams,
   CreateQueryRequest,
@@ -34,11 +35,23 @@ export const QueriesDataMapper = {
   },
 
   /**
-   * Converts array of query documents to list response DTO.
+   * Converts a paginated result of query documents into a paginated API response.
+   *
+   * @param paginatedResult The paginated data from the service layer.
+   * @returns The final API response object for listing queries.
    */
-  toGetQueriesResponse(documents: QueryDocument[]): ReadQueriesResponse {
+  toGetQueriesResponse(
+    paginatedResult: Paginated<QueryDocument>,
+  ): ReadQueriesResponse {
     return {
-      data: documents.map((doc) => this.toQueryDocumentResponse(doc)),
+      data: paginatedResult.data.map((doc) =>
+        this.toQueryDocumentResponse(doc),
+      ),
+      pagination: {
+        total: paginatedResult.total,
+        limit: paginatedResult.limit,
+        offset: paginatedResult.offset,
+      },
     };
   },
 
@@ -77,11 +90,17 @@ export const QueriesDataMapper = {
   },
 
   /**
-   * Converts a query job document to response DTO.
+   * Converts the service-layer query run result into the final paginated API response.
+   *
+   * @param serviceResult The result object from the service layer, containing the document and total count.
+   * @param pagination The pagination parameters used for the request.
+   * @returns The final API response object for the query run result.
    */
-  toGetQueryRunResultByResponse(
-    document: RunQueryJobDocument,
+  toGetQueryRunResultByIdResponse(
+    serviceResult: { document: RunQueryJobDocument; total: number },
+    pagination: PaginationQuery,
   ): ReadQueryRunByIdResponse {
+    const { document, total } = serviceResult;
     return {
       data: {
         _id: document._id.toString(),
@@ -89,8 +108,13 @@ export const QueriesDataMapper = {
         status: document.status,
         started: document.started.toISOString(),
         completed: document.completed.toISOString(),
-        result: document.result,
+        result: document.result as unknown[],
         errors: document.errors,
+      },
+      pagination: {
+        total,
+        limit: pagination.limit,
+        offset: pagination.offset,
       },
     };
   },

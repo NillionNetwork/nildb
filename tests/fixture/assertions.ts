@@ -77,16 +77,26 @@ export async function assertDocumentCount(
   ).toBe(expected);
 }
 
+/**
+ * Polls the API until a query run is complete and returns the run's data object.
+ *
+ * @param c The fixture context.
+ * @param runId The ID of the query run to wait for.
+ * @returns A promise that resolves with the data object from the API response.
+ */
 export function waitForQueryRun(
   c: FixtureContext,
-  run: UuidDto,
+  runId: UuidDto,
 ): Promise<ReadQueryRunByIdResponse> {
   const { expect, builder } = c;
 
   return vi.waitFor(
     async () => {
-      const result = await builder.readQueryRunResults(c, run).expectSuccess();
-      expect(result.data.status).toBeOneOf(["complete", "error"]);
+      const result = await builder
+        .readQueryRunResults(c, runId)
+        .expectSuccess();
+      const runData = result.data;
+      expect(runData.status).toBeOneOf(["complete", "error"]);
       return result;
     },
     {

@@ -12,8 +12,6 @@ describe("Query Lifecycle", () => {
     const { builder } = c;
 
     simpleCollection._id = createUuidDto();
-    simpleQuery._id = createUuidDto();
-    simpleQuery.collection = simpleCollection._id;
 
     await builder
       .createCollection(c, {
@@ -23,6 +21,23 @@ describe("Query Lifecycle", () => {
         schema: simpleCollection.schema,
       })
       .expectSuccess();
+
+    // Create multiple queries for pagination testing
+    for (let i = 0; i < 5; i++) {
+      const queryId = createUuidDto();
+      const query = {
+        _id: queryId,
+        name: i === 0 ? simpleQuery.name : `Test Query ${i}`,
+        collection: simpleCollection._id,
+        variables: i === 0 ? simpleQuery.variables : {},
+        pipeline: i === 0 ? simpleQuery.pipeline : [{ $match: {} }],
+      };
+      if (i === 0) {
+        simpleQuery._id = queryId;
+        simpleQuery.collection = simpleCollection._id;
+      }
+      await builder.createQuery(c, query).expectSuccess();
+    }
 
     // Add some test data to the collection
     await builder
@@ -39,16 +54,14 @@ describe("Query Lifecycle", () => {
 
   afterAll(async (_c) => {});
 
-  it("can list queries and returns an empty array", async ({ c }) => {
+  it("can list queries with default pagination", async ({ c }) => {
     const { builder, expect } = c;
 
-    const { data } = await builder.getQueries(c).expectSuccess();
-    expect(data).toEqual([]);
-  });
-
-  it("can create a new query", async ({ c }) => {
-    const { builder } = c;
-    await builder.createQuery(c, simpleQuery).expectSuccess();
+    const { data, pagination } = await builder.getQueries(c).expectSuccess();
+    expect(data).toHaveLength(5);
+    expect(pagination.total).toBe(5);
+    expect(pagination.limit).toBe(25); // Default limit
+    expect(pagination.offset).toBe(0); // Default offset
   });
 
   it("can read the created query", async ({ c }) => {
@@ -61,30 +74,23 @@ describe("Query Lifecycle", () => {
     expect(result.data.collection).toBe(simpleCollection._id);
   });
 
-  it("can list queries and returns the created query", async ({ c }) => {
+  it("can list queries with explicit pagination", async ({ c }) => {
     const { builder, expect } = c;
 
-    // Create a query first
-    const queryId = createUuidDto();
-    await builder
-      .createQuery(c, {
-        _id: queryId,
-        name: "List Test Query",
-        collection: simpleCollection._id,
-        variables: {},
-        pipeline: [{ $match: { category: "A" } }],
-      })
+    const { data, pagination } = await builder
+      .getQueries(c, { limit: 2, offset: 2 })
       .expectSuccess();
 
-    // List queries and verify it appears
-    const result = await builder.getQueries(c).expectSuccess();
-    expect(result.data).toHaveLength(2);
+    expect(data).toHaveLength(2);
+    expect(pagination.total).toBe(5);
+    expect(pagination.limit).toBe(2);
+    expect(pagination.offset).toBe(2);
   });
 
   it("can run the query and fetch its results", async ({ c }) => {
     const { builder, expect } = c;
 
-    // Execute the query
+    // Execute the query with a variable that matches one document
     const targetName = "name2";
     const runQueryResponse = await builder
       .runQuery(c, {
@@ -99,7 +105,50 @@ describe("Query Lifecycle", () => {
     const result = await waitForQueryRun(c, jobId);
     expect(result.data.status).toBe("complete");
     expect(result.data.result).toBeDefined();
-    expect(result.data.result.at(0).name).toBe(targetName);
+    expect(result.data.result).toHaveLength(1);
+    expect(result.data.result?.[0]?.name).toBe(targetName);
+  });
+
+  it("can run a query and paginate its results", async ({ c }) => {
+    const { builder, expect } = c;
+
+    // Create a query that returns all documents
+    const allDocsQueryId = createUuidDto();
+    await builder
+      .createQuery(c, {
+        _id: allDocsQueryId,
+        name: "All Documents Query",
+        collection: simpleCollection._id,
+        variables: {},
+        pipeline: [{ $match: {} }],
+      })
+      .expectSuccess();
+
+    // Execute the query
+    const runQueryResponse = await builder
+      .runQuery(c, {
+        _id: allDocsQueryId,
+        variables: {},
+      })
+      .expectSuccess();
+    const jobId = runQueryResponse.data as unknown as UuidDto;
+
+    // Wait for completion
+    const fullResult = await waitForQueryRun(c, jobId);
+    expect(fullResult.data.status).toBe("complete");
+    expect(fullResult.data.result).toHaveLength(3);
+
+    // Test pagination with limit and offset
+    const paginatedResult = await builder
+      .readQueryRunResults(c, jobId, { limit: 1, offset: 1 })
+      .expectSuccess();
+
+    expect(paginatedResult.data.result).toHaveLength(1);
+    expect(paginatedResult.pagination).toBeDefined();
+    expect(paginatedResult.pagination?.total).toBe(3);
+    expect(paginatedResult.pagination?.limit).toBe(1);
+    expect(paginatedResult.pagination?.offset).toBe(1);
+    expect(paginatedResult.data.result?.[0]?.name).toBe("name2");
   });
 
   it("can delete the query", async ({ c }) => {
@@ -109,10 +158,8 @@ describe("Query Lifecycle", () => {
     await builder.deleteQuery(c, simpleQuery._id).expectSuccess();
 
     // Verify it's deleted by checking the list
-    const result = await builder.getQueries(c).expectSuccess();
-    const queryDocument = result.data.some(
-      (query) => query._id === simpleQuery._id,
-    );
-    expect(queryDocument).toBe(false);
+    const { data, pagination } = await builder.getQueries(c).expectSuccess();
+    expect(data.some((query) => query._id === simpleQuery._id)).toBe(false);
+    expect(pagination.total).toBe(5); // We now have 5 queries total (originally 5, created 1 more in pagination test, deleted 1)
   });
 });

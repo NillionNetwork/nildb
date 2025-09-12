@@ -10,11 +10,13 @@ import {
   type CollectionNotFoundError,
   type DatabaseError,
   DataValidationError,
-  type DocumentNotFoundError,
+  DocumentNotFoundError,
   type ResourceAccessDeniedError,
   TimeoutError,
   type VariableInjectionError,
 } from "#/common/errors";
+import { CollectionName } from "#/common/mongo";
+import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import { validateData } from "#/common/validator";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
@@ -206,16 +208,38 @@ export function runQueryInBackground(
 }
 
 /**
- * Get query run job.
+ * Retrieves a query run job by its ID, with pagination applied to the result set.
+ *
+ * @param ctx The application bindings.
+ * @param command The command containing the query run ID.
+ * @param pagination The pagination parameters for the result set.
+ * @returns A paginated object containing the query run document with a sliced result array.
  */
 export function getRunQueryJob(
   ctx: AppBindings,
   command: GetQueryRunByIdCommand,
+  pagination: PaginationQuery,
 ): E.Effect<
-  RunQueryJobDocument,
+  { document: RunQueryJobDocument; total: number },
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  return RunQueryJobsRepository.findOne(ctx, { _id: command._id });
+  return pipe(
+    RunQueryJobsRepository.findRunByIdWithPaginatedResults(
+      ctx,
+      command._id,
+      pagination,
+    ),
+    E.flatMap((result) =>
+      result
+        ? E.succeed({ document: result, total: result.total })
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.QueryRuns,
+              filter: { _id: command._id },
+            }),
+          ),
+    ),
+  );
 }
 
 /**
@@ -248,19 +272,33 @@ export function getQueryById(
 }
 
 /**
- * Find queries by owner.
+ * Finds a paginated list of queries owned by a specific builder.
+ *
+ * @param ctx The application bindings.
+ * @param owner The DID of the builder who owns the queries.
+ * @param pagination The pagination parameters (limit and offset).
+ * @returns A paginated result containing the query documents.
  */
 export function findQueries(
   ctx: AppBindings,
   owner: string,
+  pagination: PaginationQuery,
 ): E.Effect<
-  QueryDocument[],
+  Paginated<QueryDocument>,
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
-  return pipe(QueriesRepository.findMany(ctx, { owner }));
+  return pipe(
+    QueriesRepository.findMany(ctx, { owner }, pagination),
+    E.map(([data, total]) => ({
+      data,
+      total,
+      limit: pagination.limit,
+      offset: pagination.offset,
+    })),
+  );
 }
 
 /**

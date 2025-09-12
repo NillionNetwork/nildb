@@ -29,6 +29,7 @@ import {
   isMongoError,
   MongoErrorCode,
 } from "#/common/mongo";
+import type { PaginationQuery } from "#/common/pagination.dto";
 import type { UuidDto } from "#/common/types";
 import type { AppBindings } from "#/env";
 import type { QueryDocument } from "#/queries/queries.types";
@@ -361,9 +362,56 @@ export function runAggregation(
 }
 
 /**
- * Find multiple records.
+ * Find multiple records with pagination.
+ *
+ * @param ctx The application bindings.
+ * @param collection The collection Uuid to search.
+ * @param filter The MongoDB filter to apply.
+ * @param pagination The pagination parameters (limit and offset).
+ * @returns A tuple containing an array of found documents and the total count.
  */
 export function findMany(
+  ctx: AppBindings,
+  collection: UUID,
+  filter: Filter<DocumentBase>,
+  pagination: PaginationQuery,
+): E.Effect<
+  [DocumentBase[], number],
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return pipe(
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
+    E.flatMap((dataCollection) =>
+      E.all([
+        E.tryPromise({
+          try: () =>
+            dataCollection
+              .find(filter)
+              .sort({ _created: -1 })
+              .limit(pagination.limit)
+              .skip(pagination.offset)
+              .toArray(),
+          catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
+        }),
+        E.tryPromise({
+          try: () => dataCollection.countDocuments(filter),
+          catch: (cause) =>
+            new DatabaseError({ cause, message: "countDocuments" }),
+        }),
+      ]),
+    ),
+  );
+}
+
+/**
+ * Find all records matching a filter, without pagination.
+ *
+ * @param ctx The application bindings.
+ * @param collection The collection Uuuid to search.
+ * @param filter The MongoDB filter to apply.
+ * @returns An array of all matching documents.
+ */
+export function findAll(
   ctx: AppBindings,
   collection: UUID,
   filter: Filter<DocumentBase>,
@@ -374,9 +422,9 @@ export function findMany(
   return pipe(
     checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: (collection) =>
-        collection.find(filter).sort({ _created: -1 }).toArray(),
-      catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
+      try: (dataCollection) =>
+        dataCollection.find(filter).sort({ _created: -1 }).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "findAll" }),
     }),
   );
 }

@@ -10,6 +10,7 @@ import {
   GrantAccessError,
   type ResourceAccessDeniedError,
 } from "#/common/errors";
+import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import { UserDataMapper, UserLoggerMapper } from "#/users/users.mapper";
@@ -64,10 +65,11 @@ export function updateUserData(
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  return DataRepository.findMany(ctx, collection, {
-    ...filter,
-    _owner: { $exists: true },
-  }).pipe(
+  return pipe(
+    DataRepository.findAll(ctx, collection, {
+      ...filter,
+      _owner: { $exists: true },
+    }),
     // This returns the owned documents grouped by owner, the standard documents are skipped.
     E.map((documents) => UserDataMapper.groupByOwner(documents)),
     E.flatMap((documents) =>
@@ -103,28 +105,35 @@ export function find(
 }
 
 /**
- * Lists all data documents owned by a user.
+ * Retrieves a paginated list of all data documents owned by a user.
  *
- * Aggregates data from multiple schema collections based on
- * the user's data references.
+ * This function uses an aggregation pipeline to efficiently paginate
+ * the user's embedded data references in the database.
  *
- * @param ctx - Application context and bindings
- * @param did - User's decentralized identifier
- * @returns Array of data documents owned by the user
+ * @param ctx The application bindings.
+ * @param did The user's Did.
+ * @param pagination The pagination parameters (limit and offset).
+ * @returns A paginated result of data document references.
  */
 export function listUserDataReferences(
   ctx: AppBindings,
   did: string,
+  pagination: PaginationQuery,
 ): E.Effect<
-  DataDocumentReference[],
+  Paginated<DataDocumentReference>,
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
   return pipe(
-    find(ctx, did),
-    E.map((user) => user.data),
+    UserRepository.findDataReferences(ctx, did, pagination),
+    E.map((result) => ({
+      data: result.data,
+      total: result.total,
+      limit: pagination.limit,
+      offset: pagination.offset,
+    })),
   );
 }
 
@@ -150,21 +159,21 @@ export function deleteUserDataReferences(
   never
 > {
   return pipe(
-    DataRepository.findMany(ctx, collection, {
+    DataRepository.findAll(ctx, collection, {
       ...filter,
       _owner: { $exists: true },
     }),
     // This returns the owned documents grouped by owner, the standard documents are skipped.
     E.map((documents) => UserDataMapper.groupByOwner(documents)),
     E.flatMap((documents) =>
-      E.forEach(Object.entries(documents), ([owner, ids]) => {
-        return pipe(
+      E.forEach(Object.entries(documents), ([owner, ids]) =>
+        pipe(
           UserRepository.removeData(ctx, owner, ids),
           E.flatMap(() =>
             UserRepository.removeUser(ctx, { _id: owner, data: { $size: 0 } }),
           ),
-        );
-      }),
+        ),
+      ),
     ),
   );
 }

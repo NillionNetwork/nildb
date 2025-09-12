@@ -1,4 +1,5 @@
 import { type IndexDirection, UUID } from "mongodb";
+import type { Paginated } from "#/common/pagination.dto";
 import type {
   CreateCollectionIndexRequest,
   CreateCollectionRequest,
@@ -44,17 +45,25 @@ export const CollectionsDataMapper = {
   },
 
   /**
+   * Converts a paginated collection result into a paginated Api response.
    *
+   * @param paginatedResult The paginated data from the service layer.
+   * @returns The final Api response object for listing collections.
    */
   toListCollectionsResponse(
-    collections: CollectionDocument[],
+    paginatedResult: Paginated<CollectionDocument>,
   ): ListCollectionsResponse {
     return {
-      data: collections.map((collection) => ({
+      data: paginatedResult.data.map((collection) => ({
         id: collection._id.toString(),
         name: collection.name,
         type: collection.type,
       })),
+      pagination: {
+        total: paginatedResult.total,
+        limit: paginatedResult.limit,
+        offset: paginatedResult.offset,
+      },
     };
   },
 
