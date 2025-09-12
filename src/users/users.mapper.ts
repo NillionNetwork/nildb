@@ -1,4 +1,5 @@
 import { UUID } from "mongodb";
+import type { Paginated } from "#/common/pagination.dto";
 import type {
   OwnedDocumentBase,
   ReadDataCommand,
@@ -82,17 +83,25 @@ export const UserDataMapper = {
   },
 
   /**
-   * Convert references to list response.
+   * Converts a paginated result of data references into a paginated Api response.
+   *
+   * @param paginatedResult The paginated data from the service layer.
+   * @returns The final Api response object for listing user data references.
    */
   toListDataReferencesResponse(
-    references: DataDocumentReference[],
+    paginatedResult: Paginated<DataDocumentReference>,
   ): ListDataReferencesResponse {
     return {
-      data: references.map((r) => ({
+      data: paginatedResult.data.map((r) => ({
         builder: r.builder,
         collection: r.collection.toString(),
         document: r.document.toString(),
       })),
+      pagination: {
+        total: paginatedResult.total,
+        limit: paginatedResult.limit,
+        offset: paginatedResult.offset,
+      },
     };
   },
 

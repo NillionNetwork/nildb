@@ -23,6 +23,7 @@ import {
   type DeleteDocumentResponse,
   GrantAccessToDataRequest,
   type GrantAccessToDataResponse,
+  ListDataReferencesRequestQuery,
   ListDataReferencesResponse,
   ReadDataRequestParams,
   ReadDataResponse,
@@ -101,13 +102,15 @@ export function listDataReferences(options: ControllerOptions): void {
         ...OpenApiSpecCommonErrorResponses,
       },
     }),
+    zValidator("query", ListDataReferencesRequestQuery),
     loadNucToken(bindings),
     loadSubjectAndVerifyAsUser(bindings),
     requireNucNamespace(NucCmd.nil.db.users.read),
     async (c) => {
       const user = c.get("user");
+      const pagination = c.req.valid("query");
       return pipe(
-        UserService.listUserDataReferences(c.env, user._id),
+        UserService.listUserDataReferences(c.env, user._id, pagination),
         E.map((documents) =>
           UserDataMapper.toListDataReferencesResponse(documents),
         ),

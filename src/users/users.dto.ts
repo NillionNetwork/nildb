@@ -1,5 +1,9 @@
 import z from "zod";
 import { ApiSuccessResponse } from "#/common/handler";
+import {
+  PaginatedResponse,
+  PaginationQuerySchema,
+} from "#/common/pagination.dto";
 
 /**
  * Generic ID path parameter.
@@ -108,10 +112,18 @@ const DataDocumentReference = z.object({
 });
 
 /**
+ * List data references request query.
+ */
+export const ListDataReferencesRequestQuery = PaginationQuerySchema;
+export type ListDataReferencesRequestQuery = z.infer<
+  typeof ListDataReferencesRequestQuery
+>;
+
+/**
  * User data references response.
  */
-export const ListDataReferencesResponse = ApiSuccessResponse(
-  z.array(DataDocumentReference),
+export const ListDataReferencesResponse = PaginatedResponse(
+  DataDocumentReference,
 ).meta({ ref: "ListDataReferencesResponse" });
 
 export type ListDataReferencesResponse = z.infer<

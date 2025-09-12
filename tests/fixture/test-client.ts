@@ -603,12 +603,32 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
     );
   }
 
+  /**
+   * Fetches a paginated list of data references for the user.
+   *
+   * @param c The fixture context.
+   * @param pagination Optional pagination parameters (limit and offset — default to 25 and 0 respectively).
+   * @returns A response handler for the API call.
+   */
   listDataReferences(
     c: FixtureContext,
+    pagination?: PaginationQuery,
   ): ResponseHandler<ListDataReferencesResponse> {
+    const query = new URLSearchParams();
+    if (pagination?.limit) {
+      query.set("limit", String(pagination.limit));
+    }
+    if (pagination?.offset) {
+      query.set("offset", String(pagination.offset));
+    }
+    const queryString = query.toString();
+    const path = queryString
+      ? `${PathsV1.users.data.root}?${queryString}`
+      : PathsV1.users.data.root;
+
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.users.data.root),
+      () => this.request(path),
       StatusCodes.OK,
       ListDataReferencesResponse,
     );
