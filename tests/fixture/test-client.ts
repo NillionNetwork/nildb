@@ -24,6 +24,7 @@ import {
   ReadCollectionMetadataResponse,
 } from "#/collections/collections.dto";
 import { NucCmd } from "#/common/nuc-cmd-tree";
+import type { PaginationQuery } from "#/common/pagination.dto";
 import { PathsV1 } from "#/common/paths";
 import type { UuidDto } from "#/common/types";
 import {
@@ -328,10 +329,32 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     );
   }
 
-  readCollections(c: FixtureContext): ResponseHandler<ListCollectionsResponse> {
+  /**
+   * Fetches a paginated list of the builder's collections.
+   *
+   * @param c The fixture context.
+   * @param pagination Optional pagination parameters (limit and offset — default to 25 and 0 respectively).
+   * @returns A response handler for the API call.
+   */
+  readCollections(
+    c: FixtureContext,
+    pagination?: PaginationQuery,
+  ): ResponseHandler<ListCollectionsResponse> {
+    const query = new URLSearchParams();
+    if (pagination?.limit) {
+      query.set("limit", String(pagination.limit));
+    }
+    if (pagination?.offset) {
+      query.set("offset", String(pagination.offset));
+    }
+    const queryString = query.toString();
+    const path = queryString
+      ? `${PathsV1.collections.root}?${queryString}`
+      : PathsV1.collections.root;
+
     return new ResponseHandler(
       c,
-      () => this.request(PathsV1.collections.root),
+      () => this.request(path),
       StatusCodes.OK,
       ListCollectionsResponse,
     );

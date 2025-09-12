@@ -20,25 +20,40 @@ import type {
   InvalidIndexOptionsError,
   ResourceAccessDeniedError,
 } from "#/common/errors";
+import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import { validateSchema } from "#/common/validator";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
 import * as CollectionsRepository from "./collections.repository";
 
 /**
- * Get builder collections.
+ * Retrieves a paginated list of a builder's collections
+ *
+ * @param ctx The application bindings.
+ * @param id The the builder's Did whose collections are to be retrieved.
+ * @param pagination Pagination limit and offset
+ * @returns A paginated result containing the collection documents.
  */
 export function getBuilderCollections(
   ctx: AppBindings,
   id: string,
+  pagination: PaginationQuery,
 ): E.Effect<
-  CollectionDocument[],
+  Paginated<CollectionDocument>,
   | DocumentNotFoundError
   | CollectionNotFoundError
   | DatabaseError
   | DataValidationError
 > {
-  return CollectionsRepository.findMany(ctx, { owner: id });
+  return pipe(
+    CollectionsRepository.findMany(ctx, { owner: id }, pagination),
+    E.map(([data, total]) => ({
+      data,
+      total,
+      limit: pagination.limit,
+      offset: pagination.offset,
+    })),
+  );
 }
 
 /**
@@ -150,7 +165,7 @@ export function deleteBuilderCollections(
   | DataValidationError
 > {
   return pipe(
-    getBuilderCollections(ctx, builder),
+    CollectionsRepository.findAll(ctx, { owner: builder }),
     E.tap(() => ctx.cache.builders.taint(builder)),
     E.flatMap((collections) =>
       E.forEach(collections, (collection) =>
@@ -158,6 +173,7 @@ export function deleteBuilderCollections(
       ),
     ),
     E.flatMap(() => CollectionsRepository.deleteMany(ctx, { owner: builder })),
+    E.as(void 0),
   );
 }
 

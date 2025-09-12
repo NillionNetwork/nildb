@@ -112,8 +112,27 @@ describe("Owned Collections", () => {
     it("can list collections (expect 2)", async ({ c }) => {
       const { expect, builder } = c;
 
-      const { data } = await builder.readCollections(c).expectSuccess();
+      const { data, pagination } = await builder
+        .readCollections(c)
+        .expectSuccess();
       expect(data).toHaveLength(2);
+      expect(pagination.total).toBe(2);
+    });
+
+    it("can list collections with pagination", async ({ c }) => {
+      const { expect, builder } = c;
+
+      const { data, pagination } = await builder
+        .readCollections(c, { limit: 1, offset: 1 })
+        .expectSuccess();
+
+      expect(data).toHaveLength(1);
+      expect(pagination.total).toBe(2);
+      expect(pagination.limit).toBe(1);
+      expect(pagination.offset).toBe(1);
+
+      // Verify it is the second collection that was created
+      expect(data[0].name).toBe(simpleCollection.name);
     });
 
     it("can read collection metadata", async ({ c }) => {

@@ -25,6 +25,7 @@ import {
   isMongoError,
   MongoErrorCode,
 } from "#/common/mongo";
+import type { PaginationQuery } from "#/common/pagination.dto";
 import type { AppBindings } from "#/env";
 
 /**
@@ -54,6 +55,44 @@ export function insert(
 export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<CollectionDocument>,
+  pagination: PaginationQuery,
+): E.Effect<
+  [CollectionDocument[], number],
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return pipe(
+    checkCollectionExists<CollectionDocument>(
+      ctx,
+      "primary",
+      CollectionName.Collections,
+    ),
+    E.flatMap((collection) =>
+      E.all([
+        E.tryPromise({
+          try: () =>
+            collection
+              .find(filter)
+              .limit(pagination.limit)
+              .skip(pagination.offset)
+              .toArray(),
+          catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
+        }),
+        E.tryPromise({
+          try: () => collection.countDocuments(filter),
+          catch: (cause) =>
+            new DatabaseError({ cause, message: "countDocuments" }),
+        }),
+      ]),
+    ),
+  );
+}
+
+/**
+ * Find all collections matching a filter, without pagination.
+ */
+export function findAll(
+  ctx: AppBindings,
+  filter: StrictFilter<CollectionDocument>,
 ): E.Effect<
   CollectionDocument[],
   CollectionNotFoundError | DatabaseError | DataValidationError
@@ -66,7 +105,7 @@ export function findMany(
     ),
     E.tryMapPromise({
       try: (collection) => collection.find(filter).toArray(),
-      catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
+      catch: (cause) => new DatabaseError({ cause, message: "findAll" }),
     }),
   );
 }
