@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Keypair } from "@nillion/nuc";
+import { Did, Keypair } from "@nillion/nuc";
 import type { FixtureContext } from "./fixture";
 import { type BuilderTestClient, createBuilderTestClient } from "./test-client";
 
@@ -21,7 +21,7 @@ export async function createRegisteredBuilder(
 
   await builder
     .register(c, {
-      did: builder.did.didString,
+      did: Did.serialize(builder.did),
       name: name ?? faker.person.fullName(),
     })
     .expectSuccess();

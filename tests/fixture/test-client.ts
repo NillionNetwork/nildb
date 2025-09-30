@@ -108,7 +108,7 @@ abstract class BaseTestClient<Options extends BaseTestClientOptions> {
   }
 
   get did(): Did {
-    return this._options.keypair.toDid("nil");
+    return this._options.keypair.toDid();
   }
 
   get keypair(): Keypair {
@@ -171,7 +171,7 @@ export class AdminTestClient extends BaseTestClient<AdminTestClientOptions> {
   protected async createToken(): Promise<string> {
     const nodeDid = Did.fromPublicKey(this._options.nodePublicKey);
     // Admin client *invokes* the capability granted by the node's delegation.
-    return await Builder.invoking(this._options.nodeDelegation)
+    return await Builder.invocationFrom(this._options.nodeDelegation)
       .audience(nodeDid)
       .signAndSerialize(this.signer);
   }
@@ -219,7 +219,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
   }
 
   override get did(): Did {
-    return this._options.keypair.toDid("nil");
+    return this._options.keypair.toDid();
   }
 
   get nilauth(): NilauthClient {
@@ -239,7 +239,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     const nodeDid = Did.fromPublicKey(this._options.nodePublicKey, "nil");
 
     // Builder *invokes* the capability granted by nilauth, targeting the node.
-    return await Builder.invoking(rootToken)
+    return await Builder.invocationFrom(rootToken)
       .audience(nodeDid)
       .signAndSerialize(this.signer);
   }
@@ -247,7 +247,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
   async ensureSubscriptionActive(): Promise<void> {
     const checkSubscription = async () => {
       const response = await this.options.nilauth.subscriptionStatus(
-        this.options.keypair.publicKey(),
+        this.options.keypair.toDid(),
         "nildb",
       );
       if (response.subscribed) return;
@@ -255,7 +255,11 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
       // If not subscribed, attempt to pay. This may fail if a payment is already processing,
       // which is fine. We will re-check the status in the next poll interval.
       await this.options.nilauth
-        .payAndValidate(this.options.keypair.publicKey(), "nildb")
+        .paySubscription(
+          this.options.keypair,
+          this.options.keypair.toDid(),
+          "nildb",
+        )
         // Ignore errors since we will return
         .catch(() => {});
 
@@ -630,7 +634,7 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
     return await Builder.invocation()
       .command(NucCmd.nil.db.users.root)
       .audience(nodeDid)
-      .subject(this.keypair.toDid("nil"))
+      .subject(this.keypair.toDid())
       .signAndSerialize(this.signer);
   }
 

@@ -458,7 +458,7 @@ describe("Owned Collections", () => {
       const documentId = expected.map((document) => document._id.toString())[0];
 
       const result = await user
-        .readData(c, collection.id.toString(), documentId.toString())
+        .readData(c, collection.id.toString(), documentId)
         .expectSuccess();
 
       expect(result.data._acl).toHaveLength(1);
@@ -537,7 +537,7 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       await otherUser
-        .readData(c, collection.id.toString(), documentId.toString())
+        .readData(c, collection.id.toString(), documentId)
         .expectFailure(StatusCodes.NOT_FOUND, "DocumentNotFoundError");
     });
 
@@ -599,7 +599,7 @@ describe("Owned Collections", () => {
       await user
         .grantAccess(c, {
           collection: collection.id.toString(),
-          document: latestDocumentId.toString(),
+          document: latestDocumentId,
           acl: {
             grantee: unauthorizedBuilder.did.didString,
             read: true,
@@ -610,7 +610,7 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       const result = await user
-        .readData(c, collection.id.toString(), latestDocumentId.toString())
+        .readData(c, collection.id.toString(), latestDocumentId)
         .expectSuccess();
 
       const aclEntry = result.data._acl.find(
@@ -638,7 +638,7 @@ describe("Owned Collections", () => {
       await user
         .grantAccess(c, {
           collection: collection.id.toString(),
-          document: documentId.toString(),
+          document: documentId,
           acl: {
             grantee: builder.did.didString,
             read: false,
@@ -664,13 +664,13 @@ describe("Owned Collections", () => {
       await user
         .revokeAccess(c, {
           collection: collection.id.toString(),
-          document: documentId.toString(),
+          document: documentId,
           grantee: unauthorizedBuilder.did.didString,
         })
         .expectSuccess();
 
       const result = await user
-        .readData(c, collection.id.toString(), documentId.toString())
+        .readData(c, collection.id.toString(), documentId)
         .expectSuccess();
 
       expect(result.data._acl).toHaveLength(1);
@@ -691,7 +691,7 @@ describe("Owned Collections", () => {
       await user
         .revokeAccess(c, {
           collection: collection.id.toString(),
-          document: documentId.toString(),
+          document: documentId,
           grantee: builder.did.didString,
         })
         .expectFailure(
@@ -802,7 +802,7 @@ describe("Owned Collections", () => {
       const { bindings } = c;
 
       const numRecordsBefore = await bindings.db.data
-        .collection<OwnedDocumentBase>(simpleCollection.id.toString())
+        .collection<OwnedDocumentBase>(simpleCollection.id)
         .count({});
 
       await unauthorizedBuilder
@@ -810,7 +810,7 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       const numRecordsAfter = await bindings.db.data
-        .collection<OwnedDocumentBase>(simpleCollection.id.toString())
+        .collection<OwnedDocumentBase>(simpleCollection.id)
         .count({});
 
       expect(numRecordsBefore).toBeGreaterThan(0);
@@ -832,7 +832,7 @@ describe("Owned Collections", () => {
       // Grant unauthorizedBuilder read permission on unauthorizedTestData[0]
       await user
         .grantAccess(c, {
-          collection: simpleCollection.id.toString(),
+          collection: simpleCollection.id,
           document: unauthorizedTestData[0]._id,
           acl: {
             grantee: unauthorizedBuilder.did.didString,
@@ -892,7 +892,7 @@ describe("Owned Collections", () => {
       // Grant unauthorizedBuilder only read permission on unauthorizedTestData[2]
       await user
         .grantAccess(c, {
-          collection: simpleCollection.id.toString(),
+          collection: simpleCollection.id,
           document: unauthorizedTestData[2]._id,
           acl: {
             grantee: unauthorizedBuilder.did.didString,

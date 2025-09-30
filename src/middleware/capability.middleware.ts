@@ -119,8 +119,7 @@ export function loadSubjectAndVerifyAsBuilder<
         },
       };
 
-      // TODO: Update when nilauth supports did:key
-      const nilauthDid = Did.fromPublicKey(config.nilauthPubKey, "nil");
+      const nilauthDid = Did.fromPublicKey(config.nilauthPubKey);
       const nildbNodeDid = bindings.node.keypair.toDid();
 
       Validator.validate(envelope, {

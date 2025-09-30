@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Builder, Signer } from "@nillion/nuc";
+import { Builder, Did } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { PathsV1 } from "#/common/paths";
@@ -22,9 +22,9 @@ describe("02-builder-lifecycle.test.ts", () => {
 
     const selfSignedToken = await Builder.invocation()
       .command("/nil/db")
-      .audience(system.keypair.toDid("nil"))
-      .subject(builder.keypair.toDid("nil"))
-      .signAndSerialize(Signer.fromKeypair(builder.keypair));
+      .audience(system.keypair.toDid())
+      .subject(builder.keypair.toDid())
+      .signAndSerialize(builder.keypair.signer());
 
     const response = await builder.app.request(PathsV1.collections.root, {
       headers: {
@@ -44,7 +44,7 @@ describe("02-builder-lifecycle.test.ts", () => {
   it("builder can read its profile", async ({ c }) => {
     const { builder, expect } = c;
     const { data } = await builder.getProfile(c).expectSuccess();
-    expect(data._id).toBe(builder.did.didString);
+    expect(data._id).toBe(Did.serialize(builder.did));
   });
 
   it("builder can update its profile", async ({ c }) => {

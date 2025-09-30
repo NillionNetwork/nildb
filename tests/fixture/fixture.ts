@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
 import { faker } from "@faker-js/faker";
-import { Builder, Did, Keypair, Signer } from "@nillion/nuc";
+import { Builder, Did, Keypair } from "@nillion/nuc";
 import dotenv from "dotenv";
 import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
@@ -104,7 +104,7 @@ export async function buildFixture(
     .subject(adminKeypair.toDid())
     .command(NucCmd.nil.db.root)
     .audience(adminKeypair.toDid())
-    .build(Signer.fromKeypair(node.keypair));
+    .sign(node.keypair.signer());
   const system = await createAdminTestClient({
     app,
     keypair: adminKeypair,
