@@ -32,12 +32,11 @@ export const EnvVarsSchema = z.object({
     .string()
     .transform((d) => d.split(",").map((e) => e.trim())),
   logLevel: LogLevel,
-  nilauthBaseUrl: z.string().url(),
+  nilauthBaseUrl: z.url(),
   nilauthPubKey: z.string().length(PUBLIC_KEY_LENGTH),
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
-  nodePublicEndpoint: z.string().url(),
+  nodePublicEndpoint: z.url(),
   metricsPort: z.number().int().positive(),
-  mqUri: z.string().optional(),
   rateLimitEnabled: z.coerce.boolean().optional().default(true),
   rateLimitWindowSeconds: z.coerce
     .number()
@@ -82,9 +81,7 @@ declare global {
       APP_LOG_LEVEL: string;
       APP_NILAUTH_PUBLIC_KEY: string;
       APP_NILAUTH_BASE_URL: string;
-      APP_NILCHAIN_JSON_RPC: string;
       APP_METRICS_PORT?: number;
-      APP_MQ_URI?: string;
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;
       APP_PORT: number;
@@ -131,7 +128,6 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     enabledFeatures: process.env.APP_ENABLED_FEATURES,
     logLevel: process.env.APP_LOG_LEVEL,
     metricsPort: Number(process.env.APP_METRICS_PORT),
-    mqUri: process.env.APP_MQ_URI,
     nilauthBaseUrl: process.env.APP_NILAUTH_BASE_URL,
     nilauthPubKey: process.env.APP_NILAUTH_PUBLIC_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,

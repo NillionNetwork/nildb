@@ -95,7 +95,7 @@ export async function buildFixture(
     endpoint: bindings.config.nodePublicEndpoint,
   };
 
-  const chainUrl = process.env.APP_NILCHAIN_JSON_RPC;
+  const chainUrl = process.env.APP_NILCHAIN_JSON_RPC!;
   const nilauthBaseUrl = bindings.config.nilauthBaseUrl;
 
   // Create system client - uses node's keypair for system administration
