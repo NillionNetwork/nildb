@@ -41,6 +41,7 @@
     "es-toolkit": "^1.39.10",
     "hono": "^4.9.6",
     "hono-openapi": "^1.0.4",
+    "hono-rate-limiter": "^0.4.2",
     "http-status-codes": "^2.3.0",
     "js-yaml": "^4.1.0",
     "mongo-migrate-ts": "^2.0.0",

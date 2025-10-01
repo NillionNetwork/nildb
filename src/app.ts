@@ -9,6 +9,7 @@ import { corsMiddleware } from "./middleware/cors.middleware";
 import { limitRequestBodySizeMiddleware } from "./middleware/limit-body.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
 import { maintenanceMiddleware } from "./middleware/maintenance.middleware";
+import { rateLimitMiddleware } from "./middleware/rate-limit.middleware";
 import { buildQueriesRouter } from "./queries/queries.router";
 import { buildSystemRouter } from "./system/system.router";
 import { buildUserRouter } from "./users/users.router";
@@ -23,6 +24,7 @@ export async function buildApp(
 
   // Setup middlewares
   corsMiddleware(options);
+  rateLimitMiddleware(options);
   limitRequestBodySizeMiddleware(options);
   injectBindingsMiddleware(options);
   loggerMiddleware(options);

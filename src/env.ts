@@ -38,6 +38,19 @@ export const EnvVarsSchema = z.object({
   nodePublicEndpoint: z.string().url(),
   metricsPort: z.number().int().positive(),
   mqUri: z.string().optional(),
+  rateLimitEnabled: z.coerce.boolean().optional().default(true),
+  rateLimitWindowSeconds: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(60),
+  rateLimitMaxRequests: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(60),
   webPort: z.number().int().positive(),
 });
 export type EnvVars = z.infer<typeof EnvVarsSchema>;
@@ -75,6 +88,9 @@ declare global {
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;
       APP_PORT: number;
+      APP_RATE_LIMIT_ENABLED?: string;
+      APP_RATE_LIMIT_WINDOW_SECONDS?: string;
+      APP_RATE_LIMIT_MAX_REQUESTS?: string;
     }
   }
 }
@@ -120,6 +136,9 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     nilauthPubKey: process.env.APP_NILAUTH_PUBLIC_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
     nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
+    rateLimitEnabled: process.env.APP_RATE_LIMIT_ENABLED,
+    rateLimitWindowSeconds: process.env.APP_RATE_LIMIT_WINDOW_SECONDS,
+    rateLimitMaxRequests: process.env.APP_RATE_LIMIT_MAX_REQUESTS,
     webPort: Number(process.env.APP_PORT),
   });
 
