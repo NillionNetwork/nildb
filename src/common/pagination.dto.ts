@@ -1,11 +1,21 @@
 import { z } from "zod";
 
 /**
+ * A type representing a MongoDB sort document.
+ */
+export type Sort = Record<string, 1 | -1>;
+
+/**
  * Zod schema for common pagination query parameters.
  */
+export const SortQuerySchema = z
+  .record(z.string(), z.union([z.literal(1), z.literal(-1)]))
+  .optional();
+
 export const PaginationQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(25),
   offset: z.coerce.number().int().min(0).optional().default(0),
+  sort: SortQuerySchema,
 });
 
 export type PaginationQuery = z.infer<typeof PaginationQuerySchema>;
@@ -18,6 +28,7 @@ export type Paginated<T> = {
   total: number;
   limit: number;
   offset: number;
+  sort?: Sort;
 };
 
 /**
@@ -31,6 +42,7 @@ export const PaginatedResponse = <T extends z.ZodTypeAny>(dataSchema: T) =>
       total: z.number().int().min(0),
       limit: z.number().int().min(1),
       offset: z.number().int().min(0),
+      sort: SortQuerySchema,
     }),
   });
 

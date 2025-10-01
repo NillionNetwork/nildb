@@ -132,7 +132,7 @@ describe("Owned Collections", () => {
       expect(pagination.offset).toBe(1);
 
       // Verify it is the second collection that was created
-      expect(data[0].name).toBe(simpleCollection.name);
+      expect(data[0].name).toBe(collection.name);
     });
 
     it("can read collection metadata", async ({ c }) => {
