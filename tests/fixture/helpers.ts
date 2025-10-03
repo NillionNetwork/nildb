@@ -1,5 +1,7 @@
 import { faker } from "@faker-js/faker";
-import { Keypair } from "@nillion/nuc";
+import { Did } from "@nillion/nuc";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 import type { FixtureContext } from "./fixture";
 import { type BuilderTestClient, createBuilderTestClient } from "./test-client";
 
@@ -9,19 +11,22 @@ export async function createRegisteredBuilder(
 ): Promise<BuilderTestClient> {
   const { app, bindings } = c;
 
+  const builderPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
+
   const builder = await createBuilderTestClient({
     app,
-    keypair: Keypair.generate(),
+    privateKey: builderPrivateKey,
     chainUrl: process.env.APP_NILCHAIN_JSON_RPC!,
     nilauthBaseUrl: bindings.config.nilauthBaseUrl,
-    nodePublicKey: bindings.node.keypair.publicKey(),
+    nodePublicKey: bindings.node.publicKey,
   });
 
   await builder.ensureSubscriptionActive();
 
+  const builderDid = await builder.getDid();
   await builder
     .register(c, {
-      did: builder.did.didString,
+      did: Did.serialize(builderDid),
       name: name ?? faker.person.fullName(),
     })
     .expectSuccess();

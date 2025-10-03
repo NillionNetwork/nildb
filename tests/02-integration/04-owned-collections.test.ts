@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { Keypair } from "@nillion/nuc";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { UUID } from "mongodb";
@@ -43,10 +44,10 @@ describe("Owned Collections", () => {
     // This builder is created manually with a specific private key to test
     // interactions where a single DID acts as both a data owner (the default `user` client)
     // and a builder. Using the `createRegisteredBuilder` helper is not suitable here as it
-    // generates a random keypair.
+    // generates a random private key.
     unauthorizedBuilder = await createBuilderTestClient({
       app,
-      keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!),
+      privateKey: process.env.APP_NILCHAIN_PRIVATE_KEY_1!,
       chainUrl: process.env.APP_NILCHAIN_JSON_RPC!,
       nilauthBaseUrl: bindings.config.nilauthBaseUrl,
       nodePublicKey: builder._options.nodePublicKey,
@@ -54,7 +55,7 @@ describe("Owned Collections", () => {
 
     await unauthorizedBuilder
       .register(c, {
-        did: unauthorizedBuilder.did.didString,
+        did: (await unauthorizedBuilder.getDid()).didString,
         name: "unauthorizedBuilder",
       })
       .expectSuccess();
@@ -132,7 +133,7 @@ describe("Owned Collections", () => {
       expect(pagination.offset).toBe(1);
 
       // Verify it is the second collection that was created
-      expect(data[0].name).toBe(simpleCollection.name);
+      expect(data[0].name).toBe(collection.name);
     });
 
     it("can read collection metadata", async ({ c }) => {
@@ -176,7 +177,7 @@ describe("Owned Collections", () => {
       // Create persistent data that should never be deleted to keep user in system
       const result = await builder
         .createOwnedData(c, {
-          owner: user.did.didString,
+          owner: (await user.getDid()).didString,
           collection: collection.id,
           data: [
             {
@@ -187,7 +188,7 @@ describe("Owned Collections", () => {
             },
           ],
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: true,
             write: false,
             execute: false,
@@ -220,11 +221,11 @@ describe("Owned Collections", () => {
 
       await builder
         .createOwnedData(c, {
-          owner: user.did.didString,
+          owner: (await user.getDid()).didString,
           collection: collection.id,
           data,
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: false,
             write: false,
             execute: false,
@@ -254,11 +255,11 @@ describe("Owned Collections", () => {
 
       const result = await builder
         .createOwnedData(c, {
-          owner: user.did.didString,
+          owner: (await user.getDid()).didString,
           collection: collection.id,
           data,
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: true,
             write: true,
             execute: true,
@@ -297,11 +298,11 @@ describe("Owned Collections", () => {
 
       await builder
         .createOwnedData(c, {
-          owner: user.did.didString,
+          owner: (await user.getDid()).didString,
           collection: collection.id,
           data,
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: false,
             write: false,
             execute: false,
@@ -325,11 +326,11 @@ describe("Owned Collections", () => {
 
       await builder
         .createOwnedData(c, {
-          owner: user.did.didString,
+          owner: (await user.getDid()).didString,
           collection: collection.id,
           data,
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: true,
             write: false,
             execute: false,
@@ -343,11 +344,11 @@ describe("Owned Collections", () => {
 
       await builder
         .createOwnedData(c, {
-          owner: user.did.didString,
+          owner: (await user.getDid()).didString,
           collection: simpleCollection.id,
           data: simpleTestData,
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: true,
             write: false,
             execute: false,
@@ -458,7 +459,7 @@ describe("Owned Collections", () => {
       const documentId = expected.map((document) => document._id.toString())[0];
 
       const result = await user
-        .readData(c, collection.id.toString(), documentId.toString())
+        .readData(c, collection.id.toString(), documentId)
         .expectSuccess();
 
       expect(result.data._acl).toHaveLength(1);
@@ -501,7 +502,7 @@ describe("Owned Collections", () => {
 
       const otherUser = await createUserTestClient({
         app: user.app,
-        keypair: Keypair.generate(),
+        privateKey: bytesToHex(secp256k1.utils.randomSecretKey()),
         nodePublicKey: user._options.nodePublicKey,
       });
 
@@ -524,11 +525,11 @@ describe("Owned Collections", () => {
       // Create data owned by other user
       await builder
         .createOwnedData(c, {
-          owner: otherUser.did.didString,
+          owner: (await otherUser.getDid()).didString,
           collection: collection.id,
           data,
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: true,
             write: false,
             execute: false,
@@ -537,7 +538,7 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       await otherUser
-        .readData(c, collection.id.toString(), documentId.toString())
+        .readData(c, collection.id.toString(), documentId)
         .expectFailure(StatusCodes.NOT_FOUND, "DocumentNotFoundError");
     });
 
@@ -547,7 +548,7 @@ describe("Owned Collections", () => {
       // Create a new temporary user for this test
       const tempUser = await createUserTestClient({
         app: app,
-        keypair: Keypair.generate(),
+        privateKey: bytesToHex(secp256k1.utils.randomSecretKey()),
         nodePublicKey: builder._options.nodePublicKey,
       });
 
@@ -555,11 +556,11 @@ describe("Owned Collections", () => {
       const documentId = createUuidDto();
       const { data: createResult } = await builder
         .createOwnedData(c, {
-          owner: tempUser.did.didString,
+          owner: (await tempUser.getDid()).didString,
           collection: collection.id,
           data: [{ _id: documentId, wallet: "0xz", country: "GBR", age: 33 }],
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: true,
             write: true,
             execute: false,
@@ -588,7 +589,7 @@ describe("Owned Collections", () => {
 
       const expected = await bindings.db.data
         .collection<OwnedDocumentBase>(collection.id.toString())
-        .find({ _owner: user.did.didString })
+        .find({ _owner: (await user.getDid()).didString })
         .sort({ _created: -1 })
         .limit(1)
         .toArray();
@@ -599,9 +600,9 @@ describe("Owned Collections", () => {
       await user
         .grantAccess(c, {
           collection: collection.id.toString(),
-          document: latestDocumentId.toString(),
+          document: latestDocumentId,
           acl: {
-            grantee: unauthorizedBuilder.did.didString,
+            grantee: (await unauthorizedBuilder.getDid()).didString,
             read: true,
             write: false,
             execute: false,
@@ -610,11 +611,13 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       const result = await user
-        .readData(c, collection.id.toString(), latestDocumentId.toString())
+        .readData(c, collection.id.toString(), latestDocumentId)
         .expectSuccess();
 
+      const unauthorizedBuilderDid = (await unauthorizedBuilder.getDid())
+        .didString;
       const aclEntry = result.data._acl.find(
-        (acl) => acl.grantee === unauthorizedBuilder.did.didString,
+        (acl) => acl.grantee === unauthorizedBuilderDid,
       );
       assertDefined(c, aclEntry);
       expect(aclEntry.read).toBe(true);
@@ -629,7 +632,7 @@ describe("Owned Collections", () => {
 
       const expected = await bindings.db.data
         .collection<OwnedDocumentBase>(collection.id.toString())
-        .find({ _owner: user.did.didString })
+        .find({ _owner: (await user.getDid()).didString })
         .limit(1)
         .toArray();
 
@@ -638,9 +641,9 @@ describe("Owned Collections", () => {
       await user
         .grantAccess(c, {
           collection: collection.id.toString(),
-          document: documentId.toString(),
+          document: documentId,
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: false,
             write: false,
             execute: false,
@@ -654,7 +657,7 @@ describe("Owned Collections", () => {
 
       const expected = await bindings.db.data
         .collection<OwnedDocumentBase>(collection.id.toString())
-        .find({ _owner: user.did.didString })
+        .find({ _owner: (await user.getDid()).didString })
         .sort({ _created: -1 })
         .limit(1)
         .toArray();
@@ -664,13 +667,13 @@ describe("Owned Collections", () => {
       await user
         .revokeAccess(c, {
           collection: collection.id.toString(),
-          document: documentId.toString(),
-          grantee: unauthorizedBuilder.did.didString,
+          document: documentId,
+          grantee: (await unauthorizedBuilder.getDid()).didString,
         })
         .expectSuccess();
 
       const result = await user
-        .readData(c, collection.id.toString(), documentId.toString())
+        .readData(c, collection.id.toString(), documentId)
         .expectSuccess();
 
       expect(result.data._acl).toHaveLength(1);
@@ -681,7 +684,7 @@ describe("Owned Collections", () => {
 
       const expected = await bindings.db.data
         .collection<OwnedDocumentBase>(collection.id.toString())
-        .find({ _owner: user.did.didString })
+        .find({ _owner: (await user.getDid()).didString })
         .sort({ _created: -1 })
         .limit(1)
         .toArray();
@@ -691,8 +694,8 @@ describe("Owned Collections", () => {
       await user
         .revokeAccess(c, {
           collection: collection.id.toString(),
-          document: documentId.toString(),
-          grantee: builder.did.didString,
+          document: documentId,
+          grantee: (await builder.getDid()).didString,
         })
         .expectFailure(
           StatusCodes.BAD_REQUEST,
@@ -718,11 +721,11 @@ describe("Owned Collections", () => {
 
       await builder
         .createOwnedData(c, {
-          owner: user.did.didString,
+          owner: (await user.getDid()).didString,
           collection: simpleCollection.id,
           data: unauthorizedTestData,
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: true,
             write: false,
             execute: false,
@@ -736,7 +739,7 @@ describe("Owned Collections", () => {
 
       await unauthorizedBuilder
         .createOwnedData(c, {
-          owner: user.did.didString,
+          owner: (await user.getDid()).didString,
           collection: simpleCollection.id,
           data: [
             {
@@ -745,7 +748,7 @@ describe("Owned Collections", () => {
             },
           ],
           acl: {
-            grantee: builder.did.didString,
+            grantee: (await builder.getDid()).didString,
             read: true,
             write: false,
             execute: false,
@@ -802,7 +805,7 @@ describe("Owned Collections", () => {
       const { bindings } = c;
 
       const numRecordsBefore = await bindings.db.data
-        .collection<OwnedDocumentBase>(simpleCollection.id.toString())
+        .collection<OwnedDocumentBase>(simpleCollection.id)
         .count({});
 
       await unauthorizedBuilder
@@ -810,7 +813,7 @@ describe("Owned Collections", () => {
         .expectSuccess();
 
       const numRecordsAfter = await bindings.db.data
-        .collection<OwnedDocumentBase>(simpleCollection.id.toString())
+        .collection<OwnedDocumentBase>(simpleCollection.id)
         .count({});
 
       expect(numRecordsBefore).toBeGreaterThan(0);
@@ -832,10 +835,10 @@ describe("Owned Collections", () => {
       // Grant unauthorizedBuilder read permission on unauthorizedTestData[0]
       await user
         .grantAccess(c, {
-          collection: simpleCollection.id.toString(),
+          collection: simpleCollection.id,
           document: unauthorizedTestData[0]._id,
           acl: {
-            grantee: unauthorizedBuilder.did.didString,
+            grantee: (await unauthorizedBuilder.getDid()).didString,
             read: true,
             write: false,
             execute: false,
@@ -892,10 +895,10 @@ describe("Owned Collections", () => {
       // Grant unauthorizedBuilder only read permission on unauthorizedTestData[2]
       await user
         .grantAccess(c, {
-          collection: simpleCollection.id.toString(),
+          collection: simpleCollection.id,
           document: unauthorizedTestData[2]._id,
           acl: {
-            grantee: unauthorizedBuilder.did.didString,
+            grantee: (await unauthorizedBuilder.getDid()).didString,
             read: true,
             write: false,
             execute: false,
@@ -948,11 +951,11 @@ describe("Owned Collections", () => {
       const testDoc = { _id: createUuidDto(), name: "test-execute" };
       await unauthorizedBuilder
         .createOwnedData(c, {
-          owner: user.did.didString,
+          owner: (await user.getDid()).didString,
           collection: unauthorizedCollectionId,
           data: [testDoc],
           acl: {
-            grantee: unauthorizedBuilder.did.didString,
+            grantee: (await unauthorizedBuilder.getDid()).didString,
             read: false,
             write: false,
             execute: true,
@@ -984,7 +987,10 @@ describe("Owned Collections", () => {
 
       expect(collectionDocument).toBeNull();
 
-      const builderDocument = await expectBuilder(c, builder.did.didString);
+      const builderDocument = await expectBuilder(
+        c,
+        (await builder.getDid()).didString,
+      );
       expect(builderDocument.collections).toHaveLength(1);
 
       await assertDocumentCount(c, id, 0);

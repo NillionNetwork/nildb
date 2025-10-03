@@ -1,6 +1,8 @@
 /** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
 import { faker } from "@faker-js/faker";
-import { Builder, Did, Keypair, Signer } from "@nillion/nuc";
+import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import dotenv from "dotenv";
 import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
@@ -33,7 +35,9 @@ export type FixtureContext = {
   app: App;
   bindings: AppBindings & {
     node: {
-      keypair: Keypair;
+      signer: Signer;
+      did: NucDid;
+      publicKey: string;
       endpoint: string;
     };
   };
@@ -90,42 +94,51 @@ export async function buildFixture(
 
   const { app } = await buildApp(bindings);
 
+  const nodePrivateKeyBytes = hexToBytes(bindings.config.nodeSecretKey);
+  const nodePublicKey = bytesToHex(secp256k1.getPublicKey(nodePrivateKeyBytes));
+  const nodeSigner = Signer.fromPrivateKey(nodePrivateKeyBytes);
+  const nodeDid = await nodeSigner.getDid();
+
   const node = {
-    keypair: Keypair.from(bindings.config.nodeSecretKey),
+    signer: nodeSigner,
+    did: nodeDid,
+    publicKey: nodePublicKey,
     endpoint: bindings.config.nodePublicEndpoint,
   };
 
-  const chainUrl = process.env.APP_NILCHAIN_JSON_RPC;
+  const chainUrl = process.env.APP_NILCHAIN_JSON_RPC!;
   const nilauthBaseUrl = bindings.config.nilauthBaseUrl;
 
-  // Create system client - uses node's keypair for system administration
-  const adminKeypair = Keypair.generate();
+  // Create system client
+  const adminPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
+  const adminSigner = Signer.fromPrivateKey(adminPrivateKey);
+  const adminDid = await adminSigner.getDid();
   const nodeDelegation = await Builder.delegation()
-    .subject(adminKeypair.toDid())
+    .subject(adminDid)
     .command(NucCmd.nil.db.root)
-    .audience(adminKeypair.toDid())
-    .build(Signer.fromKeypair(node.keypair));
+    .audience(adminDid)
+    .sign(node.signer);
   const system = await createAdminTestClient({
     app,
-    keypair: adminKeypair,
-    nodePublicKey: node.keypair.publicKey(),
+    privateKey: adminPrivateKey,
+    nodePublicKey: node.publicKey,
     nodeDelegation,
   });
 
-  // Create builder client with subscription and nilauth
+  // Create builder client
   const builder = await createBuilderTestClient({
     app,
-    keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_0!),
+    privateKey: process.env.APP_NILCHAIN_PRIVATE_KEY_0!,
     chainUrl,
     nilauthBaseUrl,
-    nodePublicKey: node.keypair.publicKey(),
+    nodePublicKey: node.publicKey,
   });
 
-  // Create user client - data owner with self-signed tokens
+  // Create user client
   const user = await createUserTestClient({
     app,
-    keypair: Keypair.from(process.env.APP_NILCHAIN_PRIVATE_KEY_1!),
-    nodePublicKey: node.keypair.publicKey(),
+    privateKey: process.env.APP_NILCHAIN_PRIVATE_KEY_1!,
+    nodePublicKey: node.publicKey,
   });
 
   // this global expect gets replaced by the test effect
@@ -134,7 +147,10 @@ export async function buildFixture(
     id,
     log,
     app,
-    bindings,
+    bindings: {
+      ...bindings,
+      node,
+    },
     expect,
     system,
     builder,
@@ -143,15 +159,16 @@ export async function buildFixture(
 
   // Register the builder
   await builder.ensureSubscriptionActive();
-  log.info({ did: Did.serialize(builder.did) }, "Builder subscription active");
+  const builderDid = await builder.getDid();
+  log.info({ did: Did.serialize(builderDid) }, "Builder subscription active");
 
   await builder
     .register(c, {
-      did: Did.serialize(builder.did),
+      did: Did.serialize(builderDid),
       name: faker.person.fullName(),
     })
     .expectSuccess();
-  log.info({ did: builder.did }, "Builder registered");
+  log.info({ did: builderDid }, "Builder registered");
 
   if (opts.collection) {
     const { collection, query } = opts;

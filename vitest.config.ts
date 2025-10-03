@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     globalSetup: "./vitest.global-setup.ts",
     testTimeout: 0,
+    hookTimeout: 30000,
     env: {
       DEBUG: "@nillion*",
     },

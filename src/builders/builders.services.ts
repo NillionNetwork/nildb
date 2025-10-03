@@ -46,7 +46,7 @@ export function createBuilder(
   return pipe(
     E.succeed(command),
     E.filterOrFail(
-      (cmd) => cmd.did !== ctx.node.keypair.toDid().didString,
+      (cmd) => cmd.did !== ctx.node.did.didString,
       (cmd) =>
         new DuplicateEntryError({
           document: { name: cmd.name, did: cmd.did },

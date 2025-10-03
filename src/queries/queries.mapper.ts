@@ -51,6 +51,7 @@ export const QueriesDataMapper = {
         total: paginatedResult.total,
         limit: paginatedResult.limit,
         offset: paginatedResult.offset,
+        sort: paginatedResult.sort,
       },
     };
   },

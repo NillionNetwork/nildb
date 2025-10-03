@@ -31,6 +31,16 @@ The following environment variables are require:
 | APP_NODE_SECRET_KEY      | Node's private key                                        | [hex encoded secp256k1 private key] |
 | APP_PORT                 | API service port                                          | 8080                                |
 
+### Rate Limiting
+
+The following variables control the IP-based rate limiting feature.
+
+| Variable                        | Description                                     | Default |
+|---------------------------------|-------------------------------------------------|---------|
+| APP_RATE_LIMIT_ENABLED          | Enables the rate-limiting feature.              | `true`  |
+| APP_RATE_LIMIT_WINDOW_SECONDS   | The duration of the time window in seconds.     | `60`    |
+| APP_RATE_LIMIT_MAX_REQUESTS     | Max requests per IP within the time window.     | `60`    |
+
 ## Start the node
 
 ### Local Development

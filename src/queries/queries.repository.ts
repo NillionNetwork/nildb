@@ -71,6 +71,7 @@ export function findMany(
           try: () =>
             collection
               .find(documentFilter)
+              .sort(pagination.sort ?? { _created: -1 })
               .limit(pagination.limit)
               .skip(pagination.offset)
               .toArray(),

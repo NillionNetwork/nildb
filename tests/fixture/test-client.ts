@@ -3,7 +3,6 @@ import {
   Builder,
   Did,
   type Envelope,
-  type Keypair,
   NilauthClient,
   type Payer,
   PayerBuilder,
@@ -68,7 +67,7 @@ import { ResponseHandler } from "./response-handler";
  */
 type BaseTestClientOptions = {
   app: App;
-  keypair: Keypair;
+  signer: Signer;
   nodePublicKey: string;
 };
 
@@ -107,16 +106,12 @@ abstract class BaseTestClient<Options extends BaseTestClientOptions> {
     return this._options.app;
   }
 
-  get did(): Did {
-    return this._options.keypair.toDid("nil");
-  }
-
-  get keypair(): Keypair {
-    return this._options.keypair;
+  async getDid(): Promise<Did> {
+    return this._options.signer.getDid();
   }
 
   get signer(): Signer {
-    return Signer.fromKeypair(this.keypair);
+    return this._options.signer;
   }
 
   protected abstract createToken(): Promise<string>;
@@ -171,7 +166,7 @@ export class AdminTestClient extends BaseTestClient<AdminTestClientOptions> {
   protected async createToken(): Promise<string> {
     const nodeDid = Did.fromPublicKey(this._options.nodePublicKey);
     // Admin client *invokes* the capability granted by the node's delegation.
-    return await Builder.invoking(this._options.nodeDelegation)
+    return await Builder.invocationFrom(this._options.nodeDelegation)
       .audience(nodeDid)
       .signAndSerialize(this.signer);
   }
@@ -218,8 +213,8 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     super(options);
   }
 
-  override get did(): Did {
-    return this._options.keypair.toDid("nil");
+  override async getDid(): Promise<Did> {
+    return this._options.signer.getDid();
   }
 
   get nilauth(): NilauthClient {
@@ -231,23 +226,24 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
    */
   protected async createToken(): Promise<string> {
     const response = await this.options.nilauth.requestToken(
-      this.options.keypair,
+      this.signer,
       "nildb",
     );
     const { token: rootToken } = response;
 
-    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey, "nil");
+    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey);
 
     // Builder *invokes* the capability granted by nilauth, targeting the node.
-    return await Builder.invoking(rootToken)
+    return await Builder.invocationFrom(rootToken)
       .audience(nodeDid)
       .signAndSerialize(this.signer);
   }
 
   async ensureSubscriptionActive(): Promise<void> {
     const checkSubscription = async () => {
+      const did = await this.getDid();
       const response = await this.options.nilauth.subscriptionStatus(
-        this.options.keypair.publicKey(),
+        did,
         "nildb",
       );
       if (response.subscribed) return;
@@ -255,7 +251,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
       // If not subscribed, attempt to pay. This may fail if a payment is already processing,
       // which is fine. We will re-check the status in the next poll interval.
       await this.options.nilauth
-        .payAndValidate(this.options.keypair.publicKey(), "nildb")
+        .payAndValidate(this.signer, did, "nildb")
         // Ignore errors since we will return
         .catch(() => {});
 
@@ -271,7 +267,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
 
   async getRootToken(): Promise<Envelope> {
     const response = await this.options.nilauth.requestToken(
-      this.options.keypair,
+      this.signer,
       "nildb",
     );
     return response.token;
@@ -626,11 +622,11 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
 
   protected async createToken(): Promise<string> {
     // Self-signed invocation targeting the node.
-    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey, "nil");
+    const nodeDid = Did.fromPublicKey(this._options.nodePublicKey);
     return await Builder.invocation()
       .command(NucCmd.nil.db.users.root)
       .audience(nodeDid)
-      .subject(this.keypair.toDid("nil"))
+      .subject(await this.getDid())
       .signAndSerialize(this.signer);
   }
 
@@ -756,13 +752,17 @@ export class UserTestClient extends BaseTestClient<UserTestClientOptions> {
  */
 export async function createAdminTestClient(opts: {
   app: App;
-  keypair: Keypair;
+  privateKey: string;
   nodePublicKey: string;
   nodeDelegation: Envelope;
 }): Promise<AdminTestClient> {
+  const signer = Signer.fromPrivateKey(opts.privateKey);
   return new AdminTestClient({
     type: "admin",
-    ...opts,
+    app: opts.app,
+    signer,
+    nodePublicKey: opts.nodePublicKey,
+    nodeDelegation: opts.nodeDelegation,
   });
 }
 
@@ -771,12 +771,13 @@ export async function createAdminTestClient(opts: {
  */
 export async function createBuilderTestClient(opts: {
   app: App;
-  keypair: Keypair;
+  privateKey: string;
   chainUrl: string;
   nilauthBaseUrl: string;
   nodePublicKey: string;
 }): Promise<BuilderTestClient> {
-  const payer = await PayerBuilder.fromKeypair(opts.keypair)
+  const signer = Signer.fromPrivateKey(opts.privateKey);
+  const payer = await PayerBuilder.fromPrivateKey(opts.privateKey)
     .chainUrl(opts.chainUrl)
     .build();
 
@@ -788,7 +789,7 @@ export async function createBuilderTestClient(opts: {
   return new BuilderTestClient({
     type: "builder",
     app: opts.app,
-    keypair: opts.keypair,
+    signer,
     payer,
     nilauth,
     nodePublicKey: opts.nodePublicKey,
@@ -800,13 +801,14 @@ export async function createBuilderTestClient(opts: {
  */
 export async function createUserTestClient(opts: {
   app: App;
-  keypair: Keypair;
+  privateKey: string;
   nodePublicKey: string;
 }): Promise<UserTestClient> {
+  const signer = Signer.fromPrivateKey(opts.privateKey);
   return new UserTestClient({
     type: "user",
     app: opts.app,
-    keypair: opts.keypair,
+    signer,
     nodePublicKey: opts.nodePublicKey,
   });
 }

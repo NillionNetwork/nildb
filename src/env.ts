@@ -1,4 +1,6 @@
-import { type Envelope, Keypair } from "@nillion/nuc";
+import { type Did, type Envelope, Signer } from "@nillion/nuc";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
@@ -32,12 +34,24 @@ export const EnvVarsSchema = z.object({
     .string()
     .transform((d) => d.split(",").map((e) => e.trim())),
   logLevel: LogLevel,
-  nilauthBaseUrl: z.string().url(),
+  nilauthBaseUrl: z.url(),
   nilauthPubKey: z.string().length(PUBLIC_KEY_LENGTH),
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
-  nodePublicEndpoint: z.string().url(),
+  nodePublicEndpoint: z.url(),
   metricsPort: z.number().int().positive(),
-  mqUri: z.string().optional(),
+  rateLimitEnabled: z.coerce.boolean().optional().default(true),
+  rateLimitWindowSeconds: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(60),
+  rateLimitMaxRequests: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(60),
   webPort: z.number().int().positive(),
 });
 export type EnvVars = z.infer<typeof EnvVarsSchema>;
@@ -55,7 +69,9 @@ export type AppBindings = {
   log: Logger;
   node: {
     endpoint: string;
-    keypair: Keypair;
+    signer: Signer;
+    did: Did;
+    publicKey: string;
   };
 };
 
@@ -69,12 +85,13 @@ declare global {
       APP_LOG_LEVEL: string;
       APP_NILAUTH_PUBLIC_KEY: string;
       APP_NILAUTH_BASE_URL: string;
-      APP_NILCHAIN_JSON_RPC: string;
       APP_METRICS_PORT?: number;
-      APP_MQ_URI?: string;
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;
       APP_PORT: number;
+      APP_RATE_LIMIT_ENABLED?: string;
+      APP_RATE_LIMIT_WINDOW_SECONDS?: string;
+      APP_RATE_LIMIT_MAX_REQUESTS?: string;
     }
   }
 }
@@ -92,6 +109,10 @@ export async function loadBindings(
   overrides: Partial<EnvVars> = {},
 ): Promise<AppBindings> {
   const config = parseConfigFromEnv(overrides);
+  const privateKeyBytes = hexToBytes(config.nodeSecretKey);
+  const publicKey = bytesToHex(secp256k1.getPublicKey(privateKeyBytes));
+  const signer = Signer.fromPrivateKey(config.nodeSecretKey);
+  const did = await signer.getDid();
 
   return {
     config,
@@ -101,7 +122,9 @@ export async function loadBindings(
     db: await initAndCreateDbClients(config),
     log: createLogger(config.logLevel),
     node: {
-      keypair: Keypair.from(config.nodeSecretKey),
+      signer,
+      did,
+      publicKey,
       endpoint: config.nodePublicEndpoint,
     },
   };
@@ -115,11 +138,13 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     enabledFeatures: process.env.APP_ENABLED_FEATURES,
     logLevel: process.env.APP_LOG_LEVEL,
     metricsPort: Number(process.env.APP_METRICS_PORT),
-    mqUri: process.env.APP_MQ_URI,
     nilauthBaseUrl: process.env.APP_NILAUTH_BASE_URL,
     nilauthPubKey: process.env.APP_NILAUTH_PUBLIC_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
     nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
+    rateLimitEnabled: process.env.APP_RATE_LIMIT_ENABLED,
+    rateLimitWindowSeconds: process.env.APP_RATE_LIMIT_WINDOW_SECONDS,
+    rateLimitMaxRequests: process.env.APP_RATE_LIMIT_MAX_REQUESTS,
     webPort: Number(process.env.APP_PORT),
   });
 

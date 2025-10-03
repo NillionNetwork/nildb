@@ -297,6 +297,7 @@ export function findQueries(
       total,
       limit: pagination.limit,
       offset: pagination.offset,
+      sort: pagination.sort,
     })),
   );
 }
