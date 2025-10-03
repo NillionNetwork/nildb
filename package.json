@@ -5,10 +5,7 @@
   "repository": "https://github.com/NillionNetwork/nildb",
   "type": "module",
   "scripts": {
-    "fix": "pnpm exec biome check --fix --unsafe",
-    "check": "pnpm typecheck && pnpm lint",
-    "typecheck": "tsc --noEmit",
-    "lint": "pnpm exec biome check  --fix --unsafe",
+    "fix": "pnpm exec biome check --fix --unsafe && tsc",
     "fmt": "pnpm exec biome format --fix",
     "start": "tsx src/main.ts",
     "test": "pnpm run test:unit && pnpm run test:integration",
