@@ -54,8 +54,7 @@ export function loadSubjectAndVerifyAsAdmin<
   E extends AppEnv = AppEnv,
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log } = bindings;
-
-  const nildbNodeDid = bindings.node.keypair.toDid();
+  const nildbNodeDid = bindings.node.did;
 
   return async (c, next) => {
     try {
@@ -120,7 +119,7 @@ export function loadSubjectAndVerifyAsBuilder<
       };
 
       const nilauthDid = Did.fromPublicKey(config.nilauthPubKey);
-      const nildbNodeDid = bindings.node.keypair.toDid();
+      const nildbNodeDid = bindings.node.did;
 
       Validator.validate(envelope, {
         rootIssuers: [nilauthDid.didString],
@@ -159,10 +158,9 @@ export function loadSubjectAndVerifyAsBuilder<
       if (cause && typeof cause === "object" && "message" in cause) {
         log.error({ cause: cause.message }, "Auth error");
 
-        // This isn't an elegant approach, but we want to return PAYMENT_REQUIRED
-        // to communicate when invocation NUC's chain is missing authority from nilauth
+        // We want to return PAYMENT_REQUIRED when invocation NUC's chain is missing authority from nilauth
         const message = cause.message as string;
-        if (message.includes("not signed by root")) {
+        if (message === Validator.ROOT_KEY_SIGNATURE_MISSING) {
           return c.text(
             getReasonPhrase(StatusCodes.PAYMENT_REQUIRED),
             StatusCodes.PAYMENT_REQUIRED,

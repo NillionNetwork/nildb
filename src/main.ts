@@ -41,11 +41,9 @@ async function main() {
       fetch: app.fetch,
       port: bindings.config.webPort,
     },
-    () => {
+    async () => {
       bindings.log.info(`Node public endpoint ${bindings.node.endpoint}`);
-      bindings.log.info(
-        `Node identifier ${bindings.node.keypair.toDid().didString}`,
-      );
+      bindings.log.info(`Node identifier ${bindings.node.did.didString}`);
       bindings.log.info(`App on :${bindings.config.webPort}`);
     },
   );

@@ -31,11 +31,11 @@ describe("User Endpoints", () => {
 
     await builder
       .createOwnedData(c, {
-        owner: user.did.didString,
+        owner: (await user.getDid()).didString,
         collection: simpleCollection._id,
         data: dataToCreate,
         acl: {
-          grantee: builder.did.didString,
+          grantee: (await builder.getDid()).didString,
           read: true,
           write: false,
           execute: false,
@@ -50,7 +50,7 @@ describe("User Endpoints", () => {
 
     // Now the user should have a profile
     const result = await user.getProfile(c).expectSuccess();
-    expect(result.data._id).toBe(user.did.didString);
+    expect(result.data._id).toBe((await user.getDid()).didString);
 
     // createOwnedData results in create data log and grant access log for each item
     expect(result.data.logs).toHaveLength(10); // 5 docs * (1 create + 1 grant)

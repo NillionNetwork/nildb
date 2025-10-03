@@ -1,4 +1,6 @@
-import { type Envelope, Keypair } from "@nillion/nuc";
+import { type Did, type Envelope, Signer } from "@nillion/nuc";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
@@ -67,7 +69,9 @@ export type AppBindings = {
   log: Logger;
   node: {
     endpoint: string;
-    keypair: Keypair;
+    signer: Signer;
+    did: Did;
+    publicKey: string;
   };
 };
 
@@ -105,6 +109,10 @@ export async function loadBindings(
   overrides: Partial<EnvVars> = {},
 ): Promise<AppBindings> {
   const config = parseConfigFromEnv(overrides);
+  const privateKeyBytes = hexToBytes(config.nodeSecretKey);
+  const publicKey = bytesToHex(secp256k1.getPublicKey(privateKeyBytes));
+  const signer = Signer.fromPrivateKey(config.nodeSecretKey);
+  const did = await signer.getDid();
 
   return {
     config,
@@ -114,7 +122,9 @@ export async function loadBindings(
     db: await initAndCreateDbClients(config),
     log: createLogger(config.logLevel),
     node: {
-      keypair: Keypair.from(config.nodeSecretKey),
+      signer,
+      did,
+      publicKey,
       endpoint: config.nodePublicEndpoint,
     },
   };

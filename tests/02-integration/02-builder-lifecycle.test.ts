@@ -18,13 +18,13 @@ describe("02-builder-lifecycle.test.ts", () => {
   });
 
   it("self-signed tokens are rejected from paid route", async ({ c }) => {
-    const { expect, builder, system } = c;
+    const { expect, builder, bindings } = c;
 
     const selfSignedToken = await Builder.invocation()
       .command("/nil/db")
-      .audience(system.keypair.toDid())
-      .subject(builder.keypair.toDid())
-      .signAndSerialize(builder.keypair.signer());
+      .audience(bindings.node.did)
+      .subject(await builder.getDid())
+      .signAndSerialize(builder.signer);
 
     const response = await builder.app.request(PathsV1.collections.root, {
       headers: {
@@ -44,7 +44,7 @@ describe("02-builder-lifecycle.test.ts", () => {
   it("builder can read its profile", async ({ c }) => {
     const { builder, expect } = c;
     const { data } = await builder.getProfile(c).expectSuccess();
-    expect(data._id).toBe(Did.serialize(builder.did));
+    expect(data._id).toBe(Did.serialize(await builder.getDid()));
   });
 
   it("builder can update its profile", async ({ c }) => {

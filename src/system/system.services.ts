@@ -30,7 +30,7 @@ export function getNodeInfo(
     E.map((maintenance) => ({
       started,
       build: getBuildInfo(ctx),
-      publicKey: node.keypair.publicKey(),
+      publicKey: node.publicKey,
       url: node.endpoint,
       maintenance,
     })),
