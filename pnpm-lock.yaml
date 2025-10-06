@@ -21,8 +21,8 @@ importers:
         specifier: ^0.7.3
         version: 0.7.3(hono@4.9.9)(zod@4.1.11)
       '@nillion/nuc':
-        specifier: 1.0.0-rc.2
-        version: 1.0.0-rc.2(pino@9.13.0)
+        specifier: 1.0.0-rc.3
+        version: 1.0.0-rc.3(pino@9.13.0)
       '@noble/curves':
         specifier: ^2.0.1
         version: 2.0.1
@@ -567,8 +567,8 @@ packages:
   '@mongodb-js/saslprep@1.3.1':
     resolution: {integrity: sha512-6nZrq5kfAz0POWyhljnbWQQJQ5uT8oE2ddX303q1uY0tWsivWKgBDXBBvuFPwOqRRalXJuVO9EjOdVtuhLX0zg==}
 
-  '@nillion/nuc@1.0.0-rc.2':
-    resolution: {integrity: sha512-QoeEvFqON7TwZC2JuoraKhnY2AO41T1ZP0XBvVyZ41MPuWEW7mLXHu+Hd1aS/EnNVQnTkJxMa9jqXxu9qvdG3A==}
+  '@nillion/nuc@1.0.0-rc.3':
+    resolution: {integrity: sha512-oRpNevsPfRuHZS+jpTLNuwel4O289JQaDxLatxtQlbyKLnVWkWieiUKyZOzJu76/zb1n64s4bvwUgB4iKtmhFQ==}
     engines: {node: '>=23'}
     peerDependencies:
       pino: ^9.7.0
@@ -2496,7 +2496,7 @@ snapshots:
     dependencies:
       sparse-bitfield: 3.0.3
 
-  '@nillion/nuc@1.0.0-rc.2(pino@9.13.0)':
+  '@nillion/nuc@1.0.0-rc.3(pino@9.13.0)':
     dependencies:
       '@bufbuild/protobuf': 2.9.0
       '@cosmjs/proto-signing': 0.36.1
