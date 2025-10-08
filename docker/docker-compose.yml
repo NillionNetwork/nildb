@@ -5,21 +5,21 @@ services:
       - "30017:27017"
 
   postgres:
-    image: postgres:17
+    image: postgres:18
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
       - "30432:5432"
 
   nilchain:
-    image: ghcr.io/nillionnetwork/nilchain-devnet:v0.1.0
+    image: ghcr.io/nillionnetwork/nilchain-devnet:main
     volumes:
       - ./nilchaind/config/genesis.json:/opt/nilchain/config/genesis.json
     ports:
-      - "30648:26648" # JSON RPC
+      - "30648:26648" # json rpc
 
   nilauth:
-    image: public.ecr.aws/k5d9x2g2/nilauth:latest
+    image: public.ecr.aws/k5d9x2g2/nilauth:main
     depends_on:
       - postgres
       - nilchain
@@ -27,8 +27,8 @@ services:
       - ./nilauth/config.yaml:/opt/config.yaml
     command: ["--config-file", "/opt/config.yaml"]
     ports:
-      - "30921:30921" # main server
-      - "30922:30022" # metrics server
+      - "30921:30921" # main api
+      - "30922:30022" # metrics
 
   token-price-api:
     image: caddy:2
