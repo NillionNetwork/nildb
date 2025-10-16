@@ -38,8 +38,12 @@ export const EnvVarsSchema = z.object({
   nilauthPubKey: z.string().length(PUBLIC_KEY_LENGTH),
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.url(),
-  metricsPort: z.number().int().positive(),
-  rateLimitEnabled: z.coerce.boolean().optional().default(true),
+  metricsPort: z.coerce.number().int().positive(),
+  rateLimitEnabled: z.preprocess((val) => {
+    if (val === "true" || val === "1") return true;
+    if (val === "false" || val === "0") return false;
+    return val;
+  }, z.boolean().optional().default(true)),
   rateLimitWindowSeconds: z.coerce
     .number()
     .int()
@@ -52,7 +56,7 @@ export const EnvVarsSchema = z.object({
     .positive()
     .optional()
     .default(60),
-  webPort: z.number().int().positive(),
+  webPort: z.coerce.number().int().positive(),
 });
 export type EnvVars = z.infer<typeof EnvVarsSchema>;
 
@@ -137,7 +141,7 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     dbUri: process.env.APP_DB_URI,
     enabledFeatures: process.env.APP_ENABLED_FEATURES,
     logLevel: process.env.APP_LOG_LEVEL,
-    metricsPort: Number(process.env.APP_METRICS_PORT),
+    metricsPort: process.env.APP_METRICS_PORT,
     nilauthBaseUrl: process.env.APP_NILAUTH_BASE_URL,
     nilauthPubKey: process.env.APP_NILAUTH_PUBLIC_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
@@ -145,7 +149,7 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     rateLimitEnabled: process.env.APP_RATE_LIMIT_ENABLED,
     rateLimitWindowSeconds: process.env.APP_RATE_LIMIT_WINDOW_SECONDS,
     rateLimitMaxRequests: process.env.APP_RATE_LIMIT_MAX_REQUESTS,
-    webPort: Number(process.env.APP_PORT),
+    webPort: process.env.APP_PORT,
   });
 
   return {
