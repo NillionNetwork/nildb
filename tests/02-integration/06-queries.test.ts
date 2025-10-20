@@ -60,7 +60,7 @@ describe("Query Lifecycle", () => {
     const { data, pagination } = await builder.getQueries(c).expectSuccess();
     expect(data).toHaveLength(5);
     expect(pagination.total).toBe(5);
-    expect(pagination.limit).toBe(25); // Default limit
+    expect(pagination.limit).toBe(1_000); // Default limit
     expect(pagination.offset).toBe(0); // Default offset
   });
 

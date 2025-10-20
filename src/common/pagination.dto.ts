@@ -13,7 +13,7 @@ export const SortQuerySchema = z
   .optional();
 
 export const PaginationQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).optional().default(25),
+  limit: z.coerce.number().int().min(1).max(1_000).optional().default(1_000),
   offset: z.coerce.number().int().min(0).optional().default(0),
   sort: SortQuerySchema,
 });
