@@ -19,9 +19,9 @@ jobs:
         with:
           node-version: "24"
       - uses: pnpm/action-setup@v4
-      - run: pnpm install
-      - run: pnpm exec biome ci
-      - run: tsc
+      - uses: extractions/setup-just@v3
+      - run: just install
+      - run: just check
 
   test:
     needs: check
@@ -33,8 +33,9 @@ jobs:
         with:
           node-version: "24"
       - uses: pnpm/action-setup@v4
-      - run: pnpm install
-      - run: pnpm vitest --coverage
+      - uses: extractions/setup-just@v3
+      - run: just install
+      - run: just test-coverage
       - uses: davelosert/vitest-coverage-report-action@v2
         if: always()
         with:

@@ -5,14 +5,7 @@
   "repository": "https://github.com/NillionNetwork/nildb",
   "type": "module",
   "scripts": {
-    "fix": "pnpm exec biome check --fix --unsafe && tsc",
-    "fmt": "pnpm exec biome format --fix",
-    "start": "tsx src/main.ts",
-    "test": "pnpm run test:unit && pnpm run test:integration",
-    "test:unit": "vitest --run tests/01-unit",
-    "test:integration": "vitest --run tests/02-integration",
-    "migrate": "tsx bin/migrate.ts",
-    "install-hooks": "lefthook install"
+    "start": "tsx src/main.ts"
   },
   "engines": {
     "node": ">=24"
