@@ -88,9 +88,14 @@ export function loadSubjectAndVerifyAsBuilder<
       const token = envelope.nuc.payload;
       const subject = Did.serialize(token.sub);
 
+      // All Dids were migrated to did:key as of 1.1.0 but the legacy `did:nil` format
+      // is still used in Nucs, and so, we need to adopt a canonical format given internal
+      // db lookups are simple string comparisons
+      const canonicalSubject = normalizeIdentifier(subject);
+
       // load builder
       const builder = await pipe(
-        BuilderRepository.findByIdWithCache(bindings, subject),
+        BuilderRepository.findByIdWithCache(bindings, canonicalSubject),
         E.catchAll((_e) => E.succeed(null)),
         E.runPromise,
       );
@@ -189,9 +194,15 @@ export function loadSubjectAndVerifyAsUser<
       const envelope: Envelope = c.get("envelope");
       const token = envelope.nuc.payload;
       const subject = token.sub.didString;
+
+      // All Dids were migrated to did:key as of 1.1.0 but the legacy `did:nil` format
+      // is still used in Nucs, and so, we need to adopt a canonical format given internal
+      // db lookups are simple string comparisons
+      const canonicalSubject = normalizeIdentifier(subject);
+
       // load user
       const user = await pipe(
-        UserRepository.findById(bindings, subject),
+        UserRepository.findById(bindings, canonicalSubject),
         E.catchAll((_e) => E.succeed(null)),
         E.runPromise,
       );
@@ -244,4 +255,34 @@ export function requireNucNamespace(cmd: string): MiddlewareHandler {
 
     return next();
   };
+}
+
+/**
+ * Normalizes a legacy hex-encoded public key or a `did:nil` string into its
+ * equivalent `did:key` representation.
+ */
+function normalizeIdentifier(id: string): string {
+  // Already a valid DID, nothing to do.
+  if (id.startsWith("did:")) {
+    // If it's the legacy did:nil, convert it to did:key.
+    if (id.startsWith("did:nil:")) {
+      const publicKeyHex = id.slice("did:nil:".length);
+      const didKey = Did.fromPublicKey(publicKeyHex, "key");
+      return Did.serialize(didKey);
+    }
+    return id;
+  }
+
+  // Handle raw hex public keys.
+  const PUBLIC_KEY_LENGTH = 66; // Uncompressed secp256k1 public key
+  if (id.length === PUBLIC_KEY_LENGTH || id.length === 64) {
+    try {
+      const didKey = Did.fromPublicKey(id, "key");
+      return Did.serialize(didKey);
+    } catch {
+      // Not a valid hex key, fall through and return original.
+    }
+  }
+
+  return id;
 }

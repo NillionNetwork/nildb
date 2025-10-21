@@ -146,7 +146,7 @@ export const DataMapper = {
       filter: dto.filter,
       requesterId,
       pagination: {
-        limit: dto.pagination?.limit ?? 25,
+        limit: dto.pagination?.limit ?? 1_000,
         offset: dto.pagination?.offset ?? 0,
       },
     };

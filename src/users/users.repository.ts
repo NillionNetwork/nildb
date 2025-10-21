@@ -1,11 +1,12 @@
 import { Effect as E, pipe } from "effect";
-import type {
-  StrictFilter,
-  StrictUpdateFilter,
-  UpdateFilter,
-  UpdateOptions,
-  UpdateResult,
-  UUID,
+import {
+  ObjectId,
+  type StrictFilter,
+  type StrictUpdateFilter,
+  type UpdateFilter,
+  type UpdateOptions,
+  type UpdateResult,
+  type UUID,
 } from "mongodb";
 import {
   type CollectionNotFoundError,
@@ -43,12 +44,14 @@ export function upsert(
   const grantAccessLogs = UserLoggerMapper.toGrantAccessLogs(documents, acl);
   const logs: UserDataLogs[] = [...createDataLogs, ...grantAccessLogs];
 
-  const filter: StrictFilter<UserDocument> = { _id: user };
+  const filter: StrictFilter<UserDocument> = { did: user };
   const now = new Date();
   const update: UpdateFilter<UserDocument> = {
     // only set when first created
     $setOnInsert: {
+      _id: new ObjectId(),
       _created: now,
+      did: user,
     },
     // set on every update
     $set: {
@@ -106,7 +109,7 @@ export function removeData(
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  const filter: StrictFilter<UserDocument> = { _id: userDid };
+  const filter: StrictFilter<UserDocument> = { did: userDid };
 
   const update: UpdateFilter<UserDocument> = {
     $set: {
@@ -147,7 +150,7 @@ export function updateUserLogs(
   void,
   CollectionNotFoundError | DatabaseError | DataValidationError
 > {
-  const filter = { _id: userId };
+  const filter = { did: userId };
   const update = {
     $set: {
       _updated: new Date(),
@@ -178,7 +181,7 @@ export function findById(
   UserDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<UserDocument> = { _id: user };
+  const filter: StrictFilter<UserDocument> = { did: user };
 
   return pipe(
     checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.Users),
@@ -292,7 +295,7 @@ export function findDataReferences(
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   const pipeline = [
-    { $match: { _id: user } },
+    { $match: { did: user } },
     {
       $project: {
         _id: 0,
@@ -318,7 +321,7 @@ export function findDataReferences(
         : E.fail(
             new DocumentNotFoundError({
               collection: CollectionName.Users,
-              filter: { _id: user },
+              filter: { did: user },
             }),
           ),
     ),

@@ -1,4 +1,5 @@
 import { Effect as E, pipe } from "effect";
+import { ObjectId } from "mongodb";
 import * as CollectionsService from "#/collections/collections.services";
 import {
   type CollectionNotFoundError,
@@ -55,7 +56,8 @@ export function createBuilder(
     E.map((cmd) => {
       const now = new Date();
       return {
-        _id: cmd.did,
+        _id: new ObjectId(),
+        did: cmd.did,
         _created: now,
         _updated: now,
         name: cmd.name,

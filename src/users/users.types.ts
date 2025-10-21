@@ -1,4 +1,4 @@
-import type { UUID } from "mongodb";
+import type { ObjectId, UUID } from "mongodb";
 import type { DocumentBase } from "#/common/mongo";
 import type { UserDataLogs } from "#/users/users.dto";
 
@@ -39,7 +39,8 @@ export type DataDocumentReference = {
 /**
  * User document.
  */
-export type UserDocument = DocumentBase<string> & {
+export type UserDocument = DocumentBase<ObjectId> & {
+  did: string;
   data: DataDocumentReference[];
   logs: UserDataLogs[];
 };

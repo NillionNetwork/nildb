@@ -1,10 +1,11 @@
-import type { UUID } from "mongodb";
+import type { ObjectId, UUID } from "mongodb";
 
 /**
  * Builder document.
  */
 export type BuilderDocument = {
-  _id: string;
+  _id: ObjectId;
+  did: string;
   _created: Date;
   _updated: Date;
   name: string;

@@ -68,7 +68,7 @@ export function readCollections(options: ControllerOptions): void {
       return pipe(
         CollectionsService.getBuilderCollections(
           c.env,
-          builder._id,
+          builder.did,
           pagination,
         ),
         E.map((paginatedResult) =>
@@ -110,7 +110,7 @@ export function createCollection(options: ControllerOptions): void {
       const payload = c.req.valid("json");
       const command = CollectionsDataMapper.toCreateCollectionCommand(
         payload,
-        builder._id,
+        builder.did,
       );
 
       return pipe(
@@ -152,7 +152,7 @@ export function deleteCollectionById(options: ControllerOptions): void {
       const params = c.req.valid("param");
       const command = CollectionsDataMapper.toDeleteCollectionCommand(
         params,
-        builder._id,
+        builder.did,
       );
 
       return pipe(
@@ -199,7 +199,7 @@ export function readCollectionById(options: ControllerOptions): void {
       const payload = c.req.valid("param");
       const command = CollectionsDataMapper.toReadCollectionById(
         payload,
-        builder._id,
+        builder.did,
       );
 
       return pipe(
@@ -244,7 +244,7 @@ export function createCollectionIndex(options: ControllerOptions): void {
       const payload = c.req.valid("json");
       const command = CollectionsDataMapper.toCreateIndexCommand(
         payload,
-        builder._id,
+        builder.did,
       );
 
       return pipe(
@@ -286,7 +286,7 @@ export function dropCollectionIndex(options: ControllerOptions): void {
       const params = c.req.valid("param");
       const command = CollectionsDataMapper.toDropIndexCommand(
         params,
-        builder._id,
+        builder.did,
       );
 
       return pipe(

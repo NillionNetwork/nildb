@@ -20,4 +20,4 @@ pre-push:
       run: pnpm exec tsc
     test:
       glob: "*.{ts}"
-      run: pnpm test
+      run: pnpm vitest run

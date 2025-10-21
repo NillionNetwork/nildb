@@ -63,7 +63,7 @@ export function deleteData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
-      const command = DataMapper.toDeleteDataCommand(payload, builder._id);
+      const command = DataMapper.toDeleteDataCommand(payload, builder.did);
 
       return pipe(
         DataService.deleteData(c.env, command),
@@ -103,7 +103,7 @@ export function flushData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder");
       const params = c.req.valid("param");
-      const command = DataMapper.toFlushDataCommand(params, builder._id);
+      const command = DataMapper.toFlushDataCommand(params, builder.did);
 
       return pipe(
         DataService.flushCollection(c.env, command),
@@ -147,7 +147,7 @@ export function findData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
-      const command = DataMapper.toFindDataCommand(payload, builder._id);
+      const command = DataMapper.toFindDataCommand(payload, builder.did);
 
       return pipe(
         DataService.findRecords(c.env, command),
@@ -194,7 +194,7 @@ export function tailData(options: ControllerOptions): void {
       const builder = c.get("builder") as BuilderDocument;
       const param = c.req.valid("param");
       const query = c.req.valid("query");
-      const command = DataMapper.toRecentDataCommand(param, query, builder._id);
+      const command = DataMapper.toRecentDataCommand(param, query, builder.did);
 
       return pipe(
         DataService.tailData(c.env, command),
@@ -239,7 +239,7 @@ export function updateData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = DataMapper.toUpdateDataCommand(payload, builder._id);
+      const command = DataMapper.toUpdateDataCommand(payload, builder.did);
 
       return pipe(
         DataService.updateRecords(c.env, command),
@@ -286,7 +286,7 @@ export function createOwnedData(options: ControllerOptions): void {
       const payload = c.req.valid("json");
       const command = DataMapper.toCreateOwnedRecordsCommand(
         payload,
-        builder._id,
+        builder.did,
       );
 
       // Validate that at least one permission is granted
@@ -349,7 +349,7 @@ export function createStandardData(options: ControllerOptions): void {
       const payload = c.req.valid("json");
       const command = DataMapper.toCreateStandardRecordsCommand(
         payload,
-        builder._id,
+        builder.did,
       );
 
       return pipe(
