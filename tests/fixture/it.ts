@@ -17,7 +17,6 @@ export function createTestFixtureExtension(
     collection?: CollectionFixture;
     query?: QueryFixture;
     keepDbs?: boolean;
-    enableNilcomm?: boolean;
   } = {},
 ): TestFixtureExtension {
   let fixture: FixtureContext | null = null;
