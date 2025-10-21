@@ -31,7 +31,7 @@ export function enforceDataOwnership(
             new ResourceAccessDeniedError({
               type: "collection",
               id: document.toString(),
-              user: user._id,
+              user: user.did,
             }),
           );
     }),

@@ -19,7 +19,7 @@ export const BuilderDataMapper = {
   toReadProfileResponse(data: BuilderDocument): ReadProfileResponse {
     return {
       data: {
-        _id: data._id,
+        _id: data.did,
         _created: data._created.toISOString(),
         _updated: data._updated.toISOString(),
         name: data.name,

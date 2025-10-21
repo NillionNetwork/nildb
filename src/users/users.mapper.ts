@@ -55,7 +55,7 @@ export const UserDataMapper = {
     params: DeleteDocumentRequestParams,
   ): DeleteUserDataCommand {
     return {
-      owner: user._id,
+      owner: user.did,
       collection: new UUID(params.collection),
       document: new UUID(params.document),
       filter: {
@@ -70,7 +70,7 @@ export const UserDataMapper = {
   toReadProfileResponse(user: UserDocument): ReadUserProfileResponse {
     return {
       data: {
-        _id: user._id,
+        _id: user.did,
         _created: user._created.toISOString(),
         _updated: user._updated.toISOString(),
         logs: user.logs,
@@ -127,7 +127,7 @@ export const UserDataMapper = {
     dto: ReadDataAclRequestParams,
   ): ReadDataAclCommand {
     return {
-      owner: user._id,
+      owner: user.did,
       collection: new UUID(dto.collection),
       document: new UUID(dto.document),
     };
@@ -143,7 +143,7 @@ export const UserDataMapper = {
     return {
       collection: new UUID(body.collection),
       document: new UUID(body.document),
-      owner: user._id,
+      owner: user.did,
       acl: {
         grantee: body.acl.grantee,
         read: body.acl.read,
@@ -164,7 +164,7 @@ export const UserDataMapper = {
       collection: new UUID(body.collection),
       document: new UUID(body.document),
       grantee: body.grantee,
-      owner: user._id,
+      owner: user.did,
     };
   },
 
@@ -180,7 +180,7 @@ export const UserDataMapper = {
       collection: new UUID(body.collection),
       filter: {
         _id: new UUID(body.document),
-        _owner: user._id,
+        _owner: user.did,
       },
     };
   },

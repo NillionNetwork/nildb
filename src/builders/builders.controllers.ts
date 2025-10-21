@@ -90,7 +90,7 @@ export function readProfile(options: ControllerOptions): void {
       const builder = c.get("builder");
 
       return pipe(
-        BuilderService.find(c.env, builder._id),
+        BuilderService.find(c.env, builder.did),
         E.map((builder) => BuilderDataMapper.toReadProfileResponse(builder)),
         E.map((response) => c.json<ReadProfileResponse>(response)),
         handleTaggedErrors(c),
@@ -125,7 +125,7 @@ export function deleteBuilder(options: ControllerOptions): void {
       const builder = c.get("builder");
 
       return pipe(
-        BuilderService.remove(c.env, builder._id),
+        BuilderService.remove(c.env, builder.did),
         E.map(() => c.text<DeleteBuilderResponse>("")),
         handleTaggedErrors(c),
         E.runPromise,
@@ -161,7 +161,7 @@ export function updateProfile(options: ControllerOptions): void {
       const payload = c.req.valid("json");
       const command = BuilderDataMapper.toUpdateProfileCommand(
         payload,
-        builder._id,
+        builder.did,
       );
 
       return pipe(

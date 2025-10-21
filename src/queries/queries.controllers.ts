@@ -58,7 +58,7 @@ export function createQuery(options: ControllerOptions): void {
       const payload = c.req.valid("json");
       const command = QueriesDataMapper.toCreateQueryCommand(
         payload,
-        builder._id,
+        builder.did,
       );
 
       return pipe(
@@ -98,7 +98,7 @@ export function deleteQuery(options: ControllerOptions): void {
       const params = c.req.valid("param");
       const command = QueriesDataMapper.toDeleteQueryByIdCommand(
         params,
-        builder._id,
+        builder.did,
       );
 
       return pipe(
@@ -145,7 +145,7 @@ export function readQueries(options: ControllerOptions): void {
       const pagination = c.req.valid("query");
 
       return pipe(
-        QueriesService.findQueries(c.env, builder._id, pagination),
+        QueriesService.findQueries(c.env, builder.did, pagination),
         E.map((documents) => QueriesDataMapper.toGetQueriesResponse(documents)),
         E.map((response) => c.json<ReadQueriesResponse>(response)),
         handleTaggedErrors(c),
@@ -189,7 +189,7 @@ export function readQueryById(options: ControllerOptions): void {
       const params = c.req.valid("param");
       const command = QueriesDataMapper.toReadQueryByIdCommand(
         params,
-        builder._id,
+        builder.did,
       );
 
       return pipe(
@@ -235,7 +235,7 @@ export function runQuery(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = QueriesDataMapper.toRunQueryCommand(payload, builder._id);
+      const command = QueriesDataMapper.toRunQueryCommand(payload, builder.did);
 
       return pipe(
         QueriesService.runQueryInBackground(c.env, command),

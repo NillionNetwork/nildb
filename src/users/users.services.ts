@@ -170,7 +170,7 @@ export function deleteUserDataReferences(
         pipe(
           UserRepository.removeData(ctx, owner, ids),
           E.flatMap(() =>
-            UserRepository.removeUser(ctx, { _id: owner, data: { $size: 0 } }),
+            UserRepository.removeUser(ctx, { did: owner, data: { $size: 0 } }),
           ),
         ),
       ),

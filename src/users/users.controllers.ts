@@ -67,7 +67,7 @@ export function readProfile(options: ControllerOptions): void {
       const user = c.get("user");
 
       return pipe(
-        UserService.find(c.env, user._id),
+        UserService.find(c.env, user.did),
         E.map((profile) => UserDataMapper.toReadProfileResponse(profile)),
         E.map((response) => c.json<ReadUserProfileResponse>(response)),
         handleTaggedErrors(c),
@@ -110,7 +110,7 @@ export function listDataReferences(options: ControllerOptions): void {
       const user = c.get("user");
       const pagination = c.req.valid("query");
       return pipe(
-        UserService.listUserDataReferences(c.env, user._id, pagination),
+        UserService.listUserDataReferences(c.env, user.did, pagination),
         E.map((documents) =>
           UserDataMapper.toListDataReferencesResponse(documents),
         ),

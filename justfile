@@ -30,6 +30,8 @@ start:
 
 # Run all tests
 test:
+    #!/usr/bin/env bash
+    set -o pipefail
     just test-unit
     just test-integration
 

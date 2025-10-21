@@ -51,7 +51,7 @@ export function findByIdWithCache(
     return E.succeed(document);
   }
 
-  const filter = { _id: builder };
+  const filter = { did: builder };
 
   return pipe(
     checkCollectionExists<BuilderDocument>(
@@ -88,7 +88,7 @@ export function findOne(
   BuilderDocument,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   return pipe(
     checkCollectionExists<BuilderDocument>(
@@ -123,7 +123,7 @@ export function deleteOneById(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   return pipe(
     checkCollectionExists<BuilderDocument>(
@@ -160,7 +160,7 @@ export function update(
   UpdateResult,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   const update: StrictUpdateFilter<BuilderDocument> = {
     $set: {
@@ -203,7 +203,7 @@ export function addCollection(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   const update: StrictUpdateFilter<BuilderDocument> = {
     $addToSet: { collections: collection },
@@ -243,7 +243,7 @@ export function removeCollection(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   const update: StrictUpdateFilter<BuilderDocument> = {
     $pull: { collections: collection },
@@ -284,7 +284,7 @@ export function addQuery(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
   const update: StrictUpdateFilter<BuilderDocument> = {
     $addToSet: { queries: query },
   };
@@ -323,7 +323,7 @@ export function removeQuery(
   void,
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
-  const filter: StrictFilter<BuilderDocument> = { _id: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   const update: StrictUpdateFilter<BuilderDocument> = {
     $pull: { queries: query },
