@@ -38,12 +38,12 @@ test:
 # Run unit tests
 test-unit:
     #!/usr/bin/env bash
-    pnpm exec vitest --run tests/01-unit
+    pnpm exec vitest run --project=unit
 
 # Run integration tests
 test-integration:
     #!/usr/bin/env bash
-    pnpm exec vitest --run tests/02-integration
+    pnpm exec vitest run --project=integration
 
 # Run tests with coverage
 test-coverage:
