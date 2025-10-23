@@ -1,16 +1,22 @@
 import { Effect as E, pipe } from "effect";
-import type {
-  StrictFilter,
-  StrictUpdateFilter,
-  UpdateResult,
-  UUID,
+import {
+  MongoServerError,
+  type StrictFilter,
+  type StrictUpdateFilter,
+  type UpdateResult,
+  type UUID,
 } from "mongodb";
 import {
   type CollectionNotFoundError,
   DatabaseError,
   DocumentNotFoundError,
+  DuplicateEntryError,
 } from "#/common/errors";
-import { CollectionName, checkCollectionExists } from "#/common/mongo";
+import {
+  CollectionName,
+  checkCollectionExists,
+  MongoErrorCode,
+} from "#/common/mongo";
 import type { AppBindings } from "#/env";
 import type { BuilderDocument } from "./builders.types";
 
@@ -20,7 +26,10 @@ import type { BuilderDocument } from "./builders.types";
 export function insert(
   ctx: AppBindings,
   document: BuilderDocument,
-): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+): E.Effect<
+  void,
+  DuplicateEntryError | CollectionNotFoundError | DatabaseError
+> {
   return pipe(
     checkCollectionExists<BuilderDocument>(
       ctx,
@@ -29,7 +38,19 @@ export function insert(
     ),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
-      catch: (cause) => new DatabaseError({ cause, message: "insert" }),
+      catch: (cause) => {
+        if (
+          cause instanceof MongoServerError &&
+          cause.code === MongoErrorCode.Duplicate
+        ) {
+          return new DuplicateEntryError({
+            document: {
+              did: document.did,
+            },
+          });
+        }
+        return new DatabaseError({ cause, message: "insert" });
+      },
     }),
     E.as(void 0),
   );

@@ -11,6 +11,7 @@ import type { CollectionDocument } from "#/collections/collections.types";
 import { CollectionName } from "#/common/mongo";
 import type { OwnedDocumentBase } from "#/data/data.types";
 import type { UserDocument } from "#/users/users.types";
+import { checkTransactionSupport } from "./utils";
 
 const PUBLIC_KEY_HEX_LENGTH = 66;
 
@@ -325,18 +326,5 @@ export class did_migration implements MigrationInterface {
     throw new Error(
       "Rollback for the `did_migration` is not supported. Please restore from a database backup.",
     );
-  }
-}
-
-async function checkTransactionSupport(client: MongoClient): Promise<boolean> {
-  try {
-    const admin = client.db().admin();
-    const hello = await admin.command({ hello: 1 });
-    const isReplicaSet = hello.setName !== undefined;
-    const isSharded = hello.msg === "isdbgrid";
-    return isReplicaSet || isSharded;
-  } catch (error) {
-    console.error("Failed to check deployment type:", error);
-    return false;
   }
 }

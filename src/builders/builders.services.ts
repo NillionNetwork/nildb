@@ -1,10 +1,12 @@
+import { Did } from "@nillion/nuc";
+import { bytesToHex } from "@noble/hashes/utils.js";
 import { Effect as E, pipe } from "effect";
 import { ObjectId } from "mongodb";
 import * as CollectionsService from "#/collections/collections.services";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
-  type DataValidationError,
+  DataValidationError,
   type DocumentNotFoundError,
   DuplicateEntryError,
 } from "#/common/errors";
@@ -42,25 +44,49 @@ export function createBuilder(
   command: CreateBuilderCommand,
 ): E.Effect<
   void,
-  DuplicateEntryError | CollectionNotFoundError | DatabaseError
+  | DataValidationError
+  | DuplicateEntryError
+  | CollectionNotFoundError
+  | DatabaseError
 > {
   return pipe(
-    E.succeed(command),
-    E.filterOrFail(
-      (cmd) => cmd.did !== ctx.node.did.didString,
-      (cmd) =>
-        new DuplicateEntryError({
-          document: { name: cmd.name, did: cmd.did },
-        }),
+    E.Do,
+    E.bind("normalizedDid", () =>
+      E.try({
+        try: () => {
+          const inputDid = command.did;
+          const validatedDid = Did.parse(inputDid);
+          // if its did:nil convert to did:key for db consistency
+          if (validatedDid.method === "nil") {
+            const publicKey = bytesToHex(validatedDid.publicKeyBytes);
+            return Did.fromPublicKey(publicKey);
+          }
+          return validatedDid;
+        },
+        catch: (cause) =>
+          new DataValidationError({
+            issues: [`Invalid Did format: ${command.did}`],
+            cause,
+          }),
+      }),
     ),
-    E.map((cmd) => {
+    E.tap(({ normalizedDid }) =>
+      E.filterOrFail(
+        () => normalizedDid.didString !== ctx.node.did.didString,
+        () =>
+          new DuplicateEntryError({
+            document: { name: command.name, did: normalizedDid.didString },
+          }),
+      ),
+    ),
+    E.map(({ normalizedDid }) => {
       const now = new Date();
       return {
         _id: new ObjectId(),
-        did: cmd.did,
+        did: normalizedDid.didString,
         _created: now,
         _updated: now,
-        name: cmd.name,
+        name: command.name,
         collections: [],
         queries: [],
       };

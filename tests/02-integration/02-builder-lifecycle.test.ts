@@ -41,6 +41,22 @@ describe("02-builder-lifecycle.test.ts", () => {
     await builder.readCollections(c).expectSuccess();
   });
 
+  it("rejects registration of a builder with a duplicate DID", async ({
+    c,
+  }) => {
+    const { builder } = c;
+    const builderDid = await builder.getDid();
+    const builderName = faker.person.fullName();
+
+    // The first registration is done by the test fixture so a second registration should fail.
+    await builder
+      .register(c, {
+        did: builderDid.didString,
+        name: builderName,
+      })
+      .expectFailure(StatusCodes.BAD_REQUEST, "DuplicateEntryError");
+  });
+
   it("builder can read its profile", async ({ c }) => {
     const { builder, expect } = c;
     const { data } = await builder.getProfile(c).expectSuccess();
