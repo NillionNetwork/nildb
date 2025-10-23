@@ -1,4 +1,6 @@
 import { UUID } from "mongodb";
+import type { Logger } from "pino";
+import { normalizeIdentifier } from "#/common/did-utils";
 import type { Paginated } from "#/common/pagination.dto";
 import type {
   OwnedDocumentBase,
@@ -139,16 +141,15 @@ export const UserDataMapper = {
   toGrantDataAccessCommand(
     user: UserDocument,
     body: GrantAccessToDataRequest,
+    log: Logger,
   ): GrantAccessToDataCommand {
     return {
       collection: new UUID(body.collection),
       document: new UUID(body.document),
       owner: user.did,
       acl: {
-        grantee: body.acl.grantee,
-        read: body.acl.read,
-        write: body.acl.write,
-        execute: body.acl.execute,
+        ...body.acl,
+        grantee: normalizeIdentifier(body.acl.grantee, log),
       },
     };
   },
@@ -159,11 +160,12 @@ export const UserDataMapper = {
   toRevokeDataAccessCommand(
     user: UserDocument,
     body: RevokeAccessToDataRequest,
+    log: Logger,
   ): RevokeAccessToDataCommand {
     return {
       collection: new UUID(body.collection),
       document: new UUID(body.document),
-      grantee: body.grantee,
+      grantee: normalizeIdentifier(body.grantee, log),
       owner: user.did,
     };
   },

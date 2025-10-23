@@ -1,3 +1,5 @@
+import type { Logger } from "pino";
+import { normalizeIdentifier } from "#/common/did-utils";
 import type {
   ReadProfileResponse,
   RegisterBuilderRequest,
@@ -32,9 +34,12 @@ export const BuilderDataMapper = {
   /**
    * Convert registration request to create command.
    */
-  toCreateBuilderCommand(dto: RegisterBuilderRequest): CreateBuilderCommand {
+  toCreateBuilderCommand(
+    dto: RegisterBuilderRequest,
+    log: Logger,
+  ): CreateBuilderCommand {
     return {
-      did: dto.did,
+      did: normalizeIdentifier(dto.did, log),
       name: dto.name,
     };
   },
