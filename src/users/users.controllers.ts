@@ -274,7 +274,11 @@ export function grantAccess(options: ControllerOptions): void {
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");
-      const command = UserDataMapper.toGrantDataAccessCommand(user, payload);
+      const command = UserDataMapper.toGrantDataAccessCommand(
+        user,
+        payload,
+        c.env.log,
+      );
 
       return pipe(
         BuildersService.find(c.env, command.acl.grantee),
@@ -313,7 +317,11 @@ export function revokeAccess(options: ControllerOptions): void {
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");
-      const command = UserDataMapper.toRevokeDataAccessCommand(user, payload);
+      const command = UserDataMapper.toRevokeDataAccessCommand(
+        user,
+        payload,
+        c.env.log,
+      );
 
       return pipe(
         BuildersService.find(c.env, command.grantee),

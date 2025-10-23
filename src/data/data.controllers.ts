@@ -287,6 +287,7 @@ export function createOwnedData(options: ControllerOptions): void {
       const command = DataMapper.toCreateOwnedRecordsCommand(
         payload,
         builder.did,
+        c.env.log,
       );
 
       // Validate that at least one permission is granted

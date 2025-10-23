@@ -46,7 +46,10 @@ export function register(options: ControllerOptions): void {
     zValidator("json", RegisterBuilderRequest),
     async (c) => {
       const payload = c.req.valid("json");
-      const command = BuilderDataMapper.toCreateBuilderCommand(payload);
+      const command = BuilderDataMapper.toCreateBuilderCommand(
+        payload,
+        c.env.log,
+      );
 
       return pipe(
         BuilderService.createBuilder(c.env, command),

@@ -1,12 +1,10 @@
-import { Did } from "@nillion/nuc";
-import { bytesToHex } from "@noble/hashes/utils.js";
-import { Effect as E, pipe } from "effect";
+import { Effect as E } from "effect";
 import { ObjectId } from "mongodb";
 import * as CollectionsService from "#/collections/collections.services";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
-  DataValidationError,
+  type DataValidationError,
   type DocumentNotFoundError,
   DuplicateEntryError,
 } from "#/common/errors";
@@ -44,55 +42,28 @@ export function createBuilder(
   command: CreateBuilderCommand,
 ): E.Effect<
   void,
-  | DataValidationError
-  | DuplicateEntryError
-  | CollectionNotFoundError
-  | DatabaseError
+  DuplicateEntryError | CollectionNotFoundError | DatabaseError
 > {
-  return pipe(
-    E.Do,
-    E.bind("normalizedDid", () =>
-      E.try({
-        try: () => {
-          const inputDid = command.did;
-          const validatedDid = Did.parse(inputDid);
-          // if its did:nil convert to did:key for db consistency
-          if (validatedDid.method === "nil") {
-            const publicKey = bytesToHex(validatedDid.publicKeyBytes);
-            return Did.fromPublicKey(publicKey);
-          }
-          return validatedDid;
-        },
-        catch: (cause) =>
-          new DataValidationError({
-            issues: [`Invalid Did format: ${command.did}`],
-            cause,
-          }),
+  if (command.did === ctx.node.did.didString) {
+    return E.fail(
+      new DuplicateEntryError({
+        document: { name: command.name, did: command.did },
       }),
-    ),
-    E.tap(({ normalizedDid }) =>
-      E.filterOrFail(
-        () => normalizedDid.didString !== ctx.node.did.didString,
-        () =>
-          new DuplicateEntryError({
-            document: { name: command.name, did: normalizedDid.didString },
-          }),
-      ),
-    ),
-    E.map(({ normalizedDid }) => {
-      const now = new Date();
-      return {
-        _id: new ObjectId(),
-        did: normalizedDid.didString,
-        _created: now,
-        _updated: now,
-        name: command.name,
-        collections: [],
-        queries: [],
-      };
-    }),
-    E.flatMap((document) => BuildersRepository.insert(ctx, document)),
-  );
+    );
+  }
+
+  const now = new Date();
+  const document: BuilderDocument = {
+    _id: new ObjectId(),
+    did: command.did,
+    _created: now,
+    _updated: now,
+    name: command.name,
+    collections: [],
+    queries: [],
+  };
+
+  return BuildersRepository.insert(ctx, document);
 }
 
 /**

@@ -1,5 +1,7 @@
 import type { DeleteResult, UpdateResult } from "mongodb";
 import { UUID } from "mongodb";
+import type { Logger } from "pino";
+import { normalizeIdentifier } from "#/common/did-utils";
 import type { DocumentBase } from "#/common/mongo";
 import type { Paginated } from "#/common/pagination.dto";
 import type {
@@ -95,12 +97,16 @@ export const DataMapper = {
   toCreateOwnedRecordsCommand(
     body: CreateOwnedDataRequest,
     requesterId: string,
+    log: Logger,
   ): CreateOwnedDataCommand {
     return {
-      owner: body.owner,
+      owner: normalizeIdentifier(body.owner, log),
       collection: new UUID(body.collection),
       data: body.data,
-      acl: body.acl,
+      acl: {
+        ...body.acl,
+        grantee: normalizeIdentifier(body.acl.grantee, log),
+      },
       requesterId,
     };
   },
