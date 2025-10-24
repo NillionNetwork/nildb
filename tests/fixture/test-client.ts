@@ -531,7 +531,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.data.createOwned, { method: "POST", body }),
-      StatusCodes.OK,
+      StatusCodes.CREATED,
       CreateDataResponse,
     );
   }
@@ -543,7 +543,7 @@ export class BuilderTestClient extends BaseTestClient<BuilderTestClientOptions> 
     return new ResponseHandler(
       c,
       () => this.request(PathsV1.data.createStandard, { method: "POST", body }),
-      StatusCodes.OK,
+      StatusCodes.CREATED,
       CreateDataResponse,
     );
   }
