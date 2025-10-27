@@ -77,6 +77,7 @@ export type AppBindings = {
     did: Did;
     publicKey: string;
   };
+  migrationsComplete: boolean;
 };
 
 // Use interface merging to define expected app vars
@@ -131,6 +132,7 @@ export async function loadBindings(
       publicKey,
       endpoint: config.nodePublicEndpoint,
     },
+    migrationsComplete: false,
   };
 }
 

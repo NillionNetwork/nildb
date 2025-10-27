@@ -23,10 +23,21 @@ export async function buildApp(
   const options: ControllerOptions = { app, bindings };
 
   // Setup middlewares
+  injectBindingsMiddleware(options);
+  // Readiness check middleware - block traffic until migrations complete
+  app.use("*", async (c, next) => {
+    if (!c.env.migrationsComplete && c.req.path !== "/health") {
+      return c.json(
+        { error: "Service not ready, migrations in progress" },
+        503,
+      );
+    }
+    return next();
+  });
+
   corsMiddleware(options);
   rateLimitMiddleware(options);
   limitRequestBodySizeMiddleware(options);
-  injectBindingsMiddleware(options);
   loggerMiddleware(options);
   maintenanceMiddleware(options);
 

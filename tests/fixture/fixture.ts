@@ -87,7 +87,10 @@ export async function buildFixture(
 
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
     await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
+    bindings.migrationsComplete = true;
     log.info("Ran db migrations");
+  } else {
+    bindings.migrationsComplete = true;
   }
 
   log.info("Bootstrapping test fixture");

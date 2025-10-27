@@ -28,10 +28,6 @@ async function main() {
   const bindings = await loadBindings();
   bindings.log.info("! Enabled features: %O", bindings.config.enabledFeatures);
 
-  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
-    await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
-  }
-
   bindings.log.info("Building app ...");
   const { app, metrics } = await buildApp(bindings);
 
@@ -59,6 +55,26 @@ async function main() {
         bindings.log.info(`Metrics on :${bindings.config.metricsPort}`);
       },
     );
+  }
+
+  // Run migrations in background to avoid container liveness probe timeouts
+  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
+    void (async () => {
+      try {
+        bindings.log.info("Starting database migrations...");
+        await mongoMigrateUp(
+          bindings.config.dbUri,
+          bindings.config.dbNamePrimary,
+        );
+        bindings.migrationsComplete = true;
+        bindings.log.info("Database migrations completed successfully");
+      } catch (error) {
+        bindings.log.error({ error }, "Database migrations failed");
+        process.exit(1);
+      }
+    })();
+  } else {
+    bindings.migrationsComplete = true;
   }
 
   const shutdown = async (): Promise<void> => {
