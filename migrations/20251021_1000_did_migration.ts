@@ -11,7 +11,6 @@ import type { CollectionDocument } from "#/collections/collections.types";
 import { CollectionName } from "#/common/mongo";
 import type { OwnedDocumentBase } from "#/data/data.types";
 import type { UserDocument } from "#/users/users.types";
-import { checkTransactionSupport } from "./utils";
 
 const PUBLIC_KEY_HEX_LENGTH = 66;
 
@@ -76,23 +75,7 @@ export class did_migration implements MigrationInterface {
    */
   public async up(_db: Db, client: MongoClient): Promise<void> {
     const start = Date.now();
-    const hasTxSupport = await checkTransactionSupport(client);
-
-    if (hasTxSupport) {
-      console.log("- Transactions supported.");
-      const session = client.startSession();
-      try {
-        await session.withTransaction(async (session) => {
-          await this.runMigration(client, session);
-        });
-      } finally {
-        await session.endSession();
-      }
-    } else {
-      console.log("- Transactions not supported.");
-      await this.runMigration(client);
-    }
-
+    await this.runMigration(client);
     const total = Math.floor((Date.now() - start) / 1000);
     console.log(`- Completed \`did_migration\` in ${total}s.`);
   }
