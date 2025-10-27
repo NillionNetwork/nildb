@@ -13,6 +13,7 @@ import type { OwnedDocumentBase } from "#/data/data.types";
 import type { UserDocument } from "#/users/users.types";
 
 const PUBLIC_KEY_HEX_LENGTH = 66;
+const BATCH_SIZE = 1000;
 
 /**
  * Normalizes a legacy identifier (hex-encoded public key or `did:nil` string) into `did:key` format.
@@ -130,37 +131,57 @@ export class did_migration implements MigrationInterface {
   /**
    * Migrates collections (`builders`, `users`) where the `_id` was a string DID.
    * Creates new documents with an ObjectId `_id` and moves the DID to a `did` field.
+   * Uses batch processing to avoid loading entire collections into memory.
    */
   private async migrateIdentityCollection(
     collection: Collection,
     session?: ClientSession,
   ) {
-    const cursor = collection.find({ _id: { $type: "string" } }, { session });
-    const legacyDocs = await cursor.toArray();
-    if (legacyDocs.length === 0) {
+    const totalLegacyDocs = await collection.countDocuments(
+      { _id: { $type: "string" } },
+      { session },
+    );
+    if (totalLegacyDocs === 0) {
       console.log(
         `- No legacy documents to migrate in '${collection.collectionName}'.`,
       );
       return;
     }
     console.log(
-      `- Migrating ${legacyDocs.length} documents in '${collection.collectionName}'...`,
+      `- Migrating ${totalLegacyDocs} documents in '${collection.collectionName}'...`,
     );
-    const newDocs = legacyDocs.map((doc) => ({
-      ...doc,
-      _id: new ObjectId(),
-      // @ts-expect-error the legacy doc's _id is a string but the type is updated in the codebase
-      did: normalizeDid(doc._id),
-    }));
-    await collection.insertMany(newDocs, { session });
-    await collection.deleteMany(
-      { _id: { $in: legacyDocs.map((d) => d._id) } },
-      { session },
-    );
+
+    let processed = 0;
+    while (processed < totalLegacyDocs) {
+      const cursor = collection.find({ _id: { $type: "string" } }, { session });
+      const legacyDocs = await cursor.limit(BATCH_SIZE).toArray();
+      if (legacyDocs.length === 0) {
+        break; // All documents processed
+      }
+
+      const newDocs = legacyDocs.map((doc) => ({
+        ...doc,
+        _id: new ObjectId(),
+        // @ts-expect-error the legacy doc's _id is a string but the type is updated in the codebase
+        did: normalizeDid(doc._id),
+      }));
+
+      await collection.insertMany(newDocs, { session });
+      await collection.deleteMany(
+        { _id: { $in: legacyDocs.map((d) => d._id) } },
+        { session },
+      );
+
+      processed += legacyDocs.length;
+      console.log(
+        `  - Migrated ${processed}/${totalLegacyDocs} in '${collection.collectionName}'`,
+      );
+    }
   }
 
   /**
    * Migrates the `owner` field in metadata collections like `collections` and `queries`.
+   * Uses streaming and bulk writes to avoid loading entire collections into memory.
    */
   private async migrateOwnerField(
     collection: Collection,
@@ -170,22 +191,39 @@ export class did_migration implements MigrationInterface {
       { $or: [{ owner: { $not: /^did:/ } }, { owner: /^did:nil:/ }] },
       { session },
     );
-    const docsToUpdate = await cursor.toArray();
-    if (docsToUpdate.length === 0) return;
-    console.log(
-      `- Migrating owner field for ${docsToUpdate.length} documents in '${collection.collectionName}'...`,
+    const total = await collection.countDocuments(
+      { $or: [{ owner: { $not: /^did:/ } }, { owner: /^did:nil:/ }] },
+      { session },
     );
-    for (const doc of docsToUpdate) {
-      await collection.updateOne(
-        { _id: doc._id },
-        { $set: { owner: normalizeDid(doc.owner) } },
-        { session },
-      );
+
+    if (total === 0) return;
+    console.log(
+      `- Migrating owner field for ${total} documents in '${collection.collectionName}'...`,
+    );
+
+    let bulkOps = [];
+    for await (const doc of cursor) {
+      bulkOps.push({
+        updateOne: {
+          filter: { _id: doc._id },
+          update: { $set: { owner: normalizeDid(doc.owner) } },
+        },
+      });
+
+      if (bulkOps.length === BATCH_SIZE) {
+        await collection.bulkWrite(bulkOps, { session });
+        bulkOps = [];
+      }
+    }
+
+    if (bulkOps.length > 0) {
+      await collection.bulkWrite(bulkOps, { session });
     }
   }
 
   /**
    * Migrates the `_owner` field within documents in a specific data collection.
+   * Uses streaming and bulk writes to avoid loading entire collections into memory.
    */
   private async migrateDataOwnerField(
     collection: Collection<OwnedDocumentBase>,
@@ -195,87 +233,115 @@ export class did_migration implements MigrationInterface {
       { $or: [{ _owner: { $not: /^did:/ } }, { _owner: /^did:nil:/ }] },
       { session },
     );
-    const docsToUpdate = await cursor.toArray();
-    if (docsToUpdate.length === 0) return;
-    console.log(
-      `- Migrating _owner field for ${docsToUpdate.length} documents in '${collection.collectionName}'...`,
+    const total = await collection.countDocuments(
+      { $or: [{ _owner: { $not: /^did:/ } }, { _owner: /^did:nil:/ }] },
+      { session },
     );
-    for (const doc of docsToUpdate) {
+    if (total === 0) return;
+    console.log(
+      `- Migrating _owner field for ${total} documents in '${collection.collectionName}'...`,
+    );
+
+    let bulkOps = [];
+    for await (const doc of cursor) {
       if (doc._owner) {
-        await collection.updateOne(
-          { _id: doc._id },
-          { $set: { _owner: normalizeDid(doc._owner) } },
-          { session },
-        );
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: doc._id },
+            update: { $set: { _owner: normalizeDid(doc._owner) } },
+          },
+        });
       }
+
+      if (bulkOps.length === BATCH_SIZE) {
+        await collection.bulkWrite(bulkOps, { session });
+        bulkOps = [];
+      }
+    }
+    if (bulkOps.length > 0) {
+      await collection.bulkWrite(bulkOps, { session });
     }
   }
 
   /**
    * Migrates the `grantee` field within the `_acl` array of documents in a data collection.
+   * Uses streaming and bulk writes to avoid loading entire collections into memory.
    */
   private async migrateAcl(
     collection: Collection<OwnedDocumentBase>,
     session?: ClientSession,
   ) {
-    const cursor = collection.find(
-      {
-        _acl: { $exists: true, $type: "array" },
-        $or: [
-          { "_acl.grantee": { $not: /^did:/ } },
-          { "_acl.grantee": /^did:nil:/ },
-        ],
-      },
-      { session },
-    );
-    const docsToUpdate = await cursor.toArray();
-    if (docsToUpdate.length === 0) return;
+    const query = {
+      _acl: { $exists: true, $type: "array" },
+      $or: [
+        { "_acl.grantee": { $not: /^did:/ } },
+        { "_acl.grantee": /^did:nil:/ },
+      ],
+    };
+    // biome-ignore lint/suspicious/noExplicitAny: MongoDB query types are too restrictive
+    const cursor = collection.find(query as any, { session });
+    // biome-ignore lint/suspicious/noExplicitAny: MongoDB query types are too restrictive
+    const total = await collection.countDocuments(query as any, { session });
+    if (total === 0) return;
     console.log(
-      `- Updating ACLs for ${docsToUpdate.length} documents in '${collection.collectionName}'...`,
+      `- Updating ACLs for ${total} documents in '${collection.collectionName}'...`,
     );
-    for (const doc of docsToUpdate) {
+
+    let bulkOps = [];
+    for await (const doc of cursor) {
       if (doc._acl) {
         const newAcl = doc._acl.map((acl) =>
           acl.grantee ? { ...acl, grantee: normalizeDid(acl.grantee) } : acl,
         );
-        await collection.updateOne(
-          { _id: doc._id },
-          { $set: { _acl: newAcl } },
-          { session },
-        );
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: doc._id },
+            update: { $set: { _acl: newAcl } },
+          },
+        });
       }
+
+      if (bulkOps.length === BATCH_SIZE) {
+        await collection.bulkWrite(bulkOps, { session });
+        bulkOps = [];
+      }
+    }
+
+    if (bulkOps.length > 0) {
+      await collection.bulkWrite(bulkOps, { session });
     }
   }
 
   /**
    * Migrates nested DID fields within the `users` collection, specifically `data.builder` and `logs.acl.grantee`.
+   * Uses streaming and bulk writes to avoid loading entire collections into memory.
    */
   private async migrateUserSubdocuments(
     collection: Collection<UserDocument>,
     session?: ClientSession,
   ) {
-    const cursor = collection.find(
-      {
-        $or: [
-          { "data.builder": { $not: /^did:/ } },
-          { "data.builder": /^did:nil:/ },
-          { "logs.acl.grantee": { $not: /^did:/ } },
-          { "logs.acl.grantee": /^did:nil:/ },
-        ],
-      },
-      { session },
-    );
-    const docsToUpdate = await cursor.toArray();
-    if (docsToUpdate.length === 0) {
+    const query = {
+      $or: [
+        { "data.builder": { $not: /^did:/ } },
+        { "data.builder": /^did:nil:/ },
+        { "logs.acl.grantee": { $not: /^did:/ } },
+        { "logs.acl.grantee": /^did:nil:/ },
+      ],
+    };
+    const cursor = collection.find(query, { session });
+    const total = await collection.countDocuments(query, { session });
+    if (total === 0) {
       console.log(
         `- No legacy subdocuments to migrate in '${collection.collectionName}'.`,
       );
       return;
     }
     console.log(
-      `- Migrating subdocuments for ${docsToUpdate.length} documents in '${collection.collectionName}'...`,
+      `- Migrating subdocuments for ${total} documents in '${collection.collectionName}'...`,
     );
-    for (const doc of docsToUpdate) {
+
+    let bulkOps = [];
+    for await (const doc of cursor) {
       const newData = doc.data.map((ref) => ({
         ...ref,
         builder: normalizeDid(ref.builder),
@@ -292,11 +358,22 @@ export class did_migration implements MigrationInterface {
         }
         return log;
       });
-      await collection.updateOne(
-        { _id: doc._id },
-        { $set: { data: newData, logs: newLogs } },
-        { session },
-      );
+
+      bulkOps.push({
+        updateOne: {
+          filter: { _id: doc._id },
+          update: { $set: { data: newData, logs: newLogs } },
+        },
+      });
+
+      if (bulkOps.length === BATCH_SIZE) {
+        await collection.bulkWrite(bulkOps, { session });
+        bulkOps = [];
+      }
+    }
+
+    if (bulkOps.length > 0) {
+      await collection.bulkWrite(bulkOps, { session });
     }
   }
 
