@@ -1,5 +1,7 @@
 import { Effect as E, pipe } from "effect";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+import { StatusCodes } from "http-status-codes";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { GrantAccessError } from "#/common/errors";
 import { handleTaggedErrors } from "#/common/handler";
@@ -30,6 +32,30 @@ import {
 } from "./data.dto";
 import { DataMapper } from "./data.mapper";
 import * as DataService from "./data.services";
+import type { UploadResult } from "./data.types";
+
+/**
+ * Determines the appropriate HTTP status code for a bulk creation result.
+ * - 201 Created: All items were created successfully.
+ * - 207 Multi-Status: A mix of successful creations and errors occurred.
+ * - 400 Bad Request: All items failed to be created.
+ * - 200 OK: No items were processed (e.g., empty input array).
+ */
+function getBulkCreateStatus(result: UploadResult): ContentfulStatusCode {
+  const hasErrors = result.errors.length > 0;
+  const hasCreated = result.created.length > 0;
+
+  if (hasCreated && !hasErrors) {
+    return StatusCodes.CREATED;
+  }
+  if (hasCreated && hasErrors) {
+    return StatusCodes.MULTI_STATUS;
+  }
+  if (!hasCreated && hasErrors) {
+    return StatusCodes.BAD_REQUEST;
+  }
+  return StatusCodes.OK;
+}
 
 /**
  * Register POST /v1/data/delete
@@ -266,8 +292,17 @@ export function createOwnedData(options: ControllerOptions): void {
       security: [{ bearerAuth: [] }],
       summary: "Upload owned data",
       responses: {
-        200: {
-          description: "OK",
+        201: {
+          description: "Created - All items were successfully created",
+          content: {
+            "application/json": {
+              schema: resolver(CreateDataResponse),
+            },
+          },
+        },
+        207: {
+          description:
+            "Multi-Status - Partial success (mix of successes and errors)",
           content: {
             "application/json": {
               schema: resolver(CreateDataResponse),
@@ -275,6 +310,14 @@ export function createOwnedData(options: ControllerOptions): void {
           },
         },
         ...OpenApiSpecCommonErrorResponses,
+        400: {
+          description: "Bad Request - All items failed to be created",
+          content: {
+            "application/json": {
+              schema: resolver(CreateDataResponse),
+            },
+          },
+        },
       },
     }),
     zValidator("json", CreateOwnedDataRequest),
@@ -307,8 +350,11 @@ export function createOwnedData(options: ControllerOptions): void {
 
       return pipe(
         DataService.createOwnedRecords(c.env, command),
-        E.map((result) => DataMapper.toCreateDataResponse(result)),
-        E.map((response) => c.json<CreateDataResponse>(response)),
+        E.map((result) => {
+          const response = DataMapper.toCreateDataResponse(result);
+          const status = getBulkCreateStatus(result);
+          return c.json(response, status);
+        }),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -330,8 +376,17 @@ export function createStandardData(options: ControllerOptions): void {
       security: [{ bearerAuth: [] }],
       summary: "Upload standard data",
       responses: {
-        200: {
-          description: "OK",
+        201: {
+          description: "Created - All items were successfully created",
+          content: {
+            "application/json": {
+              schema: resolver(CreateDataResponse),
+            },
+          },
+        },
+        207: {
+          description:
+            "Multi-Status - Partial success (mix of successes and errors)",
           content: {
             "application/json": {
               schema: resolver(CreateDataResponse),
@@ -339,6 +394,14 @@ export function createStandardData(options: ControllerOptions): void {
           },
         },
         ...OpenApiSpecCommonErrorResponses,
+        400: {
+          description: "Bad Request - All items failed to be created",
+          content: {
+            "application/json": {
+              schema: resolver(CreateDataResponse),
+            },
+          },
+        },
       },
     }),
     zValidator("json", CreateStandardDataRequest),
@@ -355,8 +418,11 @@ export function createStandardData(options: ControllerOptions): void {
 
       return pipe(
         DataService.createStandardRecords(c.env, command),
-        E.map((result) => DataMapper.toCreateDataResponse(result)),
-        E.map((response) => c.json<CreateDataResponse>(response)),
+        E.map((result) => {
+          const response = DataMapper.toCreateDataResponse(result);
+          const status = getBulkCreateStatus(result);
+          return c.json(response, status);
+        }),
         handleTaggedErrors(c),
         E.runPromise,
       );
