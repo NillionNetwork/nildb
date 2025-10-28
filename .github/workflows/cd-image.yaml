@@ -66,6 +66,8 @@ jobs:
   create-and-push-manifest:
     runs-on: ubuntu-latest
     needs: build-and-push-arch
+    outputs:
+      short_sha: ${{ steps.vars.outputs.short_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -125,6 +127,6 @@ jobs:
               "client_payload":{
                 "ref":"${{ github.ref }}",
                 "sha":"${{ github.sha }}",
-                "tag":"${{ github.sha }}"
+                "tag":"${{ needs.create-and-push-manifest.outputs.short_sha }}"
               }
             }'

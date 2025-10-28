@@ -55,7 +55,7 @@ export const EnvVarsSchema = z.object({
     .int()
     .positive()
     .optional()
-    .default(60),
+    .default(1000),
   webPort: z.coerce.number().int().positive(),
 });
 export type EnvVars = z.infer<typeof EnvVarsSchema>;
