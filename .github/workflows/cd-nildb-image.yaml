@@ -65,7 +65,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ./packages/nildb/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
           tags: public.ecr.aws/k5d9x2g2/nildb-api:${{ needs.setup.outputs.short_sha }}-${{ matrix.arch }}

@@ -62,7 +62,7 @@ create-buildinfo:
 docker-build-local:
     docker buildx build \
       --tag public.ecr.aws/k5d9x2g2/nildb-api:local \
-      --file ./Dockerfile \
+      --file ./packages/nildb/Dockerfile \
       .
 
 # Clean build artifacts
