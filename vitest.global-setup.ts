@@ -1,5 +1,5 @@
 import dockerCompose from "docker-compose";
-import pino from "pino";
+import * as pino from "pino";
 import type { TestProject } from "vitest/node";
 
 const MAX_RETRIES = 300;
@@ -8,7 +8,7 @@ const composeOptions = {
   composeOptions: [["--project-name", "nildb-tests"]],
 };
 
-const log = pino({
+const log = pino.pino({
   transport: {
     target: "pino-pretty",
     options: {

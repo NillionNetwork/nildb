@@ -70,7 +70,12 @@ export async function buildFixture(
     keepDbs?: boolean;
   } = {},
 ): Promise<FixtureContext> {
-  dotenv.config({ path: [".env.test", ".env.test.nilauthclient"] });
+  dotenv.config({
+    path: [
+      "./packages/nildb/.env.test",
+      "./packages/nildb/.env.test.nilauthclient",
+    ],
+  });
   const id = new Date().toISOString().replaceAll(":", "").replaceAll(".", "_");
   const log = createTestLogger(id);
 

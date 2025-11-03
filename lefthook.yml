@@ -17,7 +17,7 @@ pre-push:
       run: pnpm biome check --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {push_files}
     tsc-check:
       glob: "*.{ts}"
-      run: pnpm exec tsc
+      run: pnpm exec tsc -b --noEmit
     test:
       glob: "*.{ts}"
       run: pnpm vitest run

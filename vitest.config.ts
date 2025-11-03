@@ -10,7 +10,7 @@ export default defineConfig({
       DEBUG: "@nillion*",
     },
     coverage: {
-      reporter: ["text", "json-summary", "json"] as const,
+      provider: "v8",
       reportOnFailure: true,
     },
     projects: [

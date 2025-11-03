@@ -10,7 +10,7 @@
     "test:integration": "vitest run --project=integration",
     "migrate": "pnpm nildb migrate",
     "check": "pnpm exec biome ci && pnpm exec tsc -b",
-    "fix": "pnpm exec biome check --fix --unsafe && pnpm exec tsc -b",
+    "fix": "pnpm exec biome check --fix --unsafe && pnpm exec tsc -b --noEmit",
     "fmt": "pnpm exec biome format --fix"
   },
   "engines": {
@@ -25,7 +25,9 @@
     "@types/elliptic": "^6.4.18",
     "@types/js-yaml": "^4.0.9",
     "@vitest/coverage-v8": "3.2.4",
+    "docker-compose": "^1.3.0",
     "lefthook": "^2.0.1",
+    "pino": "^10.1.0",
     "pino-pretty": "^13.1.2",
     "tsx": "^4.20.6",
     "type-fest": "^5.1.0",
@@ -34,5 +36,5 @@
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "3.2.4"
   },
-  "packageManager": "pnpm@10.19.0"
+  "packageManager": "pnpm@10.20.0"
 }
