@@ -50,7 +50,7 @@
   },
   "overrides": [
     {
-      "includes": ["./tests/**/*.ts"],
+      "includes": ["./packages/nildb/tests/**/*.ts"],
       "linter": {
         "rules": {
           "style": {

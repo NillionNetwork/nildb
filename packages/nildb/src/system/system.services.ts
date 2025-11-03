@@ -48,7 +48,7 @@ function getBuildInfo(ctx: AppBindings): BuildInfo {
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const buildInfoPath = path.join(__dirname, "../../buildinfo.json");
+    const buildInfoPath = path.join(__dirname, "../../../buildinfo.json");
     const content = fs.readFileSync(buildInfoPath, "utf-8");
     return JSON.parse(content) as BuildInfo;
   } catch (_error) {

@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Effect as E, pipe } from "effect";
 import type { Config as MongoMigrateConfig } from "mongo-migrate-ts/lib/config";
 import {
@@ -80,10 +82,13 @@ export async function mongoMigrateUp(
   database: string,
 ): Promise<void> {
   console.warn("! Database migration check");
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const migrationsDir = path.join(__dirname, "../../migrations");
   const config: MongoMigrateConfig = {
     uri,
     database,
-    migrationsDir: "./migrations",
+    migrationsDir,
     globPattern: "[0-9]*_[0-9]*_[a-z]*.ts",
     migrationNameTimestampFormat: "yyyyMMdd_HHmm",
   };

@@ -8,7 +8,8 @@ export const OpenApiSpecEmptySuccessResponses = {
   204: { description: ReasonPhrases.NO_CONTENT },
 } as const;
 
-export const OpenApiSpecCommonErrorResponses = {
+// biome-ignore lint/suspicious/noExplicitAny: Avoid TypeScript portability errors in monorepo — full type is would be very noisy
+export const OpenApiSpecCommonErrorResponses: Record<string, any> = {
   400: {
     description: ReasonPhrases.BAD_REQUEST,
     content: {
@@ -29,4 +30,4 @@ export const OpenApiSpecCommonErrorResponses = {
   500: {
     description: ReasonPhrases.INTERNAL_SERVER_ERROR,
   },
-} as const;
+};

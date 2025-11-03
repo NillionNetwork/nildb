@@ -12,52 +12,44 @@ install-hooks:
 
 # Format code
 fmt:
-    pnpm exec biome format --fix
+    pnpm fmt
 
 # Fix code issues (format + lint + type check)
 fix:
-    pnpm exec biome check --fix --unsafe
-    tsc
+    pnpm fix
 
 # Run linter and type checker (CI mode)
 check:
-    pnpm exec biome ci
-    tsc
+    pnpm check
 
 # Start the application
 start:
-    pnpm exec tsx src/main.ts
+    pnpm start
 
 # Run all tests
 test:
-    #!/usr/bin/env bash
-    set -o pipefail
-    just test-unit
-    just test-integration
+    pnpm test
 
 # Run unit tests
 test-unit:
-    #!/usr/bin/env bash
-    pnpm exec vitest run --project=unit
+    pnpm test:unit
 
 # Run integration tests
 test-integration:
-    #!/usr/bin/env bash
-    pnpm exec vitest run --project=integration
+    pnpm test:integration
 
 # Run tests with coverage
 test-coverage:
-    #!/usr/bin/env bash
-    pnpm exec vitest --coverage
+    pnpm --filter @nillion/nildb exec vitest --coverage
 
 # Run database migrations
 migrate:
-    pnpm exec tsx bin/migrate.ts
+    pnpm migrate
 
 # Build info for Docker
 create-buildinfo:
     #!/usr/bin/env bash
-    VERSION=$(cat package.json | jq -r .version)
+    VERSION=$(cat packages/nildb/package.json | jq -r .version)
     cat << EOF > buildinfo.json
     {
       "time": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",

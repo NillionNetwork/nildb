@@ -18,14 +18,14 @@ export default defineConfig({
         plugins: [tsconfigPaths()],
         test: {
           name: "unit",
-          include: ["tests/01-unit/**/*.test.ts"],
+          include: ["packages/nildb/tests/01-unit/**/*.test.ts"],
         },
       },
       {
         plugins: [tsconfigPaths()],
         test: {
           name: "integration",
-          include: ["tests/02-integration/**/*.test.ts"],
+          include: ["packages/nildb/tests/02-integration/**/*.test.ts"],
           globalSetup: "./vitest.global-setup.ts",
         },
       },
