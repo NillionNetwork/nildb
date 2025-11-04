@@ -3,15 +3,23 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    // Common test config that applies to all projects
+    // Common test config that apply to all projects
     testTimeout: 0,
     hookTimeout: 30000,
-    env: {
-      DEBUG: "@nillion*",
-    },
     coverage: {
       provider: "v8",
       reportOnFailure: true,
+      reporter: ["text", "json-summary", "json"],
+      // Explicitly define source files to analyze for coverage
+      include: ["packages/nildb/src/**/*.{js,ts}"],
+      // Exclude test files, fixtures, and build artifacts from coverage
+      exclude: [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "**/tests/**",
+      ],
     },
     projects: [
       {
@@ -35,6 +43,5 @@ export default defineConfig({
     // try and share the same nilchain wallet
     // ref: https://github.com/NillionNetwork/nildb/issues/174
     maxWorkers: 1,
-    minWorkers: 1,
   },
 });

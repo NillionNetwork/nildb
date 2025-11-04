@@ -25,7 +25,7 @@ check:
 
 # Format, fix, and type check all files
 fix:
-    pnpm exec biome check --fix --unsafe && pnpm exec tsc -b --noEmit
+    pnpm exec biome check --fix --unsafe && pnpm exec tsc -b
 
 # Format all files
 fmt:

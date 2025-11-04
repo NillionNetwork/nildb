@@ -95,9 +95,9 @@ export async function mongoMigrateUp(
 
   // mongo-migrate-ts is primarily a CLI tool, but we need to run migrations
   // programmatically on startup and in tests. Using dynamic import here to
-  // handle different module resolution between tsx (dist/) and vitest (lib/).
+  // handle different module resolution. Vitest 4 requires the compiled dist path.
   // additionally, we use a migratePath otherwise tsc complains about type issues in the lib
-  const migratePath = "mongo-migrate-ts/lib/commands/up" as const;
+  const migratePath = "mongo-migrate-ts/dist/lib/commands/up" as const;
   const migrate = await import(migratePath);
   await migrate.up({ config });
 }

@@ -7,10 +7,10 @@ import {
   type MongoClient,
   ObjectId,
 } from "mongodb";
-import type { CollectionDocument } from "#/collections/collections.types";
-import { CollectionName } from "#/common/mongo";
-import type { OwnedDocumentBase } from "#/data/data.types";
-import type { UserDocument } from "#/users/users.types";
+import type { CollectionDocument } from "../src/collections/collections.types.ts";
+import { CollectionName } from "../src/common/mongo.ts";
+import type { OwnedDocumentBase } from "../src/data/data.types.ts";
+import type { UserDocument } from "../src/users/users.types.ts";
 
 const PUBLIC_KEY_HEX_LENGTH = 66;
 const BATCH_SIZE = 1000;

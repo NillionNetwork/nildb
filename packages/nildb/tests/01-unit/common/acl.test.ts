@@ -1,12 +1,18 @@
+import type { CollectionDocument } from "@nildb/collections/collections.types";
+import { buildAccessControlledFilter } from "@nildb/common/acl";
 import { Effect as E, Exit } from "effect";
 import { UUID } from "mongodb";
-import { describe, expect, it, type Mock, vi } from "vitest";
-import * as CollectionsService from "#/collections/collections.services";
-import type { CollectionDocument } from "#/collections/collections.types";
-import { buildAccessControlledFilter } from "#/common/acl";
+import { describe, expect, it, vi } from "vitest";
 
-// Mock the entire collections service module
-vi.mock("#/collections/collections.services");
+// Create mock function in hoisted scope so it's available during vi.mock() execution
+const { mockFind } = vi.hoisted(() => ({
+  mockFind: vi.fn(),
+}));
+
+// Mock the entire collections service module using @nildb path alias
+vi.mock("@nildb/collections/collections.services", () => ({
+  find: mockFind,
+}));
 
 describe("buildAccessControlledFilter", () => {
   const collectionId = new UUID();
@@ -26,9 +32,7 @@ describe("buildAccessControlledFilter", () => {
     };
 
     it("should return the original filter when the requester is the owner", () => {
-      (CollectionsService.find as Mock).mockReturnValue(
-        E.succeed(mockStandardCollection),
-      );
+      mockFind.mockReturnValue(E.succeed(mockStandardCollection));
 
       const originalFilter = { a: 1 };
       const result = E.runSync(
@@ -45,9 +49,7 @@ describe("buildAccessControlledFilter", () => {
     });
 
     it("should fail with ResourceAccessDeniedError if the requester is not the owner", () => {
-      (CollectionsService.find as Mock).mockReturnValue(
-        E.succeed(mockStandardCollection),
-      );
+      mockFind.mockReturnValue(E.succeed(mockStandardCollection));
 
       const exit = E.runSyncExit(
         buildAccessControlledFilter(
@@ -79,9 +81,7 @@ describe("buildAccessControlledFilter", () => {
     };
 
     it("should return only the ACL filter if the original filter is empty", () => {
-      (CollectionsService.find as Mock).mockReturnValue(
-        E.succeed(mockOwnedCollection),
-      );
+      mockFind.mockReturnValue(E.succeed(mockOwnedCollection));
 
       const result = E.runSync(
         buildAccessControlledFilter(
@@ -104,9 +104,7 @@ describe("buildAccessControlledFilter", () => {
     });
 
     it("should combine the original filter and ACL filter with $and", () => {
-      (CollectionsService.find as Mock).mockReturnValue(
-        E.succeed(mockOwnedCollection),
-      );
+      mockFind.mockReturnValue(E.succeed(mockOwnedCollection));
 
       const originalFilter = { "data.field": "value" };
       const result = E.runSync(
@@ -135,9 +133,7 @@ describe("buildAccessControlledFilter", () => {
     });
 
     it("should combine the original filter and ACL filter for 'execute'", () => {
-      (CollectionsService.find as Mock).mockReturnValue(
-        E.succeed(mockOwnedCollection),
-      );
+      mockFind.mockReturnValue(E.succeed(mockOwnedCollection));
 
       const originalFilter = { "data.field": "value" };
       const result = E.runSync(

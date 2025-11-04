@@ -40,3 +40,5 @@ jobs:
         if: always()
         with:
           comment-on: "pr"
+          json-summary-path: ./coverage/coverage-summary.json
+          json-final-path: ./coverage/coverage-final.json

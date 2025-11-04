@@ -1,6 +1,6 @@
 import type { MigrationInterface } from "mongo-migrate-ts";
 import type { Db, MongoClient } from "mongodb";
-import { CollectionName } from "#/common/mongo";
+import { CollectionName } from "../src/common/mongo.ts";
 
 /**
  * Setup/teardown primary collections
