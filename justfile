@@ -53,19 +53,19 @@ build:
 
 # Run all tests (unit & integration)
 test:
-    vitest run
+    pnpm exec vitest run
 
 # Run unit tests
 test-unit:
-    vitest run --project=unit
+    pnpm exec vitest run --project=unit
 
 # Run integration tests
 test-integration:
-    vitest run --project=integration
+    pnpm exec vitest run --project=integration
 
 # Run tests with coverage
 test-coverage:
-    vitest run --coverage
+    pnpm exec vitest run --coverage
 
 # ------------------
 # --- Build & Docker
