@@ -2,51 +2,72 @@
 default:
     @just --list
 
-# Install dependencies
-install:
-    pnpm install
+# ------------------
+# --- Installation
+# ------------------
 
-# Install git hooks
-install-hooks:
+# Setup the repository (install dependencies and setup lefthook)
+init:
+    pnpm install
     lefthook install
 
-# Format code
-fmt:
-    pnpm fmt
+# ------------------
+# --- Quality
+# ------------------
 
-# Fix code issues (format + lint + type check)
-fix:
-    pnpm fix
-
-# Run linter and type checker (CI mode)
+# Check for formatting, lint, and type errors
 check:
-    pnpm check
+    pnpm exec biome ci && pnpm exec tsc -b --noEmit
 
-# Start the application
-start:
-    pnpm start
+# Format, fix, and type check all files
+fix:
+    pnpm exec biome check --fix --unsafe && pnpm exec tsc -b --noEmit
 
-# Run all tests
-test:
-    pnpm test
+# Format all files
+fmt:
+    pnpm exec biome format --write .
 
-# Run unit tests
-test-unit:
-    pnpm test:unit
+# ------------------
+# --- Application
+# ------------------
 
-# Run integration tests
-test-integration:
-    pnpm test:integration
-
-# Run tests with coverage
-test-coverage:
-    pnpm --filter @nillion/nildb exec vitest --coverage
+# Run the application using tsx
+dev:
+    pnpm --filter @nillion/nildb dev
 
 # Run database migrations
 migrate:
-    pnpm migrate
+    pnpm --filter @nillion/nildb exec tsx bin/migrate.ts
 
-# Build info for Docker
+# Build nildb
+build:
+    pnpm --filter @nillion/nildb build
+
+# ------------------
+# --- Testing
+# ------------------
+
+# Run all tests (unit & integration)
+test:
+    vitest run
+
+# Run unit tests
+test-unit:
+    vitest run --project=unit
+
+# Run integration tests
+test-integration:
+    vitest run --project=integration
+
+# Run tests with coverage
+test-coverage:
+    vitest run --coverage
+
+# ------------------
+# --- Build & Docker
+# ------------------
+
+# Create build info aretefact for Docker
 create-buildinfo:
     #!/usr/bin/env bash
     VERSION=$(cat packages/nildb/package.json | jq -r .version)
@@ -58,12 +79,16 @@ create-buildinfo:
     }
     EOF
 
-# Docker: Build image for specific architecture
-docker-build-local:
+# Build local Docker image
+docker-build-local: create-buildinfo
     docker buildx build \
       --tag public.ecr.aws/k5d9x2g2/nildb-api:local \
       --file ./packages/nildb/Dockerfile \
       .
+
+# ------------------
+# --- Cleanup
+# ------------------
 
 # Clean build artifacts
 clean:

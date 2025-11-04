@@ -2,17 +2,6 @@
   "private": true,
   "repository": "https://github.com/NillionNetwork/nildb",
   "type": "module",
-  "scripts": {
-    "nildb": "pnpm --filter @nillion/nildb",
-    "start": "pnpm nildb start",
-    "test": "vitest run",
-    "test:unit": "vitest run --project=unit",
-    "test:integration": "vitest run --project=integration",
-    "migrate": "pnpm nildb migrate",
-    "check": "pnpm exec biome ci && pnpm exec tsc -b",
-    "fix": "pnpm exec biome check --fix --unsafe && pnpm exec tsc -b --noEmit",
-    "fmt": "pnpm exec biome format --fix"
-  },
   "engines": {
     "node": ">=24"
   },
@@ -29,6 +18,7 @@
     "lefthook": "^2.0.1",
     "pino": "^10.1.0",
     "pino-pretty": "^13.1.2",
+    "tsdown": "^0.15.12",
     "tsx": "^4.20.6",
     "type-fest": "^5.1.0",
     "typescript": "^5.9.3",

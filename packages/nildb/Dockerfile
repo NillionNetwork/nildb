@@ -1,22 +1,20 @@
 # 1. Install all dependencies
 FROM node:24-alpine AS builder
 RUN corepack enable pnpm
-WORKDIR /app
+WORKDIR /build
 COPY . .
 RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @nillion/nildb build
+RUN pnpm deploy --prod --filter @nillion/nildb /app
+COPY buildinfo.json /app/buildinfo.json
 
-# 2. Create production deployment for the nildb package
-FROM builder AS deploy
-WORKDIR /app
-RUN pnpm deploy --prod --filter @nillion/nildb /prod/app
-
-# 3. Final, clean image with only production files
+# 2. Final image
 FROM node:24-alpine
 RUN corepack enable pnpm
 WORKDIR /app
-COPY --from=deploy /prod/app .
+COPY --from=builder /app .
 
 USER node
 EXPOSE 8080
-ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-ENTRYPOINT [ "pnpm", "exec", "tsx", "src/main.ts" ]
+ENV NODE_ENV=production
+CMD [ "node", "--enable-source-maps", "dist/main.mjs" ]
