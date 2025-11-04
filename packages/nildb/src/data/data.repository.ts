@@ -2,15 +2,13 @@ import { Effect as E, pipe } from "effect";
 import {
   type DeleteResult,
   type Document,
+  type Filter,
+  MongoBulkWriteError,
   type StrictFilter,
+  type UpdateFilter,
   type UpdateResult,
   UUID,
 } from "mongodb";
-import {
-  type Filter,
-  MongoBulkWriteError,
-  type UpdateFilter,
-} from "mongodb/lib/beta";
 import type { JsonObject } from "type-fest";
 import type { CollectionDocument } from "#/collections/collections.types";
 import { applyCoercions } from "#/common/coercion";
