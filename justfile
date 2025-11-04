@@ -11,6 +11,10 @@ init:
     pnpm install
     lefthook install
 
+# Install dependencies
+install:
+    pnpm install
+
 # ------------------
 # --- Quality
 # ------------------
