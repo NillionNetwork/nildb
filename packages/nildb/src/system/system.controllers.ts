@@ -24,6 +24,7 @@ import {
   requireNucNamespace,
 } from "#/middleware/capability.middleware";
 import type { DeleteQueryResponse } from "#/queries/queries.dto";
+// biome-ignore lint/correctness/useImportExtensions: its a .json file
 import packageJson from "../../package.json";
 import {
   ReadAboutNodeResponse,
@@ -31,9 +32,9 @@ import {
   SetLogLevelRequest,
   type StartMaintenanceResponse,
   type StopMaintenanceResponse,
-} from "./system.dto";
-import { SystemDataMapper } from "./system.mapper";
-import * as SystemService from "./system.services";
+} from "./system.dto.js";
+import { SystemDataMapper } from "./system.mapper.js";
+import * as SystemService from "./system.services.js";
 
 /**
  * Handle GET /about

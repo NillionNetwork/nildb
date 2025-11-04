@@ -2,8 +2,11 @@ import { faker } from "@faker-js/faker";
 import { Did } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
-import type { FixtureContext } from "./fixture";
-import { type BuilderTestClient, createBuilderTestClient } from "./test-client";
+import type { FixtureContext } from "./fixture.js";
+import {
+  type BuilderTestClient,
+  createBuilderTestClient,
+} from "./test-client.js";
 
 export async function createRegisteredBuilder(
   c: FixtureContext,

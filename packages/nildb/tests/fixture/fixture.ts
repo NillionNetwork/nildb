@@ -19,7 +19,7 @@ import {
   loadBindings,
 } from "#/env";
 import type { QueryVariable } from "#/queries/queries.types";
-import { createTestLogger } from "./logger";
+import { createTestLogger } from "./logger.js";
 import {
   type AdminTestClient,
   type BuilderTestClient,
@@ -27,7 +27,7 @@ import {
   createBuilderTestClient,
   createUserTestClient,
   type UserTestClient,
-} from "./test-client";
+} from "./test-client.js";
 
 export type FixtureContext = {
   id: string;

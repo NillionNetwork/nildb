@@ -14,7 +14,7 @@ import {
 } from "#/common/mongo";
 import type { PaginationQuery } from "#/common/pagination.dto";
 import type { AppBindings } from "#/env";
-import type { QueryDocument } from "./queries.types";
+import type { QueryDocument } from "./queries.types.js";
 
 /**
  * Insert query document.

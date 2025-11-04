@@ -1,5 +1,5 @@
 import type { ControllerOptions } from "#/common/types";
-import * as UserController from "./users.controllers";
+import * as UserController from "./users.controllers.js";
 
 /**
  * Registers the users domain.

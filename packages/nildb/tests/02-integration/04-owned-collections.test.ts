@@ -17,14 +17,14 @@ import {
   assertDefined,
   assertDocumentCount,
   expectBuilder,
-} from "../fixture/assertions";
-import type { CollectionFixture, QueryFixture } from "../fixture/fixture";
-import { createTestFixtureExtension } from "../fixture/it";
+} from "../fixture/assertions.js";
+import type { CollectionFixture, QueryFixture } from "../fixture/fixture.js";
+import { createTestFixtureExtension } from "../fixture/it.js";
 import {
   type BuilderTestClient,
   createBuilderTestClient,
   createUserTestClient,
-} from "../fixture/test-client";
+} from "../fixture/test-client.js";
 
 describe("Owned Collections", () => {
   const collection = collectionJson as unknown as CollectionFixture;

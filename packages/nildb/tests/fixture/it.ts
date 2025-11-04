@@ -1,10 +1,10 @@
 import * as vitest from "vitest";
-import type { FixtureContext } from "./fixture";
+import type { FixtureContext } from "./fixture.js";
 import {
   buildFixture,
   type CollectionFixture,
   type QueryFixture,
-} from "./fixture";
+} from "./fixture.js";
 
 type TestFixtureExtension = {
   it: vitest.TestAPI<{ c: FixtureContext }>;

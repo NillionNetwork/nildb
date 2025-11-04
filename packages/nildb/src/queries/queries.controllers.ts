@@ -27,9 +27,9 @@ import {
   ReadQueryRunByIdResponse,
   RunQueryRequest,
   RunQueryResponse,
-} from "./queries.dto";
-import { QueriesDataMapper } from "./queries.mapper";
-import * as QueriesService from "./queries.services";
+} from "./queries.dto.js";
+import { QueriesDataMapper } from "./queries.mapper.js";
+import * as QueriesService from "./queries.services.js";
 
 /**
  * Handle POST /v1/queries

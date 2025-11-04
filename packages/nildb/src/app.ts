@@ -1,18 +1,18 @@
 import { Hono } from "hono";
-import { buildBuildersRouter } from "./builders/builders.router";
-import { buildCollectionsRouter } from "./collections/collections.router";
-import type { ControllerOptions } from "./common/types";
-import { buildDataRouter } from "./data/data.router";
-import type { AppBindings, AppEnv } from "./env";
-import { injectBindingsMiddleware } from "./middleware/bindings.middleware";
-import { corsMiddleware } from "./middleware/cors.middleware";
-import { limitRequestBodySizeMiddleware } from "./middleware/limit-body.middleware";
-import { loggerMiddleware } from "./middleware/logger.middleware";
-import { maintenanceMiddleware } from "./middleware/maintenance.middleware";
-import { rateLimitMiddleware } from "./middleware/rate-limit.middleware";
-import { buildQueriesRouter } from "./queries/queries.router";
-import { buildSystemRouter } from "./system/system.router";
-import { buildUserRouter } from "./users/users.router";
+import { buildBuildersRouter } from "./builders/builders.router.js";
+import { buildCollectionsRouter } from "./collections/collections.router.js";
+import type { ControllerOptions } from "./common/types.js";
+import { buildDataRouter } from "./data/data.router.js";
+import type { AppBindings, AppEnv } from "./env.js";
+import { injectBindingsMiddleware } from "./middleware/bindings.middleware.js";
+import { corsMiddleware } from "./middleware/cors.middleware.js";
+import { limitRequestBodySizeMiddleware } from "./middleware/limit-body.middleware.js";
+import { loggerMiddleware } from "./middleware/logger.middleware.js";
+import { maintenanceMiddleware } from "./middleware/maintenance.middleware.js";
+import { rateLimitMiddleware } from "./middleware/rate-limit.middleware.js";
+import { buildQueriesRouter } from "./queries/queries.router.js";
+import { buildSystemRouter } from "./system/system.router.js";
+import { buildUserRouter } from "./users/users.router.js";
 
 export type App = Hono<AppEnv>;
 

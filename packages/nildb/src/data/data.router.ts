@@ -1,5 +1,5 @@
 import type { ControllerOptions } from "#/common/types";
-import * as DataController from "./data.controllers";
+import * as DataController from "./data.controllers.js";
 
 /**
  * Registers all data-related routes with the application.

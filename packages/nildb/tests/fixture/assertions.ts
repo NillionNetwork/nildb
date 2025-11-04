@@ -4,7 +4,7 @@ import type { ApiErrorResponse, ApiSuccessResponse } from "#/common/handler";
 import { CollectionName } from "#/common/mongo";
 import type { UuidDto } from "#/common/types";
 import type { ReadQueryRunByIdResponse } from "#/queries/queries.dto";
-import type { FixtureContext } from "./fixture";
+import type { FixtureContext } from "./fixture.js";
 
 export function assertDefined<T>(
   c: FixtureContext,

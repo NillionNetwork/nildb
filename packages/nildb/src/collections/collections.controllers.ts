@@ -29,8 +29,8 @@ import {
   ListCollectionsResponse,
   ReadCollectionMetadataRequestParams,
   ReadCollectionMetadataResponse,
-} from "./collections.dto";
-import * as CollectionsService from "./collections.services";
+} from "./collections.dto.js";
+import * as CollectionsService from "./collections.services.js";
 
 /**
  * Handle GET /v1/collections?limit={number}&offset={number}

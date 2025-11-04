@@ -30,7 +30,7 @@ import type {
   DeleteUserDataCommand,
   UpdateUserDataCommand,
 } from "#/users/users.types";
-import * as DataRepository from "./data.repository";
+import * as DataRepository from "./data.repository.js";
 import type {
   CreateOwnedDataCommand,
   CreateStandardDataCommand,
@@ -42,7 +42,7 @@ import type {
   RecentDataCommand,
   UpdateDataCommand,
   UploadResult,
-} from "./data.types";
+} from "./data.types.js";
 
 /**
  * Create owned records.

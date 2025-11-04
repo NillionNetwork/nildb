@@ -2,9 +2,10 @@ import { type ServerType, serve } from "@hono/node-server";
 import { Command } from "commander";
 import dotenv from "dotenv";
 import { mongoMigrateUp } from "#/common/mongo";
+// biome-ignore lint/correctness/useImportExtensions: its a .json file
 import packageJson from "../package.json";
-import { buildApp } from "./app";
-import { FeatureFlag, hasFeatureFlag, loadBindings } from "./env";
+import { buildApp } from "./app.js";
+import { FeatureFlag, hasFeatureFlag, loadBindings } from "./env.js";
 
 export type NilDbCliOptions = {
   envFile: string;

@@ -21,9 +21,9 @@ import {
   type RegisterBuilderResponse,
   UpdateProfileRequest,
   type UpdateProfileResponse,
-} from "./builders.dto";
-import { BuilderDataMapper } from "./builders.mapper";
-import * as BuilderService from "./builders.services";
+} from "./builders.dto.js";
+import { BuilderDataMapper } from "./builders.mapper.js";
+import * as BuilderService from "./builders.services.js";
 
 /**
  * Handle POST /v1/builders/register

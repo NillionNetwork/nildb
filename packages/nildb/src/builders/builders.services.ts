@@ -10,7 +10,7 @@ import {
 } from "#/common/errors";
 import type { AppBindings } from "#/env";
 import * as QueriesService from "#/queries/queries.services";
-import * as BuildersRepository from "./builders.repository";
+import * as BuildersRepository from "./builders.repository.js";
 import type {
   AddBuilderCollectionCommand,
   AddBuilderQueryCommand,
@@ -19,7 +19,7 @@ import type {
   RemoveBuilderCollectionCommand,
   RemoveBuilderQueryCommand,
   UpdateProfileCommand,
-} from "./builders.types";
+} from "./builders.types.js";
 
 /**
  * Find builder by DID.

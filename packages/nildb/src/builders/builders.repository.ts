@@ -18,7 +18,7 @@ import {
   MongoErrorCode,
 } from "#/common/mongo";
 import type { AppBindings } from "#/env";
-import type { BuilderDocument } from "./builders.types";
+import type { BuilderDocument } from "./builders.types.js";
 
 /**
  * Insert builder document.

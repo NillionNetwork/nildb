@@ -6,8 +6,8 @@ import { createUuidDto, type UuidDto } from "#/common/types";
 import type { StandardDocumentBase } from "#/data/data.types";
 import standardCollectionJson from "../data/wallet.standard.collection.json";
 import standardQueryJson from "../data/wallet.standard.query.json";
-import type { CollectionFixture, QueryFixture } from "../fixture/fixture";
-import { createTestFixtureExtension } from "../fixture/it";
+import type { CollectionFixture, QueryFixture } from "../fixture/fixture.js";
+import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("Standard Collections and Queries", () => {
   const standardCollection =

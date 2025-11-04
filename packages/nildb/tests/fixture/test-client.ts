@@ -59,8 +59,8 @@ import {
   type RevokeAccessToDataRequest,
   type UpdateUserDataRequest,
 } from "#/users/users.dto";
-import type { FixtureContext } from "./fixture";
-import { ResponseHandler } from "./response-handler";
+import type { FixtureContext } from "./fixture.js";
+import { ResponseHandler } from "./response-handler.js";
 
 /**
  * Base configuration for test client creation.

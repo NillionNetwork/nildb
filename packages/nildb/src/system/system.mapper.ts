@@ -3,13 +3,13 @@ import type {
   ReadAboutNodeResponse,
   ReadLogLevelResponse,
   SetLogLevelRequest,
-} from "./system.dto";
+} from "./system.dto.js";
 import type {
   AboutNode,
   SetLogLevelCommand,
   StartMaintenanceCommand,
   StopMaintenanceCommand,
-} from "./system.types";
+} from "./system.types.js";
 
 /**
  * System data mapper.

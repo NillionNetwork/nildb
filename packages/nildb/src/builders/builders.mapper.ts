@@ -4,12 +4,12 @@ import type {
   ReadProfileResponse,
   RegisterBuilderRequest,
   UpdateProfileRequest,
-} from "./builders.dto";
+} from "./builders.dto.js";
 import type {
   BuilderDocument,
   CreateBuilderCommand,
   UpdateProfileCommand,
-} from "./builders.types";
+} from "./builders.types.js";
 
 /**
  * Builder data mapper.

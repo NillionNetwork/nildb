@@ -7,8 +7,8 @@ import { z } from "zod";
 import type { BuilderDocument } from "#/builders/builders.types";
 import { Cache } from "#/common/cache";
 import { createLogger, LogLevel } from "#/common/logger";
-import { initAndCreateDbClients } from "./common/mongo";
-import type { UserDocument } from "./users/users.types";
+import { initAndCreateDbClients } from "./common/mongo.js";
+import type { UserDocument } from "./users/users.types.js";
 
 export const PRIVATE_KEY_LENGTH = 64;
 export const PUBLIC_KEY_LENGTH = 66;

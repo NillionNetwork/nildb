@@ -20,7 +20,7 @@ import type {
   TailDataResponse,
   UpdateDataRequest,
   UpdateDataResponse,
-} from "./data.dto";
+} from "./data.dto.js";
 import type {
   CreateOwnedDataCommand,
   CreateStandardDataCommand,
@@ -30,7 +30,7 @@ import type {
   RecentDataCommand,
   UpdateDataCommand,
   UploadResult,
-} from "./data.types";
+} from "./data.types.js";
 
 export const DataMapper = {
   /**

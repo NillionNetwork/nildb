@@ -24,7 +24,7 @@ import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import { validateSchema } from "#/common/validator";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
-import * as CollectionsRepository from "./collections.repository";
+import * as CollectionsRepository from "./collections.repository.js";
 
 /**
  * Retrieves a paginated list of a builder's collections

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { Effect as E, pipe } from "effect";
 import type { CollectionNotFoundError, DatabaseError } from "#/common/errors";
 import type { AppBindings } from "#/env";
-import * as SystemRepository from "./system.repository";
+import * as SystemRepository from "./system.repository.js";
 import type {
   AboutNode,
   BuildInfo,
@@ -12,7 +12,7 @@ import type {
   SetLogLevelCommand,
   StartMaintenanceCommand,
   StopMaintenanceCommand,
-} from "./system.types";
+} from "./system.types.js";
 
 const started = new Date();
 let buildInfo: BuildInfo;

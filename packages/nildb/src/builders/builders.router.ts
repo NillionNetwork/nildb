@@ -1,5 +1,5 @@
 import type { ControllerOptions } from "#/common/types";
-import * as BuilderController from "./builders.controllers";
+import * as BuilderController from "./builders.controllers.js";
 
 /**
  * Registers the builders domain.

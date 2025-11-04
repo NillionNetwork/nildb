@@ -2,7 +2,7 @@
 import type { StatusCodes } from "http-status-codes";
 import type z from "zod";
 import type { ApiErrorResponse } from "#/common/handler";
-import type { FixtureContext } from "./fixture";
+import type { FixtureContext } from "./fixture.js";
 
 export class ResponseHandler<TSuccess = unknown> {
   constructor(

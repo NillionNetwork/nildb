@@ -14,14 +14,14 @@ import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import * as DataRepository from "#/data/data.repository";
 import type { AppBindings } from "#/env";
 import { UserDataMapper, UserLoggerMapper } from "#/users/users.mapper";
-import * as UserRepository from "./users.repository";
+import * as UserRepository from "./users.repository.js";
 import type {
   DataDocumentReference,
   GrantAccessToDataCommand,
   RevokeAccessToDataCommand,
   UpsertUserCommand,
   UserDocument,
-} from "./users.types";
+} from "./users.types.js";
 
 /**
  * Update or create a user document in the database.

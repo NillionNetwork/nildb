@@ -19,7 +19,7 @@ import type {
   RevokeAccessToDataRequest,
   UpdateUserDataRequest,
   UserDataLogs,
-} from "./users.dto";
+} from "./users.dto.js";
 import type {
   Acl,
   DataDocumentReference,
@@ -29,7 +29,7 @@ import type {
   RevokeAccessToDataCommand,
   UpdateUserDataCommand,
   UserDocument,
-} from "./users.types";
+} from "./users.types.js";
 
 /**
  * User data mapper.

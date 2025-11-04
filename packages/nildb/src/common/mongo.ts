@@ -12,7 +12,7 @@ import {
 import { CollectionNotFoundError, DatabaseError } from "#/common/errors";
 import type { UuidDto } from "#/common/types";
 import type { AppBindings, EnvVars } from "#/env";
-import type { CoercibleMap } from "./coercion";
+import type { CoercibleMap } from "./coercion.js";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
 // identifier across the cluster.

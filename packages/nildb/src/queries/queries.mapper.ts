@@ -10,7 +10,7 @@ import type {
   ReadQueryRunByIdResponse,
   RunQueryRequest,
   RunQueryResponse,
-} from "./queries.dto";
+} from "./queries.dto.js";
 import type {
   AddQueryCommand,
   DeleteQueryCommand,
@@ -20,7 +20,7 @@ import type {
   ReadQueryByIdCommand,
   RunQueryCommand,
   RunQueryJobDocument,
-} from "./queries.types";
+} from "./queries.types.js";
 
 export const QueriesDataMapper = {
   /**

@@ -20,9 +20,10 @@ import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import { validateData } from "#/common/validator";
 import * as DataService from "#/data/data.services";
 import type { AppBindings } from "#/env";
+// biome-ignore lint/correctness/useImportExtensions: its a .json file
 import pipelineSchema from "./mongodb_pipeline.json";
-import * as RunQueryJobsRepository from "./queries.jobs.repository";
-import * as QueriesRepository from "./queries.repository";
+import * as RunQueryJobsRepository from "./queries.jobs.repository.js";
+import * as QueriesRepository from "./queries.repository.js";
 import type {
   AddQueryCommand,
   DeleteQueryCommand,
@@ -32,7 +33,7 @@ import type {
   ReadQueryByIdCommand,
   RunQueryCommand,
   RunQueryJobDocument,
-} from "./queries.types";
+} from "./queries.types.js";
 
 /**
  * Add query.

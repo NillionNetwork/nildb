@@ -13,7 +13,7 @@ import {
 import { CollectionName, checkCollectionExists } from "#/common/mongo";
 import type { PaginationQuery } from "#/common/pagination.dto";
 import type { AppBindings } from "#/env";
-import type { RunQueryJobDocument } from "./queries.types";
+import type { RunQueryJobDocument } from "./queries.types.js";
 
 /**
  * Create query job document.

@@ -8,7 +8,7 @@ import type {
   ListCollectionsResponse,
   ReadCollectionMetadataRequestParams,
   ReadCollectionMetadataResponse,
-} from "./collections.dto";
+} from "./collections.dto.js";
 import type {
   CollectionDocument,
   CollectionMetadata,
@@ -17,7 +17,7 @@ import type {
   DeleteCollectionCommand,
   DropIndexCommand,
   ReadCollectionByIdCommand,
-} from "./collections.types";
+} from "./collections.types.js";
 
 export const CollectionsDataMapper = {
   /**

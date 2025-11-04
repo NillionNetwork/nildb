@@ -38,7 +38,7 @@ import type {
   PartialDataDocumentDto,
   StandardDocumentBase,
   UploadResult,
-} from "./data.types";
+} from "./data.types.js";
 
 /**
  * Create data collection.
