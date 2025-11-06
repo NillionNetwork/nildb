@@ -1,9 +1,9 @@
+import { normalizeIdentifier } from "@nildb/common/did-utils";
+import type { DocumentBase } from "@nildb/common/mongo";
+import type { Paginated } from "@nildb/common/pagination.dto";
 import type { DeleteResult, UpdateResult } from "mongodb";
 import { UUID } from "mongodb";
 import type { Logger } from "pino";
-import { normalizeIdentifier } from "#/common/did-utils";
-import type { DocumentBase } from "#/common/mongo";
-import type { Paginated } from "#/common/pagination.dto";
 import type {
   CreateDataResponse,
   CreateOwnedDataRequest,

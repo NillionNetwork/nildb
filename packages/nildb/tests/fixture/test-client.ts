@@ -1,31 +1,21 @@
 /** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
-import {
-  Builder,
-  Did,
-  type Envelope,
-  NilauthClient,
-  type Payer,
-  PayerBuilder,
-  Signer,
-} from "@nillion/nuc";
-import { StatusCodes } from "http-status-codes";
-import { vi } from "vitest";
-import type { App } from "#/app";
+
+import type { App } from "@nildb/app";
 import {
   ReadProfileResponse,
   type RegisterBuilderRequest,
   type UpdateProfileRequest,
-} from "#/builders/builders.dto";
+} from "@nildb/builders/builders.dto";
 import {
   type CreateCollectionIndexRequest,
   type CreateCollectionRequest,
   ListCollectionsResponse,
   ReadCollectionMetadataResponse,
-} from "#/collections/collections.dto";
-import { NucCmd } from "#/common/nuc-cmd-tree";
-import type { PaginationQuery } from "#/common/pagination.dto";
-import { PathsV1 } from "#/common/paths";
-import type { UuidDto } from "#/common/types";
+} from "@nildb/collections/collections.dto";
+import { NucCmd } from "@nildb/common/nuc-cmd-tree";
+import type { PaginationQuery } from "@nildb/common/pagination.dto";
+import { PathsV1 } from "@nildb/common/paths";
+import type { UuidDto } from "@nildb/common/types";
 import {
   CreateDataResponse,
   type CreateOwnedDataRequest,
@@ -37,7 +27,7 @@ import {
   TailDataResponse,
   type UpdateDataRequest,
   UpdateDataResponse,
-} from "#/data/data.dto";
+} from "@nildb/data/data.dto";
 import {
   type CreateQueryRequest,
   ReadQueriesResponse,
@@ -45,12 +35,12 @@ import {
   ReadQueryRunByIdResponse,
   type RunQueryRequest,
   RunQueryResponse,
-} from "#/queries/queries.dto";
+} from "@nildb/queries/queries.dto";
 import {
   ReadAboutNodeResponse,
   ReadLogLevelResponse,
   type SetLogLevelRequest,
-} from "#/system/system.dto";
+} from "@nildb/system/system.dto";
 import {
   type GrantAccessToDataRequest,
   ListDataReferencesResponse,
@@ -58,7 +48,18 @@ import {
   ReadUserProfileResponse,
   type RevokeAccessToDataRequest,
   type UpdateUserDataRequest,
-} from "#/users/users.dto";
+} from "@nildb/users/users.dto";
+import {
+  Builder,
+  Did,
+  type Envelope,
+  NilauthClient,
+  type Payer,
+  PayerBuilder,
+  Signer,
+} from "@nillion/nuc";
+import { StatusCodes } from "http-status-codes";
+import { vi } from "vitest";
 import type { FixtureContext } from "./fixture.js";
 import { ResponseHandler } from "./response-handler.js";
 

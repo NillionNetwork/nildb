@@ -1,9 +1,9 @@
 import { faker } from "@faker-js/faker";
+import { createUuidDto, type UuidDto } from "@nildb/common/types";
+import type { StandardDocumentBase } from "@nildb/data/data.types";
 import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
-import { createUuidDto, type UuidDto } from "#/common/types";
-import type { StandardDocumentBase } from "#/data/data.types";
 import standardCollectionJson from "../data/wallet.standard.collection.json";
 import standardQueryJson from "../data/wallet.standard.query.json";
 import type { CollectionFixture, QueryFixture } from "../fixture/fixture.js";

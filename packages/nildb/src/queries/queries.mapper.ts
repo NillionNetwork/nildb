@@ -1,5 +1,5 @@
+import type { Paginated, PaginationQuery } from "@nildb/common/pagination.dto";
 import { UUID } from "mongodb";
-import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
 import type {
   ByIdRequestParams,
   CreateQueryRequest,

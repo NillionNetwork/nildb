@@ -1,8 +1,8 @@
+import type { DocumentBase } from "@nildb/common/mongo";
+import type { PaginationQuery } from "@nildb/common/pagination.dto";
+import type { UuidDto } from "@nildb/common/types";
+import type { Acl } from "@nildb/users/users.types";
 import type { UUID } from "mongodb";
-import type { DocumentBase } from "#/common/mongo";
-import type { PaginationQuery } from "#/common/pagination.dto";
-import type { UuidDto } from "#/common/types";
-import type { Acl } from "#/users/users.types";
 
 /**
  * Standard document base.

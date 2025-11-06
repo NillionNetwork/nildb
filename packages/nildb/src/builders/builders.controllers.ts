@@ -1,19 +1,19 @@
-import { Effect as E, pipe } from "effect";
-import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
-import { handleTaggedErrors } from "#/common/handler";
-import { NucCmd } from "#/common/nuc-cmd-tree";
+import { handleTaggedErrors } from "@nildb/common/handler";
+import { NucCmd } from "@nildb/common/nuc-cmd-tree";
 import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
-} from "#/common/openapi";
-import { PathsV1 } from "#/common/paths";
-import type { ControllerOptions } from "#/common/types";
+} from "@nildb/common/openapi";
+import { PathsV1 } from "@nildb/common/paths";
+import type { ControllerOptions } from "@nildb/common/types";
 import {
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
-} from "#/middleware/capability.middleware";
+} from "@nildb/middleware/capability.middleware";
+import { Effect as E, pipe } from "effect";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+import { StatusCodes } from "http-status-codes";
 import {
   type DeleteBuilderResponse,
   ReadProfileResponse,

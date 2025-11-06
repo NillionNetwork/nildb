@@ -1,9 +1,12 @@
+import {
+  type CollectionNotFoundError,
+  DatabaseError,
+} from "@nildb/common/errors";
+import { CollectionName, checkCollectionExists } from "@nildb/common/mongo";
+import type { AppBindings } from "@nildb/env";
+import type { MaintenanceStatusDocument } from "@nildb/system/system.types";
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UpdateOptions } from "mongodb";
-import { type CollectionNotFoundError, DatabaseError } from "#/common/errors";
-import { CollectionName, checkCollectionExists } from "#/common/mongo";
-import type { AppBindings } from "#/env";
-import type { MaintenanceStatusDocument } from "#/system/system.types";
 
 /**
  * Start maintenance mode.

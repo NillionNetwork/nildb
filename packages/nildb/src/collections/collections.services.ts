@@ -1,6 +1,4 @@
-import { Effect as E, pipe } from "effect";
-import type { CreateIndexesOptions, IndexSpecification } from "mongodb";
-import * as BuildersService from "#/builders/builders.services";
+import * as BuildersService from "@nildb/builders/builders.services";
 import type {
   CollectionDocument,
   CollectionMetadata,
@@ -9,8 +7,8 @@ import type {
   DeleteCollectionCommand,
   DropIndexCommand,
   ReadCollectionByIdCommand,
-} from "#/collections/collections.types";
-import { enforceBuilderOwnership } from "#/common/acl";
+} from "@nildb/collections/collections.types";
+import { enforceBuilderOwnership } from "@nildb/common/acl";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -19,11 +17,13 @@ import type {
   IndexNotFoundError,
   InvalidIndexOptionsError,
   ResourceAccessDeniedError,
-} from "#/common/errors";
-import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
-import { validateSchema } from "#/common/validator";
-import * as DataService from "#/data/data.services";
-import type { AppBindings } from "#/env";
+} from "@nildb/common/errors";
+import type { Paginated, PaginationQuery } from "@nildb/common/pagination.dto";
+import { validateSchema } from "@nildb/common/validator";
+import * as DataService from "@nildb/data/data.services";
+import type { AppBindings } from "@nildb/env";
+import { Effect as E, pipe } from "effect";
+import type { CreateIndexesOptions, IndexSpecification } from "mongodb";
 import * as CollectionsRepository from "./collections.repository.js";
 
 /**

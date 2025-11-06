@@ -1,3 +1,30 @@
+import * as CollectionsService from "@nildb/collections/collections.services";
+import {
+  buildAccessControlledFilter,
+  enforceBuilderOwnership,
+} from "@nildb/common/acl";
+import { applyCoercions } from "@nildb/common/coercion";
+import type {
+  CollectionNotFoundError,
+  DatabaseError,
+  DataValidationError,
+  DocumentNotFoundError,
+  InvalidIndexOptionsError,
+  ResourceAccessDeniedError,
+} from "@nildb/common/errors";
+import {
+  addDocumentBaseCoercions,
+  type DocumentBase,
+} from "@nildb/common/mongo";
+import type { Paginated } from "@nildb/common/pagination.dto";
+import { validateData } from "@nildb/common/validator";
+import type { AppBindings } from "@nildb/env";
+import type { QueryDocument } from "@nildb/queries/queries.types";
+import * as UsersService from "@nildb/users/users.services";
+import type {
+  DeleteUserDataCommand,
+  UpdateUserDataCommand,
+} from "@nildb/users/users.types";
 import { Effect as E, pipe } from "effect";
 import {
   type DeleteResult,
@@ -6,30 +33,6 @@ import {
   UUID,
 } from "mongodb";
 import type { JsonObject } from "type-fest";
-import * as CollectionsService from "#/collections/collections.services";
-import {
-  buildAccessControlledFilter,
-  enforceBuilderOwnership,
-} from "#/common/acl";
-import { applyCoercions } from "#/common/coercion";
-import type {
-  CollectionNotFoundError,
-  DatabaseError,
-  DataValidationError,
-  DocumentNotFoundError,
-  InvalidIndexOptionsError,
-  ResourceAccessDeniedError,
-} from "#/common/errors";
-import { addDocumentBaseCoercions, type DocumentBase } from "#/common/mongo";
-import type { Paginated } from "#/common/pagination.dto";
-import { validateData } from "#/common/validator";
-import type { AppBindings } from "#/env";
-import type { QueryDocument } from "#/queries/queries.types";
-import * as UsersService from "#/users/users.services";
-import type {
-  DeleteUserDataCommand,
-  UpdateUserDataCommand,
-} from "#/users/users.types";
 import * as DataRepository from "./data.repository.js";
 import type {
   CreateOwnedDataCommand,

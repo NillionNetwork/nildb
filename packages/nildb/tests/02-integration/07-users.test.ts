@@ -1,8 +1,8 @@
+import { createUuidDto } from "@nildb/common/types";
 import { describe } from "vitest";
-import { createUuidDto } from "#/common/types";
-import simpleCollection from "#tests/data/simple.collection.json";
-import simpleQuery from "#tests/data/simple.query.json";
-import { createTestFixtureExtension } from "#tests/fixture/it";
+import simpleCollection from "../data/simple.collection.json";
+import simpleQuery from "../data/simple.query.json";
+import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("User Endpoints", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

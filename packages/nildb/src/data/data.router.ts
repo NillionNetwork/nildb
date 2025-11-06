@@ -1,4 +1,4 @@
-import type { ControllerOptions } from "#/common/types";
+import type { ControllerOptions } from "@nildb/common/types";
 import * as DataController from "./data.controllers.js";
 
 /**

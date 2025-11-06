@@ -1,15 +1,15 @@
-import { Effect as E, pipe } from "effect";
-import type { UUID } from "mongodb";
-import * as CollectionsService from "#/collections/collections.services";
+import * as CollectionsService from "@nildb/collections/collections.services";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
   type DataValidationError,
   type DocumentNotFoundError,
   ResourceAccessDeniedError,
-} from "#/common/errors";
-import type { AppBindings } from "#/env";
-import type { Permission, UserDocument } from "#/users/users.types";
+} from "@nildb/common/errors";
+import type { AppBindings } from "@nildb/env";
+import type { Permission, UserDocument } from "@nildb/users/users.types";
+import { Effect as E, pipe } from "effect";
+import type { UUID } from "mongodb";
 
 export function enforceDataOwnership(
   user: UserDocument,

@@ -1,19 +1,19 @@
-import { Effect as E, pipe } from "effect";
-import type { DeleteResult, StrictFilter } from "mongodb";
-import { applyCoercions } from "#/common/coercion";
+import { applyCoercions } from "@nildb/common/coercion";
 import {
   type CollectionNotFoundError,
   DatabaseError,
   type DataValidationError,
   DocumentNotFoundError,
-} from "#/common/errors";
+} from "@nildb/common/errors";
 import {
   addDocumentBaseCoercions,
   CollectionName,
   checkCollectionExists,
-} from "#/common/mongo";
-import type { PaginationQuery } from "#/common/pagination.dto";
-import type { AppBindings } from "#/env";
+} from "@nildb/common/mongo";
+import type { PaginationQuery } from "@nildb/common/pagination.dto";
+import type { AppBindings } from "@nildb/env";
+import { Effect as E, pipe } from "effect";
+import type { DeleteResult, StrictFilter } from "mongodb";
 import type { QueryDocument } from "./queries.types.js";
 
 /**

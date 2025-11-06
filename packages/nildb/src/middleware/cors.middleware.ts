@@ -1,5 +1,5 @@
+import type { ControllerOptions } from "@nildb/common/types";
 import { cors } from "hono/cors";
-import type { ControllerOptions } from "#/common/types";
 
 export function corsMiddleware(options: ControllerOptions): void {
   const { app } = options;

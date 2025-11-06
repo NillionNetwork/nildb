@@ -1,11 +1,11 @@
-import { Effect as E, Either, pipe } from "effect";
-import { describe, it } from "vitest";
 import {
   injectVariablesIntoAggregation,
   type QueryRuntimeVariables,
   validateVariables,
-} from "#/queries/queries.services";
-import type { QueryVariable } from "#/queries/queries.types";
+} from "@nildb/queries/queries.services";
+import type { QueryVariable } from "@nildb/queries/queries.types";
+import { Effect as E, Either, pipe } from "effect";
+import { describe, it } from "vitest";
 
 describe("queries.services.ts", () => {
   describe("validateVariables", () => {

@@ -1,5 +1,5 @@
+import type { ControllerOptions } from "@nildb/common/types";
 import type { MiddlewareHandler } from "hono";
-import type { ControllerOptions } from "#/common/types";
 
 export function loggerMiddleware(options: ControllerOptions): void {
   const { app, bindings } = options;

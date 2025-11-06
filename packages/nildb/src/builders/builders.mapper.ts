@@ -1,5 +1,5 @@
+import { normalizeIdentifier } from "@nildb/common/did-utils";
 import type { Logger } from "pino";
-import { normalizeIdentifier } from "#/common/did-utils";
 import type {
   ReadProfileResponse,
   RegisterBuilderRequest,

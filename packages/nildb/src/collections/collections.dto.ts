@@ -1,9 +1,9 @@
-import { z } from "zod";
-import { ApiSuccessResponse } from "#/common/handler";
+import { ApiSuccessResponse } from "@nildb/common/handler";
 import {
   PaginatedResponse,
   PaginationQuerySchema,
-} from "#/common/pagination.dto";
+} from "@nildb/common/pagination.dto";
+import { z } from "zod";
 
 /**
  * Collection document data.

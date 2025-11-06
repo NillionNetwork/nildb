@@ -1,5 +1,5 @@
+import type { ControllerOptions } from "@nildb/common/types";
 import type { Hono } from "hono";
-import type { ControllerOptions } from "#/common/types";
 import * as SystemController from "./system.controllers.js";
 
 /**

@@ -1,8 +1,8 @@
+import type { Acl } from "@nildb/users/users.types";
 import { Data } from "effect";
 import type { JsonObject } from "type-fest";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
-import type { Acl } from "#/users/users.types";
 
 export class DuplicateEntryError extends Data.TaggedError(
   "DuplicateEntryError",

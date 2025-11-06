@@ -1,9 +1,9 @@
 import { faker } from "@faker-js/faker";
+import { PathsV1 } from "@nildb/common/paths";
 import { Builder, Did } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
-import { PathsV1 } from "#/common/paths";
-import { createTestFixtureExtension } from "#tests/fixture/it";
+import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("02-builder-lifecycle.test.ts", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

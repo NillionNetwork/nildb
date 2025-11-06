@@ -4,8 +4,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "#/*": ["./src/*"],
-      "#tests/*": ["./tests/*"]
+      "@nildb/*": ["./src/*"]
     },
     "composite": true
   },

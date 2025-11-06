@@ -1,7 +1,7 @@
+import type { App } from "@nildb/app";
+import type { AppBindings } from "@nildb/env";
 import { UUID } from "mongodb";
 import { z } from "zod";
-import type { App } from "#/app";
-import type { AppBindings } from "#/env";
 
 /**
  * UUID string type.

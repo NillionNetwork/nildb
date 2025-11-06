@@ -1,6 +1,6 @@
+import type { DocumentBase } from "@nildb/common/mongo";
 import type { UUID } from "mongodb";
 import type { JsonValue } from "type-fest";
-import type { DocumentBase } from "#/common/mongo";
 
 /**
  * Query variable configuration.

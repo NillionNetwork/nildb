@@ -1,5 +1,5 @@
+import type { ControllerOptions } from "@nildb/common/types";
 import { bodyLimit } from "hono/body-limit";
-import type { ControllerOptions } from "#/common/types";
 
 export function limitRequestBodySizeMiddleware(
   options: ControllerOptions,

@@ -8,6 +8,13 @@
     "start": "node --enable-source-maps dist/main.mjs",
     "dev": "tsx src/main.ts"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "dependencies": {
     "mongodb": "^6.20.0"
   },

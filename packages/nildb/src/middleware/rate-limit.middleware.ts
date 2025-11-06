@@ -1,8 +1,8 @@
 import { getConnInfo } from "@hono/node-server/conninfo";
+import type { ControllerOptions } from "@nildb/common/types";
 import type { Context, Next } from "hono";
 import { rateLimiter } from "hono-rate-limiter";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import type { ControllerOptions } from "#/common/types";
 
 /**
  * Applies IP-based rate limiting to protect the service from abuse.

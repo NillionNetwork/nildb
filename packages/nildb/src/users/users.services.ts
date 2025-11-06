@@ -1,7 +1,5 @@
-import { Effect as E, pipe } from "effect";
-import type { UpdateResult, UUID } from "mongodb";
-import * as CollectionsService from "#/collections/collections.services";
-import { enforceDataOwnership } from "#/common/acl";
+import * as CollectionsService from "@nildb/collections/collections.services";
+import { enforceDataOwnership } from "@nildb/common/acl";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
@@ -9,11 +7,13 @@ import {
   type DocumentNotFoundError,
   GrantAccessError,
   type ResourceAccessDeniedError,
-} from "#/common/errors";
-import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
-import * as DataRepository from "#/data/data.repository";
-import type { AppBindings } from "#/env";
-import { UserDataMapper, UserLoggerMapper } from "#/users/users.mapper";
+} from "@nildb/common/errors";
+import type { Paginated, PaginationQuery } from "@nildb/common/pagination.dto";
+import * as DataRepository from "@nildb/data/data.repository";
+import type { AppBindings } from "@nildb/env";
+import { UserDataMapper, UserLoggerMapper } from "@nildb/users/users.mapper";
+import { Effect as E, pipe } from "effect";
+import type { UpdateResult, UUID } from "mongodb";
 import * as UserRepository from "./users.repository.js";
 import type {
   DataDocumentReference,

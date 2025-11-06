@@ -1,5 +1,5 @@
+import type { Paginated } from "@nildb/common/pagination.dto";
 import { type IndexDirection, UUID } from "mongodb";
-import type { Paginated } from "#/common/pagination.dto";
 import type {
   CreateCollectionIndexRequest,
   CreateCollectionRequest,

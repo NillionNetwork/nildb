@@ -1,5 +1,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CollectionNotFoundError, DatabaseError } from "@nildb/common/errors";
+import type { UuidDto } from "@nildb/common/types";
+import type { AppBindings, EnvVars } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import migrateMongo from "migrate-mongo";
 import {
@@ -9,9 +12,6 @@ import {
   MongoError,
   type UUID,
 } from "mongodb";
-import { CollectionNotFoundError, DatabaseError } from "#/common/errors";
-import type { UuidDto } from "#/common/types";
-import type { AppBindings, EnvVars } from "#/env";
 import type { CoercibleMap } from "./coercion.js";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable

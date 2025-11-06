@@ -1,7 +1,7 @@
+import { applyCoercions, type CoercibleMap } from "@nildb/common/coercion";
 import { Effect as E, Exit } from "effect";
 import { UUID } from "mongodb";
 import { describe, expect, it } from "vitest";
-import { applyCoercions, type CoercibleMap } from "#/common/coercion";
 
 describe("coercion.test.ts", () => {
   it("should return the original map if no $coerce key is present", () => {

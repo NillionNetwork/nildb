@@ -1,9 +1,9 @@
+import { createUuidDto, type UuidDto } from "@nildb/common/types";
 import { describe } from "vitest";
-import { createUuidDto, type UuidDto } from "#/common/types";
-import simpleCollection from "#tests/data/simple.collection.json";
-import simpleQuery from "#tests/data/simple.query.json";
-import { waitForQueryRun } from "#tests/fixture/assertions";
-import { createTestFixtureExtension } from "#tests/fixture/it";
+import simpleCollection from "../data/simple.collection.json";
+import simpleQuery from "../data/simple.query.json";
+import { waitForQueryRun } from "../fixture/assertions.js";
+import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("Query Lifecycle", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

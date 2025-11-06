@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
-import { createTestFixtureExtension } from "#tests/fixture/it";
+import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("rate-limiting.test.ts", () => {
   process.env.APP_RATE_LIMIT_ENABLED = "true";

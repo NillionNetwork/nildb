@@ -1,6 +1,6 @@
+import { ApiErrorResponse } from "@nildb/common/handler";
 import { resolver } from "hono-openapi";
 import { ReasonPhrases } from "http-status-codes";
-import { ApiErrorResponse } from "#/common/handler";
 
 export const OpenApiSpecEmptySuccessResponses = {
   200: { description: ReasonPhrases.OK },

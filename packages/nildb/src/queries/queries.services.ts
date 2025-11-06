@@ -1,11 +1,7 @@
-import { Effect as E, pipe } from "effect";
-import { cloneDeep, set } from "es-toolkit/compat";
-import type { Document, UUID } from "mongodb";
-import { z } from "zod";
-import * as BuildersService from "#/builders/builders.services";
-import * as CollectionsService from "#/collections/collections.services";
-import { enforceBuilderOwnership } from "#/common/acl";
-import { applyCoercions } from "#/common/coercion";
+import * as BuildersService from "@nildb/builders/builders.services";
+import * as CollectionsService from "@nildb/collections/collections.services";
+import { enforceBuilderOwnership } from "@nildb/common/acl";
+import { applyCoercions } from "@nildb/common/coercion";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
@@ -14,12 +10,16 @@ import {
   type ResourceAccessDeniedError,
   TimeoutError,
   type VariableInjectionError,
-} from "#/common/errors";
-import { CollectionName } from "#/common/mongo";
-import type { Paginated, PaginationQuery } from "#/common/pagination.dto";
-import { validateData } from "#/common/validator";
-import * as DataService from "#/data/data.services";
-import type { AppBindings } from "#/env";
+} from "@nildb/common/errors";
+import { CollectionName } from "@nildb/common/mongo";
+import type { Paginated, PaginationQuery } from "@nildb/common/pagination.dto";
+import { validateData } from "@nildb/common/validator";
+import * as DataService from "@nildb/data/data.services";
+import type { AppBindings } from "@nildb/env";
+import { Effect as E, pipe } from "effect";
+import { cloneDeep, set } from "es-toolkit/compat";
+import type { Document, UUID } from "mongodb";
+import { z } from "zod";
 // biome-ignore lint/correctness/useImportExtensions: its a .json file
 import pipelineSchema from "./mongodb_pipeline.json";
 import * as RunQueryJobsRepository from "./queries.jobs.repository.js";

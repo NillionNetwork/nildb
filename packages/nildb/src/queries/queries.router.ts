@@ -1,5 +1,5 @@
-import type { ControllerOptions } from "#/common/types";
-import * as QueriesController from "#/queries/queries.controllers";
+import type { ControllerOptions } from "@nildb/common/types";
+import * as QueriesController from "@nildb/queries/queries.controllers";
 
 /**
  * Registers the queries domain.

@@ -1,14 +1,14 @@
 import { faker } from "@faker-js/faker";
+import type { CollectionDocument } from "@nildb/collections/collections.types";
+import { CollectionName } from "@nildb/common/mongo";
+import { createUuidDto, type UuidDto } from "@nildb/common/types";
+import type { OwnedDocumentBase } from "@nildb/data/data.types";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { UUID } from "mongodb";
 import { describe, expect } from "vitest";
-import type { CollectionDocument } from "#/collections/collections.types";
-import { CollectionName } from "#/common/mongo";
-import { createUuidDto, type UuidDto } from "#/common/types";
-import type { OwnedDocumentBase } from "#/data/data.types";
 import simpleCollectionJson from "../data/simple.collection.json";
 import simpleQueryJson from "../data/simple.query.json";
 import collectionJson from "../data/wallet.collection.json";

@@ -1,7 +1,7 @@
+import { createUuidDto } from "@nildb/common/types";
 import { describe } from "vitest";
-import { createUuidDto } from "#/common/types";
-import simpleCollection from "#tests/data/simple.collection.json";
-import { createTestFixtureExtension } from "#tests/fixture/it";
+import simpleCollection from "../data/simple.collection.json";
+import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("Collection Index Management", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

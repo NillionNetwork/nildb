@@ -1,7 +1,7 @@
+import { PathsV1 } from "@nildb/common/paths";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
-import { PathsV1 } from "#/common/paths";
-import { createTestFixtureExtension } from "#tests/fixture/it";
+import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("system.test.ts", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

@@ -1,12 +1,12 @@
-import { UUID } from "mongodb";
-import type { Logger } from "pino";
-import { normalizeIdentifier } from "#/common/did-utils";
-import type { Paginated } from "#/common/pagination.dto";
+import { normalizeIdentifier } from "@nildb/common/did-utils";
+import type { Paginated } from "@nildb/common/pagination.dto";
 import type {
   OwnedDocumentBase,
   ReadDataCommand,
   StandardDocumentBase,
-} from "#/data/data.types";
+} from "@nildb/data/data.types";
+import { UUID } from "mongodb";
+import type { Logger } from "pino";
 import type {
   DeleteDocumentRequestParams,
   GrantAccessToDataRequest,

@@ -1,15 +1,15 @@
-import { Effect as E } from "effect";
-import { ObjectId } from "mongodb";
-import * as CollectionsService from "#/collections/collections.services";
+import * as CollectionsService from "@nildb/collections/collections.services";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
   type DataValidationError,
   type DocumentNotFoundError,
   DuplicateEntryError,
-} from "#/common/errors";
-import type { AppBindings } from "#/env";
-import * as QueriesService from "#/queries/queries.services";
+} from "@nildb/common/errors";
+import type { AppBindings } from "@nildb/env";
+import * as QueriesService from "@nildb/queries/queries.services";
+import { Effect as E } from "effect";
+import { ObjectId } from "mongodb";
 import * as BuildersRepository from "./builders.repository.js";
 import type {
   AddBuilderCollectionCommand,

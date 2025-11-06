@@ -1,5 +1,5 @@
-import * as CollectionsController from "#/collections/collections.controllers";
-import type { ControllerOptions } from "#/common/types";
+import * as CollectionsController from "@nildb/collections/collections.controllers";
+import type { ControllerOptions } from "@nildb/common/types";
 
 /**
  * Registers the collections domain.

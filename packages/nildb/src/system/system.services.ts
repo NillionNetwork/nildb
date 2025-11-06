@@ -1,9 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type {
+  CollectionNotFoundError,
+  DatabaseError,
+} from "@nildb/common/errors";
+import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
-import type { CollectionNotFoundError, DatabaseError } from "#/common/errors";
-import type { AppBindings } from "#/env";
 import * as SystemRepository from "./system.repository.js";
 import type {
   AboutNode,

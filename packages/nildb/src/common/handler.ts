@@ -1,9 +1,3 @@
-import { Effect as E, pipe } from "effect";
-import type { Context } from "hono";
-import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { StatusCodes } from "http-status-codes";
-import { Temporal } from "temporal-polyfill";
-import z from "zod";
 import type {
   CollectionNotFoundError,
   DatabaseError,
@@ -16,8 +10,14 @@ import type {
   ResourceAccessDeniedError,
   RevokeAccessError,
   VariableInjectionError,
-} from "#/common/errors";
-import type { AppEnv } from "#/env";
+} from "@nildb/common/errors";
+import type { AppEnv } from "@nildb/env";
+import { Effect as E, pipe } from "effect";
+import type { Context } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { StatusCodes } from "http-status-codes";
+import { Temporal } from "temporal-polyfill";
+import z from "zod";
 
 export const ApiErrorResponse = z
   .object({

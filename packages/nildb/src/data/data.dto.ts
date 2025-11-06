@@ -1,10 +1,10 @@
-import { z } from "zod";
-import { ApiSuccessResponse } from "#/common/handler";
+import { ApiSuccessResponse } from "@nildb/common/handler";
 import {
   PaginatedResponse,
   PaginationBodySchema,
-} from "#/common/pagination.dto";
-import { AclDto } from "#/users/users.dto";
+} from "@nildb/common/pagination.dto";
+import { AclDto } from "@nildb/users/users.dto";
+import { z } from "zod";
 
 /**
  * Owned data creation request.

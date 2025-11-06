@@ -1,10 +1,10 @@
+import { DataValidationError } from "@nildb/common/errors";
+import { Uuid } from "@nildb/common/types";
 import Ajv from "ajv";
 import type { DataValidationCxt } from "ajv/dist/types";
 import * as addFormats from "ajv-formats";
 import { Effect as E } from "effect";
 import { type ZodSafeParseResult, z } from "zod";
-import { DataValidationError } from "#/common/errors";
-import { Uuid } from "#/common/types";
 
 export function validateSchema(
   schema: Record<string, unknown>,

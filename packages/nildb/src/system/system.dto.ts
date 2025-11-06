@@ -1,6 +1,6 @@
+import { ApiSuccessResponse } from "@nildb/common/handler";
+import { LogLevel } from "@nildb/common/logger";
 import { z } from "zod";
-import { ApiSuccessResponse } from "#/common/handler";
-import { LogLevel } from "#/common/logger";
 
 /**
  * Log level update request.

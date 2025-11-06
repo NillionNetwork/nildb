@@ -1,8 +1,8 @@
+import { DataValidationError } from "@nildb/common/errors";
 import { Effect as E } from "effect";
 import { cloneDeep, get, set } from "es-toolkit/compat";
 import { UUID } from "mongodb";
 import { type ZodType, z } from "zod";
-import { DataValidationError } from "#/common/errors";
 
 /**
  * The set of supported types that a json value can be coerced into.

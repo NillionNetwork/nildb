@@ -1,5 +1,5 @@
+import type { DocumentBase } from "@nildb/common/mongo";
 import type { IndexDirection, UUID } from "mongodb";
-import type { DocumentBase } from "#/common/mongo";
 
 /**
  * Collection type.

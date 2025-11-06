@@ -1,3 +1,15 @@
+import {
+  type CollectionNotFoundError,
+  DatabaseError,
+  DocumentNotFoundError,
+  DuplicateEntryError,
+} from "@nildb/common/errors";
+import {
+  CollectionName,
+  checkCollectionExists,
+  MongoErrorCode,
+} from "@nildb/common/mongo";
+import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import {
   MongoServerError,
@@ -6,18 +18,6 @@ import {
   type UpdateResult,
   type UUID,
 } from "mongodb";
-import {
-  type CollectionNotFoundError,
-  DatabaseError,
-  DocumentNotFoundError,
-  DuplicateEntryError,
-} from "#/common/errors";
-import {
-  CollectionName,
-  checkCollectionExists,
-  MongoErrorCode,
-} from "#/common/mongo";
-import type { AppBindings } from "#/env";
 import type { BuilderDocument } from "./builders.types.js";
 
 /**

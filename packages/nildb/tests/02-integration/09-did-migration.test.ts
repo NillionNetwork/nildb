@@ -1,11 +1,11 @@
 import { faker } from "@faker-js/faker";
+import { PathsV1 } from "@nildb/common/paths";
 import { Builder, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { describe } from "vitest";
-import { PathsV1 } from "#/common/paths";
-import { createTestFixtureExtension } from "#tests/fixture/it";
-import { createBuilderTestClient } from "#tests/fixture/test-client";
+import { createTestFixtureExtension } from "../fixture/it.js";
+import { createBuilderTestClient } from "../fixture/test-client.js";
 
 describe("did:nil to did:key auth translation", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension({});

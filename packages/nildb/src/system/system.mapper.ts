@@ -1,4 +1,4 @@
-import type { LogLevel } from "#/common/logger";
+import type { LogLevel } from "@nildb/common/logger";
 import type {
   ReadAboutNodeResponse,
   ReadLogLevelResponse,

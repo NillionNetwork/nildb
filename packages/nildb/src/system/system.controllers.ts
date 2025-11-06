@@ -1,4 +1,20 @@
 import { prometheus } from "@hono/prometheus";
+import { handleTaggedErrors } from "@nildb/common/handler";
+import type { LogLevel } from "@nildb/common/logger";
+import { NucCmd } from "@nildb/common/nuc-cmd-tree";
+import {
+  OpenApiSpecCommonErrorResponses,
+  OpenApiSpecEmptySuccessResponses,
+} from "@nildb/common/openapi";
+import { PathsV1 } from "@nildb/common/paths";
+import type { ControllerOptions } from "@nildb/common/types";
+import { FeatureFlag, hasFeatureFlag } from "@nildb/env";
+import {
+  loadNucToken,
+  loadSubjectAndVerifyAsAdmin,
+  requireNucNamespace,
+} from "@nildb/middleware/capability.middleware";
+import type { DeleteQueryResponse } from "@nildb/queries/queries.dto";
 import { Effect as E, pipe } from "effect";
 import { Hono } from "hono";
 import {
@@ -8,22 +24,6 @@ import {
   validator as zValidator,
 } from "hono-openapi";
 import { StatusCodes } from "http-status-codes";
-import { handleTaggedErrors } from "#/common/handler";
-import type { LogLevel } from "#/common/logger";
-import { NucCmd } from "#/common/nuc-cmd-tree";
-import {
-  OpenApiSpecCommonErrorResponses,
-  OpenApiSpecEmptySuccessResponses,
-} from "#/common/openapi";
-import { PathsV1 } from "#/common/paths";
-import type { ControllerOptions } from "#/common/types";
-import { FeatureFlag, hasFeatureFlag } from "#/env";
-import {
-  loadNucToken,
-  loadSubjectAndVerifyAsAdmin,
-  requireNucNamespace,
-} from "#/middleware/capability.middleware";
-import type { DeleteQueryResponse } from "#/queries/queries.dto";
 // biome-ignore lint/correctness/useImportExtensions: its a .json file
 import packageJson from "../../package.json";
 import {

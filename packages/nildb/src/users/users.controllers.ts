@@ -1,23 +1,21 @@
-import { Effect as E, pipe } from "effect";
-import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
-import * as BuildersService from "#/builders/builders.services";
-import { handleTaggedErrors } from "#/common/handler";
-import { NucCmd } from "#/common/nuc-cmd-tree";
+import * as BuildersService from "@nildb/builders/builders.services";
+import { handleTaggedErrors } from "@nildb/common/handler";
+import { NucCmd } from "@nildb/common/nuc-cmd-tree";
 import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
-} from "#/common/openapi";
-import { PathsV1 } from "#/common/paths";
-import type { ControllerOptions } from "#/common/types";
-import { UpdateDataResponse } from "#/data/data.dto";
-import { DataMapper } from "#/data/data.mapper";
-import * as DataService from "#/data/data.services";
-import type { OwnedDocumentBase } from "#/data/data.types";
+} from "@nildb/common/openapi";
+import { PathsV1 } from "@nildb/common/paths";
+import type { ControllerOptions } from "@nildb/common/types";
+import { UpdateDataResponse } from "@nildb/data/data.dto";
+import { DataMapper } from "@nildb/data/data.mapper";
+import * as DataService from "@nildb/data/data.services";
+import type { OwnedDocumentBase } from "@nildb/data/data.types";
 import {
   loadNucToken,
   loadSubjectAndVerifyAsUser,
   requireNucNamespace,
-} from "#/middleware/capability.middleware";
+} from "@nildb/middleware/capability.middleware";
 import {
   DeleteDocumentRequestParams,
   type DeleteDocumentResponse,
@@ -31,9 +29,11 @@ import {
   RevokeAccessToDataRequest,
   type RevokeAccessToDataResponse,
   UpdateUserDataRequest,
-} from "#/users/users.dto";
-import { UserDataMapper } from "#/users/users.mapper";
-import * as UserService from "#/users/users.services";
+} from "@nildb/users/users.dto";
+import { UserDataMapper } from "@nildb/users/users.mapper";
+import * as UserService from "@nildb/users/users.services";
+import { Effect as E, pipe } from "effect";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 
 /**
  * Handle GET /v1/users/me

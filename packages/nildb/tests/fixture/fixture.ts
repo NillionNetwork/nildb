@@ -1,5 +1,17 @@
 /** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
 import { faker } from "@faker-js/faker";
+import { type App, buildApp } from "@nildb/app";
+import type { CollectionType } from "@nildb/collections/collections.types";
+import { mongoMigrateUp } from "@nildb/common/mongo";
+import { NucCmd } from "@nildb/common/nuc-cmd-tree";
+import { createUuidDto, type UuidDto } from "@nildb/common/types";
+import {
+  type AppBindings,
+  FeatureFlag,
+  hasFeatureFlag,
+  loadBindings,
+} from "@nildb/env";
+import type { QueryVariable } from "@nildb/queries/queries.types";
 import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
@@ -7,18 +19,6 @@ import dotenv from "dotenv";
 import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
 import * as vitest from "vitest";
-import { type App, buildApp } from "#/app";
-import type { CollectionType } from "#/collections/collections.types";
-import { mongoMigrateUp } from "#/common/mongo";
-import { NucCmd } from "#/common/nuc-cmd-tree";
-import { createUuidDto, type UuidDto } from "#/common/types";
-import {
-  type AppBindings,
-  FeatureFlag,
-  hasFeatureFlag,
-  loadBindings,
-} from "#/env";
-import type { QueryVariable } from "#/queries/queries.types";
 import { createTestLogger } from "./logger.js";
 import {
   type AdminTestClient,
