@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsdown",
-    "start": "node --enable-source-maps dist/main.mjs",
+    "start": "node --enable-source-maps dist/main.js",
     "dev": "tsx src/main.ts"
   },
   "exports": {

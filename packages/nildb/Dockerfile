@@ -17,4 +17,4 @@ COPY --from=builder /app .
 USER node
 EXPOSE 8080
 ENV NODE_ENV=production
-CMD [ "node", "--enable-source-maps", "dist/main.mjs" ]
+CMD [ "node", "--enable-source-maps", "dist/main.js" ]
