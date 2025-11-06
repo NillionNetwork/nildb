@@ -26,9 +26,7 @@ This guide explains how to set up your development environment and contribute co
 ## Development Server
 
 ```shell
-pnpm dev    # watches for changes and auto-reloads
-# or
-pnpm start  # runs without watching
+pnpm start  # runs nilDb
 ```
 
 > [!NOTE]
@@ -36,12 +34,11 @@ pnpm start  # runs without watching
 
 ## Code quality
 
-Run these checks before submitting your PR:
+The following commands are run from the root of the repository. Run these checks before submitting your PR:
 
 ```shell
-tsc         # type check
-biome check # format and lint
-pnpm test   # run the test suite
+pnpm check  # format, lint, and type check
+pnpm test   # run the full test suite
 ```
 
 > [!NOTE]

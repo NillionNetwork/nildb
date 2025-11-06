@@ -2,62 +2,75 @@
 default:
     @just --list
 
+# ------------------
+# --- Installation
+# ------------------
+
+# Setup the repository (install dependencies and setup lefthook)
+init:
+    pnpm install
+    lefthook install
+
 # Install dependencies
 install:
     pnpm install
 
-# Install git hooks
-install-hooks:
-    lefthook install
+# ------------------
+# --- Quality
+# ------------------
 
-# Format code
-fmt:
-    pnpm exec biome format --fix
-
-# Fix code issues (format + lint + type check)
-fix:
-    pnpm exec biome check --fix --unsafe
-    tsc
-
-# Run linter and type checker (CI mode)
+# Check for formatting, lint, and type errors
 check:
-    pnpm exec biome ci
-    tsc
+    pnpm exec biome ci && pnpm exec tsc -b --noEmit
 
-# Start the application
-start:
-    pnpm exec tsx src/main.ts
+# Format, fix, and type check all files
+fix:
+    pnpm exec biome check --fix --unsafe && pnpm exec tsc -b
 
-# Run all tests
+# Format all files
+fmt:
+    pnpm exec biome format --write .
+
+# ------------------
+# --- Application
+# ------------------
+
+# Run the application using tsx
+dev:
+    pnpm --filter @nillion/nildb dev
+
+# Build nildb
+build:
+    pnpm --filter @nillion/nildb build
+
+# ------------------
+# --- Testing
+# ------------------
+
+# Run all tests (unit & integration)
 test:
-    #!/usr/bin/env bash
-    set -o pipefail
-    just test-unit
-    just test-integration
+    pnpm exec vitest run
 
 # Run unit tests
 test-unit:
-    #!/usr/bin/env bash
     pnpm exec vitest run --project=unit
 
 # Run integration tests
 test-integration:
-    #!/usr/bin/env bash
     pnpm exec vitest run --project=integration
 
 # Run tests with coverage
 test-coverage:
-    #!/usr/bin/env bash
-    pnpm exec vitest --coverage
+    pnpm exec vitest run --coverage
 
-# Run database migrations
-migrate:
-    pnpm exec tsx bin/migrate.ts
+# ------------------
+# --- Build & Docker
+# ------------------
 
-# Build info for Docker
+# Create build info aretefact for Docker
 create-buildinfo:
     #!/usr/bin/env bash
-    VERSION=$(cat package.json | jq -r .version)
+    VERSION=$(cat packages/nildb/package.json | jq -r .version)
     cat << EOF > buildinfo.json
     {
       "time": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
@@ -66,12 +79,16 @@ create-buildinfo:
     }
     EOF
 
-# Docker: Build image for specific architecture
-docker-build-local:
+# Build local Docker image
+docker-build-local: create-buildinfo
     docker buildx build \
       --tag public.ecr.aws/k5d9x2g2/nildb-api:local \
-      --file ./Dockerfile \
+      --file ./packages/nildb/Dockerfile \
       .
+
+# ------------------
+# --- Cleanup
+# ------------------
 
 # Clean build artifacts
 clean:

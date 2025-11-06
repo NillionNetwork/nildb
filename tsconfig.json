@@ -1,36 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-
-  "compilerOptions": {
-    "noEmit": true,
-
-    "lib": ["esnext", "es2024"],
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-
-    "skipLibCheck": true,
-    "strict": true,
-    "allowUnusedLabels": false,
-    "allowUnreachableCode": false,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitOverride": true,
-    "noImplicitReturns": true,
-    "isolatedModules": true,
-
-    "baseUrl": ".",
-    "paths": {
-      "#/*": ["src/*"],
-      "#tests/*": ["tests/*"]
-    }
-  },
-  "include": [
-    "./src/**/*.ts",
-    "./tests/**/*.ts",
-    "./bin/*.ts",
-    "./migrations/*.ts"
-  ]
+  "extends": "./tsconfig.base.json",
+  "references": [{ "path": "packages/nildb" }],
+  "files": []
 }
