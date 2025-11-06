@@ -39,10 +39,6 @@ fmt:
 dev:
     pnpm --filter @nillion/nildb dev
 
-# Run database migrations
-migrate:
-    pnpm --filter @nillion/nildb exec tsx bin/migrate.ts
-
 # Build nildb
 build:
     pnpm --filter @nillion/nildb build

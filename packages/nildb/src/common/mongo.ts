@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect as E, pipe } from "effect";
-import type { Config as MongoMigrateConfig } from "mongo-migrate-ts/lib/config";
+import migrateMongo from "migrate-mongo";
 import {
   type Collection,
   type Document,
@@ -84,22 +84,28 @@ export async function mongoMigrateUp(
   console.warn("! Database migration check");
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const migrationsDir = path.join(__dirname, "../../migrations");
-  const config: MongoMigrateConfig = {
-    uri,
-    database,
-    migrationsDir,
-    globPattern: "[0-9]*_[0-9]*_[a-z]*.ts",
-    migrationNameTimestampFormat: "yyyyMMdd_HHmm",
-  };
 
-  // mongo-migrate-ts is primarily a CLI tool, but we need to run migrations
-  // programmatically on startup and in tests. Using dynamic import here to
-  // handle different module resolution. Vitest 4 requires the compiled dist path.
-  // additionally, we use a migratePath otherwise tsc complains about type issues in the lib
-  const migratePath = "mongo-migrate-ts/dist/lib/commands/up" as const;
-  const migrate = await import(migratePath);
-  await migrate.up({ config });
+  migrateMongo.config.set({
+    mongodb: {
+      url: uri,
+      databaseName: database,
+    },
+    migrationsDir: path.join(__dirname, "../../migrations"),
+    changelogCollectionName: "_migrations",
+    migrationFileExtension: ".mjs",
+    useFileHash: true,
+  });
+
+  // Connect to database and run migrations
+  const { db, client } = await migrateMongo.database.connect();
+  try {
+    const migratedFiles = await migrateMongo.up(db, client);
+    console.log(
+      `Successfully migrated: ${migratedFiles.length > 0 ? migratedFiles.join(", ") : "no new migrations"}`,
+    );
+  } finally {
+    await client.close();
+  }
 }
 
 export function isMongoError(value: unknown): value is MongoError {

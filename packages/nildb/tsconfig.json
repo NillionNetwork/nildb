@@ -9,10 +9,5 @@
     },
     "composite": true
   },
-  "include": [
-    "./src/**/*.ts",
-    "./tests/**/*.ts",
-    "./bin/*.ts",
-    "./migrations/*.ts"
-  ]
+  "include": ["./src/**/*.ts", "./tests/**/*.ts"]
 }
