@@ -58,7 +58,7 @@ async function validateV112Migrations(db) {
 
   // Validate each migration name matches expected
   const migrationNames = migrations.map((m) =>
-    m.fileName.replace(/\.(ts|mjs)$/, ""),
+    m.file.replace(/\.(ts|mjs)$/, ""),
   );
   for (let i = 0; i < EXPECTED_V112_MIGRATIONS.length; i++) {
     if (migrationNames[i] !== EXPECTED_V112_MIGRATIONS[i]) {
