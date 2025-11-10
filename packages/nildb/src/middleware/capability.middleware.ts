@@ -1,5 +1,4 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
-import { normalizeIdentifier } from "@nildb/common/did-utils";
 import type { AppBindings, AppEnv } from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
 import {
@@ -10,6 +9,7 @@ import {
   Payload,
   Validator,
 } from "@nillion/nuc";
+import { normalizeIdentifier } from "@nillion/shared";
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";

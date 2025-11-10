@@ -3,7 +3,8 @@
   "extends": "./tsconfig.base.json",
   "references": [
     { "path": "packages/nildb" },
-    { "path": "packages/nildb-types" }
+    { "path": "packages/nildb-types" },
+    { "path": "packages/shared" }
   ],
   "files": []
 }

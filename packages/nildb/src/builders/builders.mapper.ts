@@ -1,9 +1,9 @@
-import { normalizeIdentifier } from "@nildb/common/did-utils";
 import type {
   ReadProfileResponse,
   RegisterBuilderRequest,
   UpdateProfileRequest,
 } from "@nillion/nildb-types";
+import { normalizeIdentifier } from "@nillion/shared";
 import type { Logger } from "pino";
 import type {
   BuilderDocument,

@@ -1,4 +1,3 @@
-import { normalizeIdentifier } from "@nildb/common/did-utils";
 import type { DocumentBase } from "@nildb/common/mongo";
 import type {
   CreateDataResponse,
@@ -18,6 +17,7 @@ import type {
   UpdateDataRequest,
   UpdateDataResponse,
 } from "@nillion/nildb-types";
+import { normalizeIdentifier } from "@nillion/shared";
 import type { DeleteResult, UpdateResult } from "mongodb";
 import { UUID } from "mongodb";
 import type { Logger } from "pino";

@@ -1,4 +1,3 @@
-import { normalizeIdentifier } from "@nildb/common/did-utils";
 import type {
   OwnedDocumentBase,
   ReadDataCommand,
@@ -18,6 +17,7 @@ import type {
   UpdateUserDataRequest,
   UserDataLogs,
 } from "@nillion/nildb-types";
+import { normalizeIdentifier } from "@nillion/shared";
 import { UUID } from "mongodb";
 import type { Logger } from "pino";
 import type {

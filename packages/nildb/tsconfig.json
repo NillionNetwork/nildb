@@ -6,7 +6,9 @@
     "paths": {
       "@nildb/*": ["./src/*"],
       "@nillion/nildb-types": ["../nildb-types/src/lib.ts"],
-      "@nillion/nildb-types/*": ["../nildb-types/src/*"]
+      "@nillion/nildb-types/*": ["../nildb-types/src/*"],
+      "@nillion/shared": ["../shared/src/index.ts"],
+      "@nillion/shared/*": ["../shared/src/*"]
     }
   },
   "include": ["./src/**/*.ts", "./tests/**/*.ts", "../nildb-types/src/**/*.ts"]

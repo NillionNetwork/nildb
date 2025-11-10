@@ -72,6 +72,9 @@ importers:
       '@nillion/nildb-types':
         specifier: workspace:*
         version: link:../nildb-types
+      '@nillion/shared':
+        specifier: workspace:*
+        version: link:../shared
       mongodb:
         specifier: ^6.20.0
         version: 6.20.0
@@ -185,6 +188,28 @@ importers:
         specifier: ^4.1.12
         version: 4.1.12
     devDependencies:
+      tsdown:
+        specifier: ^0.15.12
+        version: 0.15.12(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/shared:
+    dependencies:
+      '@nillion/nuc':
+        specifier: ^1.0.0
+        version: 1.0.0(pino@10.1.0)(typescript@5.9.3)
+      temporal-polyfill:
+        specifier: ^0.3.0
+        version: 0.3.0
+    devDependencies:
+      '@types/pino':
+        specifier: ^7.0.5
+        version: 7.0.5
+      pino:
+        specifier: ^10.1.0
+        version: 10.1.0
       tsdown:
         specifier: ^0.15.12
         version: 0.15.12(typescript@5.9.3)
@@ -976,6 +1001,10 @@ packages:
 
   '@types/node@24.9.1':
     resolution: {integrity: sha512-QoiaXANRkSXK6p0Duvt56W208du4P9Uye9hWLWgGMDTEoKPhuenzNcC4vGUmrNkiOKTlIrBoyNQYNpSwfEZXSg==}
+
+  '@types/pino@7.0.5':
+    resolution: {integrity: sha512-wKoab31pknvILkxAF8ss+v9iNyhw5Iu/0jLtRkUD74cNfOOLJNnqfFKAv0r7wVaTQxRZtWrMpGfShwwBjOcgcg==}
+    deprecated: This is a stub types definition. pino provides its own type definitions, so you do not need this installed.
 
   '@types/webidl-conversions@7.0.3':
     resolution: {integrity: sha512-CiJJvcRtIgzadHCYXw7dqEnMNRjhGZlYK05Mj9OyktqV8uVT8fD2BFOB7S1uwBE3Kj2Z+4UyPmFw/Ixgw/LAlA==}
@@ -2925,6 +2954,10 @@ snapshots:
   '@types/node@24.9.1':
     dependencies:
       undici-types: 7.16.0
+
+  '@types/pino@7.0.5':
+    dependencies:
+      pino: 10.1.0
 
   '@types/webidl-conversions@7.0.3': {}
 

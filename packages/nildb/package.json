@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@nillion/nildb-types": "workspace:*",
+    "@nillion/shared": "workspace:*",
     "mongodb": "^6.20.0"
   },
   "devDependencies": {
