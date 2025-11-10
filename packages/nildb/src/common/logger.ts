@@ -11,5 +11,8 @@ export function createLogger(level: string): Logger {
     },
     timestamp: () => `,"time":"${new Date().toISOString()}"`,
     level,
+    serializers: {
+      error: pino.stdSerializers.err,
+    },
   });
 }
