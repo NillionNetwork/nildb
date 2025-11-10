@@ -22,13 +22,7 @@
       "correctness": {
         "recommended": true,
         "noUnusedImports": "error",
-        "noUnusedVariables": "error",
-        "useImportExtensions": {
-          "level": "error",
-          "options": {
-            "forceJsExtensions": true
-          }
-        }
+        "noUnusedVariables": "error"
       },
       "style": {
         "noParameterAssign": "error",
@@ -41,7 +35,14 @@
         "noUnusedTemplateLiteral": "error",
         "useNumberNamespace": "error",
         "noInferrableTypes": "error",
-        "noUselessElse": "error"
+        "noUselessElse": "error",
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "requireAscii": true,
+            "filenameCases": ["kebab-case"]
+          }
+        }
       },
       "nursery": {
         "noImportCycles": "error"

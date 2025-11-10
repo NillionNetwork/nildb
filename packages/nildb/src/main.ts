@@ -2,7 +2,6 @@ import { type ServerType, serve } from "@hono/node-server";
 import { mongoMigrateUp } from "@nildb/common/mongo";
 import { Command } from "commander";
 import dotenv from "dotenv";
-// biome-ignore lint/correctness/useImportExtensions: its a .json file
 import packageJson from "../package.json";
 import { buildApp } from "./app.js";
 import { FeatureFlag, hasFeatureFlag, loadBindings } from "./env.js";

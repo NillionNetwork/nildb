@@ -1,16 +1,14 @@
 import { normalizeIdentifier } from "@nildb/common/did-utils";
-import type { Paginated } from "@nildb/common/pagination.dto";
 import type {
   OwnedDocumentBase,
   ReadDataCommand,
   StandardDocumentBase,
 } from "@nildb/data/data.types";
-import { UUID } from "mongodb";
-import type { Logger } from "pino";
 import type {
   DeleteDocumentRequestParams,
   GrantAccessToDataRequest,
   ListDataReferencesResponse,
+  Paginated,
   ReadDataAccessResponse,
   ReadDataAclRequestParams,
   ReadDataRequestParams,
@@ -19,7 +17,9 @@ import type {
   RevokeAccessToDataRequest,
   UpdateUserDataRequest,
   UserDataLogs,
-} from "./users.dto.js";
+} from "@nillion/nildb-types";
+import { UUID } from "mongodb";
+import type { Logger } from "pino";
 import type {
   Acl,
   DataDocumentReference,

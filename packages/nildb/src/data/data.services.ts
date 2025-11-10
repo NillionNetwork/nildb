@@ -16,7 +16,6 @@ import {
   addDocumentBaseCoercions,
   type DocumentBase,
 } from "@nildb/common/mongo";
-import type { Paginated } from "@nildb/common/pagination.dto";
 import { validateData } from "@nildb/common/validator";
 import type { AppBindings } from "@nildb/env";
 import type { QueryDocument } from "@nildb/queries/queries.types";
@@ -25,6 +24,7 @@ import type {
   DeleteUserDataCommand,
   UpdateUserDataCommand,
 } from "@nildb/users/users.types";
+import type { Paginated } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import {
   type DeleteResult,

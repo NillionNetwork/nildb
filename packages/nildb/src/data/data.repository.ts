@@ -15,11 +15,10 @@ import {
   isMongoError,
   MongoErrorCode,
 } from "@nildb/common/mongo";
-import type { PaginationQuery } from "@nildb/common/pagination.dto";
-import type { UuidDto } from "@nildb/common/types";
 import type { AppBindings } from "@nildb/env";
 import type { QueryDocument } from "@nildb/queries/queries.types";
 import type { Acl } from "@nildb/users/users.types";
+import type { PaginationQuery, UuidDto } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import {
   type DeleteResult,

@@ -1,9 +1,9 @@
-import { PathsV1 } from "@nildb/common/paths";
+import { PathsV1 } from "@nillion/nildb-types";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createTestFixtureExtension } from "../fixture/it.js";
 
-describe("system.test.ts", () => {
+describe("system.test.js", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
   beforeAll(async (_c) => {});
   afterAll(async (_c) => {});

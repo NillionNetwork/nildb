@@ -10,8 +10,8 @@ import {
   CollectionName,
   checkCollectionExists,
 } from "@nildb/common/mongo";
-import type { PaginationQuery } from "@nildb/common/pagination.dto";
 import type { AppBindings } from "@nildb/env";
+import type { PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import type { DeleteResult, StrictFilter } from "mongodb";
 import type { QueryDocument } from "./queries.types.js";

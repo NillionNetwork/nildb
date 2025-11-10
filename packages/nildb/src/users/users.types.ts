@@ -1,5 +1,5 @@
 import type { DocumentBase } from "@nildb/common/mongo";
-import type { UserDataLogs } from "@nildb/users/users.dto";
+import type { UserDataLogs } from "@nillion/nildb-types";
 import type { ObjectId, UUID } from "mongodb";
 
 /**

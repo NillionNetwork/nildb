@@ -1,4 +1,4 @@
-import { createUuidDto, type UuidDto } from "@nildb/common/types";
+import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
 import { describe } from "vitest";
 import simpleCollection from "../data/simple.collection.json";
 import simpleQuery from "../data/simple.query.json";

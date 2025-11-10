@@ -1,9 +1,5 @@
 import { normalizeIdentifier } from "@nildb/common/did-utils";
 import type { DocumentBase } from "@nildb/common/mongo";
-import type { Paginated } from "@nildb/common/pagination.dto";
-import type { DeleteResult, UpdateResult } from "mongodb";
-import { UUID } from "mongodb";
-import type { Logger } from "pino";
 import type {
   CreateDataResponse,
   CreateOwnedDataRequest,
@@ -15,12 +11,16 @@ import type {
   FindDataRequest,
   FindDataResponse,
   FlushDataRequest,
+  Paginated,
   TailDataRequestParams,
   TailDataRequestQuery,
   TailDataResponse,
   UpdateDataRequest,
   UpdateDataResponse,
-} from "./data.dto.js";
+} from "@nillion/nildb-types";
+import type { DeleteResult, UpdateResult } from "mongodb";
+import { UUID } from "mongodb";
+import type { Logger } from "pino";
 import type {
   CreateOwnedDataCommand,
   CreateStandardDataCommand,

@@ -1,11 +1,8 @@
-import {
-  type ApiErrorResponse,
-  handleTaggedErrors,
-} from "@nildb/common/handler";
-import { PathsV1 } from "@nildb/common/paths";
+import { handleTaggedErrors } from "@nildb/common/handler";
 import type { ControllerOptions } from "@nildb/common/types";
 import type { AppEnv } from "@nildb/env";
 import * as SystemService from "@nildb/system/system.services";
+import { type ApiErrorResponse, PathsV1 } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import type { Context, MiddlewareHandler, Next } from "hono";
 import { StatusCodes } from "http-status-codes";

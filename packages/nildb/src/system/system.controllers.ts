@@ -1,12 +1,9 @@
 import { prometheus } from "@hono/prometheus";
 import { handleTaggedErrors } from "@nildb/common/handler";
-import type { LogLevel } from "@nildb/common/logger";
-import { NucCmd } from "@nildb/common/nuc-cmd-tree";
 import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
 } from "@nildb/common/openapi";
-import { PathsV1 } from "@nildb/common/paths";
 import type { ControllerOptions } from "@nildb/common/types";
 import { FeatureFlag, hasFeatureFlag } from "@nildb/env";
 import {
@@ -14,7 +11,16 @@ import {
   loadSubjectAndVerifyAsAdmin,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
-import type { DeleteQueryResponse } from "@nildb/queries/queries.dto";
+import type { DeleteQueryResponse, LogLevel } from "@nillion/nildb-types";
+import {
+  NucCmd,
+  PathsV1,
+  ReadAboutNodeResponse,
+  ReadLogLevelResponse,
+  SetLogLevelRequest,
+  type StartMaintenanceResponse,
+  type StopMaintenanceResponse,
+} from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import { Hono } from "hono";
 import {
@@ -24,15 +30,7 @@ import {
   validator as zValidator,
 } from "hono-openapi";
 import { StatusCodes } from "http-status-codes";
-// biome-ignore lint/correctness/useImportExtensions: its a .json file
 import packageJson from "../../package.json";
-import {
-  ReadAboutNodeResponse,
-  ReadLogLevelResponse,
-  SetLogLevelRequest,
-  type StartMaintenanceResponse,
-  type StopMaintenanceResponse,
-} from "./system.dto.js";
 import { SystemDataMapper } from "./system.mapper.js";
 import * as SystemService from "./system.services.js";
 

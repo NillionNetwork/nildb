@@ -2,7 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
 import { createTestFixtureExtension } from "../fixture/it.js";
 
-describe("rate-limiting.test.ts", () => {
+describe("rate-limiting.test.js", () => {
   process.env.APP_RATE_LIMIT_ENABLED = "true";
   process.env.APP_RATE_LIMIT_WINDOW_SECONDS = "10";
   process.env.APP_RATE_LIMIT_MAX_REQUESTS = "5";

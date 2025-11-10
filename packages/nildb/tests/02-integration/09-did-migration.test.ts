@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { PathsV1 } from "@nildb/common/paths";
+import { PathsV1 } from "@nillion/nildb-types";
 import { Builder, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";

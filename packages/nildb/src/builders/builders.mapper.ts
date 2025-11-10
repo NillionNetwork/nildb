@@ -1,10 +1,10 @@
 import { normalizeIdentifier } from "@nildb/common/did-utils";
-import type { Logger } from "pino";
 import type {
   ReadProfileResponse,
   RegisterBuilderRequest,
   UpdateProfileRequest,
-} from "./builders.dto.js";
+} from "@nillion/nildb-types";
+import type { Logger } from "pino";
 import type {
   BuilderDocument,
   CreateBuilderCommand,

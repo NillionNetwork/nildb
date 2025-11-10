@@ -1,16 +1,17 @@
-import type { Paginated, PaginationQuery } from "@nildb/common/pagination.dto";
-import { UUID } from "mongodb";
 import type {
   ByIdRequestParams,
   CreateQueryRequest,
   DeleteQueryRequest,
+  Paginated,
+  PaginationQuery,
   QueryDocumentResponse,
   ReadQueriesResponse,
   ReadQueryResponse,
   ReadQueryRunByIdResponse,
   RunQueryRequest,
   RunQueryResponse,
-} from "./queries.dto.js";
+} from "@nillion/nildb-types";
+import { UUID } from "mongodb";
 import type {
   AddQueryCommand,
   DeleteQueryCommand,

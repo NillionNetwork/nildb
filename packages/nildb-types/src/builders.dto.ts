@@ -1,5 +1,5 @@
-import { ApiSuccessResponse } from "@nildb/common/handler";
 import { z } from "zod";
+import { ApiSuccessResponse } from "./responses.dto.js";
 
 /**
  * Builder registration request.

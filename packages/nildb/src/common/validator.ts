@@ -1,5 +1,5 @@
 import { DataValidationError } from "@nildb/common/errors";
-import { Uuid } from "@nildb/common/types";
+import { Uuid } from "@nillion/nildb-types";
 import Ajv from "ajv";
 import type { DataValidationCxt } from "ajv/dist/types";
 import * as addFormats from "ajv-formats";

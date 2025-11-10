@@ -1,0 +1,41 @@
+{
+  "name": "@nillion/nildb-types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "default": "./dist/lib.js"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "stub": "tsdown --stub"
+  },
+  "dependencies": {
+    "http-status-codes": "^2.3.0",
+    "mongodb": "^6.20.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "tsdown": "^0.15.12",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist"
+  ],
+  "tsdown": {
+    "entry": [
+      "src/lib.ts"
+    ],
+    "format": [
+      "esm"
+    ],
+    "sourcemap": true,
+    "clean": true,
+    "minify": false
+  }
+}

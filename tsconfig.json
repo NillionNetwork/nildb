@@ -1,6 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.base.json",
-  "references": [{ "path": "packages/nildb" }],
+  "references": [
+    { "path": "packages/nildb" },
+    { "path": "packages/nildb-types" }
+  ],
   "files": []
 }

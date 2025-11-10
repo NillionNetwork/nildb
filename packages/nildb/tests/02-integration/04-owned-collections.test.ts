@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker";
 import type { CollectionDocument } from "@nildb/collections/collections.types";
 import { CollectionName } from "@nildb/common/mongo";
-import { createUuidDto, type UuidDto } from "@nildb/common/types";
 import type { OwnedDocumentBase } from "@nildb/data/data.types";
+import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { StatusCodes } from "http-status-codes";

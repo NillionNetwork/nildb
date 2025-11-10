@@ -1,14 +1,14 @@
-import type { Paginated } from "@nildb/common/pagination.dto";
-import { type IndexDirection, UUID } from "mongodb";
 import type {
   CreateCollectionIndexRequest,
   CreateCollectionRequest,
   DeleteCollectionRequestParams,
   DropCollectionIndexParams,
   ListCollectionsResponse,
+  Paginated,
   ReadCollectionMetadataRequestParams,
   ReadCollectionMetadataResponse,
-} from "./collections.dto.js";
+} from "@nillion/nildb-types";
+import { type IndexDirection, UUID } from "mongodb";
 import type {
   CollectionDocument,
   CollectionMetadata,

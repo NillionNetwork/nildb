@@ -3,7 +3,7 @@ import { Effect as E, Exit } from "effect";
 import { UUID } from "mongodb";
 import { describe, expect, it } from "vitest";
 
-describe("coercion.test.ts", () => {
+describe("coercion.test.js", () => {
   it("should return the original map if no $coerce key is present", () => {
     const data = { a: 1, b: "test" };
 

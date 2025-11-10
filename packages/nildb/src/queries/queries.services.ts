@@ -12,15 +12,14 @@ import {
   type VariableInjectionError,
 } from "@nildb/common/errors";
 import { CollectionName } from "@nildb/common/mongo";
-import type { Paginated, PaginationQuery } from "@nildb/common/pagination.dto";
 import { validateData } from "@nildb/common/validator";
 import * as DataService from "@nildb/data/data.services";
 import type { AppBindings } from "@nildb/env";
+import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import { cloneDeep, set } from "es-toolkit/compat";
 import type { Document, UUID } from "mongodb";
 import { z } from "zod";
-// biome-ignore lint/correctness/useImportExtensions: its a .json file
 import pipelineSchema from "./mongodb_pipeline.json";
 import * as RunQueryJobsRepository from "./queries.jobs.repository.js";
 import * as QueriesRepository from "./queries.repository.js";

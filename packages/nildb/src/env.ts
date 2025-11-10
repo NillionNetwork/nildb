@@ -1,6 +1,7 @@
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import { Cache } from "@nildb/common/cache";
-import { createLogger, LogLevel } from "@nildb/common/logger";
+import { createLogger } from "@nildb/common/logger";
+import { LogLevel } from "@nillion/nildb-types";
 import { type Did, type Envelope, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";

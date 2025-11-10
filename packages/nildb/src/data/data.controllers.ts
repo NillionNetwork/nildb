@@ -1,19 +1,13 @@
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import { GrantAccessError } from "@nildb/common/errors";
 import { handleTaggedErrors } from "@nildb/common/handler";
-import { NucCmd } from "@nildb/common/nuc-cmd-tree";
 import { OpenApiSpecCommonErrorResponses } from "@nildb/common/openapi";
-import { PathsV1 } from "@nildb/common/paths";
 import type { ControllerOptions } from "@nildb/common/types";
 import {
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
-import { Effect as E, pipe } from "effect";
-import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
 import {
   CreateDataResponse,
   CreateOwnedDataRequest,
@@ -24,12 +18,18 @@ import {
   FindDataRequest,
   FindDataResponse,
   type FlushDataResponse,
+  NucCmd,
+  PathsV1,
   TailDataRequestParams,
   TailDataRequestQuery,
   TailDataResponse,
   UpdateDataRequest,
   UpdateDataResponse,
-} from "./data.dto.js";
+} from "@nillion/nildb-types";
+import { Effect as E, pipe } from "effect";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+import { StatusCodes } from "http-status-codes";
 import { DataMapper } from "./data.mapper.js";
 import * as DataService from "./data.services.js";
 import type { UploadResult } from "./data.types.js";

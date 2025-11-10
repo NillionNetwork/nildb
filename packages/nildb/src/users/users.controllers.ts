@@ -1,13 +1,10 @@
 import * as BuildersService from "@nildb/builders/builders.services";
 import { handleTaggedErrors } from "@nildb/common/handler";
-import { NucCmd } from "@nildb/common/nuc-cmd-tree";
 import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
 } from "@nildb/common/openapi";
-import { PathsV1 } from "@nildb/common/paths";
 import type { ControllerOptions } from "@nildb/common/types";
-import { UpdateDataResponse } from "@nildb/data/data.dto";
 import { DataMapper } from "@nildb/data/data.mapper";
 import * as DataService from "@nildb/data/data.services";
 import type { OwnedDocumentBase } from "@nildb/data/data.types";
@@ -16,6 +13,8 @@ import {
   loadSubjectAndVerifyAsUser,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import { UserDataMapper } from "@nildb/users/users.mapper";
+import * as UserService from "@nildb/users/users.services";
 import {
   DeleteDocumentRequestParams,
   type DeleteDocumentResponse,
@@ -23,15 +22,16 @@ import {
   type GrantAccessToDataResponse,
   ListDataReferencesRequestQuery,
   ListDataReferencesResponse,
+  NucCmd,
+  PathsV1,
   ReadDataRequestParams,
   ReadDataResponse,
   ReadUserProfileResponse,
   RevokeAccessToDataRequest,
   type RevokeAccessToDataResponse,
+  UpdateDataResponse,
   UpdateUserDataRequest,
-} from "@nildb/users/users.dto";
-import { UserDataMapper } from "@nildb/users/users.mapper";
-import * as UserService from "@nildb/users/users.services";
+} from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 

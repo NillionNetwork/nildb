@@ -3,8 +3,6 @@ import { faker } from "@faker-js/faker";
 import { type App, buildApp } from "@nildb/app";
 import type { CollectionType } from "@nildb/collections/collections.types";
 import { mongoMigrateUp } from "@nildb/common/mongo";
-import { NucCmd } from "@nildb/common/nuc-cmd-tree";
-import { createUuidDto, type UuidDto } from "@nildb/common/types";
 import {
   type AppBindings,
   FeatureFlag,
@@ -12,6 +10,7 @@ import {
   loadBindings,
 } from "@nildb/env";
 import type { QueryVariable } from "@nildb/queries/queries.types";
+import { createUuidDto, NucCmd, type UuidDto } from "@nillion/nildb-types";
 import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";

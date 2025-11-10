@@ -1,8 +1,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CollectionNotFoundError, DatabaseError } from "@nildb/common/errors";
-import type { UuidDto } from "@nildb/common/types";
 import type { AppBindings, EnvVars } from "@nildb/env";
+import type { UuidDto } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import migrateMongo from "migrate-mongo";
 import {

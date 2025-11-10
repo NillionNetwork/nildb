@@ -12,31 +12,14 @@ import type {
   VariableInjectionError,
 } from "@nildb/common/errors";
 import type { AppEnv } from "@nildb/env";
+import type { ApiErrorResponse } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
-import z from "zod";
 
-export const ApiErrorResponse = z
-  .object({
-    errors: z.array(z.string()),
-    ts: z.string(),
-  })
-  .meta({ ref: "ApiErrorResponse" });
-export type ApiErrorResponse = z.infer<typeof ApiErrorResponse>;
-
-export const ApiSuccessResponse = <T extends z.ZodType>(dataSchema: T) =>
-  z.object({
-    data: dataSchema,
-  });
-
-export type ApiSuccessResponse<T> = {
-  data: T;
-};
-
-export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
+export type ApiResponse<T> = { data: T } | ApiErrorResponse;
 
 type KnownError =
   | CollectionNotFoundError

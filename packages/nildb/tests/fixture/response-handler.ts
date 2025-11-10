@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
 
-import type { ApiErrorResponse } from "@nildb/common/handler";
+import type { ApiErrorResponse } from "@nillion/nildb-types";
 import type { StatusCodes } from "http-status-codes";
 import type z from "zod";
 import type { FixtureContext } from "./fixture.js";

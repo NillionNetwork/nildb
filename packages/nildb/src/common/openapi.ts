@@ -1,4 +1,4 @@
-import { ApiErrorResponse } from "@nildb/common/handler";
+import { ApiErrorResponse } from "@nillion/nildb-types";
 import { resolver } from "hono-openapi";
 import { ReasonPhrases } from "http-status-codes";
 

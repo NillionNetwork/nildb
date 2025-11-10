@@ -2,53 +2,43 @@
 
 import type { App } from "@nildb/app";
 import {
-  ReadProfileResponse,
-  type RegisterBuilderRequest,
-  type UpdateProfileRequest,
-} from "@nildb/builders/builders.dto";
-import {
   type CreateCollectionIndexRequest,
   type CreateCollectionRequest,
-  ListCollectionsResponse,
-  ReadCollectionMetadataResponse,
-} from "@nildb/collections/collections.dto";
-import { NucCmd } from "@nildb/common/nuc-cmd-tree";
-import type { PaginationQuery } from "@nildb/common/pagination.dto";
-import { PathsV1 } from "@nildb/common/paths";
-import type { UuidDto } from "@nildb/common/types";
-import {
   CreateDataResponse,
   type CreateOwnedDataRequest,
+  type CreateQueryRequest,
   type CreateStandardDataRequest,
   type DeleteDataRequest,
   DeleteDataResponse,
   type FindDataRequest,
   FindDataResponse,
-  TailDataResponse,
-  type UpdateDataRequest,
-  UpdateDataResponse,
-} from "@nildb/data/data.dto";
-import {
-  type CreateQueryRequest,
+  type GrantAccessToDataRequest,
+  ListCollectionsResponse,
+  ListDataReferencesResponse,
+  NucCmd,
+  type PaginationQuery,
+  PathsV1,
+  ReadAboutNodeResponse,
+  ReadCollectionMetadataResponse,
+  ReadDataResponse,
+  ReadLogLevelResponse,
+  ReadProfileResponse,
   ReadQueriesResponse,
   ReadQueryResponse,
   ReadQueryRunByIdResponse,
+  ReadUserProfileResponse,
+  type RegisterBuilderRequest,
+  type RevokeAccessToDataRequest,
   type RunQueryRequest,
   RunQueryResponse,
-} from "@nildb/queries/queries.dto";
-import {
-  ReadAboutNodeResponse,
-  ReadLogLevelResponse,
   type SetLogLevelRequest,
-} from "@nildb/system/system.dto";
-import {
-  type GrantAccessToDataRequest,
-  ListDataReferencesResponse,
-  ReadDataResponse,
-  ReadUserProfileResponse,
-  type RevokeAccessToDataRequest,
+  TailDataResponse,
+  type UpdateDataRequest,
+  UpdateDataResponse,
+  type UpdateProfileRequest,
   type UpdateUserDataRequest,
-} from "@nildb/users/users.dto";
+  type UuidDto,
+} from "@nillion/nildb-types";
 import {
   Builder,
   Did,

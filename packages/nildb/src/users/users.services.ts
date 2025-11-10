@@ -8,10 +8,10 @@ import {
   GrantAccessError,
   type ResourceAccessDeniedError,
 } from "@nildb/common/errors";
-import type { Paginated, PaginationQuery } from "@nildb/common/pagination.dto";
 import * as DataRepository from "@nildb/data/data.repository";
 import type { AppBindings } from "@nildb/env";
 import { UserDataMapper, UserLoggerMapper } from "@nildb/users/users.mapper";
+import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import type { UpdateResult, UUID } from "mongodb";
 import * as UserRepository from "./users.repository.js";

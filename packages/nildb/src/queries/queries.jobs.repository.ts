@@ -4,8 +4,8 @@ import {
   DocumentNotFoundError,
 } from "@nildb/common/errors";
 import { CollectionName, checkCollectionExists } from "@nildb/common/mongo";
-import type { PaginationQuery } from "@nildb/common/pagination.dto";
 import type { AppBindings } from "@nildb/env";
+import type { PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import {
   type InsertOneResult,

@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { createUuidDto, type UuidDto } from "@nildb/common/types";
 import type { StandardDocumentBase } from "@nildb/data/data.types";
+import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
 import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";

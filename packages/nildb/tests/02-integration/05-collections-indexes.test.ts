@@ -1,4 +1,4 @@
-import { createUuidDto } from "@nildb/common/types";
+import { createUuidDto } from "@nillion/nildb-types";
 import { describe } from "vitest";
 import simpleCollection from "../data/simple.collection.json";
 import { createTestFixtureExtension } from "../fixture/it.js";

@@ -1,21 +1,16 @@
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import { CollectionsDataMapper } from "@nildb/collections/collections.mapper";
 import { handleTaggedErrors } from "@nildb/common/handler";
-import { NucCmd } from "@nildb/common/nuc-cmd-tree";
 import {
   OpenApiSpecCommonErrorResponses,
   OpenApiSpecEmptySuccessResponses,
 } from "@nildb/common/openapi";
-import { PathsV1 } from "@nildb/common/paths";
 import type { ControllerOptions } from "@nildb/common/types";
 import {
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
-import { Effect as E, pipe } from "effect";
-import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
 import {
   CreateCollectionIndexRequest,
   type CreateCollectionIndexResponse,
@@ -27,9 +22,14 @@ import {
   type DropCollectionIndexResponse,
   ListCollectionsRequestQuery,
   ListCollectionsResponse,
+  NucCmd,
+  PathsV1,
   ReadCollectionMetadataRequestParams,
   ReadCollectionMetadataResponse,
-} from "./collections.dto.js";
+} from "@nillion/nildb-types";
+import { Effect as E, pipe } from "effect";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+import { StatusCodes } from "http-status-codes";
 import * as CollectionsService from "./collections.services.js";
 
 /**

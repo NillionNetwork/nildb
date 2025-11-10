@@ -18,10 +18,10 @@ import type {
   InvalidIndexOptionsError,
   ResourceAccessDeniedError,
 } from "@nildb/common/errors";
-import type { Paginated, PaginationQuery } from "@nildb/common/pagination.dto";
 import { validateSchema } from "@nildb/common/validator";
 import * as DataService from "@nildb/data/data.services";
 import type { AppBindings } from "@nildb/env";
+import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import type { CreateIndexesOptions, IndexSpecification } from "mongodb";
 import * as CollectionsRepository from "./collections.repository.js";

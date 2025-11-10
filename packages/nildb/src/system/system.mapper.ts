@@ -1,9 +1,9 @@
-import type { LogLevel } from "@nildb/common/logger";
 import type {
+  LogLevel,
   ReadAboutNodeResponse,
   ReadLogLevelResponse,
   SetLogLevelRequest,
-} from "./system.dto.js";
+} from "@nillion/nildb-types";
 import type {
   AboutNode,
   SetLogLevelCommand,

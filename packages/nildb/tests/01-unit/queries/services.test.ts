@@ -7,7 +7,7 @@ import type { QueryVariable } from "@nildb/queries/queries.types";
 import { Effect as E, Either, pipe } from "effect";
 import { describe, it } from "vitest";
 
-describe("queries.services.ts", () => {
+describe("queries.services.js", () => {
   describe("validateVariables", () => {
     it("should fail for unexpected variables", ({ expect }) => {
       const queryVariables: Record<string, QueryVariable> = {
