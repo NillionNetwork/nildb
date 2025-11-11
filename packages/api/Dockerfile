@@ -18,7 +18,6 @@ FROM node:24-alpine
 RUN corepack enable pnpm
 WORKDIR /app
 COPY --from=builder /app .
-COPY --from=builder /build/packages/api/migrations /migrations
 
 USER node
 EXPOSE 8080

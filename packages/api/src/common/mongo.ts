@@ -1,5 +1,3 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { CollectionNotFoundError, DatabaseError } from "@nildb/common/errors";
 import type { AppBindings, EnvVars } from "@nildb/env";
 import type { UuidDto } from "@nillion/nildb-types";
@@ -82,15 +80,21 @@ export async function mongoMigrateUp(
   database: string,
 ): Promise<void> {
   console.warn("! Database migration check");
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
+
+  // In dev: this file is at src/common/mongo.ts → ../../migrations
+  // In prod: code is bundled to dist/main.js → ../migrations
+  // Detect based on whether we're running from dist/ or src/
+  const currentFileUrl = new URL(import.meta.url);
+  const migrationsDir = currentFileUrl.pathname.includes("/dist/")
+    ? new URL("../migrations", import.meta.url).pathname
+    : new URL("../../migrations", import.meta.url).pathname;
 
   migrateMongo.config.set({
     mongodb: {
       url: uri,
       databaseName: database,
     },
-    migrationsDir: path.join(__dirname, "../../migrations"),
+    migrationsDir,
     changelogCollectionName: "_migrations",
     migrationFileExtension: ".mjs",
     useFileHash: true,
