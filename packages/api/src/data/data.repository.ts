@@ -1,0 +1,460 @@
+import type { CollectionDocument } from "@nildb/collections/collections.types";
+import { applyCoercions } from "@nildb/common/coercion";
+import {
+  type CollectionNotFoundError,
+  DatabaseError,
+  type DataValidationError,
+  DocumentNotFoundError,
+  InvalidIndexOptionsError,
+} from "@nildb/common/errors";
+import {
+  addDocumentBaseCoercions,
+  CollectionName,
+  checkCollectionExists,
+  type DocumentBase,
+  isMongoError,
+  MongoErrorCode,
+} from "@nildb/common/mongo";
+import type { AppBindings } from "@nildb/env";
+import type { QueryDocument } from "@nildb/queries/queries.types";
+import type { Acl } from "@nildb/users/users.types";
+import type { PaginationQuery, UuidDto } from "@nillion/nildb-types";
+import { Effect as E, pipe } from "effect";
+import {
+  type DeleteResult,
+  type Document,
+  type Filter,
+  MongoBulkWriteError,
+  type StrictFilter,
+  type UpdateFilter,
+  type UpdateResult,
+  UUID,
+} from "mongodb";
+import type { JsonObject } from "type-fest";
+import type {
+  CreateFailure,
+  OwnedDocumentBase,
+  PartialDataDocumentDto,
+  StandardDocumentBase,
+  UploadResult,
+} from "./data.types.js";
+
+/**
+ * Create data collection.
+ */
+export function createCollection(
+  ctx: AppBindings,
+  id: UUID,
+): E.Effect<void, InvalidIndexOptionsError | DatabaseError> {
+  return pipe(
+    E.tryPromise({
+      try: () => ctx.db.data.createCollection(id.toString()),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "createCollection" }),
+    }),
+    E.flatMap((collection) =>
+      E.all([
+        E.tryPromise({
+          try: () =>
+            collection.createIndex(
+              { _updated: 1 },
+              { unique: false, name: "_updated_1" },
+            ),
+          catch: (cause) => {
+            if (
+              isMongoError(cause) &&
+              cause.code === MongoErrorCode.IndexNotFound
+            ) {
+              return new InvalidIndexOptionsError({
+                collection: collection.toString(),
+                message: "_updated_1",
+              });
+            }
+            return new DatabaseError({ cause, message: "" });
+          },
+        }),
+        E.tryPromise({
+          try: () =>
+            collection.createIndex(
+              { _created: 1 },
+              { unique: false, name: "_created_1" },
+            ),
+          catch: (cause) => {
+            if (
+              isMongoError(cause) &&
+              cause.code === MongoErrorCode.IndexNotFound
+            ) {
+              return new InvalidIndexOptionsError({
+                collection: collection.toString(),
+                message: "_created_1",
+              });
+            }
+            return new DatabaseError({ cause, message: "" });
+          },
+        }),
+      ]),
+    ),
+    E.as(void 0),
+  );
+}
+
+/**
+ * Tail collection data.
+ */
+export function tailCollection(
+  ctx: AppBindings,
+  collection: UUID,
+  limit: number,
+  filter: Filter<DocumentBase>,
+): E.Effect<DocumentBase[], CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
+    E.tryMapPromise({
+      try: (c) => c.find(filter).sort({ _created: -1 }).limit(limit).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "tailCollection" }),
+    }),
+  );
+}
+
+/**
+ * Drop data collection.
+ */
+export function drop(
+  ctx: AppBindings,
+  collection: UUID,
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
+    E.tryMapPromise({
+      try: (collection) =>
+        ctx.db.data.dropCollection(collection.collectionName),
+      catch: (cause) =>
+        new DatabaseError({ cause, message: "deleteCollection" }),
+    }),
+    E.as(void 0),
+  );
+}
+
+/**
+ * Insert owned data.
+ */
+export function insertOwnedData(
+  ctx: AppBindings,
+  collection: CollectionDocument,
+  data: PartialDataDocumentDto[],
+  owner: string,
+  acl: Acl[],
+): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<OwnedDocumentBase>(
+      ctx,
+      "data",
+      collection._id.toString(),
+    ),
+    E.tryMapPromise({
+      try: async (dataCollection) => {
+        const created = new Set<UuidDto>();
+        const errors: CreateFailure[] = [];
+
+        const batchSize = 1000;
+        const batches: OwnedDocumentBase[][] = [];
+        const now = new Date();
+
+        for (let i = 0; i < data.length; i += batchSize) {
+          const batch: OwnedDocumentBase[] = data
+            .slice(i, i + batchSize)
+            .map((partial) => ({
+              ...partial,
+              _id: new UUID(partial._id),
+              _created: now,
+              _updated: now,
+              _owner: owner,
+              _acl: acl,
+            }));
+          batches.push(batch);
+        }
+
+        // Insert each batch of documents into the collection
+        for (const batch of batches) {
+          try {
+            const result = await dataCollection.insertMany(batch, {
+              ordered: false,
+            });
+            for (const id of Object.values(result.insertedIds)) {
+              created.add(id.toString() as UuidDto);
+            }
+          } catch (e) {
+            if (e instanceof MongoBulkWriteError) {
+              const result = e.result;
+
+              for (const id of Object.values(result.insertedIds)) {
+                created.add(id.toString() as UuidDto);
+              }
+
+              result.getWriteErrors().forEach((writeError) => {
+                const document = batch[writeError.index];
+                created.delete(document._id.toString() as UuidDto);
+                errors.push({
+                  error: writeError.errmsg ?? "Unknown bulk operation error",
+                  document,
+                });
+              });
+            } else {
+              console.error("An unhandled error occurred: %O", e);
+              throw e;
+            }
+          }
+        }
+
+        return {
+          created: Array.from(created),
+          errors,
+        };
+      },
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
+  );
+}
+/**
+ * Insert standard data.
+ */
+export function insertStandardData(
+  ctx: AppBindings,
+  collection: CollectionDocument,
+  data: PartialDataDocumentDto[],
+): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<StandardDocumentBase>(
+      ctx,
+      "data",
+      collection._id.toString(),
+    ),
+    E.tryMapPromise({
+      try: async (dataCollection) => {
+        const created = new Set<UuidDto>();
+        const errors: CreateFailure[] = [];
+
+        const batchSize = 1000;
+        const batches: StandardDocumentBase[][] = [];
+        const now = new Date();
+
+        for (let i = 0; i < data.length; i += batchSize) {
+          const batch: DocumentBase[] = data
+            .slice(i, i + batchSize)
+            .map((partial) => ({
+              ...partial,
+              _id: new UUID(partial._id),
+              _created: now,
+              _updated: now,
+            }));
+          batches.push(batch);
+        }
+
+        // Insert each batch of documents into the collection
+        for (const batch of batches) {
+          try {
+            const result = await dataCollection.insertMany(batch, {
+              ordered: false,
+            });
+            for (const id of Object.values(result.insertedIds)) {
+              created.add(id.toString() as UuidDto);
+            }
+          } catch (e) {
+            if (e instanceof MongoBulkWriteError) {
+              const result = e.result;
+
+              for (const id of Object.values(result.insertedIds)) {
+                created.add(id.toString() as UuidDto);
+              }
+
+              result.getWriteErrors().forEach((writeError) => {
+                const document = batch[writeError.index];
+                created.delete(document._id.toString() as UuidDto);
+                errors.push({
+                  error: writeError.errmsg ?? "Unknown bulk operation error",
+                  document,
+                });
+              });
+            } else {
+              console.error("An unhandled error occurred: %O", e);
+              throw e;
+            }
+          }
+        }
+
+        return {
+          created: Array.from(created),
+          errors,
+        };
+      },
+      catch: (cause) => new DatabaseError({ cause, message: "" }),
+    }),
+  );
+}
+
+/**
+ * Update multiple records.
+ */
+export function updateMany(
+  ctx: AppBindings,
+  collection: UUID,
+  filter: Filter<DocumentBase>,
+  update: UpdateFilter<DocumentBase>,
+): E.Effect<
+  UpdateResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return pipe(
+    E.all([
+      checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
+      applyCoercions(addDocumentBaseCoercions(update)),
+    ]),
+    E.tryMapPromise({
+      try: ([collection, documentUpdate]) =>
+        collection.updateMany(filter, documentUpdate),
+      catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
+    }),
+  );
+}
+
+/**
+ * Delete multiple records.
+ */
+export function deleteMany(
+  ctx: AppBindings,
+  collection: UUID,
+  filter: StrictFilter<DocumentBase>,
+): E.Effect<
+  DeleteResult,
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return pipe(
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
+    E.tryMapPromise({
+      try: (collection) => collection.deleteMany(filter),
+      catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
+    }),
+  );
+}
+
+/**
+ * Run aggregation query.
+ */
+export function runAggregation(
+  ctx: AppBindings,
+  query: QueryDocument,
+  pipeline: Document[],
+): E.Effect<JsonObject[], CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<DocumentBase>(
+      ctx,
+      "data",
+      query.collection.toString(),
+    ),
+    E.tryMapPromise({
+      try: (collection) => collection.aggregate(pipeline).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "runAggregation" }),
+    }),
+  );
+}
+
+/**
+ * Find multiple records with pagination.
+ *
+ * @param ctx The application bindings.
+ * @param collection The collection Uuid to search.
+ * @param filter The MongoDB filter to apply.
+ * @param pagination The pagination parameters (limit and offset).
+ * @returns A tuple containing an array of found documents and the total count.
+ */
+export function findMany(
+  ctx: AppBindings,
+  collection: UUID,
+  filter: Filter<DocumentBase>,
+  pagination: PaginationQuery,
+): E.Effect<
+  [DocumentBase[], number],
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return pipe(
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
+    E.flatMap((dataCollection) =>
+      E.all([
+        E.tryPromise({
+          try: () =>
+            dataCollection
+              .find(filter)
+              .sort({ _created: -1 })
+              .limit(pagination.limit)
+              .skip(pagination.offset)
+              .toArray(),
+          catch: (cause) => new DatabaseError({ cause, message: "findMany" }),
+        }),
+        E.tryPromise({
+          try: () => dataCollection.countDocuments(filter),
+          catch: (cause) =>
+            new DatabaseError({ cause, message: "countDocuments" }),
+        }),
+      ]),
+    ),
+  );
+}
+
+/**
+ * Find all records matching a filter, without pagination.
+ *
+ * @param ctx The application bindings.
+ * @param collection The collection Uuuid to search.
+ * @param filter The MongoDB filter to apply.
+ * @returns An array of all matching documents.
+ */
+export function findAll(
+  ctx: AppBindings,
+  collection: UUID,
+  filter: Filter<DocumentBase>,
+): E.Effect<
+  DocumentBase[],
+  CollectionNotFoundError | DatabaseError | DataValidationError
+> {
+  return pipe(
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
+    E.tryMapPromise({
+      try: (dataCollection) =>
+        dataCollection.find(filter).sort({ _created: -1 }).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "findAll" }),
+    }),
+  );
+}
+
+/**
+ * Find one record.
+ */
+export function findOne(
+  ctx: AppBindings,
+  collection: UUID,
+  filter: Filter<DocumentBase>,
+): E.Effect<
+  DocumentBase,
+  | DocumentNotFoundError
+  | CollectionNotFoundError
+  | DatabaseError
+  | DataValidationError
+> {
+  return pipe(
+    checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
+    E.tryMapPromise({
+      try: (collection) => collection.findOne(filter),
+      catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
+    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Collections,
+              filter,
+            }),
+          )
+        : E.succeed(result),
+    ),
+  );
+}

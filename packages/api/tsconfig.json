@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@nildb/*": ["./src/*"],
+      "@nillion/nildb-types": ["../types/src/lib.ts"],
+      "@nillion/nildb-types/*": ["../types/src/*"],
+      "@nillion/nildb-shared": ["../shared/src/index.ts"],
+      "@nillion/nildb-shared/*": ["../shared/src/*"],
+      "@nillion/nildb-client": ["../client/src/index.ts"],
+      "@nillion/nildb-client/*": ["../client/src/*"]
+    }
+  },
+  "include": ["./src/**/*.ts", "./tests/**/*.ts", "../types/src/**/*.ts"]
+}

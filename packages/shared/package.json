@@ -1,0 +1,42 @@
+{
+  "name": "@nillion/nildb-shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/lib.ts",
+      "default": "./src/lib.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "stub": "tsdown --stub"
+  },
+  "dependencies": {
+    "@nillion/nuc": "^1.0.0",
+    "temporal-polyfill": "^0.3.0"
+  },
+  "devDependencies": {
+    "@types/pino": "^7.0.5",
+    "pino": "^10.1.0",
+    "tsdown": "^0.15.12",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist"
+  ],
+  "tsdown": {
+    "entry": [
+      "src/lib.ts"
+    ],
+    "format": [
+      "esm"
+    ],
+    "sourcemap": true,
+    "clean": true,
+    "minify": false
+  }
+}

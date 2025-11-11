@@ -10,14 +10,12 @@ export default defineConfig({
       provider: "v8",
       reportOnFailure: true,
       reporter: ["text", "json-summary", "json"],
-      // Explicitly define source files to analyze for coverage
-      include: ["packages/nildb/src/**/*.{js,ts}"],
-      // Exclude test files, fixtures, and build artifacts from coverage
+      include: ["packages/api/src/**/*.{js,ts}"],
       exclude: [
         "**/node_modules/**",
         "**/dist/**",
-        "**/*.test.ts",
-        "**/*.spec.ts",
+        "**/*.test.js",
+        "**/*.spec.js",
         "**/tests/**",
       ],
     },
@@ -26,21 +24,19 @@ export default defineConfig({
         plugins: [tsconfigPaths()],
         test: {
           name: "unit",
-          include: ["packages/nildb/tests/01-unit/**/*.test.ts"],
+          include: ["packages/api/tests/01-unit/**/*.test.ts"],
         },
       },
       {
         plugins: [tsconfigPaths()],
         test: {
           name: "integration",
-          include: ["packages/nildb/tests/02-integration/**/*.test.ts"],
+          include: ["packages/api/tests/02-integration/**/*.test.ts"],
           globalSetup: "./vitest.global-setup.ts",
         },
       },
     ],
-    // These force vitest to run the test suite with 1 worker
-    // side-stepping the sequence mismatch issue caused when multiple tests
-    // try and share the same nilchain wallet
+    // Force vitest to run the test suite with 1 worker to avoid nilchain sequence mismatches
     // ref: https://github.com/NillionNetwork/nildb/issues/174
     maxWorkers: 1,
   },
