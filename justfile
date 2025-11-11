@@ -70,7 +70,7 @@ test-coverage:
 # Create build info aretefact for Docker
 create-buildinfo:
     #!/usr/bin/env bash
-    VERSION=$(cat packages/nildb/package.json | jq -r .version)
+    VERSION=$(cat packages/api/package.json | jq -r .version)
     cat << EOF > buildinfo.json
     {
       "time": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
@@ -83,7 +83,7 @@ create-buildinfo:
 docker-build-local: create-buildinfo
     docker buildx build \
       --tag public.ecr.aws/k5d9x2g2/nildb-api:local \
-      --file ./packages/nildb/Dockerfile \
+      --file ./packages/api/Dockerfile \
       .
 
 # ------------------

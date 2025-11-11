@@ -4,7 +4,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@nillion/shared/*": ["./src/*"]
+      "@nillion/nildb-shared/*": ["./src/*"]
     },
     "composite": true
   },

@@ -67,14 +67,14 @@ importers:
         specifier: 4.0.6
         version: 4.0.6(@types/debug@4.1.12)(@types/node@24.9.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1)
 
-  packages/nildb:
+  packages/api:
     dependencies:
-      '@nillion/nildb-types':
-        specifier: workspace:*
-        version: link:../nildb-types
-      '@nillion/shared':
+      '@nillion/nildb-shared':
         specifier: workspace:*
         version: link:../shared
+      '@nillion/nildb-types':
+        specifier: workspace:*
+        version: link:../types
       mongodb:
         specifier: ^6.20.0
         version: 6.20.0
@@ -91,15 +91,9 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.4
         version: 0.7.4(hono@4.10.3)(zod@4.1.12)
-      '@nillion/nildb-client-admin':
+      '@nillion/nildb-client':
         specifier: workspace:*
-        version: link:../nildb-client-admin
-      '@nillion/nildb-client-builder':
-        specifier: workspace:*
-        version: link:../nildb-client-builder
-      '@nillion/nildb-client-user':
-        specifier: workspace:*
-        version: link:../nildb-client-user
+        version: link:../client
       '@nillion/nuc':
         specifier: ^1.0.0
         version: 1.0.0(pino@10.1.0)(typescript@5.9.3)
@@ -185,65 +179,14 @@ importers:
         specifier: ^4.0.2
         version: 4.0.2(zod@4.1.12)
 
-  packages/nildb-client-admin:
+  packages/client:
     dependencies:
       '@nillion/nildb-types':
         specifier: workspace:*
-        version: link:../nildb-types
+        version: link:../types
       '@nillion/nuc':
         specifier: ^1.0.0
         version: 1.0.0(pino@10.1.0)(typescript@5.9.3)
-    devDependencies:
-      tsdown:
-        specifier: ^0.15.12
-        version: 0.15.12(typescript@5.9.3)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/nildb-client-builder:
-    dependencies:
-      '@nillion/nildb-types':
-        specifier: workspace:*
-        version: link:../nildb-types
-      '@nillion/nuc':
-        specifier: ^1.0.0
-        version: 1.0.0(pino@10.1.0)(typescript@5.9.3)
-    devDependencies:
-      tsdown:
-        specifier: ^0.15.12
-        version: 0.15.12(typescript@5.9.3)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/nildb-client-user:
-    dependencies:
-      '@nillion/nildb-types':
-        specifier: workspace:*
-        version: link:../nildb-types
-      '@nillion/nuc':
-        specifier: ^1.0.0
-        version: 1.0.0(pino@10.1.0)(typescript@5.9.3)
-    devDependencies:
-      tsdown:
-        specifier: ^0.15.12
-        version: 0.15.12(typescript@5.9.3)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/nildb-types:
-    dependencies:
-      http-status-codes:
-        specifier: ^2.3.0
-        version: 2.3.0
-      mongodb:
-        specifier: ^6.20.0
-        version: 6.20.0
-      zod:
-        specifier: ^4.1.12
-        version: 4.1.12
     devDependencies:
       tsdown:
         specifier: ^0.15.12
@@ -267,6 +210,25 @@ importers:
       pino:
         specifier: ^10.1.0
         version: 10.1.0
+      tsdown:
+        specifier: ^0.15.12
+        version: 0.15.12(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/types:
+    dependencies:
+      http-status-codes:
+        specifier: ^2.3.0
+        version: 2.3.0
+      mongodb:
+        specifier: ^6.20.0
+        version: 6.20.0
+      zod:
+        specifier: ^4.1.12
+        version: 4.1.12
+    devDependencies:
       tsdown:
         specifier: ^0.15.12
         version: 0.15.12(typescript@5.9.3)

@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**/*.ts", "packages/nildb/migrations/*.mjs", "**/*.json"]
+    "includes": ["**/*.ts", "packages/api/migrations/*.mjs", "**/*.json"]
   },
   "formatter": {
     "enabled": true,
@@ -57,7 +57,7 @@
   },
   "overrides": [
     {
-      "includes": ["./packages/nildb/tests/**/*.ts"],
+      "includes": ["./packages/api/tests/**/*.ts"],
       "linter": {
         "rules": {
           "style": {
