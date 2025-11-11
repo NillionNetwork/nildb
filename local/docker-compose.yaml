@@ -25,7 +25,7 @@ services:
       - "40017:27017"
 
   nilauth:
-    image: public.ecr.aws/k5d9x2g2/nilauth:latest
+    image: public.ecr.aws/k5d9x2g2/nilauth:main
     depends_on:
       - postgres
       - nilchain
