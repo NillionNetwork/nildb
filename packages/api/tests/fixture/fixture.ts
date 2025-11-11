@@ -72,10 +72,7 @@ export async function buildFixture(
   } = {},
 ): Promise<FixtureContext> {
   dotenv.config({
-    path: [
-      "./packages/api/.env.test",
-      "./packages/api/.env.test.nilauthclient",
-    ],
+    path: ["./packages/api/env.test", "./packages/api/env.test.nilauthclient"],
   });
   const id = new Date().toISOString().replaceAll(":", "").replaceAll(".", "_");
   const log = createTestLogger(id);
