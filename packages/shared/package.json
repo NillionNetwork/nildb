@@ -7,8 +7,9 @@
   "types": "./dist/lib.d.ts",
   "exports": {
     ".": {
-      "types": "./src/lib.ts",
-      "default": "./src/lib.ts"
+      "types": "./dist/lib.d.ts",
+      "development": "./src/lib.ts",
+      "default": "./dist/lib.js"
     }
   },
   "scripts": {

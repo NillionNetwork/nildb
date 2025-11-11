@@ -4,6 +4,11 @@ RUN corepack enable pnpm
 WORKDIR /build
 COPY . .
 RUN pnpm install --frozen-lockfile
+# Build dependencies
+RUN pnpm --filter @nillion/nildb-types build
+RUN pnpm --filter @nillion/nildb-shared build
+RUN pnpm --filter @nillion/nildb-client build
+# Build the api
 RUN pnpm --filter @nillion/nildb build
 RUN pnpm deploy --prod --filter @nillion/nildb /app
 COPY buildinfo.json /app/buildinfo.json
