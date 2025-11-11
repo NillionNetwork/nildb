@@ -1,6 +1,8 @@
 services:
   nildb:
-    build: ../
+    build:
+      context: ..
+      dockerfile: packages/api/Dockerfile
     ports:
       - "40080:8080"
     depends_on:
