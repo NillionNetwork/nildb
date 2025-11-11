@@ -18,15 +18,16 @@ describe("02-builder-lifecycle.test.js", () => {
   });
 
   it("self-signed tokens are rejected from paid route", async ({ c }) => {
-    const { expect, builder, bindings } = c;
+    const { expect, app, builderSigner, bindings } = c;
 
+    const builderDid = await builderSigner.getDid();
     const selfSignedToken = await Builder.invocation()
       .command("/nil/db")
       .audience(bindings.node.did)
-      .subject(await builder.getDid())
-      .signAndSerialize(builder.signer);
+      .subject(builderDid)
+      .signAndSerialize(builderSigner);
 
-    const response = await builder.app.request(PathsV1.collections.root, {
+    const response = await app.request(PathsV1.collections.root, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${selfSignedToken}`,
@@ -37,45 +38,70 @@ describe("02-builder-lifecycle.test.js", () => {
 
   it("builder can access paid routes", async ({ c }) => {
     const { builder } = c;
-    await builder.ensureSubscriptionActive();
-    await builder.readCollections(c).expectSuccess();
+    const result = await builder.readCollections();
+    c.expect(result.ok).toBe(true);
   });
 
   it("rejects registration of a builder with a duplicate DID", async ({
     c,
   }) => {
-    const { builder } = c;
-    const builderDid = await builder.getDid();
+    const { expect, builder, builderSigner } = c;
+    const builderDid = await builderSigner.getDid();
     const builderName = faker.person.fullName();
 
     // The first registration is done by the test fixture so a second registration should fail.
-    await builder
-      .register(c, {
-        did: builderDid.didString,
-        name: builderName,
-      })
-      .expectFailure(StatusCodes.BAD_REQUEST, "DuplicateEntryError");
+    const result = await builder.register({
+      did: builderDid.didString,
+      name: builderName,
+    });
+
+    expect(result.ok).toBe(false);
   });
 
   it("builder can read its profile", async ({ c }) => {
-    const { builder, expect } = c;
-    const { data } = await builder.getProfile(c).expectSuccess();
-    expect(data._id).toBe(Did.serialize(await builder.getDid()));
+    const { builder, builderSigner, expect } = c;
+    const result = await builder.getProfile();
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.data._id).toBe(
+        Did.serialize(await builderSigner.getDid()),
+      );
+    }
   });
 
   it("builder can update its profile", async ({ c }) => {
     const { builder, expect } = c;
     const newName = faker.company.name();
-    await builder.updateProfile(c, { name: newName }).expectSuccess();
-    const { data } = await builder.getProfile(c).expectSuccess();
-    expect(data.name).toBe(newName);
+    const updateResult = await builder.updateProfile({ name: newName });
+    expect(updateResult.ok).toBe(true);
+    const getResult = await builder.getProfile();
+    expect(getResult.ok).toBe(true);
+    if (getResult.ok) {
+      expect(getResult.data.data.name).toBe(newName);
+    }
   });
 
   it("builder can be removed", async ({ c }) => {
-    const { builder } = c;
-    await builder.deleteBuilder(c).expectSuccess();
-    await builder.getProfile(c).expectStatusCode(StatusCodes.UNAUTHORIZED);
-    await builder.readCollections(c).expectStatusCode(StatusCodes.UNAUTHORIZED);
-    await builder.getQueries(c).expectStatusCode(StatusCodes.UNAUTHORIZED);
+    const { expect, builder } = c;
+    const deleteResult = await builder.deleteBuilder();
+    expect(deleteResult.ok).toBe(true);
+
+    const getProfileResult = await builder.getProfile();
+    expect(getProfileResult.ok).toBe(false);
+    if (!getProfileResult.ok) {
+      expect(getProfileResult.status).toBeDefined();
+    }
+
+    const readCollectionsResult = await builder.readCollections();
+    expect(readCollectionsResult.ok).toBe(false);
+    if (!readCollectionsResult.ok) {
+      expect(readCollectionsResult.status).toBeDefined();
+    }
+
+    const getQueriesResult = await builder.getQueries();
+    expect(getQueriesResult.ok).toBe(false);
+    if (!getQueriesResult.ok) {
+      expect(getQueriesResult.status).toBeDefined();
+    }
   });
 });

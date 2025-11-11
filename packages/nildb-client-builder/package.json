@@ -1,0 +1,40 @@
+{
+  "name": "@nillion/nildb-client-builder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "stub": "tsdown --stub"
+  },
+  "dependencies": {
+    "@nillion/nuc": "^1.0.0",
+    "@nillion/nildb-types": "workspace:*"
+  },
+  "devDependencies": {
+    "tsdown": "^0.15.12",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist"
+  ],
+  "tsdown": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "format": [
+      "esm"
+    ],
+    "sourcemap": true,
+    "clean": true,
+    "minify": false
+  }
+}

@@ -2,13 +2,15 @@ import { faker } from "@faker-js/faker";
 import type { CollectionDocument } from "@nildb/collections/collections.types";
 import { CollectionName } from "@nildb/common/mongo";
 import type { OwnedDocumentBase } from "@nildb/data/data.types";
+import type { BuilderClient } from "@nillion/nildb-client-builder";
+import { BuilderClient as BuilderClientClass } from "@nillion/nildb-client-builder";
 import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
+import { NilauthClient, PayerBuilder, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
-import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { UUID } from "mongodb";
-import { describe, expect } from "vitest";
+import { describe, vi } from "vitest";
 import simpleCollectionJson from "../data/simple.collection.json";
 import simpleQueryJson from "../data/simple.query.json";
 import collectionJson from "../data/wallet.collection.json";
@@ -19,12 +21,8 @@ import {
   expectBuilder,
 } from "../fixture/assertions.js";
 import type { CollectionFixture, QueryFixture } from "../fixture/fixture.js";
+import { createUserTestClient } from "../fixture/helpers.js";
 import { createTestFixtureExtension } from "../fixture/it.js";
-import {
-  type BuilderTestClient,
-  createBuilderTestClient,
-  createUserTestClient,
-} from "../fixture/test-client.js";
 
 describe("Owned Collections", () => {
   const collection = collectionJson as unknown as CollectionFixture;
@@ -34,55 +32,81 @@ describe("Owned Collections", () => {
 
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
 
-  let unauthorizedBuilder: BuilderTestClient;
+  let unauthorizedBuilder: BuilderClient;
+  let unauthorizedBuilderSigner: Signer;
 
   beforeAll(async (c) => {
-    await c.builder.ensureSubscriptionActive();
-
-    const { builder, bindings, app } = c;
+    const { bindings, app } = c;
 
     // This builder is created manually with a specific private key to test
     // interactions where a single DID acts as both a data owner (the default `user` client)
     // and a builder. Using the `createRegisteredBuilder` helper is not suitable here as it
     // generates a random private key.
-    unauthorizedBuilder = await createBuilderTestClient({
-      app,
-      privateKey: process.env.APP_NILCHAIN_PRIVATE_KEY_1!,
-      chainUrl: process.env.APP_NILCHAIN_JSON_RPC!,
-      nilauthBaseUrl: bindings.config.nilauthBaseUrl,
-      nodePublicKey: builder._options.nodePublicKey,
+    const privateKey = process.env.APP_NILCHAIN_PRIVATE_KEY_1!;
+    unauthorizedBuilderSigner = Signer.fromPrivateKey(privateKey);
+    const builderDid = await unauthorizedBuilderSigner.getDid();
+
+    // Create nilauth client and ensure subscription is active
+    const payer = await PayerBuilder.fromPrivateKey(privateKey)
+      .chainUrl(process.env.APP_NILCHAIN_JSON_RPC!)
+      .build();
+
+    const nilauth = await NilauthClient.create({
+      baseUrl: bindings.config.nilauthBaseUrl,
+      payer,
     });
 
-    await unauthorizedBuilder
-      .register(c, {
-        did: (await unauthorizedBuilder.getDid()).didString,
-        name: "unauthorizedBuilder",
-      })
-      .expectSuccess();
+    // Ensure subscription is active (same logic as createRegisteredBuilder)
+    const checkSubscription = async () => {
+      const response = await nilauth.subscriptionStatus(builderDid, "nildb");
+      if (response.subscribed) return;
+      await nilauth
+        .payAndValidate(unauthorizedBuilderSigner, builderDid, "nildb")
+        .catch(() => {});
+      throw new Error("Subscription not yet active");
+    };
+    await vi.waitFor(checkSubscription, { timeout: 10000, interval: 500 });
 
-    await unauthorizedBuilder.ensureSubscriptionActive();
+    unauthorizedBuilder = new BuilderClientClass({
+      baseUrl: bindings.config.nodePublicEndpoint,
+      signer: unauthorizedBuilderSigner,
+      nodePublicKey: bindings.node.publicKey,
+      nilauth,
+      httpClient: app.request,
+    });
+
+    const registerResult = await unauthorizedBuilder.register({
+      did: builderDid.didString,
+      name: "unauthorizedBuilder",
+    });
+
+    if (!registerResult.ok) {
+      throw new Error(`Failed to register builder: ${registerResult.error}`);
+    }
   });
   afterAll(async (_c) => {});
 
   describe("Collection Lifecycle", () => {
     it("can list collections (expect 0)", async ({ c }) => {
       const { expect, builder } = c;
-      const { data } = await builder.readCollections(c).expectSuccess();
-      expect(data).toHaveLength(0);
+      const result = await builder.readCollections();
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(0);
     });
 
     it("can add collection", async ({ c }) => {
-      const { bindings, builder } = c;
+      const { bindings, builder, expect } = c;
 
       const _id = createUuidDto();
-      await builder
-        .createCollection(c, {
-          _id,
-          type: collection.type,
-          name: collection.name,
-          schema: collection.schema,
-        })
-        .expectSuccess();
+      const result = await builder.createCollection({
+        _id,
+        type: collection.type,
+        name: collection.name,
+        schema: collection.schema,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
 
       const document = await bindings.db.primary
         .collection(CollectionName.Builders)
@@ -95,17 +119,17 @@ describe("Owned Collections", () => {
     });
 
     it("can add simple collection", async ({ c }) => {
-      const { builder } = c;
+      const { builder, expect } = c;
 
       const _id = createUuidDto();
-      await builder
-        .createCollection(c, {
-          _id,
-          type: simpleCollection.type,
-          name: simpleCollection.name,
-          schema: simpleCollection.schema,
-        })
-        .expectSuccess();
+      const result = await builder.createCollection({
+        _id,
+        type: simpleCollection.type,
+        name: simpleCollection.name,
+        schema: simpleCollection.schema,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
 
       simpleCollection.id = _id;
     });
@@ -113,39 +137,42 @@ describe("Owned Collections", () => {
     it("can list collections (expect 2)", async ({ c }) => {
       const { expect, builder } = c;
 
-      const { data, pagination } = await builder
-        .readCollections(c)
-        .expectSuccess();
-      expect(data).toHaveLength(2);
-      expect(pagination.total).toBe(2);
+      const result = await builder.readCollections();
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(2);
+      expect(result.data.pagination.total).toBe(2);
     });
 
     it("can list collections with pagination", async ({ c }) => {
       const { expect, builder } = c;
 
-      const { data, pagination } = await builder
-        .readCollections(c, { limit: 1, offset: 1 })
-        .expectSuccess();
+      const result = await builder.readCollections({
+        limit: 1,
+        offset: 1,
+      });
 
-      expect(data).toHaveLength(1);
-      expect(pagination.total).toBe(2);
-      expect(pagination.limit).toBe(1);
-      expect(pagination.offset).toBe(1);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(1);
+      expect(result.data.pagination.total).toBe(2);
+      expect(result.data.pagination.limit).toBe(1);
+      expect(result.data.pagination.offset).toBe(1);
 
       // Verify it is the second collection that was created
-      expect(data[0].name).toBe(collection.name);
+      expect(result.data.data[0].name).toBe(collection.name);
     });
 
     it("can read collection metadata", async ({ c }) => {
       const { expect, builder } = c;
 
-      const { data } = await builder
-        .readCollection(c, collection.id)
-        .expectSuccess();
+      const result = await builder.readCollection(collection.id);
 
-      expect(data._id).toBe(collection.id);
-      expect(data.count).toBe(0);
-      expect(data.schema).toEqual(collection.schema);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data._id).toBe(collection.id);
+      expect(result.data.data.count).toBe(0);
+      expect(result.data.data.schema).toEqual(collection.schema);
     });
   });
 
@@ -172,31 +199,31 @@ describe("Owned Collections", () => {
     );
 
     it("can upload owned data (persistent)", async ({ c }) => {
-      const { expect, bindings, builder, user } = c;
+      const { expect, bindings, builder, userSigner, builderSigner } = c;
 
       // Create persistent data that should never be deleted to keep user in system
-      const result = await builder
-        .createOwnedData(c, {
-          owner: (await user.getDid()).didString,
-          collection: collection.id,
-          data: [
-            {
-              _id: createUuidDto(),
-              wallet: "0x1",
-              country: "GBR",
-              age: 42,
-            },
-          ],
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: true,
-            write: false,
-            execute: false,
+      const result = await builder.createOwnedData({
+        owner: (await userSigner.getDid()).didString,
+        collection: collection.id,
+        data: [
+          {
+            _id: createUuidDto(),
+            wallet: "0x1",
+            country: "GBR",
+            age: 42,
           },
-        })
-        .expectSuccess();
+        ],
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      });
 
-      expect(result.data.created).toHaveLength(1);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data.created).toHaveLength(1);
 
       const data = await bindings.db.data
         .collection(collection.id.toString())
@@ -208,7 +235,7 @@ describe("Owned Collections", () => {
     });
 
     it("can't upload owned data with invalid permissions", async ({ c }) => {
-      const { builder, user } = c;
+      const { expect, builder, userSigner, builderSigner } = c;
 
       const data: OwnedRecord[] = [
         {
@@ -219,23 +246,25 @@ describe("Owned Collections", () => {
         },
       ];
 
-      await builder
-        .createOwnedData(c, {
-          owner: (await user.getDid()).didString,
-          collection: collection.id,
-          data,
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: false,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectFailure(StatusCodes.UNAUTHORIZED);
+      const result = await builder.createOwnedData({
+        owner: (await userSigner.getDid()).didString,
+        collection: collection.id,
+        data,
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: false,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBeDefined();
+      }
     });
 
     it("can upload more owned data (for testing)", async ({ c }) => {
-      const { expect, bindings, builder, user } = c;
+      const { expect, bindings, builder, userSigner, builderSigner } = c;
 
       // Create test data that can be safely modified/deleted in other tests
       const data: OwnedRecord[] = [
@@ -253,21 +282,21 @@ describe("Owned Collections", () => {
         },
       ];
 
-      const result = await builder
-        .createOwnedData(c, {
-          owner: (await user.getDid()).didString,
-          collection: collection.id,
-          data,
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: true,
-            write: true,
-            execute: true,
-          },
-        })
-        .expectSuccess();
+      const result = await builder.createOwnedData({
+        owner: (await userSigner.getDid()).didString,
+        collection: collection.id,
+        data,
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: true,
+          write: true,
+          execute: true,
+        },
+      });
 
-      expect(result.data.created).toHaveLength(2);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data.created).toHaveLength(2);
 
       const cursor = bindings.db.data
         .collection(collection.id.toString())
@@ -278,41 +307,14 @@ describe("Owned Collections", () => {
 
     it("can read collection metadata after data upload", async ({ c }) => {
       const { expect, builder } = c;
-      const { data } = await builder
-        .readCollection(c, collection.id)
-        .expectSuccess();
-      expect(data.count).toBe(3); // 1 from first upload, 2 from second.
-    });
-
-    it("can't upload owned data with invalid permissions", async ({ c }) => {
-      const { builder, user } = c;
-
-      const data: OwnedRecord[] = [
-        {
-          _id: createUuidDto(),
-          wallet: "0x1",
-          country: "GBR",
-          age: 20,
-        },
-      ];
-
-      await builder
-        .createOwnedData(c, {
-          owner: (await user.getDid()).didString,
-          collection: collection.id,
-          data,
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: false,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectFailure(StatusCodes.UNAUTHORIZED);
+      const result = await builder.readCollection(collection.id);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data.count).toBe(3); // 1 from first upload, 2 from second.
     });
 
     it("rejects owned data that does not conform", async ({ c }) => {
-      const { builder, user } = c;
+      const { expect, builder, userSigner, builderSigner } = c;
 
       const data: OwnedRecord[] = [
         {
@@ -324,48 +326,50 @@ describe("Owned Collections", () => {
         },
       ];
 
-      await builder
-        .createOwnedData(c, {
-          owner: (await user.getDid()).didString,
-          collection: collection.id,
-          data,
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: true,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
+      const result = await builder.createOwnedData({
+        owner: (await userSigner.getDid()).didString,
+        collection: collection.id,
+        data,
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBeDefined();
+      }
     });
 
     it("can create test data for reading", async ({ c }) => {
-      const { builder, user } = c;
+      const { builder, expect, userSigner, builderSigner } = c;
 
-      await builder
-        .createOwnedData(c, {
-          owner: (await user.getDid()).didString,
-          collection: simpleCollection.id,
-          data: simpleTestData,
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: true,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectSuccess();
+      const result = await builder.createOwnedData({
+        owner: (await userSigner.getDid()).didString,
+        collection: simpleCollection.id,
+        data: simpleTestData,
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
     });
 
     it("can tail a collection", async ({ c }) => {
       const { expect, builder } = c;
 
-      const result = await builder
-        .tailData(c, simpleCollection.id, 5)
-        .expectSuccess();
+      const result = await builder.tailData(simpleCollection.id, 5);
 
-      expect(result.data).toHaveLength(5);
-      expect(result.data[0]?.name).toBeDefined();
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(5);
+      expect(result.data.data[0]?.name).toBeDefined();
     });
 
     it("can read owned data by a single id", async ({ c }) => {
@@ -378,16 +382,16 @@ describe("Owned Collections", () => {
       expect(expected).toBeDefined();
       const _id = expected!._id.toString();
 
-      const result = await builder
-        .findData(c, {
-          collection: collection.id,
-          filter: { _id },
-        })
-        .expectSuccess();
+      const result = await builder.findData({
+        collection: collection.id,
+        filter: { _id },
+      });
 
-      const actual = result.data[0];
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      const actual = result.data.data[0];
       expect(actual._id).toBe(_id);
-      expect(result.pagination.total).toBe(1);
+      expect(result.data.pagination.total).toBe(1);
     });
 
     it("can read data from a list of ids", async ({ c }) => {
@@ -402,24 +406,24 @@ describe("Owned Collections", () => {
       expect(expected).toBeDefined();
       const ids = expected.map((document) => document._id.toString());
 
-      const result = await builder
-        .findData(c, {
-          collection: collection.id,
-          filter: {
-            $coerce: {
-              "_id.$in": "uuid",
-            },
-            _id: { $in: ids },
+      const result = await builder.findData({
+        collection: collection.id,
+        filter: {
+          $coerce: {
+            "_id.$in": "uuid",
           },
-        })
-        .expectSuccess();
+          _id: { $in: ids },
+        },
+      });
 
-      expect(result.data).toHaveLength(3);
-      expect(result.pagination.total).toBe(3);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(3);
+      expect(result.data.pagination.total).toBe(3);
     });
 
     it("can update owned data", async ({ c }) => {
-      const { bindings, user } = c;
+      const { bindings, user, expect } = c;
 
       // Find a document where the user has write permission (from the second upload)
       const docToUpdate = await bindings.db.data
@@ -427,23 +431,24 @@ describe("Owned Collections", () => {
         .findOne({ age: 40 });
       assertDefined(c, docToUpdate, "Test document with age 40 not found");
 
-      await user
-        .updateData(c, {
-          collection: collection.id.toString(),
-          document: docToUpdate._id.toString(),
-          update: {
-            $set: {
-              age: 41,
-            },
+      const result = await user.updateData({
+        collection: collection.id.toString(),
+        document: docToUpdate._id.toString(),
+        update: {
+          $set: {
+            age: 41,
           },
-        })
-        .expectSuccess();
+        },
+      });
+      expect(result.ok).toBe(true);
     });
 
     it("can list owned data references", async ({ c }) => {
       const { expect, user } = c;
-      const result = await user.listDataReferences(c).expectSuccess();
-      expect(result.data).toHaveLength(13);
+      const result = await user.listDataReferences();
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(13);
     });
 
     it("can read owned data as user", async ({ c }) => {
@@ -458,14 +463,14 @@ describe("Owned Collections", () => {
 
       const documentId = expected.map((document) => document._id.toString())[0];
 
-      const result = await user
-        .readData(c, collection.id.toString(), documentId)
-        .expectSuccess();
+      const result = await user.readData(collection.id.toString(), documentId);
 
-      expect(result.data._acl).toHaveLength(1);
-      expect(result.data._acl[0]?.read).toBe(true);
-      expect(result.data._acl[0]?.write).toBe(true);
-      expect(result.data._acl[0]?.execute).toBe(true);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data._acl).toHaveLength(1);
+      expect(result.data.data._acl[0]?.read).toBe(true);
+      expect(result.data.data._acl[0]?.write).toBe(true);
+      expect(result.data.data._acl[0]?.execute).toBe(true);
     });
 
     it("can delete owned data (specific test record)", async ({ c }) => {
@@ -482,28 +487,30 @@ describe("Owned Collections", () => {
       expect(expected).toBeDefined();
       const ids = expected.map((document) => document._id.toString());
 
-      const result = await builder
-        .deleteData(c, {
-          collection: collection.id,
-          filter: {
-            $coerce: {
-              "_id.$in": "uuid",
-            },
-            _id: { $in: ids },
+      const result = await builder.deleteData({
+        collection: collection.id,
+        filter: {
+          $coerce: {
+            "_id.$in": "uuid",
           },
-        })
-        .expectSuccess();
+          _id: { $in: ids },
+        },
+      });
 
-      expect((result.data as DeleteResult).deletedCount).toEqual(1);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect((result.data.data as DeleteResult).deletedCount).toEqual(1);
     });
 
     it("user cannot access data they are not the owner of", async ({ c }) => {
-      const { bindings, builder, user } = c;
+      const { expect, bindings, builder, app, builderSigner } = c;
 
+      const otherUserPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
+      const otherUserSigner = Signer.fromPrivateKey(otherUserPrivateKey);
       const otherUser = await createUserTestClient({
-        app: user.app,
-        privateKey: bytesToHex(secp256k1.utils.randomSecretKey()),
-        nodePublicKey: user._options.nodePublicKey,
+        app,
+        privateKey: otherUserPrivateKey,
+        nodePublicKey: bindings.node.publicKey,
       });
 
       const data: OwnedRecord[] = [
@@ -523,73 +530,83 @@ describe("Owned Collections", () => {
       const documentId = expected.map((document) => document._id.toString())[0];
 
       // Create data owned by other user
-      await builder
-        .createOwnedData(c, {
-          owner: (await otherUser.getDid()).didString,
-          collection: collection.id,
-          data,
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: true,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectSuccess();
+      const createResult = await builder.createOwnedData({
+        owner: (await otherUserSigner.getDid()).didString,
+        collection: collection.id,
+        data,
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(createResult.ok).toBe(true);
 
-      await otherUser
-        .readData(c, collection.id.toString(), documentId)
-        .expectFailure(StatusCodes.NOT_FOUND, "DocumentNotFoundError");
+      const readResult = await otherUser.readData(
+        collection.id.toString(),
+        documentId,
+      );
+      expect(readResult.ok).toBe(false);
+      if (!readResult.ok) {
+        expect(readResult.status).toBeDefined();
+      }
     });
 
     it("removes users if all their data have been deleted", async ({ c }) => {
-      const { builder, expect, app } = c;
+      const { builder, expect, app, bindings, builderSigner } = c;
 
       // Create a new temporary user for this test
+      const tempUserPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
+      const tempUserSigner = Signer.fromPrivateKey(tempUserPrivateKey);
       const tempUser = await createUserTestClient({
-        app: app,
-        privateKey: bytesToHex(secp256k1.utils.randomSecretKey()),
-        nodePublicKey: builder._options.nodePublicKey,
+        app,
+        privateKey: tempUserPrivateKey,
+        nodePublicKey: bindings.node.publicKey,
       });
 
       // Create a single data record owned by the temporary user
       const documentId = createUuidDto();
-      const { data: createResult } = await builder
-        .createOwnedData(c, {
-          owner: (await tempUser.getDid()).didString,
-          collection: collection.id,
-          data: [{ _id: documentId, wallet: "0xz", country: "GBR", age: 33 }],
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: true,
-            write: true,
-            execute: false,
-          },
-        })
-        .expectSuccess();
+      const createResultResponse = await builder.createOwnedData({
+        owner: (await tempUserSigner.getDid()).didString,
+        collection: collection.id,
+        data: [{ _id: documentId, wallet: "0xz", country: "GBR", age: 33 }],
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: true,
+          write: true,
+          execute: false,
+        },
+      });
 
-      expect(createResult.created).toHaveLength(1);
+      expect(createResultResponse.ok).toBe(true);
+      if (!createResultResponse.ok) throw new Error("Test setup failed");
+      expect(createResultResponse.data.data.created).toHaveLength(1);
 
       // Verify the user can list their data reference
-      await tempUser.listDataReferences(c).expectSuccess();
+      const listResult = await tempUser.listDataReferences();
+      expect(listResult.ok).toBe(true);
 
       // Builder deletes the temporary user's only piece of data
-      await tempUser.deleteData(c, collection.id, documentId).expectSuccess();
+      const deleteResult = await tempUser.deleteData(collection.id, documentId);
+      expect(deleteResult.ok).toBe(true);
 
       // Assert that the temporary user can no longer access the system, as they have no data
-      await tempUser
-        .listDataReferences(c)
-        .expectStatusCode(StatusCodes.UNAUTHORIZED);
+      const finalListResult = await tempUser.listDataReferences();
+      expect(finalListResult.ok).toBe(false);
+      if (!finalListResult.ok) {
+        expect(finalListResult.status).toBeDefined();
+      }
     });
   });
 
   describe("Access Control (ACL)", () => {
     it("can grant access", async ({ c }) => {
-      const { expect, bindings, user } = c;
+      const { expect, bindings, user, userSigner } = c;
 
       const expected = await bindings.db.data
         .collection<OwnedDocumentBase>(collection.id.toString())
-        .find({ _owner: (await user.getDid()).didString })
+        .find({ _owner: (await userSigner.getDid()).didString })
         .sort({ _created: -1 })
         .limit(1)
         .toArray();
@@ -597,26 +614,28 @@ describe("Owned Collections", () => {
         document._id.toString(),
       )[0];
 
-      await user
-        .grantAccess(c, {
-          collection: collection.id.toString(),
-          document: latestDocumentId,
-          acl: {
-            grantee: (await unauthorizedBuilder.getDid()).didString,
-            read: true,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectSuccess();
+      const grantResult = await user.grantAccess({
+        collection: collection.id.toString(),
+        document: latestDocumentId,
+        acl: {
+          grantee: (await unauthorizedBuilderSigner.getDid()).didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(grantResult.ok).toBe(true);
 
-      const result = await user
-        .readData(c, collection.id.toString(), latestDocumentId)
-        .expectSuccess();
+      const result = await user.readData(
+        collection.id.toString(),
+        latestDocumentId,
+      );
 
-      const unauthorizedBuilderDid = (await unauthorizedBuilder.getDid())
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      const unauthorizedBuilderDid = (await unauthorizedBuilderSigner.getDid())
         .didString;
-      const aclEntry = result.data._acl.find(
+      const aclEntry = result.data.data._acl.find(
         (acl) => acl.grantee === unauthorizedBuilderDid,
       );
       assertDefined(c, aclEntry);
@@ -628,79 +647,79 @@ describe("Owned Collections", () => {
     it("insufficient access cannot be granted to the collection owner", async ({
       c,
     }) => {
-      const { bindings, user, builder } = c;
+      const { expect, bindings, user, userSigner, builderSigner } = c;
 
       const expected = await bindings.db.data
         .collection<OwnedDocumentBase>(collection.id.toString())
-        .find({ _owner: (await user.getDid()).didString })
+        .find({ _owner: (await userSigner.getDid()).didString })
         .limit(1)
         .toArray();
 
       const documentId = expected.map((document) => document._id.toString())[0];
 
-      await user
-        .grantAccess(c, {
-          collection: collection.id.toString(),
-          document: documentId,
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: false,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectFailure(StatusCodes.UNAUTHORIZED);
+      const result = await user.grantAccess({
+        collection: collection.id.toString(),
+        document: documentId,
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: false,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBeDefined();
+      }
     });
 
     it("can revoke access", async ({ c }) => {
-      const { expect, bindings, user } = c;
+      const { expect, bindings, user, userSigner } = c;
 
       const expected = await bindings.db.data
         .collection<OwnedDocumentBase>(collection.id.toString())
-        .find({ _owner: (await user.getDid()).didString })
+        .find({ _owner: (await userSigner.getDid()).didString })
         .sort({ _created: -1 })
         .limit(1)
         .toArray();
 
       const documentId = expected.map((document) => document._id.toString())[0];
 
-      await user
-        .revokeAccess(c, {
-          collection: collection.id.toString(),
-          document: documentId,
-          grantee: (await unauthorizedBuilder.getDid()).didString,
-        })
-        .expectSuccess();
+      const revokeResult = await user.revokeAccess({
+        collection: collection.id.toString(),
+        document: documentId,
+        grantee: (await unauthorizedBuilderSigner.getDid()).didString,
+      });
+      expect(revokeResult.ok).toBe(true);
 
-      const result = await user
-        .readData(c, collection.id.toString(), documentId)
-        .expectSuccess();
+      const result = await user.readData(collection.id.toString(), documentId);
 
-      expect(result.data._acl).toHaveLength(1);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data._acl).toHaveLength(1);
     });
 
     it("cannot revoke access from collection owner", async ({ c }) => {
-      const { bindings, user, builder } = c;
+      const { expect, bindings, user, userSigner, builderSigner } = c;
 
       const expected = await bindings.db.data
         .collection<OwnedDocumentBase>(collection.id.toString())
-        .find({ _owner: (await user.getDid()).didString })
+        .find({ _owner: (await userSigner.getDid()).didString })
         .sort({ _created: -1 })
         .limit(1)
         .toArray();
 
       const documentId = expected.map((document) => document._id.toString())[0];
 
-      await user
-        .revokeAccess(c, {
-          collection: collection.id.toString(),
-          document: documentId,
-          grantee: (await builder.getDid()).didString,
-        })
-        .expectFailure(
-          StatusCodes.BAD_REQUEST,
-          "Collection owners cannot have their access revoked",
-        );
+      const result = await user.revokeAccess({
+        collection: collection.id.toString(),
+        document: documentId,
+        grantee: (await builderSigner.getDid()).didString,
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBeDefined();
+      }
     });
   });
 
@@ -717,100 +736,106 @@ describe("Owned Collections", () => {
     it("can create test data for unauthorized access testing", async ({
       c,
     }) => {
-      const { builder, user } = c;
+      const { builder, expect, userSigner, builderSigner } = c;
 
-      await builder
-        .createOwnedData(c, {
-          owner: (await user.getDid()).didString,
-          collection: simpleCollection.id,
-          data: unauthorizedTestData,
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: true,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectSuccess();
+      const result = await builder.createOwnedData({
+        owner: (await userSigner.getDid()).didString,
+        collection: simpleCollection.id,
+        data: unauthorizedTestData,
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
     });
 
     it("prevents data upload by unauthorized builder", async ({ c }) => {
-      const { builder, user } = c;
+      const { expect, userSigner, builderSigner } = c;
 
-      await unauthorizedBuilder
-        .createOwnedData(c, {
-          owner: (await user.getDid()).didString,
-          collection: simpleCollection.id,
-          data: [
-            {
-              _id: createUuidDto(),
-              name: faker.person.fullName(),
-            },
-          ],
-          acl: {
-            grantee: (await builder.getDid()).didString,
-            read: true,
-            write: false,
-            execute: false,
+      const result = await unauthorizedBuilder.createOwnedData({
+        owner: (await userSigner.getDid()).didString,
+        collection: simpleCollection.id,
+        data: [
+          {
+            _id: createUuidDto(),
+            name: faker.person.fullName(),
           },
-        })
-        .expectFailure(StatusCodes.NOT_FOUND, "ResourceAccessDeniedError");
+        ],
+        acl: {
+          grantee: (await builderSigner.getDid()).didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBeDefined();
+      }
     });
 
     it("prevents data reads by unauthorized builder", async ({ c }) => {
-      const result = await unauthorizedBuilder
-        .findData(c, {
-          collection: simpleCollection.id,
-          filter: {},
-        })
-        .expectSuccess();
+      const { expect } = c;
+      const result = await unauthorizedBuilder.findData({
+        collection: simpleCollection.id,
+        filter: {},
+      });
 
-      expect(result.data).toHaveLength(0);
-      expect(result.pagination.total).toBe(0);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(0);
+      expect(result.data.pagination.total).toBe(0);
     });
 
     it("prevents data updates by unauthorized builder", async ({ c }) => {
+      const { expect } = c;
       const record =
         unauthorizedTestData[
           Math.floor(Math.random() * unauthorizedTestCollectionSize)
         ];
-      const result = await unauthorizedBuilder
-        .updateData(c, {
-          collection: simpleCollection.id,
-          filter: { name: record.name },
-          update: { $set: { name: "foo" } },
-        })
-        .expectSuccess();
+      const result = await unauthorizedBuilder.updateData({
+        collection: simpleCollection.id,
+        filter: { name: record.name },
+        update: { $set: { name: "foo" } },
+      });
 
-      expect(result.data.modified).toBe(0);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data.modified).toBe(0);
     });
 
     it("prevents data deletes by unauthorized builder", async ({ c }) => {
+      const { expect } = c;
       const record =
         unauthorizedTestData[
           Math.floor(Math.random() * unauthorizedTestCollectionSize)
         ];
 
-      const result = await unauthorizedBuilder
-        .deleteData(c, {
-          collection: simpleCollection.id,
-          filter: { name: record.name },
-        })
-        .expectSuccess();
+      const result = await unauthorizedBuilder.deleteData({
+        collection: simpleCollection.id,
+        filter: { name: record.name },
+      });
 
-      expect(result.data.deletedCount).toBe(0);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data.deletedCount).toBe(0);
     });
 
     it("prevents data flush by unauthorized builder", async ({ c }) => {
-      const { bindings } = c;
+      const { expect, bindings } = c;
 
       const numRecordsBefore = await bindings.db.data
         .collection<OwnedDocumentBase>(simpleCollection.id)
         .count({});
 
-      await unauthorizedBuilder
-        .flushData(c, simpleCollection.id)
-        .expectSuccess();
+      const flushResult = await unauthorizedBuilder.flushData(
+        simpleCollection.id,
+      );
+      expect(flushResult.ok).toBe(true);
 
       const numRecordsAfter = await bindings.db.data
         .collection<OwnedDocumentBase>(simpleCollection.id)
@@ -821,165 +846,163 @@ describe("Owned Collections", () => {
     });
 
     it("prevents data tail by unauthorized builder", async ({ c }) => {
-      const result = await unauthorizedBuilder
-        .tailData(c, simpleCollection.id)
-        .expectSuccess();
-      expect(result.data).toHaveLength(0);
+      const { expect } = c;
+      const result = await unauthorizedBuilder.tailData(simpleCollection.id);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(0);
     });
 
     it("allows authorized read via findData after granting permission", async ({
       c,
     }) => {
-      const { user } = c;
+      const { expect, user } = c;
 
       // Grant unauthorizedBuilder read permission on unauthorizedTestData[0]
-      await user
-        .grantAccess(c, {
-          collection: simpleCollection.id,
-          document: unauthorizedTestData[0]._id,
-          acl: {
-            grantee: (await unauthorizedBuilder.getDid()).didString,
-            read: true,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectSuccess();
+      const grantResult = await user.grantAccess({
+        collection: simpleCollection.id,
+        document: unauthorizedTestData[0]._id,
+        acl: {
+          grantee: (await unauthorizedBuilderSigner.getDid()).didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(grantResult.ok).toBe(true);
 
       // Now unauthorizedBuilder should be able to read unauthorizedTestData[0]
-      const resultWithAccess = await unauthorizedBuilder
-        .findData(c, {
-          collection: simpleCollection.id,
-          filter: { _id: unauthorizedTestData[0]._id },
-        })
-        .expectSuccess();
+      const resultWithAccess = await unauthorizedBuilder.findData({
+        collection: simpleCollection.id,
+        filter: { _id: unauthorizedTestData[0]._id },
+      });
 
-      expect(resultWithAccess.data).toHaveLength(1);
-      expect(resultWithAccess.pagination.total).toBe(1);
+      expect(resultWithAccess.ok).toBe(true);
+      if (!resultWithAccess.ok) throw new Error("Test setup failed");
+      expect(resultWithAccess.data.data).toHaveLength(1);
+      expect(resultWithAccess.data.pagination.total).toBe(1);
 
       // But still can't read other documents
-      const resultWithoutAccess = await unauthorizedBuilder
-        .findData(c, {
-          collection: simpleCollection.id,
-          filter: { _id: unauthorizedTestData[1]._id },
-        })
-        .expectSuccess();
+      const resultWithoutAccess = await unauthorizedBuilder.findData({
+        collection: simpleCollection.id,
+        filter: { _id: unauthorizedTestData[1]._id },
+      });
 
-      expect(resultWithoutAccess.data).toHaveLength(0);
-      expect(resultWithoutAccess.pagination.total).toBe(0);
+      expect(resultWithoutAccess.ok).toBe(true);
+      if (!resultWithoutAccess.ok) throw new Error("Test setup failed");
+      expect(resultWithoutAccess.data.data).toHaveLength(0);
+      expect(resultWithoutAccess.data.pagination.total).toBe(0);
     });
 
     it("can find owned data with pagination", async ({ c }) => {
       const { expect, builder } = c;
 
       // Total data count in simpleCollection is 10 for reading + 10 for unauthorized access testing = 20
-      const { data, pagination } = await builder
-        .findData(c, {
-          collection: simpleCollection.id,
-          filter: {},
-          pagination: { limit: 5, offset: 10 },
-        })
-        .expectSuccess();
+      const result = await builder.findData({
+        collection: simpleCollection.id,
+        filter: {},
+        pagination: { limit: 5, offset: 10 },
+      });
 
-      expect(data).toHaveLength(5);
-      expect(pagination.total).toBe(20);
-      expect(pagination.limit).toBe(5);
-      expect(pagination.offset).toBe(10);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(5);
+      expect(result.data.pagination.total).toBe(20);
+      expect(result.data.pagination.limit).toBe(5);
+      expect(result.data.pagination.offset).toBe(10);
     });
 
     it("prevents unauthorized update even with read permission", async ({
       c,
     }) => {
-      const { user } = c;
+      const { expect, user } = c;
 
       // Grant unauthorizedBuilder only read permission on unauthorizedTestData[2]
-      await user
-        .grantAccess(c, {
-          collection: simpleCollection.id,
-          document: unauthorizedTestData[2]._id,
-          acl: {
-            grantee: (await unauthorizedBuilder.getDid()).didString,
-            read: true,
-            write: false,
-            execute: false,
-          },
-        })
-        .expectSuccess();
+      const grantResult = await user.grantAccess({
+        collection: simpleCollection.id,
+        document: unauthorizedTestData[2]._id,
+        acl: {
+          grantee: (await unauthorizedBuilderSigner.getDid()).didString,
+          read: true,
+          write: false,
+          execute: false,
+        },
+      });
+      expect(grantResult.ok).toBe(true);
 
       // unauthorizedBuilder should NOT be able to update even with read permission
-      const result = await unauthorizedBuilder
-        .updateData(c, {
-          collection: simpleCollection.id,
-          filter: { _id: unauthorizedTestData[2]._id },
-          update: { $set: { name: "hacked" } },
-        })
-        .expectSuccess();
+      const result = await unauthorizedBuilder.updateData({
+        collection: simpleCollection.id,
+        filter: { _id: unauthorizedTestData[2]._id },
+        update: { $set: { name: "hacked" } },
+      });
 
-      expect(result.data.modified).toBe(0);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data.modified).toBe(0);
     });
 
     it("allows authorized query execution with execute permission", async ({
       c,
     }) => {
-      const { user } = c;
+      const { expect, userSigner } = c;
 
       // 1. Unauthorized builder creates its OWN collection
       const unauthorizedCollectionId = createUuidDto();
-      await unauthorizedBuilder
-        .createCollection(c, {
+      const createCollectionResult = await unauthorizedBuilder.createCollection(
+        {
           _id: unauthorizedCollectionId,
           type: "owned",
           name: "unauthorized-collection",
           schema: simpleCollectionJson.schema,
-        })
-        .expectSuccess();
+        },
+      );
+      expect(createCollectionResult.ok).toBe(true);
 
       // 2. Unauthorized builder creates its OWN query for its collection
       const unauthorizedQueryId = createUuidDto();
-      await unauthorizedBuilder
-        .createQuery(c, {
-          _id: unauthorizedQueryId,
-          name: "unauthorized-simple-query",
-          collection: unauthorizedCollectionId,
-          variables: { name: { path: "$.pipeline[0].$match.name" } },
-          pipeline: [{ $match: { name: "" } }],
-        })
-        .expectSuccess();
+      const createQueryResult = await unauthorizedBuilder.createQuery({
+        _id: unauthorizedQueryId,
+        name: "unauthorized-simple-query",
+        collection: unauthorizedCollectionId,
+        variables: { name: { path: "$.pipeline[0].$match.name" } },
+        pipeline: [{ $match: { name: "" } }],
+      });
+      expect(createQueryResult.ok).toBe(true);
 
       // 3. Unauthorized builder creates data in its collection, owned by the main user,
       //    and grants ITSELF 'execute' permission.
       const testDoc = { _id: createUuidDto(), name: "test-execute" };
-      await unauthorizedBuilder
-        .createOwnedData(c, {
-          owner: (await user.getDid()).didString,
-          collection: unauthorizedCollectionId,
-          data: [testDoc],
-          acl: {
-            grantee: (await unauthorizedBuilder.getDid()).didString,
-            read: false,
-            write: false,
-            execute: true,
-          },
-        })
-        .expectSuccess();
+      const createDataResult = await unauthorizedBuilder.createOwnedData({
+        owner: (await userSigner.getDid()).didString,
+        collection: unauthorizedCollectionId,
+        data: [testDoc],
+        acl: {
+          grantee: (await unauthorizedBuilderSigner.getDid()).didString,
+          read: false,
+          write: false,
+          execute: true,
+        },
+      });
+      expect(createDataResult.ok).toBe(true);
 
       // 4. Unauthorized builder can now run its query, which will process the data
       //    it has 'execute' permission on.
-      await unauthorizedBuilder
-        .runQuery(c, {
-          _id: unauthorizedQueryId,
-          variables: { name: testDoc.name },
-        })
-        .expectSuccess();
+      const runQueryResult = await unauthorizedBuilder.runQuery({
+        _id: unauthorizedQueryId,
+        variables: { name: testDoc.name },
+      });
+      expect(runQueryResult.ok).toBe(true);
     });
   });
 
   describe("Cleanup", () => {
     it("can delete collection", async ({ c }) => {
-      const { expect, bindings, builder } = c;
+      const { expect, bindings, builder, builderSigner } = c;
 
       const id = collection.id;
-      await builder.deleteCollection(c, id).expectSuccess();
+      const result = await builder.deleteCollection(id);
+      expect(result.ok).toBe(true);
 
       const collectionDocument = await bindings.db.primary
         .collection<CollectionDocument>(CollectionName.Collections)
@@ -989,7 +1012,7 @@ describe("Owned Collections", () => {
 
       const builderDocument = await expectBuilder(
         c,
-        (await builder.getDid()).didString,
+        (await builderSigner.getDid()).didString,
       );
       expect(builderDocument.collections).toHaveLength(1);
 

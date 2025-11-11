@@ -91,6 +91,15 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.4
         version: 0.7.4(hono@4.10.3)(zod@4.1.12)
+      '@nillion/nildb-client-admin':
+        specifier: workspace:*
+        version: link:../nildb-client-admin
+      '@nillion/nildb-client-builder':
+        specifier: workspace:*
+        version: link:../nildb-client-builder
+      '@nillion/nildb-client-user':
+        specifier: workspace:*
+        version: link:../nildb-client-user
       '@nillion/nuc':
         specifier: ^1.0.0
         version: 1.0.0(pino@10.1.0)(typescript@5.9.3)
@@ -175,6 +184,54 @@ importers:
       zod-validation-error:
         specifier: ^4.0.2
         version: 4.0.2(zod@4.1.12)
+
+  packages/nildb-client-admin:
+    dependencies:
+      '@nillion/nildb-types':
+        specifier: workspace:*
+        version: link:../nildb-types
+      '@nillion/nuc':
+        specifier: ^1.0.0
+        version: 1.0.0(pino@10.1.0)(typescript@5.9.3)
+    devDependencies:
+      tsdown:
+        specifier: ^0.15.12
+        version: 0.15.12(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/nildb-client-builder:
+    dependencies:
+      '@nillion/nildb-types':
+        specifier: workspace:*
+        version: link:../nildb-types
+      '@nillion/nuc':
+        specifier: ^1.0.0
+        version: 1.0.0(pino@10.1.0)(typescript@5.9.3)
+    devDependencies:
+      tsdown:
+        specifier: ^0.15.12
+        version: 0.15.12(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/nildb-client-user:
+    dependencies:
+      '@nillion/nildb-types':
+        specifier: workspace:*
+        version: link:../nildb-types
+      '@nillion/nuc':
+        specifier: ^1.0.0
+        version: 1.0.0(pino@10.1.0)(typescript@5.9.3)
+    devDependencies:
+      tsdown:
+        specifier: ^0.15.12
+        version: 0.15.12(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/nildb-types:
     dependencies:

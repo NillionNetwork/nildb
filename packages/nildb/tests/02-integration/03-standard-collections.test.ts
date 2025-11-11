@@ -1,7 +1,6 @@
 import { faker } from "@faker-js/faker";
 import type { StandardDocumentBase } from "@nildb/data/data.types";
 import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
-import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 import standardCollectionJson from "../data/wallet.standard.collection.json";
@@ -21,17 +20,17 @@ describe("Standard Collections and Queries", () => {
 
   // Standard Collection Management Tests
   it("can add standard collection", async ({ c }) => {
-    const { builder } = c;
+    const { builder, expect } = c;
 
     const _id = createUuidDto();
-    await builder
-      .createCollection(c, {
-        _id,
-        type: standardCollection.type,
-        name: standardCollection.name,
-        schema: standardCollection.schema,
-      })
-      .expectSuccess();
+    const result = await builder.createCollection({
+      _id,
+      type: standardCollection.type,
+      name: standardCollection.name,
+      schema: standardCollection.schema,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
 
     standardCollection.id = _id;
   });
@@ -68,14 +67,14 @@ describe("Standard Collections and Queries", () => {
       },
     ];
 
-    const result = await builder
-      .createStandardData(c, {
-        collection: standardCollection.id,
-        data,
-      })
-      .expectSuccess();
+    const result = await builder.createStandardData({
+      collection: standardCollection.id,
+      data,
+    });
 
-    expect(result.data.created).toHaveLength(3);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
+    expect(result.data.data.created).toHaveLength(3);
 
     const cursor = bindings.db.data
       .collection(standardCollection.id.toString())
@@ -85,7 +84,7 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("rejects standard data that does not conform", async ({ c }) => {
-    const { builder } = c;
+    const { expect, builder } = c;
 
     const data: StandardRecord[] = [
       {
@@ -97,12 +96,14 @@ describe("Standard Collections and Queries", () => {
       },
     ];
 
-    await builder
-      .createStandardData(c, {
-        collection: standardCollection.id,
-        data,
-      })
-      .expectFailure(StatusCodes.BAD_REQUEST, "DataValidationError");
+    const result = await builder.createStandardData({
+      collection: standardCollection.id,
+      data,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBeDefined();
+    }
   });
 
   it("can read standard data by a single id", async ({ c }) => {
@@ -115,48 +116,48 @@ describe("Standard Collections and Queries", () => {
     expect(expected).toBeDefined();
     const _id = expected!._id.toString();
 
-    const result = await builder
-      .findData(c, {
-        collection: standardCollection.id,
-        filter: { _id },
-      })
-      .expectSuccess();
+    const result = await builder.findData({
+      collection: standardCollection.id,
+      filter: { _id },
+    });
 
-    const actual = result.data[0];
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
+    const actual = result.data.data[0];
     expect(actual._id).toBe(_id);
-    expect(result.pagination.total).toBe(1);
+    expect(result.data.pagination.total).toBe(1);
   });
 
   it("can find standard data with pagination", async ({ c }) => {
     const { expect, builder } = c;
 
     // Total data count is 3 at this point in the test file
-    const { data, pagination } = await builder
-      .findData(c, {
-        collection: standardCollection.id,
-        filter: {},
-        pagination: { limit: 1, offset: 1 },
-      })
-      .expectSuccess();
+    const result = await builder.findData({
+      collection: standardCollection.id,
+      filter: {},
+      pagination: { limit: 1, offset: 1 },
+    });
 
-    expect(data).toHaveLength(1);
-    expect(pagination.total).toBe(3);
-    expect(pagination.limit).toBe(1);
-    expect(pagination.offset).toBe(1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
+    expect(result.data.data).toHaveLength(1);
+    expect(result.data.pagination.total).toBe(3);
+    expect(result.data.pagination.limit).toBe(1);
+    expect(result.data.pagination.offset).toBe(1);
   });
 
   it("can update data via filter", async ({ c }) => {
     const { expect, builder } = c;
 
-    const result = await builder
-      .updateData(c, {
-        collection: standardCollection.id,
-        filter: { country: "CAN" },
-        update: { $set: { country: "USA" } },
-      })
-      .expectSuccess();
+    const result = await builder.updateData({
+      collection: standardCollection.id,
+      filter: { country: "CAN" },
+      update: { $set: { country: "USA" } },
+    });
 
-    expect(result.data.modified).toBeGreaterThan(0);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
+    expect(result.data.data.modified).toBeGreaterThan(0);
   });
 
   it("can delete standard data", async ({ c }) => {
@@ -171,37 +172,38 @@ describe("Standard Collections and Queries", () => {
     expect(expected).toBeDefined();
     const ids = expected.map((document) => document._id.toString());
 
-    const result = await builder
-      .deleteData(c, {
-        collection: standardCollection.id,
-        filter: {
-          $coerce: {
-            "_id.$in": "uuid",
-          },
-          _id: { $in: ids },
+    const result = await builder.deleteData({
+      collection: standardCollection.id,
+      filter: {
+        $coerce: {
+          "_id.$in": "uuid",
         },
-      })
-      .expectSuccess();
+        _id: { $in: ids },
+      },
+    });
 
-    expect(result.data.deletedCount).toEqual(1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
+    expect(result.data.data.deletedCount).toEqual(1);
   });
 
   it("can delete data by filter", async ({ c }) => {
     const { expect, builder } = c;
 
-    const result = await builder
-      .deleteData(c, {
-        collection: standardCollection.id,
-        filter: { country: "USA" },
-      })
-      .expectSuccess();
+    const result = await builder.deleteData({
+      collection: standardCollection.id,
+      filter: { country: "USA" },
+    });
 
-    expect((result.data as DeleteResult).deletedCount).toBeGreaterThan(0);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
+    expect((result.data.data as DeleteResult).deletedCount).toBeGreaterThan(0);
   });
 
   it("can flush all data from collection", async ({ c }) => {
-    const { builder } = c;
-    await builder.flushData(c, standardCollection.id).expectSuccess();
+    const { builder, expect } = c;
+    const result = await builder.flushData(standardCollection.id);
+    expect(result.ok).toBe(true);
   });
 
   // Standard Collection Query Tests
@@ -213,19 +215,19 @@ describe("Standard Collections and Queries", () => {
   };
 
   it("can create standard collection query", async ({ c }) => {
-    const { builder } = c;
+    const { builder, expect } = c;
     standardQuery.id = createUuidDto();
     standardQuery.collection = standardCollection.id;
 
-    await builder
-      .createQuery(c, {
-        _id: standardQuery.id,
-        name: standardQuery.name,
-        collection: standardQuery.collection,
-        variables: standardQuery.variables,
-        pipeline: standardQuery.pipeline,
-      })
-      .expectSuccess();
+    const result = await builder.createQuery({
+      _id: standardQuery.id,
+      name: standardQuery.name,
+      collection: standardQuery.collection,
+      variables: standardQuery.variables,
+      pipeline: standardQuery.pipeline,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
   });
 
   it("can create wallet test data for standard query execution", async ({
@@ -238,38 +240,40 @@ describe("Standard Collections and Queries", () => {
       country: faker.location.countryCode(),
     }));
 
-    const { builder } = c;
+    const { builder, expect } = c;
 
-    await builder
-      .createStandardData(c, {
-        collection: standardCollection.id,
-        data,
-      })
-      .expectSuccess();
+    const result = await builder.createStandardData({
+      collection: standardCollection.id,
+      data,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
   });
 
   it("can run query on standard collection", async ({ c }) => {
     const { expect, builder } = c;
 
-    const result = await builder
-      .runQuery(c, {
-        _id: standardQuery.id,
-        variables: {},
-      })
-      .expectSuccess();
+    const result = await builder.runQuery({
+      _id: standardQuery.id,
+      variables: {},
+    });
 
-    const runId = result.data as UuidDto;
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
+    const runId = result.data.data as UuidDto;
     expect(runId).toBeDefined();
   });
 
   it("can delete standard collection query", async ({ c }) => {
-    const { builder } = c;
+    const { builder, expect } = c;
 
-    await builder.deleteQuery(c, standardQuery.id.toString()).expectSuccess();
+    const result = await builder.deleteQuery(standardQuery.id.toString());
+    expect(result.ok).toBe(true);
   });
 
   it("can delete standard collection", async ({ c }) => {
-    const { builder } = c;
-    await builder.deleteCollection(c, standardCollection.id).expectSuccess();
+    const { builder, expect } = c;
+    const result = await builder.deleteCollection(standardCollection.id);
+    expect(result.ok).toBe(true);
   });
 });

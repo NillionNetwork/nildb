@@ -7,17 +7,17 @@ describe("Collection Index Management", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
 
   beforeAll(async (c) => {
-    const { builder } = c;
+    const { builder, expect } = c;
 
     simpleCollection._id = createUuidDto();
-    await builder
-      .createCollection(c, {
-        _id: simpleCollection._id,
-        type: simpleCollection.type as "owned",
-        name: simpleCollection.name,
-        schema: simpleCollection.schema,
-      })
-      .expectSuccess();
+    const result = await builder.createCollection({
+      _id: simpleCollection._id,
+      type: simpleCollection.type as "owned",
+      name: simpleCollection.name,
+      schema: simpleCollection.schema,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
   });
   afterAll(async (_c) => {});
 
@@ -25,24 +25,29 @@ describe("Collection Index Management", () => {
     const { builder, expect } = c;
 
     // Create an index on the "name" field
-    await builder
-      .createCollectionIndex(c, simpleCollection._id, {
+    const createResult = await builder.createCollectionIndex(
+      simpleCollection._id,
+      {
         collection: simpleCollection._id,
         name: "name_index",
         keys: [{ name: 1 }],
         unique: false,
-      })
-      .expectSuccess();
+      },
+    );
+    expect(createResult.ok).toBe(true);
+    if (!createResult.ok) throw new Error("Test setup failed");
 
     // Fetch collection metadata to verify the index was created
-    const { data } = await builder
-      .readCollection(c, simpleCollection._id)
-      .expectSuccess();
+    const result = await builder.readCollection(simpleCollection._id);
 
-    expect(data.indexes).toBeDefined();
-    expect(data.indexes.some((index: any) => index.name === "name_index")).toBe(
-      true,
-    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
+    expect(result.data.data.indexes).toBeDefined();
+    expect(
+      result.data.data.indexes.some(
+        (index: any) => index.name === "name_index",
+      ),
+    ).toBe(true);
   });
 
   it("can drop an index from a collection", async ({ c }) => {
@@ -50,17 +55,19 @@ describe("Collection Index Management", () => {
 
     // Drop the index
     const indexName = "name_index";
-    await builder
-      .dropCollectionIndex(c, simpleCollection._id, indexName)
-      .expectSuccess();
+    const dropResult = await builder.dropCollectionIndex(
+      simpleCollection._id,
+      indexName,
+    );
+    expect(dropResult.ok).toBe(true);
 
     // Verify the index was removed
-    const result = await builder
-      .readCollection(c, simpleCollection._id)
-      .expectSuccess();
+    const result = await builder.readCollection(simpleCollection._id);
 
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Test setup failed");
     expect(
-      result.data.indexes.some((index: any) => index.name === indexName),
+      result.data.data.indexes.some((index: any) => index.name === indexName),
     ).toBe(false);
   });
 });

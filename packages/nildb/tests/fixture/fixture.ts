@@ -10,8 +10,18 @@ import {
   loadBindings,
 } from "@nildb/env";
 import type { QueryVariable } from "@nildb/queries/queries.types";
+import { AdminClient } from "@nillion/nildb-client-admin";
+import { BuilderClient } from "@nillion/nildb-client-builder";
+import { UserClient } from "@nillion/nildb-client-user";
 import { createUuidDto, NucCmd, type UuidDto } from "@nillion/nildb-types";
-import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
+import {
+  Builder,
+  Did,
+  NilauthClient,
+  type Did as NucDid,
+  PayerBuilder,
+  Signer,
+} from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import dotenv from "dotenv";
@@ -19,14 +29,6 @@ import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
 import * as vitest from "vitest";
 import { createTestLogger } from "./logger.js";
-import {
-  type AdminTestClient,
-  type BuilderTestClient,
-  createAdminTestClient,
-  createBuilderTestClient,
-  createUserTestClient,
-  type UserTestClient,
-} from "./test-client.js";
 
 export type FixtureContext = {
   id: string;
@@ -40,9 +42,11 @@ export type FixtureContext = {
       endpoint: string;
     };
   };
-  system: AdminTestClient;
-  builder: BuilderTestClient;
-  user: UserTestClient;
+  system: AdminClient;
+  builder: BuilderClient;
+  builderSigner: Signer;
+  user: UserClient;
+  userSigner: Signer;
   expect: vitest.ExpectStatic;
 };
 
@@ -125,27 +129,46 @@ export async function buildFixture(
     .command(NucCmd.nil.db.root)
     .audience(adminDid)
     .sign(node.signer);
-  const system = await createAdminTestClient({
-    app,
-    privateKey: adminPrivateKey,
+  const system = new AdminClient({
+    baseUrl: bindings.config.nodePublicEndpoint,
+    signer: adminSigner,
     nodePublicKey: node.publicKey,
     nodeDelegation,
+    httpClient: app.request,
   });
 
   // Create builder client
-  const builder = await createBuilderTestClient({
-    app,
-    privateKey: process.env.APP_NILCHAIN_PRIVATE_KEY_0!,
-    chainUrl,
-    nilauthBaseUrl,
+  const builderSigner = Signer.fromPrivateKey(
+    process.env.APP_NILCHAIN_PRIVATE_KEY_0!,
+  );
+  const payer = await PayerBuilder.fromPrivateKey(
+    process.env.APP_NILCHAIN_PRIVATE_KEY_0!,
+  )
+    .chainUrl(chainUrl)
+    .build();
+
+  const nilauth = await NilauthClient.create({
+    baseUrl: nilauthBaseUrl,
+    payer,
+  });
+
+  const builder = new BuilderClient({
+    baseUrl: bindings.config.nodePublicEndpoint,
+    signer: builderSigner,
     nodePublicKey: node.publicKey,
+    nilauth,
+    httpClient: app.request,
   });
 
   // Create user client
-  const user = await createUserTestClient({
-    app,
-    privateKey: process.env.APP_NILCHAIN_PRIVATE_KEY_1!,
+  const userSigner = Signer.fromPrivateKey(
+    process.env.APP_NILCHAIN_PRIVATE_KEY_1!,
+  );
+  const user = new UserClient({
+    baseUrl: bindings.config.nodePublicEndpoint,
+    signer: userSigner,
     nodePublicKey: node.publicKey,
+    httpClient: app.request,
   });
 
   // this global expect gets replaced by the test effect
@@ -161,34 +184,47 @@ export async function buildFixture(
     expect,
     system,
     builder,
+    builderSigner,
     user,
+    userSigner,
   };
 
   // Register the builder
-  await builder.ensureSubscriptionActive();
-  const builderDid = await builder.getDid();
+  // Ensure subscription is active
+  const builderDid = await builderSigner.getDid();
+  const checkSubscription = async () => {
+    const response = await nilauth.subscriptionStatus(builderDid, "nildb");
+    if (response.subscribed) return;
+    await nilauth
+      .payAndValidate(builderSigner, builderDid, "nildb")
+      .catch(() => {});
+    throw new Error("Subscription not yet active");
+  };
+  await vitest.vi.waitFor(checkSubscription, { timeout: 10000, interval: 500 });
   log.info({ did: Did.serialize(builderDid) }, "Builder subscription active");
 
-  await builder
-    .register(c, {
-      did: Did.serialize(builderDid),
-      name: faker.person.fullName(),
-    })
-    .expectSuccess();
+  const registerResult = await builder.register({
+    did: Did.serialize(builderDid),
+    name: faker.person.fullName(),
+  });
+  if (!registerResult.ok) {
+    throw new Error(`Failed to register builder: ${registerResult.error}`);
+  }
   log.info({ did: builderDid }, "Builder registered");
 
   if (opts.collection) {
     const { collection, query } = opts;
 
     collection.id = createUuidDto();
-    await builder
-      .createCollection(c, {
-        _id: collection.id,
-        type: collection.type,
-        name: collection.name,
-        schema: collection.schema,
-      })
-      .expectSuccess();
+    const collectionResult = await builder.createCollection({
+      _id: collection.id,
+      type: collection.type,
+      name: collection.name,
+      schema: collection.schema,
+    });
+    if (!collectionResult.ok) {
+      throw new Error(`Failed to create collection: ${collectionResult.error}`);
+    }
 
     log.info({ id: collection.id }, "Schema registered");
 
@@ -196,15 +232,16 @@ export async function buildFixture(
       log.info("Registering query");
       query.id = createUuidDto();
       query.collection = collection.id;
-      await builder
-        .createQuery(c, {
-          _id: query.id,
-          name: query.name,
-          collection: query.collection,
-          variables: query.variables,
-          pipeline: query.pipeline,
-        })
-        .expectSuccess();
+      const queryResult = await builder.createQuery({
+        _id: query.id,
+        name: query.name,
+        collection: query.collection,
+        variables: query.variables,
+        pipeline: query.pipeline,
+      });
+      if (!queryResult.ok) {
+        throw new Error(`Failed to create query: ${queryResult.error}`);
+      }
 
       log.info({ id: query.id }, "Query registered");
     }

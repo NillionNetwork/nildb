@@ -95,12 +95,13 @@ export function waitForQueryRun(
 
   return vi.waitFor(
     async () => {
-      const result = await builder
-        .readQueryRunResults(c, runId)
-        .expectSuccess();
-      const runData = result.data;
+      const result = await builder.readQueryRunResults(runId);
+      if (!result.ok) {
+        throw new Error(result.error);
+      }
+      const runData = result.data.data;
       expect(runData.status).toBeOneOf(["complete", "error"]);
-      return result;
+      return result.data;
     },
     {
       timeout: 5000,

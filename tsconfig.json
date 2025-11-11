@@ -4,7 +4,10 @@
   "references": [
     { "path": "packages/nildb" },
     { "path": "packages/nildb-types" },
-    { "path": "packages/shared" }
+    { "path": "packages/shared" },
+    { "path": "packages/nildb-client-admin" },
+    { "path": "packages/nildb-client-builder" },
+    { "path": "packages/nildb-client-user" }
   ],
   "files": []
 }

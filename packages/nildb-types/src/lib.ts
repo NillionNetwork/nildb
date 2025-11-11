@@ -7,6 +7,7 @@ export * from "./pagination.dto.js";
 export * from "./paths.js";
 export * from "./queries.dto.js";
 export * from "./responses.dto.js";
+export * from "./result.js";
 export * from "./system.dto.js";
 export * from "./types.js";
 export * from "./users.dto.js";
