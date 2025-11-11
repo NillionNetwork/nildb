@@ -17,6 +17,7 @@ permissions:
 jobs:
   setup:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       short_sha: ${{ steps.vars.outputs.short_sha }}
     steps:
@@ -27,6 +28,7 @@ jobs:
   build-and-push-arch:
     needs: setup
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -75,6 +77,7 @@ jobs:
 
   create-and-push-manifest:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [setup, build-and-push-arch]
     steps:
       - name: Checkout
@@ -117,6 +120,7 @@ jobs:
   deploy-to-ci-cluster:
     needs: [setup, create-and-push-manifest]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: github.ref_name == 'main'
     strategy:
       matrix:
