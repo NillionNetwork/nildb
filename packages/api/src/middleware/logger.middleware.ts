@@ -13,8 +13,10 @@ export function loggerMiddleware(options: ControllerOptions): void {
       await next();
 
       const end = performance.now();
+      const duration = Math.round(end - start);
       const status = c.res.status;
 
+      // Log to console/OTel (automatic instrumentation handles traces and metrics)
       const logLevel =
         status >= 500
           ? "error"
@@ -29,15 +31,17 @@ export function loggerMiddleware(options: ControllerOptions): void {
           method,
           url,
           status,
-          duration: `${Math.round(end - start)}ms`,
+          duration: `${duration}ms`,
         });
       }
     } catch (err) {
+      const duration = Math.round(performance.now() - start);
+
       log.error({
         err,
         method,
         url,
-        duration: `${Math.round(performance.now() - start)}ms`,
+        duration: `${duration}ms`,
       });
       throw err;
     }
