@@ -16,9 +16,7 @@ import { buildUserRouter } from "./users/users.router.js";
 
 export type App = Hono<AppEnv>;
 
-export async function buildApp(
-  bindings: AppBindings,
-): Promise<{ app: App; metrics: Hono | undefined }> {
+export async function buildApp(bindings: AppBindings): Promise<{ app: App }> {
   const app = new Hono<AppEnv>();
   const options: ControllerOptions = { app, bindings };
 
@@ -42,12 +40,12 @@ export async function buildApp(
   maintenanceMiddleware(options);
 
   // Setup controllers
-  const { metrics } = buildSystemRouter(options);
+  buildSystemRouter(options);
   buildBuildersRouter(options);
   buildCollectionsRouter(options);
   buildQueriesRouter(options);
   buildDataRouter(options);
   buildUserRouter(options);
 
-  return { app, metrics };
+  return { app };
 }
