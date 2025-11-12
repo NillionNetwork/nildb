@@ -62,7 +62,7 @@ When the `otel` feature is enabled in `APP_ENABLED_FEATURES`, the following vari
 
 **Deployment Environment Behavior:**
 - When `OTEL_DEPLOYMENT_ENV=local`, telemetry is logged to stdout only and not sent to the OTLP endpoint
-- For production deployments, set this to `platform`, `staging`, or `sandbox` to enable OTLP export
+- For non-local deployments, set this to an appropriate value to enable OTLP export, e.g: `dev`, `staging`, `production` 
 
 ## Start the node
 
