@@ -18,7 +18,22 @@
   "dependencies": {
     "@nillion/nildb-types": "workspace:*",
     "@nillion/nildb-shared": "workspace:*",
-    "mongodb": "^6.20.0"
+    "mongodb": "^6.20.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api-logs": "^0.54.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.51.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.54.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.54.0",
+    "@opentelemetry/exporter-prometheus": "^0.54.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.54.0",
+    "@opentelemetry/instrumentation": "^0.54.0",
+    "@opentelemetry/instrumentation-http": "^0.54.0",
+    "@opentelemetry/resources": "^1.28.0",
+    "@opentelemetry/sdk-logs": "^0.54.0",
+    "@opentelemetry/sdk-metrics": "^1.28.0",
+    "@opentelemetry/sdk-node": "^0.54.0",
+    "@opentelemetry/sdk-trace-node": "^1.28.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0"
   },
   "devDependencies": {
     "@hono/node-server": "^1.19.5",
@@ -72,7 +87,8 @@
     "clean": true,
     "minify": false,
     "external": [
-      "mongodb"
+      "mongodb",
+      "@opentelemetry/*"
     ]
   }
 }
