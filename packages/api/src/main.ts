@@ -66,7 +66,7 @@ async function main() {
       );
     } else {
       console.info(
-        "! OpenTelemetry enabled but running in local environment; using stdout logging only",
+        "! OpenTelemetry SDK disabled (OTEL_SDK_DISABLED=true); using stdout logging only",
       );
     }
   } else if (metricsEnabled) {

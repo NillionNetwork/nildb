@@ -43,14 +43,6 @@ export type OtelProviders = {
 };
 
 /**
- * Check if OpenTelemetry should emit telemetry to OTLP endpoint.
- * Returns false for local development to avoid noise in platform observability.
- */
-export function shouldEmitTelemetry(deploymentEnv: string): boolean {
-  return deploymentEnv.toLowerCase() !== "local";
-}
-
-/**
  * Create OpenTelemetry resource.
  */
 export function createOtelResource(config: EnvVars): Resource {
@@ -118,12 +110,13 @@ export function initializeMetricsOnly(config: EnvVars): MetricsOnlyProviders {
  * Initialize OpenTelemetry providers for metrics, logs, and traces.
  * This is used when the 'otel' feature flag is enabled.
  * All telemetry is pushed to OTLP endpoint, no /metrics endpoint is served.
+ *
+ * To disable OpenTelemetry SDK without removing the 'otel' feature flag,
+ * set the standard OTEL_SDK_DISABLED=true environment variable.
  */
 export function initializeOtel(config: EnvVars): OtelProviders | null {
-  const shouldEmit = shouldEmitTelemetry(config.otelDeploymentEnv);
-
-  if (!shouldEmit) {
-    // For local development, return null to signal fallback to Pino
+  // Check standard OpenTelemetry environment variable to disable the SDK
+  if (process.env.OTEL_SDK_DISABLED === "true") {
     return null;
   }
 
