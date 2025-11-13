@@ -24,7 +24,7 @@ import {
   ATTR_CLOUD_PLATFORM,
   ATTR_CLOUD_PROVIDER,
   ATTR_CLOUD_REGION,
-  ATTR_DEPLOYMENT_ENVIRONMENT,
+  ATTR_DEPLOYMENT_ENVIRONMENT_NAME,
   ATTR_SERVICE_INSTANCE_ID,
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
@@ -57,7 +57,7 @@ export function createOtelResource(config: EnvVars): Resource {
   const attributes: Record<string, string> = {
     [ATTR_SERVICE_NAME]: config.otelServiceName,
     [ATTR_SERVICE_VERSION]: packageJson.version,
-    [ATTR_DEPLOYMENT_ENVIRONMENT]: config.otelDeploymentEnv,
+    [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]: config.otelDeploymentEnv,
     [ATTR_SERVICE_INSTANCE_ID]: process.env.HOSTNAME || "unknown",
     "team.name": config.otelTeamName,
   };
