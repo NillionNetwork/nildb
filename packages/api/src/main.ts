@@ -47,15 +47,17 @@ async function main() {
     FeatureFlag.METRICS,
   );
 
+  // Validate that only one observability mode is enabled
+  if (otelEnabled && metricsEnabled) {
+    console.error(
+      "Both 'metrics' and 'otel' feature flags are enabled. These are mutually exclusive. Update APP_ENABLED_FEATURES to include only one.",
+    );
+    process.exit(1);
+  }
+
   // Initialize observability based on feature flags
   let otelProviders: OtelProviders | null = null;
   let metricsOnlyProviders: MetricsOnlyProviders | null = null;
-
-  if (otelEnabled && metricsEnabled) {
-    console.info(
-      "! Both 'metrics' and 'otel' features are enabled. 'otel' takes precedence - metrics/traces/logs will be pushed to OTLP, no /metrics endpoint.",
-    );
-  }
 
   if (otelEnabled) {
     // Full OpenTelemetry mode: metrics, traces, and logs to OTLP (no /metrics endpoint)
