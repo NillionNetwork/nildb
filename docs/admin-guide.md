@@ -22,7 +22,7 @@ The following environment variables are require:
 |--------------------------|-----------------------------------------------------------|-------------------------------------|
 | APP_DB_NAME_BASE         | Database name prefix                                      | nildb_data                          |
 | APP_DB_URI               | MongoDB connection string                                 | mongodb://node-xxxx-db:27017        |
-| APP_ENABLED_FEATURES     | Enable features                                           | openapi-spec,metrics,migrations     |
+| APP_ENABLED_FEATURES     | Enable features                                           | openapi,metrics,migrations     |
 | APP_LOG_LEVEL            | Logging verbosity                                         | debug                               |
 | APP_METRICS_PORT         | Prometheus metrics port                                   | 9091                                |
 | APP_NILAUTH_BASE_URL     | The nilauth service url for subscriptions and revocations | http://127.0.0.1:30921              |
