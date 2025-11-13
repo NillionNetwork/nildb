@@ -23,7 +23,7 @@ services:
       - OTEL_ENDPOINT=http://otel-collector:4318
       - OTEL_SERVICE_NAME=nildb
       - OTEL_TEAM_NAME=nildb
-      - OTEL_DEPLOYMENT_ENV=local-docker
+      - OTEL_DEPLOYMENT_ENV=local
       - OTEL_METRICS_EXPORT_INTERVAL_MS=10000
 
   mongodb:
