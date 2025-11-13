@@ -46,23 +46,31 @@ The following variables control the IP-based rate limiting feature.
 
 When the `otel` feature is enabled in `APP_ENABLED_FEATURES`, the following variables configure OpenTelemetry instrumentation:
 
-| Variable                           | Description                                  | Default                  | Required |
-|------------------------------------|----------------------------------------------|--------------------------|----------|
-| OTEL_ENDPOINT                      | OTLP endpoint URL                            | http://localhost         | No       |
-| OTEL_SERVICE_NAME                  | Service name for telemetry                   | nildb                    | No       |
-| OTEL_TEAM_NAME                     | Team responsible for the service             | nildb                    | No       |
-| OTEL_DEPLOYMENT_ENV                | Deployment environment                       | local                    | No       |
-| OTEL_METRICS_EXPORT_INTERVAL_MS    | Metrics export interval in milliseconds      | 60000                    | No       |
+| Variable                        | Description                             | Default          | Required |
+|---------------------------------|-----------------------------------------|------------------|----------|
+| OTEL_ENDPOINT                   | OTLP endpoint URL                       | http://localhost | No       |
+| OTEL_SERVICE_NAME               | Service name for telemetry              | nildb            | No       |
+| OTEL_TEAM_NAME                  | Team responsible for the service        | nildb            | No       |
+| OTEL_DEPLOYMENT_ENV             | Deployment environment                  | local            | No       |
+| OTEL_METRICS_EXPORT_INTERVAL_MS | Metrics export interval in milliseconds | 60000            | No       |
+| OTEL_SDK_DISABLED               | Disable OpenTelemetry SDK               | (not set)        | No       |
 
 **Feature Flag Behavior:**
 
 - **`metrics` only**: Metrics are served on `:9091/metrics` endpoint using OpenTelemetry PrometheusExporter. No traces or logs sent to OTLP.
 - **`otel` only**: Metrics, traces, and logs are pushed to OTLP endpoint. No `/metrics` endpoint is exposed.
-- **Both `metrics` and `otel`**: The `otel` flag takes precedence - all telemetry pushed to OTLP, no `/metrics` endpoint.
 
-**Deployment Environment Behavior:**
-- When `OTEL_DEPLOYMENT_ENV=local`, telemetry is logged to stdout only and not sent to the OTLP endpoint
-- For non-local deployments, set this to an appropriate value to enable OTLP export, e.g: `dev`, `staging`, `production` 
+> ![NOTE]
+> The `metrics` and `otel` feature flags are **mutually exclusive**. Enabling both will cause the server to exit with an error. Choose one observability mode.
+
+**Disabling OpenTelemetry SDK:**
+
+To disable OpenTelemetry SDK and prevent telemetry emission while keeping the `otel` feature flag enabled, set the following environment variable:
+```bash
+OTEL_SDK_DISABLED=true
+```
+
+This is useful for local development where you want to use Pino stdout logging instead of sending telemetry to an OTLP endpoint.
 
 ## Start the node
 
