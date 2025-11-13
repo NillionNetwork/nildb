@@ -60,7 +60,12 @@ export function createLogger(
                 ) {
                   attributes[key] = value;
                 } else if (value !== null && value !== undefined) {
-                  attributes[key] = String(value);
+                  try {
+                    attributes[key] = JSON.stringify(value);
+                  } catch {
+                    // Fallback to String() if JSON.stringify fails (e.g., circular refs)
+                    attributes[key] = String(value);
+                  }
                 }
               }
             }
