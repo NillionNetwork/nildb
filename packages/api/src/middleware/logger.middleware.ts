@@ -27,22 +27,28 @@ export function loggerMiddleware(options: ControllerOptions): void {
               : "debug";
 
       if (logLevel !== "silent") {
-        log[logLevel]({
-          method,
-          url,
-          status,
-          duration: `${duration}ms`,
-        });
+        log[logLevel](
+          {
+            method,
+            url,
+            status,
+            duration: `${duration}ms`,
+          },
+          `${method} ${url} ${status}`,
+        );
       }
     } catch (err) {
       const duration = Math.round(performance.now() - start);
 
-      log.error({
-        err,
-        method,
-        url,
-        duration: `${duration}ms`,
-      });
+      log.error(
+        {
+          err,
+          method,
+          url,
+          duration: `${duration}ms`,
+        },
+        `${method} ${url} error`,
+      );
       throw err;
     }
   };
