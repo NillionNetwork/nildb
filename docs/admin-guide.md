@@ -53,7 +53,22 @@ When the `otel` feature is enabled in `APP_ENABLED_FEATURES`, the following vari
 | OTEL_TEAM_NAME                  | Team responsible for the service        | nildb            | No       |
 | OTEL_DEPLOYMENT_ENV             | Deployment environment                  | local            | No       |
 | OTEL_METRICS_EXPORT_INTERVAL_MS | Metrics export interval in milliseconds | 60000            | No       |
+| OTEL_RESOURCE_ATTRIBUTES        | Additional resource attributes          | (not set)        | No       |
 | OTEL_SDK_DISABLED               | Disable OpenTelemetry SDK               | (not set)        | No       |
+
+**Setting Custom Resource Attributes:**
+
+You can set or override any OpenTelemetry resource attributes using `OTEL_RESOURCE_ATTRIBUTES`:
+
+```bash
+# Set single attribute
+OTEL_RESOURCE_ATTRIBUTES=service.instance.id=nildb-r5nw
+
+# Set multiple attributes (comma-separated)
+OTEL_RESOURCE_ATTRIBUTES=service.instance.id=nildb-r5nw,custom.key=value
+```
+
+Values set via `OTEL_RESOURCE_ATTRIBUTES` take precedence over programmatically set values. This is useful for setting deployment-specific identifiers like `service.instance.id` without modifying code.
 
 **Feature Flag Behavior:**
 
