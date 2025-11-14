@@ -5,7 +5,9 @@ import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { HostMetrics } from "@opentelemetry/host-metrics";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
+import { RuntimeNodeInstrumentation } from "@opentelemetry/instrumentation-runtime-node";
 import {
   envDetector,
   processDetector,
@@ -38,12 +40,14 @@ import packageJson from "../../package.json";
 export type MetricsOnlyProviders = {
   meterProvider: MeterProvider;
   prometheusExporter: PrometheusExporter;
+  hostMetrics: HostMetrics;
 };
 
 export type OtelProviders = {
   tracerProvider: NodeTracerProvider;
   meterProvider: MeterProvider;
   loggerProvider: LoggerProvider;
+  hostMetrics: HostMetrics;
 };
 
 /**
@@ -121,12 +125,19 @@ export async function initializeMetricsOnly(
           enabled: true,
         },
       }),
+      // Add Node.js runtime metrics (heap, GC, event loop lag, etc.)
+      new RuntimeNodeInstrumentation(),
     ],
   });
+
+  // Start host metrics collection (CPU, memory, network)
+  const hostMetrics = new HostMetrics({ meterProvider });
+  hostMetrics.start();
 
   return {
     meterProvider,
     prometheusExporter,
+    hostMetrics,
   };
 }
 
@@ -189,18 +200,26 @@ export async function initializeOtel(
           enabled: false,
         },
       }),
+      // Add Node.js runtime metrics (heap, GC, event loop lag, etc.)
+      new RuntimeNodeInstrumentation(),
     ],
   });
+
+  // Start host metrics collection (CPU, memory, network)
+  const hostMetrics = new HostMetrics({ meterProvider });
+  hostMetrics.start();
 
   return {
     tracerProvider,
     meterProvider,
     loggerProvider,
+    hostMetrics,
   };
 }
 
 /**
  * Gracefully shutdown metrics-only providers.
+ * Note: HostMetrics cleanup is handled automatically by MeterProvider shutdown.
  */
 export async function shutdownMetricsOnly(
   providers: MetricsOnlyProviders,
@@ -213,6 +232,7 @@ export async function shutdownMetricsOnly(
 
 /**
  * Gracefully shutdown all OpenTelemetry providers.
+ * Note: HostMetrics cleanup is handled automatically by MeterProvider shutdown.
  */
 export async function shutdownOtel(providers: OtelProviders): Promise<void> {
   await Promise.all([
