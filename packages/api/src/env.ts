@@ -5,6 +5,7 @@ import { LogLevel } from "@nillion/nildb-types";
 import { type Did, type Envelope, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
+import type { LoggerProvider } from "@opentelemetry/sdk-logs";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
@@ -18,6 +19,7 @@ export const FeatureFlag = {
   OPENAPI: "openapi",
   METRICS: "metrics",
   MIGRATIONS: "migrations",
+  OTEL: "otel",
 } as const;
 
 export type FeatureFlag = (typeof FeatureFlag)[keyof typeof FeatureFlag];
@@ -40,6 +42,16 @@ export const EnvVarsSchema = z.object({
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.url(),
   metricsPort: z.coerce.number().int().positive(),
+  otelEndpoint: z.string().url().optional().default("http://localhost"),
+  otelServiceName: z.string().min(1).optional().default("nildb"),
+  otelTeamName: z.string().min(1).optional().default("nildb"),
+  otelDeploymentEnv: z.string().min(1).optional().default("local"),
+  otelMetricsExportIntervalMs: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(60000),
   rateLimitEnabled: z.preprocess((val) => {
     if (val === "true" || val === "1") return true;
     if (val === "false" || val === "0") return false;
@@ -98,6 +110,11 @@ declare global {
       APP_RATE_LIMIT_ENABLED?: string;
       APP_RATE_LIMIT_WINDOW_SECONDS?: string;
       APP_RATE_LIMIT_MAX_REQUESTS?: string;
+      OTEL_ENDPOINT?: string;
+      OTEL_SERVICE_NAME?: string;
+      OTEL_TEAM_NAME?: string;
+      OTEL_DEPLOYMENT_ENV?: string;
+      OTEL_METRICS_EXPORT_INTERVAL_MS?: string;
     }
   }
 }
@@ -113,6 +130,7 @@ export type AppVariables = {
 
 export async function loadBindings(
   overrides: Partial<EnvVars> = {},
+  loggerProvider?: LoggerProvider,
 ): Promise<AppBindings> {
   const config = parseConfigFromEnv(overrides);
   const privateKeyBytes = hexToBytes(config.nodeSecretKey);
@@ -126,7 +144,7 @@ export async function loadBindings(
       builders: new Cache<string, BuilderDocument>(),
     },
     db: await initAndCreateDbClients(config),
-    log: createLogger(config.logLevel),
+    log: createLogger(config.logLevel, loggerProvider),
     node: {
       signer,
       did,
@@ -149,6 +167,11 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     nilauthPubKey: process.env.APP_NILAUTH_PUBLIC_KEY,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
     nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
+    otelEndpoint: process.env.OTEL_ENDPOINT,
+    otelServiceName: process.env.OTEL_SERVICE_NAME,
+    otelTeamName: process.env.OTEL_TEAM_NAME,
+    otelDeploymentEnv: process.env.OTEL_DEPLOYMENT_ENV,
+    otelMetricsExportIntervalMs: process.env.OTEL_METRICS_EXPORT_INTERVAL_MS,
     rateLimitEnabled: process.env.APP_RATE_LIMIT_ENABLED,
     rateLimitWindowSeconds: process.env.APP_RATE_LIMIT_WINDOW_SECONDS,
     rateLimitMaxRequests: process.env.APP_RATE_LIMIT_MAX_REQUESTS,
