@@ -6,7 +6,11 @@ import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
-import { Resource } from "@opentelemetry/resources";
+import {
+  envDetector,
+  processDetector,
+  Resource,
+} from "@opentelemetry/resources";
 import {
   BatchLogRecordProcessor,
   LoggerProvider,
@@ -44,8 +48,19 @@ export type OtelProviders = {
 
 /**
  * Create OpenTelemetry resource.
+ *
+ * This creates a base resource with application-specific attributes and merges
+ * it with environment-detected attributes (from OTEL_RESOURCE_ATTRIBUTES).
+ *
+ * You can set or override any resource attributes via OTEL_RESOURCE_ATTRIBUTES:
+ *   OTEL_RESOURCE_ATTRIBUTES=key1=value1,key2=value2
+ *
+ * Example:
+ *   OTEL_RESOURCE_ATTRIBUTES=service.instance.id=nildb-r5nw
+ *
+ * Environment variables take precedence over programmatically set values.
  */
-export function createOtelResource(config: EnvVars): Resource {
+export async function createOtelResource(config: EnvVars): Promise<Resource> {
   const attributes: Record<string, string> = {
     [ATTR_SERVICE_NAME]: config.otelServiceName,
     [ATTR_SERVICE_VERSION]: packageJson.version,
@@ -61,7 +76,14 @@ export function createOtelResource(config: EnvVars): Resource {
     attributes[ATTR_CLOUD_REGION] = process.env.AWS_REGION;
   }
 
-  return new Resource(attributes);
+  const baseResource = new Resource(attributes);
+
+  // Detect resource attributes from environment (OTEL_RESOURCE_ATTRIBUTES)
+  // Environment variables take precedence over programmatic values
+  const envResource = await envDetector.detect();
+  const processResource = await processDetector.detect();
+
+  return baseResource.merge(envResource).merge(processResource);
 }
 
 /**
@@ -69,8 +91,10 @@ export function createOtelResource(config: EnvVars): Resource {
  * This is used when only the 'metrics' feature flag is enabled (not 'otel').
  * Metrics are served on /metrics endpoint for scraping, not pushed to OTLP.
  */
-export function initializeMetricsOnly(config: EnvVars): MetricsOnlyProviders {
-  const resource = createOtelResource(config);
+export async function initializeMetricsOnly(
+  config: EnvVars,
+): Promise<MetricsOnlyProviders> {
+  const resource = await createOtelResource(config);
 
   // Prometheus exporter serves metrics on /metrics endpoint
   const prometheusExporter = new PrometheusExporter({
@@ -114,13 +138,15 @@ export function initializeMetricsOnly(config: EnvVars): MetricsOnlyProviders {
  * To disable OpenTelemetry SDK without removing the 'otel' feature flag,
  * set the standard OTEL_SDK_DISABLED=true environment variable.
  */
-export function initializeOtel(config: EnvVars): OtelProviders | null {
+export async function initializeOtel(
+  config: EnvVars,
+): Promise<OtelProviders | null> {
   // Check standard OpenTelemetry environment variable to disable the SDK
   if (process.env.OTEL_SDK_DISABLED === "true") {
     return null;
   }
 
-  const resource = createOtelResource(config);
+  const resource = await createOtelResource(config);
 
   // Configure tracing
   const traceExporter = new OTLPTraceExporter({

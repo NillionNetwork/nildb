@@ -61,7 +61,7 @@ async function main() {
 
   if (otelEnabled) {
     // Full OpenTelemetry mode: metrics, traces, and logs to OTLP (no /metrics endpoint)
-    otelProviders = initializeOtel(config);
+    otelProviders = await initializeOtel(config);
     if (otelProviders) {
       console.info(
         "! OpenTelemetry initialized: metrics, traces, and logs will be pushed to OTLP",
@@ -73,7 +73,7 @@ async function main() {
     }
   } else if (metricsEnabled) {
     // Metrics-only mode: serve metrics on /metrics endpoint (no traces, no logs to OTLP)
-    metricsOnlyProviders = initializeMetricsOnly(config);
+    metricsOnlyProviders = await initializeMetricsOnly(config);
     console.info(
       `! Metrics-only mode initialized: metrics will be served on :${config.metricsPort}/metrics`,
     );
