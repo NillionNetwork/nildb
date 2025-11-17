@@ -120,9 +120,9 @@ export async function initializeMetricsOnly(
         "@opentelemetry/instrumentation-fs": {
           enabled: false,
         },
-        // Disable tracing but keep metrics
+        // Disable HTTP instrumentation - we use custom middleware for route-aware metrics
         "@opentelemetry/instrumentation-http": {
-          enabled: true,
+          enabled: false,
         },
       }),
       // Add Node.js runtime metrics (heap, GC, event loop lag, etc.)
@@ -191,12 +191,16 @@ export async function initializeOtel(
     new BatchLogRecordProcessor(logExporter),
   );
 
-  // Register automatic instrumentations for HTTP, MongoDB, etc.
+  // Register automatic instrumentations for MongoDB, etc.
   registerInstrumentations({
     instrumentations: [
       getNodeAutoInstrumentations({
         // Disable fs instrumentation to reduce noise
         "@opentelemetry/instrumentation-fs": {
+          enabled: false,
+        },
+        // Disable HTTP instrumentation - we use custom middleware for route-aware metrics
+        "@opentelemetry/instrumentation-http": {
           enabled: false,
         },
       }),

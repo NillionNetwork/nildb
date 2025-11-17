@@ -9,6 +9,7 @@ import { corsMiddleware } from "./middleware/cors.middleware.js";
 import { limitRequestBodySizeMiddleware } from "./middleware/limit-body.middleware.js";
 import { loggerMiddleware } from "./middleware/logger.middleware.js";
 import { maintenanceMiddleware } from "./middleware/maintenance.middleware.js";
+import { metricsMiddleware } from "./middleware/metrics.middleware.js";
 import { rateLimitMiddleware } from "./middleware/rate-limit.middleware.js";
 import { buildQueriesRouter } from "./queries/queries.router.js";
 import { buildSystemRouter } from "./system/system.router.js";
@@ -33,6 +34,7 @@ export async function buildApp(bindings: AppBindings): Promise<{ app: App }> {
     return next();
   });
 
+  metricsMiddleware(options);
   corsMiddleware(options);
   rateLimitMiddleware(options);
   limitRequestBodySizeMiddleware(options);
