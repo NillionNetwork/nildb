@@ -31,7 +31,9 @@ export function loadNucToken<
         );
       }
 
-      const envelope = Codec.decodeBase64Url(tokenString);
+      // We must use the unsafe decode first to extract the subject/claims required
+      // to fetch the correct context (User/Builder) for validation
+      const envelope = Codec._unsafeDecodeBase64Url(tokenString);
       c.set("envelope", envelope);
 
       return next();
@@ -60,7 +62,9 @@ export function loadSubjectAndVerifyAsAdmin<
   return async (c, next) => {
     try {
       const envelope = c.get("envelope");
-      Validator.validate(envelope, { rootIssuers: [nildbNodeDid.didString] });
+      await Validator.validate(envelope, {
+        rootIssuers: [nildbNodeDid.didString],
+      });
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
@@ -127,7 +131,7 @@ export function loadSubjectAndVerifyAsBuilder<
       const nilauthDid = Did.fromPublicKey(config.nilauthPubKey);
       const nildbNodeDid = bindings.node.did;
 
-      Validator.validate(envelope, {
+      await Validator.validate(envelope, {
         rootIssuers: [nilauthDid.didString],
         params: {
           tokenRequirements: {
@@ -215,7 +219,7 @@ export function loadSubjectAndVerifyAsUser<
           StatusCodes.UNAUTHORIZED,
         );
       }
-      Validator.validate(envelope, {
+      await Validator.validate(envelope, {
         rootIssuers: [subject],
       });
       c.set("user", user);

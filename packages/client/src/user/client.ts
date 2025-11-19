@@ -35,6 +35,7 @@ export class UserClient {
       .command(NucCmd.nil.db.users.root)
       .audience(nodeDid)
       .subject(did)
+      .expiresIn(60 * 1000)
       .signAndSerialize(this.options.signer);
   }
 

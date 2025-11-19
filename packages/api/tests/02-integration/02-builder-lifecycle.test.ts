@@ -25,6 +25,7 @@ describe("02-builder-lifecycle.test.js", () => {
       .command("/nil/db")
       .audience(bindings.node.did)
       .subject(builderDid)
+      .expiresIn(1000 * 10)
       .signAndSerialize(builderSigner);
 
     const response = await app.request(PathsV1.collections.root, {

@@ -123,6 +123,7 @@ export async function buildFixture(
     .subject(adminDid)
     .command(NucCmd.nil.db.root)
     .audience(adminDid)
+    .expiresIn(1000 * 60 * 5)
     .sign(node.signer);
   const system = new AdminClient({
     baseUrl: bindings.config.nodePublicEndpoint,
