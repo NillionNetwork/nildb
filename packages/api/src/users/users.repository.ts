@@ -25,6 +25,8 @@ import {
   type UUID,
 } from "mongodb";
 
+const MAX_USER_LOGS = 1000;
+
 /**
  * Upsert user document.
  */
@@ -60,8 +62,11 @@ export function upsert(
       data: {
         $each: data,
       },
+    },
+    $push: {
       logs: {
         $each: logs,
+        $slice: -MAX_USER_LOGS,
       },
     },
   };
@@ -121,9 +126,10 @@ export function removeData(
         },
       },
     },
-    $addToSet: {
+    $push: {
       logs: {
         $each: UserLoggerMapper.toDeleteDataLogs(data),
+        $slice: -MAX_USER_LOGS,
       },
     },
   };
@@ -157,6 +163,7 @@ export function updateUserLogs(
     $push: {
       logs: {
         $each: logs,
+        $slice: -MAX_USER_LOGS,
       },
     },
   };
