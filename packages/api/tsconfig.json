@@ -7,7 +7,7 @@
       "@nildb/*": ["./src/*"],
       "@nillion/nildb-types": ["../types/src/lib.ts"],
       "@nillion/nildb-types/*": ["../types/src/*"],
-      "@nillion/nildb-shared": ["../shared/src/index.ts"],
+      "@nillion/nildb-shared": ["../shared/src/lib.ts"],
       "@nillion/nildb-shared/*": ["../shared/src/*"],
       "@nillion/nildb-client": ["../client/src/index.ts"],
       "@nillion/nildb-client/*": ["../client/src/*"]

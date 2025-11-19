@@ -21,7 +21,7 @@ install:
 
 # Check for formatting, lint, and type errors
 check:
-    pnpm exec biome ci && pnpm exec tsc -b --noEmit
+    pnpm exec tsc -b && pnpm exec biome ci && pnpm exec tsc -b --noEmit
 
 # Format, fix, and type check all files
 fix:
