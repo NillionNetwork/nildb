@@ -29,6 +29,7 @@ export class AdminClient {
     const nodeDid = Did.fromPublicKey(this.options.nodePublicKey);
     return await Builder.invocationFrom(this.nodeDelegation)
       .audience(nodeDid)
+      .expiresIn(60 * 1000)
       .signAndSerialize(this.options.signer);
   }
 

@@ -64,6 +64,7 @@ export class BuilderClient {
 
     return await Builder.invocationFrom(rootToken)
       .audience(nodeDid)
+      .expiresIn(60 * 1000)
       .signAndSerialize(this.options.signer);
   }
 
