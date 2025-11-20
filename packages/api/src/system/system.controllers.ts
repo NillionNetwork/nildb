@@ -1,4 +1,3 @@
-import { prometheus } from "@hono/prometheus";
 import { handleTaggedErrors } from "@nildb/common/handler";
 import {
   OpenApiSpecCommonErrorResponses,
@@ -22,7 +21,6 @@ import {
   type StopMaintenanceResponse,
 } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
-import { Hono } from "hono";
 import {
   describeRoute,
   openAPIRouteHandler,
@@ -99,36 +97,6 @@ export function readNodeHealth(options: ControllerOptions): void {
     }),
     async (c) => c.text("OK"),
   );
-}
-
-/**
- * Handle GET /metrics
- */
-export function getMetrics(options: ControllerOptions): {
-  metrics: Hono | undefined;
-} {
-  const {
-    app,
-    bindings: { log },
-  } = options;
-
-  const enabled = hasFeatureFlag(
-    options.bindings.config.enabledFeatures,
-    FeatureFlag.METRICS,
-  );
-
-  if (!enabled) {
-    log.info("The metrics feature is disabled");
-    return { metrics: undefined };
-  }
-
-  const metrics = new Hono();
-  const { printMetrics, registerMetrics } = prometheus();
-  app.use("*", registerMetrics);
-
-  metrics.get(PathsV1.system.metrics, printMetrics);
-
-  return { metrics };
 }
 
 /**

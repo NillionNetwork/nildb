@@ -5,12 +5,14 @@ services:
       dockerfile: packages/api/Dockerfile
     ports:
       - "40080:8080"
+      - "40091:9091"
     depends_on:
       - mongodb
+      - otel-collector
     environment:
       - APP_DB_NAME_BASE=nildb
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=openapi,metrics,migrations
+      - APP_ENABLED_FEATURES=openapi,otel,migrations
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_BASE_URL=http://nilauth:8080
@@ -18,6 +20,11 @@ services:
       - APP_NODE_PUBLIC_ENDPOINT=http://localhost:40080
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_PORT=8080
+      - OTEL_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=nildb
+      - OTEL_TEAM_NAME=nildb
+      - OTEL_DEPLOYMENT_ENV=local
+      - OTEL_METRICS_EXPORT_INTERVAL_MS=10000
 
   mongodb:
     image: mongo:latest
@@ -56,3 +63,11 @@ services:
       - ./nilchaind/config/genesis.json:/opt/nilchain/config/genesis.json
     ports:
       - "40648:26648" # JSON RPC
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "40318:4318"   # OTLP HTTP receiver

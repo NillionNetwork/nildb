@@ -18,18 +18,18 @@ This section provides task-oriented instructions for node administrators.
 
 The following environment variables are require:
 
-| Variable                 | Description                                               | Example                             |
-|--------------------------|-----------------------------------------------------------|-------------------------------------|
-| APP_DB_NAME_BASE         | Database name prefix                                      | nildb_data                          |
-| APP_DB_URI               | MongoDB connection string                                 | mongodb://node-xxxx-db:27017        |
-| APP_ENABLED_FEATURES     | Enable features                                           | openapi-spec,metrics,migrations     |
-| APP_LOG_LEVEL            | Logging verbosity                                         | debug                               |
-| APP_METRICS_PORT         | Prometheus metrics port                                   | 9091                                |
-| APP_NILAUTH_BASE_URL     | The nilauth service url for subscriptions and revocations | http://127.0.0.1:30921              |
-| APP_NILAUTH_PUBLIC_KEY   | The nilauth service's secp256k1 public key                | [hex encoded secp256k1 public key]  |
-| APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                        | https://nildb-xxxx.domain.com       |
-| APP_NODE_SECRET_KEY      | Node's private key                                        | [hex encoded secp256k1 private key] |
-| APP_PORT                 | API service port                                          | 8080                                |
+| Variable                 | Description                                               | Example                              |
+|--------------------------|-----------------------------------------------------------|--------------------------------------|
+| APP_DB_NAME_BASE         | Database name prefix                                      | nildb_data                           |
+| APP_DB_URI               | MongoDB connection string                                 | mongodb://node-xxxx-db:27017         |
+| APP_ENABLED_FEATURES     | Enable features                                           | openapi-spec,metrics,migrations,otel |
+| APP_LOG_LEVEL            | Logging verbosity                                         | debug                                |
+| APP_METRICS_PORT         | Prometheus metrics port                                   | 9091                                 |
+| APP_NILAUTH_BASE_URL     | The nilauth service url for subscriptions and revocations | http://127.0.0.1:30921               |
+| APP_NILAUTH_PUBLIC_KEY   | The nilauth service's secp256k1 public key                | [hex encoded secp256k1 public key]   |
+| APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                        | https://nildb-xxxx.domain.com        |
+| APP_NODE_SECRET_KEY      | Node's private key                                        | [hex encoded secp256k1 private key]  |
+| APP_PORT                 | API service port                                          | 8080                                 |
 
 ### Rate Limiting
 
@@ -40,6 +40,52 @@ The following variables control the IP-based rate limiting feature.
 | APP_RATE_LIMIT_ENABLED          | Enables the rate-limiting feature.              | `true`  |
 | APP_RATE_LIMIT_WINDOW_SECONDS   | The duration of the time window in seconds.     | `60`    |
 | APP_RATE_LIMIT_MAX_REQUESTS     | Max requests per IP within the time window.     | `60`    |
+
+
+### OpenTelemetry
+
+When the `otel` feature is enabled in `APP_ENABLED_FEATURES`, the following variables configure OpenTelemetry instrumentation:
+
+| Variable                        | Description                             | Default          | Required |
+|---------------------------------|-----------------------------------------|------------------|----------|
+| OTEL_ENDPOINT                   | OTLP endpoint URL                       | http://localhost | No       |
+| OTEL_SERVICE_NAME               | Service name for telemetry              | nildb            | No       |
+| OTEL_TEAM_NAME                  | Team responsible for the service        | nildb            | No       |
+| OTEL_DEPLOYMENT_ENV             | Deployment environment                  | local            | No       |
+| OTEL_METRICS_EXPORT_INTERVAL_MS | Metrics export interval in milliseconds | 60000            | No       |
+| OTEL_RESOURCE_ATTRIBUTES        | Additional resource attributes          | (not set)        | No       |
+| OTEL_SDK_DISABLED               | Disable OpenTelemetry SDK               | (not set)        | No       |
+
+**Setting Custom Resource Attributes:**
+
+You can set or override any OpenTelemetry resource attributes using `OTEL_RESOURCE_ATTRIBUTES`:
+
+```bash
+# Set single attribute
+OTEL_RESOURCE_ATTRIBUTES=service.instance.id=nildb-r5nw
+
+# Set multiple attributes (comma-separated)
+OTEL_RESOURCE_ATTRIBUTES=service.instance.id=nildb-r5nw,custom.key=value
+```
+
+Values set via `OTEL_RESOURCE_ATTRIBUTES` take precedence over programmatically set values. This is useful for setting deployment-specific identifiers like `service.instance.id` without modifying code.
+
+**Feature Flag Behavior:**
+
+- **`metrics` only**: Metrics are served on `:9091/metrics` endpoint using OpenTelemetry PrometheusExporter. No traces or logs sent to OTLP.
+- **`otel` only**: Metrics, traces, and logs are pushed to OTLP endpoint. No `/metrics` endpoint is exposed.
+
+> ![NOTE]
+> The `metrics` and `otel` feature flags are **mutually exclusive**. Enabling both will cause the server to exit with an error. Choose one observability mode.
+
+**Disabling OpenTelemetry SDK:**
+
+To disable OpenTelemetry SDK and prevent telemetry emission while keeping the `otel` feature flag enabled, set the following environment variable:
+```bash
+OTEL_SDK_DISABLED=true
+```
+
+This is useful for local development where you want to use Pino stdout logging instead of sending telemetry to an OTLP endpoint.
 
 ## Start the node
 
@@ -53,14 +99,21 @@ docker compose -f local/docker-compose.yaml up -d
 ```
 
 This stack includes:
-- **nilDB**: The main API service (port 40080)
+- **nilDB**: The main API service (port 40080, metrics port 40091)
 - **MongoDB**: Database backend (port 40017)
 - **nilauth**: Authentication service for NUC tokens (port 40921)
 - **nilchain**: Local blockchain for testing payments (JSON-RPC port 40648)
 - **PostgreSQL**: Database for nilauth (port 40432)
 - **token-price-api**: Mock token pricing service (port 40923)
+- **otel-collector**: OpenTelemetry collector with debug exporter (OTLP port 40318)
 
 The nilDB API will be available at `http://localhost:40080`.
+
+The local stack is configured with `APP_ENABLED_FEATURES=openapi,otel,migrations`, which means:
+- Metrics, traces, and logs are sent to the OTel Collector (visible in `docker compose logs otel-collector`)
+- No `/metrics` endpoint is exposed (OTLP push only)
+
+To switch to metrics-only mode (serve metrics on `:40091/metrics`), change `otel` to `metrics` in the docker-compose.yaml file.
 
 ### Production Deployment
 
@@ -105,10 +158,14 @@ The following endpoints provide operational information:
 
 - `GET /health` - Service health check
 - `GET /about` - Node configuration
-- `GET :9091/metrics` - Prometheus metrics (internal access only)
+- `GET :9091/metrics` - Prometheus metrics (internal access only, available when `metrics` feature flag is enabled without `otel`)
 
 > ![NOTE]
-> `/metrics` shouldn't be exposed publicly. 
+> The `/metrics` endpoint behavior depends on feature flags:
+> - **`metrics` only**: Serves metrics at `:9091/metrics` using OpenTelemetry PrometheusExporter
+> - **`otel` enabled**: No `/metrics` endpoint; all telemetry pushed to OTLP collector
+>
+> The `/metrics` endpoint should never be exposed publicly - use firewall rules or network policies to restrict access to internal monitoring systems only.
 
 ## Logging
 

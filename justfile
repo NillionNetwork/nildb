@@ -19,8 +19,14 @@ install:
 # --- Quality
 # ------------------
 
+# Build workspace dependencies (required for type checking and tests)
+build-deps:
+    pnpm --filter @nillion/nildb-types build
+    pnpm --filter @nillion/nildb-shared build
+    pnpm --filter @nillion/nildb-client build
+
 # Check for formatting, lint, and type errors
-check:
+check: build-deps
     pnpm exec tsc -b && pnpm exec biome ci && pnpm exec tsc -b --noEmit
 
 # Format, fix, and type check all files
@@ -40,7 +46,7 @@ dev:
     pnpm --filter @nillion/nildb dev
 
 # Build nildb
-build:
+build: build-deps
     pnpm --filter @nillion/nildb build
 
 # ------------------
@@ -48,19 +54,19 @@ build:
 # ------------------
 
 # Run all tests (unit & integration)
-test:
+test: build-deps
     pnpm exec vitest run
 
 # Run unit tests
-test-unit:
+test-unit: build-deps
     pnpm exec vitest run --project=unit
 
 # Run integration tests
-test-integration:
+test-integration: build-deps
     pnpm exec vitest run --project=integration
 
 # Run tests with coverage
-test-coverage:
+test-coverage: build-deps
     pnpm exec vitest run --coverage
 
 # ------------------
