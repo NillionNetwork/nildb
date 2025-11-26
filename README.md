@@ -1,6 +1,6 @@
 # nilDB
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/NillionNetwork/nildb/.github%2Fworkflows%2Fci.yaml)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/NillionNetwork/nildb/.github%2Fworkflows%2Fci.yaml)](https://github.com/NillionNetwork/nildb/actions)
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/NillionNetwork/nildb)
 
 nilDB is a structured data persistence service, which when multiple nodes are combined into a cluster, offers a robust, distributed and queryable data persistence solution. Paired with the nilQL library ([nilql-py](https://github.com/nillionnetwork/nilql-py) or [nilql-ts](https://github.com/NillionNetwork/nilql-ts)), users can leverage advanced cryptography to enable homomorphic operations, secret sharing, and other secure data processing use cases.
