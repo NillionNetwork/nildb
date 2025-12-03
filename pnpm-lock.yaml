@@ -71,7 +71,7 @@ importers:
     dependencies:
       '@nillion/nildb-shared':
         specifier: workspace:*
-        version: link:../shared
+        version: file:packages/shared(pino@10.1.0)(typescript@5.9.3)
       '@nillion/nildb-types':
         specifier: workspace:*
         version: link:../types
@@ -144,10 +144,10 @@ importers:
         version: 0.7.4(hono@4.10.3)(zod@4.1.12)
       '@nillion/nildb-client':
         specifier: workspace:*
-        version: link:../client
+        version: file:packages/client(pino@10.1.0)(typescript@5.9.3)
       '@nillion/nuc':
-        specifier: ^1.1.0-rc.0
-        version: 1.1.0-rc.0(pino@10.1.0)(typescript@5.9.3)
+        specifier: ^1.1.0
+        version: 1.1.0(pino@10.1.0)(typescript@5.9.3)
       '@noble/curves':
         specifier: ^2.0.1
         version: 2.0.1
@@ -716,6 +716,21 @@ packages:
 
   '@napi-rs/wasm-runtime@1.0.7':
     resolution: {integrity: sha512-SeDnOO0Tk7Okiq6DbXmmBODgOAb9dp9gjlphokTUxmt8U3liIP1ZsozBahH69j/RJv+Rfs6IwUKHTgQYJ/HBAw==}
+
+  '@nillion/nildb-client@file:packages/client':
+    resolution: {directory: packages/client, type: directory}
+
+  '@nillion/nildb-shared@file:packages/shared':
+    resolution: {directory: packages/shared, type: directory}
+
+  '@nillion/nildb-types@file:packages/types':
+    resolution: {directory: packages/types, type: directory}
+
+  '@nillion/nuc@1.1.0':
+    resolution: {integrity: sha512-m7V6DZHjlT3hx0bvw3jxMVijyoCdfPgvBgGdGp/av7Wpq/mPPTOPSph/DUnk2EMkLLNHWuh6DJuDSXaK6PgpRg==}
+    engines: {node: '>=23'}
+    peerDependencies:
+      pino: ^9.7.0
 
   '@nillion/nuc@1.1.0-rc.0':
     resolution: {integrity: sha512-wXLS+9Z+BjnPa/HSK8zTky5kFYC/Iks4zrUeJOr52zLDKD52UYWrs+404+ti/CTWw19NZZxTCFcIqHRfG4eQNA==}
@@ -1755,9 +1770,6 @@ packages:
   '@types/mysql@2.15.26':
     resolution: {integrity: sha512-DSLCOXhkvfS5WNNPbfn2KdICAmk8lLc+/PNvnPnF7gOdMZCxopXduqv0OQ13y/yA/zXTSikZZqVgybUxOEg6YQ==}
 
-  '@types/node@22.7.5':
-    resolution: {integrity: sha512-jML7s2NAzMWc//QSJ1a3prpk78cOPchGvXJsC3C6R6PSMoooztvRVQEz89gmBTBY1SPMaqo5teB4uNHPdetShQ==}
-
   '@types/node@24.9.1':
     resolution: {integrity: sha512-QoiaXANRkSXK6p0Duvt56W208du4P9Uye9hWLWgGMDTEoKPhuenzNcC4vGUmrNkiOKTlIrBoyNQYNpSwfEZXSg==}
 
@@ -1845,9 +1857,6 @@ packages:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-
-  aes-js@4.0.0-beta.5:
-    resolution: {integrity: sha512-G965FqalsNyrPqgEGON7nIx1e/OVENSgiEIzyC63haUMuvNnwIgIjMs52hlTCKhkBny7A2ORNlfY9Zu+jmGk1Q==}
 
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
@@ -3606,6 +3615,67 @@ snapshots:
       '@tybys/wasm-util': 0.10.1
     optional: true
 
+  '@nillion/nildb-client@file:packages/client(pino@10.1.0)(typescript@5.9.3)':
+    dependencies:
+      '@nillion/nildb-types': file:packages/types
+      '@nillion/nuc': 1.1.0(pino@10.1.0)(typescript@5.9.3)
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-providers'
+      - '@mongodb-js/zstd'
+      - bufferutil
+      - gcp-metadata
+      - kerberos
+      - mongodb-client-encryption
+      - pino
+      - snappy
+      - socks
+      - typescript
+      - utf-8-validate
+
+  '@nillion/nildb-shared@file:packages/shared(pino@10.1.0)(typescript@5.9.3)':
+    dependencies:
+      '@nillion/nuc': 1.1.0(pino@10.1.0)(typescript@5.9.3)
+      temporal-polyfill: 0.3.0
+    transitivePeerDependencies:
+      - bufferutil
+      - pino
+      - typescript
+      - utf-8-validate
+
+  '@nillion/nildb-types@file:packages/types':
+    dependencies:
+      http-status-codes: 2.3.0
+      mongodb: 6.20.0
+      zod: 4.1.12
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-providers'
+      - '@mongodb-js/zstd'
+      - gcp-metadata
+      - kerberos
+      - mongodb-client-encryption
+      - snappy
+      - socks
+
+  '@nillion/nuc@1.1.0(pino@10.1.0)(typescript@5.9.3)':
+    dependencies:
+      '@bufbuild/protobuf': 2.10.1
+      '@cosmjs/proto-signing': 0.37.0
+      '@cosmjs/stargate': 0.37.0
+      '@noble/curves': 2.0.1
+      '@noble/hashes': 2.0.1
+      '@scure/base': 2.0.0
+      es-toolkit: 1.41.0
+      http-status-codes: 2.3.0
+      ky: 1.14.0
+      multiformats: 13.4.1
+      pino: 10.1.0
+      viem: 2.39.3(typescript@5.9.3)(zod@4.1.12)
+      zod: 4.1.12
+    transitivePeerDependencies:
+      - bufferutil
+      - typescript
+      - utf-8-validate
+
   '@nillion/nuc@1.1.0-rc.0(pino@10.1.0)(typescript@5.9.3)':
     dependencies:
       '@bufbuild/protobuf': 2.10.1
@@ -4799,10 +4869,6 @@ snapshots:
     dependencies:
       '@types/node': 24.9.1
 
-  '@types/node@22.7.5':
-    dependencies:
-      undici-types: 6.19.8
-
   '@types/node@24.9.1':
     dependencies:
       undici-types: 7.16.0
@@ -4904,8 +4970,6 @@ snapshots:
       acorn: 8.15.0
 
   acorn@8.15.0: {}
-
-  aes-js@4.0.0-beta.5: {}
 
   agent-base@7.1.4: {}
 
