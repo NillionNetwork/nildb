@@ -17,8 +17,8 @@
   },
   "dependencies": {
     "http-status-codes": "^2.3.0",
-    "mongodb": "^6.20.0",
-    "zod": "^4.1.12"
+    "mongodb": "^6.21.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "tsdown": "^0.15.12",

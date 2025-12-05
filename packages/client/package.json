@@ -17,8 +17,8 @@
     "stub": "tsdown --stub"
   },
   "dependencies": {
-    "@nillion/nuc": "^1.1.0-rc.0",
-    "@nillion/nildb-types": "workspace:*"
+    "@nillion/nildb-types": "workspace:*",
+    "@nillion/nuc": "^1.1.1"
   },
   "devDependencies": {
     "tsdown": "^0.15.12",
