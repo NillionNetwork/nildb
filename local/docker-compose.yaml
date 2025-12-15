@@ -15,8 +15,7 @@ services:
       - APP_ENABLED_FEATURES=openapi,otel,migrations
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
-      - APP_NILAUTH_BASE_URL=http://nilauth:8080
-      - APP_NILAUTH_PUBLIC_KEY=03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
+      - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
       - APP_NODE_PUBLIC_ENDPOINT=http://localhost:40080
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_PORT=8080

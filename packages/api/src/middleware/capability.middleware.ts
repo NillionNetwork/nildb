@@ -1,10 +1,11 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
-import type { AppBindings, AppEnv } from "@nildb/env";
+import type { AppBindings, AppEnv, NilauthInstance } from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
 import { normalizeIdentifier } from "@nillion/nildb-shared";
 import {
   Codec,
   Did,
+  type Did as DidType,
   type Envelope,
   NilauthClient,
   Payload,
@@ -13,6 +14,24 @@ import {
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
+
+type NilauthInstanceWithDid = NilauthInstance & { did: DidType };
+
+function buildNilauthInstancesWithDids(
+  instances: NilauthInstance[],
+): NilauthInstanceWithDid[] {
+  return instances.map((instance) => ({
+    ...instance,
+    did: Did.fromPublicKey(instance.publicKey),
+  }));
+}
+
+function extractRootIssuerDid(envelope: Envelope): string {
+  const proofs = envelope.proofs;
+  const rootToken =
+    proofs.length > 0 ? proofs[proofs.length - 1] : envelope.nuc;
+  return rootToken.payload.iss.didString;
+}
 
 export function loadNucToken<
   P extends string = string,
@@ -86,6 +105,10 @@ export function loadSubjectAndVerifyAsBuilder<
   E extends AppEnv = AppEnv,
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
+  const nilauthInstances = buildNilauthInstancesWithDids(
+    config.nilauthInstances,
+  );
+  const nilauthRootIssuers = nilauthInstances.map((n) => n.did.didString);
 
   return async (c, next) => {
     try {
@@ -128,11 +151,10 @@ export function loadSubjectAndVerifyAsBuilder<
         },
       };
 
-      const nilauthDid = Did.fromPublicKey(config.nilauthPubKey);
       const nildbNodeDid = bindings.node.did;
 
       await Validator.validate(envelope, {
-        rootIssuers: [nilauthDid.didString],
+        rootIssuers: nilauthRootIssuers,
         params: {
           tokenRequirements: {
             type: "invocation",
@@ -143,8 +165,26 @@ export function loadSubjectAndVerifyAsBuilder<
       });
 
       // check revocations last because it's costly (in terms of network RTT)
+      // Find the nilauth instance that issued the root token in the proof chain
+      const rootIssuerDid = extractRootIssuerDid(envelope);
+      const matchingNilauth = nilauthInstances.find(
+        (n) => n.did.didString === rootIssuerDid,
+      );
+
+      if (!matchingNilauth) {
+        // This shouldn't happen if validation passed, but handle defensively
+        log.error(
+          "No matching nilauth instance found for root issuer: %s",
+          rootIssuerDid,
+        );
+        return c.text(
+          getReasonPhrase(StatusCodes.UNAUTHORIZED),
+          StatusCodes.UNAUTHORIZED,
+        );
+      }
+
       const nilauthClient = await NilauthClient.create({
-        baseUrl: config.nilauthBaseUrl,
+        baseUrl: matchingNilauth.baseUrl,
       });
       const { revoked } =
         await nilauthClient.findRevocationsInProofChain(envelope);

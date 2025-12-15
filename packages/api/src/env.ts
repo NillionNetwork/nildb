@@ -15,6 +15,11 @@ import type { UserDocument } from "./users/users.types.js";
 export const PRIVATE_KEY_LENGTH = 64;
 export const PUBLIC_KEY_LENGTH = 66;
 
+export type NilauthInstance = {
+  publicKey: string;
+  baseUrl: string;
+};
+
 export const FeatureFlag = {
   OPENAPI: "openapi",
   METRICS: "metrics",
@@ -29,6 +34,36 @@ export type AppEnv = {
   Variables: AppVariables;
 };
 
+const NilauthInstancesSchema = z
+  .string()
+  .transform((value): NilauthInstance[] => {
+    return value.split(",").map((entry) => {
+      const trimmed = entry.trim();
+      const lastSlashIndex = trimmed.lastIndexOf("/");
+      if (lastSlashIndex === -1) {
+        throw new Error(
+          `Invalid nilauth instance format: "${trimmed}". Expected "baseUrl/publicKey"`,
+        );
+      }
+      const baseUrl = trimmed.slice(0, lastSlashIndex);
+      const publicKey = trimmed.slice(lastSlashIndex + 1);
+      if (!publicKey || !baseUrl) {
+        throw new Error(
+          `Invalid nilauth instance format: "${trimmed}". Expected "baseUrl/publicKey"`,
+        );
+      }
+      if (publicKey.length !== PUBLIC_KEY_LENGTH) {
+        throw new Error(
+          `Invalid nilauth public key length: ${publicKey.length}. Expected ${PUBLIC_KEY_LENGTH}`,
+        );
+      }
+      return { publicKey, baseUrl };
+    });
+  })
+  .refine((instances) => instances.length > 0, {
+    message: "At least one nilauth instance is required",
+  });
+
 export const EnvVarsSchema = z.object({
   dbNamePrimary: z.string().min(4),
   dbNameData: z.string().min(4),
@@ -37,8 +72,7 @@ export const EnvVarsSchema = z.object({
     .string()
     .transform((d) => d.split(",").map((e) => e.trim())),
   logLevel: LogLevel,
-  nilauthBaseUrl: z.url(),
-  nilauthPubKey: z.string().length(PUBLIC_KEY_LENGTH),
+  nilauthInstances: NilauthInstancesSchema,
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.url(),
   metricsPort: z.coerce.number().int().positive(),
@@ -101,8 +135,7 @@ declare global {
       APP_DB_URI: string;
       APP_ENABLED_FEATURES: string;
       APP_LOG_LEVEL: string;
-      APP_NILAUTH_PUBLIC_KEY: string;
-      APP_NILAUTH_BASE_URL: string;
+      APP_NILAUTH_INSTANCES: string;
       APP_METRICS_PORT?: number;
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;
@@ -163,8 +196,7 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     enabledFeatures: process.env.APP_ENABLED_FEATURES,
     logLevel: process.env.APP_LOG_LEVEL,
     metricsPort: process.env.APP_METRICS_PORT,
-    nilauthBaseUrl: process.env.APP_NILAUTH_BASE_URL,
-    nilauthPubKey: process.env.APP_NILAUTH_PUBLIC_KEY,
+    nilauthInstances: process.env.APP_NILAUTH_INSTANCES,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
     nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
     otelEndpoint: process.env.OTEL_ENDPOINT,

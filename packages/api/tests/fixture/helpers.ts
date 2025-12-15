@@ -21,7 +21,7 @@ export async function createRegisteredBuilder(
     .build();
 
   const nilauth = await NilauthClient.create({
-    baseUrl: bindings.config.nilauthBaseUrl,
+    baseUrl: bindings.config.nilauthInstances[0].baseUrl,
     payer,
   });
 

@@ -113,7 +113,7 @@ export async function buildFixture(
   };
 
   const chainUrl = process.env.APP_NILCHAIN_JSON_RPC!;
-  const nilauthBaseUrl = bindings.config.nilauthBaseUrl;
+  const nilauthBaseUrl = bindings.config.nilauthInstances[0].baseUrl;
 
   // Create system client
   const adminPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
