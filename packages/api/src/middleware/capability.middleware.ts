@@ -1,13 +1,13 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
 import type { AppBindings, AppEnv, NilauthInstance } from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
+import { NilauthClient } from "@nillion/nilauth-client";
 import { normalizeIdentifier } from "@nillion/nildb-shared";
 import {
   Codec,
   Did,
   type Did as DidType,
   type Envelope,
-  NilauthClient,
   Payload,
   Validator,
 } from "@nillion/nuc";

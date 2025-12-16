@@ -8,11 +8,20 @@ metrics:
   bind_endpoint: 0.0.0.0:30022
 
 payments:
-  nilchain_url: http://nilchain:26648
+  # Anvil local Ethereum node
+  ethereum_rpc_url: http://nil-anvil:8545
+
+  # Contract addresses from nil-devnet DeployLocal.s.sol (deterministic)
+  nil_token_address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  burn_contract_address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+
+  # Anvil chain ID
+  chain_id: 31337
 
   subscriptions:
     renewal_threshold_seconds: 86400 # 1 day
     length_seconds: 604800 # 1 week
+    payment_slippage: 0.03 # 3%
     dollar_cost:
       nildb: 1
       nilai: 1

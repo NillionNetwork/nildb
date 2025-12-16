@@ -26,6 +26,7 @@ The following environment variables are require:
 | APP_LOG_LEVEL            | Logging verbosity                                              | debug                                    |
 | APP_METRICS_PORT         | Prometheus metrics port                                        | 9091                                     |
 | APP_NILAUTH_INSTANCES    | Trusted nilauth instances (format: `baseUrl/publicKey,...`)    | [see below]                              |
+| APP_NILAUTH_CHAIN_ID     | Ethereum chain ID for payment validation                       | 1                                        |
 | APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                             | https://nildb-xxxx.domain.com            |
 | APP_NODE_SECRET_KEY      | Node's private key                                             | [hex encoded secp256k1 private key]      |
 | APP_PORT                 | API service port                                               | 8080                                     |
@@ -148,6 +149,7 @@ services:
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_INSTANCES=http://127.0.0.1:30921/037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b
+      - APP_NILAUTH_CHAIN_ID=1
       - APP_NODE_PUBLIC_ENDPOINT=https://nildb-xxxx.domain.com
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_PORT=8080

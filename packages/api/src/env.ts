@@ -73,6 +73,7 @@ export const EnvVarsSchema = z.object({
     .transform((d) => d.split(",").map((e) => e.trim())),
   logLevel: LogLevel,
   nilauthInstances: NilauthInstancesSchema,
+  nilauthChainId: z.coerce.number().int().positive(),
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.url(),
   metricsPort: z.coerce.number().int().positive(),
@@ -136,6 +137,7 @@ declare global {
       APP_ENABLED_FEATURES: string;
       APP_LOG_LEVEL: string;
       APP_NILAUTH_INSTANCES: string;
+      APP_NILAUTH_CHAIN_ID: string;
       APP_METRICS_PORT?: number;
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;
@@ -197,6 +199,7 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     logLevel: process.env.APP_LOG_LEVEL,
     metricsPort: process.env.APP_METRICS_PORT,
     nilauthInstances: process.env.APP_NILAUTH_INSTANCES,
+    nilauthChainId: process.env.APP_NILAUTH_CHAIN_ID,
     nodePublicEndpoint: process.env.APP_NODE_PUBLIC_ENDPOINT,
     nodeSecretKey: process.env.APP_NODE_SECRET_KEY,
     otelEndpoint: process.env.OTEL_ENDPOINT,

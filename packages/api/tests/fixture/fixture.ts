@@ -10,16 +10,10 @@ import {
   loadBindings,
 } from "@nildb/env";
 import type { QueryVariable } from "@nildb/queries/queries.types";
+import { NilauthClient } from "@nillion/nilauth-client";
 import { AdminClient, BuilderClient, UserClient } from "@nillion/nildb-client";
 import { createUuidDto, NucCmd, type UuidDto } from "@nillion/nildb-types";
-import {
-  Builder,
-  Did,
-  NilauthClient,
-  type Did as NucDid,
-  PayerBuilder,
-  Signer,
-} from "@nillion/nuc";
+import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import dotenv from "dotenv";
@@ -27,6 +21,7 @@ import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
 import * as vitest from "vitest";
 import { createTestLogger } from "./logger.js";
+import { activateSubscriptionWithPayment } from "./payment.js";
 
 export type FixtureContext = {
   id: string;
@@ -112,8 +107,8 @@ export async function buildFixture(
     endpoint: bindings.config.nodePublicEndpoint,
   };
 
-  const chainUrl = process.env.APP_NILCHAIN_JSON_RPC!;
   const nilauthBaseUrl = bindings.config.nilauthInstances[0].baseUrl;
+  const chainId = bindings.config.nilauthChainId;
 
   // Create system client
   const adminPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
@@ -135,17 +130,12 @@ export async function buildFixture(
 
   // Create builder client
   const builderSigner = Signer.fromPrivateKey(
-    process.env.APP_NILCHAIN_PRIVATE_KEY_0!,
+    process.env.APP_TEST_BUILDER_PRIVATE_KEY!,
   );
-  const payer = await PayerBuilder.fromPrivateKey(
-    process.env.APP_NILCHAIN_PRIVATE_KEY_0!,
-  )
-    .chainUrl(chainUrl)
-    .build();
 
   const nilauth = await NilauthClient.create({
     baseUrl: nilauthBaseUrl,
-    payer,
+    chainId,
   });
 
   const builder = new BuilderClient({
@@ -158,7 +148,7 @@ export async function buildFixture(
 
   // Create user client
   const userSigner = Signer.fromPrivateKey(
-    process.env.APP_NILCHAIN_PRIVATE_KEY_1!,
+    process.env.APP_TEST_USER_PRIVATE_KEY!,
   );
   const user = new UserClient({
     baseUrl: bindings.config.nodePublicEndpoint,
@@ -186,17 +176,10 @@ export async function buildFixture(
   };
 
   // Register the builder
-  // Ensure subscription is active
+  // Activate subscription via real payment on Anvil
   const builderDid = await builderSigner.getDid();
-  const checkSubscription = async () => {
-    const response = await nilauth.subscriptionStatus(builderDid, "nildb");
-    if (response.subscribed) return;
-    await nilauth
-      .payAndValidate(builderSigner, builderDid, "nildb")
-      .catch(() => {});
-    throw new Error("Subscription not yet active");
-  };
-  await vitest.vi.waitFor(checkSubscription, { timeout: 10000, interval: 500 });
+  const anvilRpcUrl = process.env.APP_ANVIL_RPC_URL || "http://127.0.0.1:30545";
+  await activateSubscriptionWithPayment(nilauth, builderDid, anvilRpcUrl);
   log.info({ did: Did.serialize(builderDid) }, "Builder subscription active");
 
   const registerResult = await builder.register({

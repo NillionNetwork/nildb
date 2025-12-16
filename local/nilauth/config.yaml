@@ -1,3 +1,6 @@
+# WARNING: test_mode enables test-only endpoints. Never enable in production!
+test_mode: true
+
 server:
   bind_endpoint: 0.0.0.0:8080
 

@@ -2,14 +2,15 @@ import { faker } from "@faker-js/faker";
 import type { CollectionDocument } from "@nildb/collections/collections.types";
 import { CollectionName } from "@nildb/common/mongo";
 import type { OwnedDocumentBase } from "@nildb/data/data.types";
+import { NilauthClient } from "@nillion/nilauth-client";
 import { BuilderClient } from "@nillion/nildb-client";
 import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
-import { NilauthClient, PayerBuilder, Signer } from "@nillion/nuc";
+import { Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import type { DeleteResult } from "mongodb";
 import { UUID } from "mongodb";
-import { describe, vi } from "vitest";
+import { describe } from "vitest";
 import simpleCollectionJson from "../data/simple.collection.json";
 import simpleQueryJson from "../data/simple.query.json";
 import collectionJson from "../data/wallet.collection.json";
@@ -22,6 +23,7 @@ import {
 import type { CollectionFixture, QueryFixture } from "../fixture/fixture.js";
 import { createUserTestClient } from "../fixture/helpers.js";
 import { createTestFixtureExtension } from "../fixture/it.js";
+import { activateSubscriptionWithPayment } from "../fixture/payment.js";
 
 describe("Owned Collections", () => {
   const collection = collectionJson as unknown as CollectionFixture;
@@ -41,30 +43,20 @@ describe("Owned Collections", () => {
     // interactions where a single DID acts as both a data owner (the default `user` client)
     // and a builder. Using the `createRegisteredBuilder` helper is not suitable here as it
     // generates a random private key.
-    const privateKey = process.env.APP_NILCHAIN_PRIVATE_KEY_1!;
+    const privateKey = process.env.APP_TEST_USER_PRIVATE_KEY!;
     unauthorizedBuilderSigner = Signer.fromPrivateKey(privateKey);
     const builderDid = await unauthorizedBuilderSigner.getDid();
 
-    // Create nilauth client and ensure subscription is active
-    const payer = await PayerBuilder.fromPrivateKey(privateKey)
-      .chainUrl(process.env.APP_NILCHAIN_JSON_RPC!)
-      .build();
-
+    // Create nilauth client and activate subscription for testing
     const nilauth = await NilauthClient.create({
       baseUrl: bindings.config.nilauthInstances[0].baseUrl,
-      payer,
+      chainId: bindings.config.nilauthChainId,
     });
 
-    // Ensure subscription is active (same logic as createRegisteredBuilder)
-    const checkSubscription = async () => {
-      const response = await nilauth.subscriptionStatus(builderDid, "nildb");
-      if (response.subscribed) return;
-      await nilauth
-        .payAndValidate(unauthorizedBuilderSigner, builderDid, "nildb")
-        .catch(() => {});
-      throw new Error("Subscription not yet active");
-    };
-    await vi.waitFor(checkSubscription, { timeout: 10000, interval: 500 });
+    // Activate subscription via real payment on Anvil
+    const anvilRpcUrl =
+      process.env.APP_ANVIL_RPC_URL || "http://127.0.0.1:30545";
+    await activateSubscriptionWithPayment(nilauth, builderDid, anvilRpcUrl);
 
     unauthorizedBuilder = new BuilderClient({
       baseUrl: bindings.config.nodePublicEndpoint,
