@@ -185,6 +185,7 @@ export function loadSubjectAndVerifyAsBuilder<
 
       const nilauthClient = await NilauthClient.create({
         baseUrl: matchingNilauth.baseUrl,
+        chainId: config.nilauthChainId,
       });
       const { revoked } =
         await nilauthClient.findRevocationsInProofChain(envelope);

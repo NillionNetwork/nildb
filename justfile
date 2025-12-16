@@ -73,17 +73,17 @@ test-coverage: build-deps
 # --- Docker Services
 # ------------------
 
-# Start test infrastructure (mongo, postgres, anvil, nilauth)
+# Start local dev infrastructure (mongo, postgres, anvil, nilauth, otel)
 docker-up:
-    cd docker && docker compose up -d
+    cd local && docker compose up -d
 
-# Stop test infrastructure
+# Stop local dev infrastructure
 docker-down:
-    cd docker && docker compose down
+    cd local && docker compose down
 
 # View docker logs
 docker-logs:
-    cd docker && docker compose logs -f
+    cd local && docker compose logs -f
 
 # ------------------
 # --- Build & Docker

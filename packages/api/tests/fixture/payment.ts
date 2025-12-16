@@ -61,6 +61,9 @@ const burnAbi = [
  * The payer is always the Anvil test account (which has mNIL tokens).
  * The subscriber can be any DID.
  *
+ * If the subscription is already active (412 error), this function
+ * silently succeeds since the goal is achieved.
+ *
  * @param nilauth - NilauthClient instance
  * @param subscriberDid - The DID to activate the subscription for
  * @param rpcUrl - Anvil RPC URL (defaults to localhost:30545 for docker setup)
@@ -116,5 +119,20 @@ export async function activateSubscriptionWithPayment(
   await publicClient.waitForTransactionReceipt({ hash: burnHash });
 
   // Step 4: Validate payment with nilauth (payer signs the request)
-  await nilauth.validatePayment(burnHash, payload, payerSigner);
+  // 412 means subscription is already active, which is fine
+  try {
+    await nilauth.validatePayment(burnHash, payload, payerSigner);
+  } catch (error: unknown) {
+    // Check if this is a 412 error (subscription already active)
+    // The error chain: NilauthUnreachable -> HTTPError with status 412
+    const errorString = String(error);
+    const causeString =
+      error instanceof Error && error.cause ? String(error.cause) : "";
+    const isAlreadyActive =
+      errorString.includes("412") || causeString.includes("412");
+    if (!isAlreadyActive) {
+      throw error;
+    }
+    // Subscription already active - that's fine, we're done
+  }
 }
