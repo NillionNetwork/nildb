@@ -70,6 +70,22 @@ test-coverage: build-deps
     pnpm exec vitest run --coverage
 
 # ------------------
+# --- Docker Services
+# ------------------
+
+# Start local dev infrastructure (mongo, postgres, anvil, nilauth, otel)
+docker-up:
+    cd local && docker compose up -d
+
+# Stop local dev infrastructure
+docker-down:
+    cd local && docker compose down
+
+# View docker logs
+docker-logs:
+    cd local && docker compose logs -f
+
+# ------------------
 # --- Build & Docker
 # ------------------
 

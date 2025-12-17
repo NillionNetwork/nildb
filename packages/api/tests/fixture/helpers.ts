@@ -1,11 +1,12 @@
 import { faker } from "@faker-js/faker";
 import type { App } from "@nildb/app";
+import { NilauthClient } from "@nillion/nilauth-client";
 import { BuilderClient, UserClient } from "@nillion/nildb-client";
-import { Did, NilauthClient, PayerBuilder, Signer } from "@nillion/nuc";
+import { Did, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
-import { vi } from "vitest";
 import type { FixtureContext } from "./fixture.js";
+import { activateSubscriptionWithPayment } from "./payment.js";
 
 export async function createRegisteredBuilder(
   c: FixtureContext,
@@ -16,13 +17,9 @@ export async function createRegisteredBuilder(
   const builderPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
   const builderSigner = Signer.fromPrivateKey(builderPrivateKey);
 
-  const payer = await PayerBuilder.fromPrivateKey(builderPrivateKey)
-    .chainUrl(process.env.APP_NILCHAIN_JSON_RPC!)
-    .build();
-
   const nilauth = await NilauthClient.create({
-    baseUrl: bindings.config.nilauthBaseUrl,
-    payer,
+    baseUrl: bindings.config.nilauthInstances[0].baseUrl,
+    chainId: bindings.config.nilauthChainId,
   });
 
   const builder = new BuilderClient({
@@ -33,17 +30,10 @@ export async function createRegisteredBuilder(
     httpClient: app.request,
   });
 
-  // Ensure subscription is active
+  // Activate subscription via real payment on Anvil
   const builderDid = await builderSigner.getDid();
-  const checkSubscription = async () => {
-    const response = await nilauth.subscriptionStatus(builderDid, "nildb");
-    if (response.subscribed) return;
-    await nilauth
-      .payAndValidate(builderSigner, builderDid, "nildb")
-      .catch(() => {});
-    throw new Error("Subscription not yet active");
-  };
-  await vi.waitFor(checkSubscription, { timeout: 10000, interval: 500 });
+  const anvilRpcUrl = process.env.APP_ANVIL_RPC_URL || "http://127.0.0.1:30545";
+  await activateSubscriptionWithPayment(nilauth, builderDid, anvilRpcUrl);
 
   const registerResult = await builder.register({
     did: Did.serialize(builderDid),
@@ -60,21 +50,17 @@ export async function createRegisteredBuilder(
 export async function createBuilderTestClient(options: {
   app: App;
   privateKey: string;
-  chainUrl: string;
+  chainId: number;
   nilauthBaseUrl: string;
   nodePublicKey: string;
 }): Promise<BuilderClient> {
-  const { app, privateKey, chainUrl, nilauthBaseUrl, nodePublicKey } = options;
+  const { app, privateKey, chainId, nilauthBaseUrl, nodePublicKey } = options;
 
   const builderSigner = Signer.fromPrivateKey(privateKey);
 
-  const payer = await PayerBuilder.fromPrivateKey(privateKey)
-    .chainUrl(chainUrl)
-    .build();
-
   const nilauth = await NilauthClient.create({
     baseUrl: nilauthBaseUrl,
-    payer,
+    chainId,
   });
 
   const builder = new BuilderClient({

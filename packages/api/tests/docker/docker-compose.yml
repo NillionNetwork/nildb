@@ -1,0 +1,48 @@
+services:
+  mongo:
+    image: mongo:8
+    ports:
+      - "30017:27017"
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "30432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nil-anvil:
+    image: public.ecr.aws/k5d9x2g2/nil-anvil:local
+    ports:
+      - "30545:8545"
+    healthcheck:
+      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://localhost:8545"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  nilauth:
+    image: public.ecr.aws/k5d9x2g2/nilauth:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nil-anvil:
+        condition: service_healthy
+    volumes:
+      - ./nilauth/config.yaml:/opt/config.yaml
+    command: ["--config-file", "/opt/config.yaml"]
+    ports:
+      - "30921:30921" # main api
+      - "30922:30022" # metrics
+
+  token-price-api:
+    image: caddy:2
+    ports:
+      - "30923:80"
+    command: |
+      caddy respond --listen :80 --body '{"nillion":{"usd":1}}' --header "Content-Type: application/json"

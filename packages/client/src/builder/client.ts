@@ -1,3 +1,4 @@
+import type { NilauthClient } from "@nillion/nilauth-client";
 import {
   type CreateCollectionIndexRequest,
   type CreateCollectionRequest,
@@ -27,13 +28,7 @@ import {
   type UpdateProfileRequest,
   type UuidDto,
 } from "@nillion/nildb-types";
-import {
-  Builder,
-  Did,
-  type Envelope,
-  type NilauthClient,
-  type Signer,
-} from "@nillion/nuc";
+import { Builder, Did, type Envelope, type Signer } from "@nillion/nuc";
 import type { HttpClient } from "../types.js";
 
 type BuilderClientOptions = {

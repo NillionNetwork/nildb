@@ -18,18 +18,32 @@ This section provides task-oriented instructions for node administrators.
 
 The following environment variables are require:
 
-| Variable                 | Description                                               | Example                              |
-|--------------------------|-----------------------------------------------------------|--------------------------------------|
-| APP_DB_NAME_BASE         | Database name prefix                                      | nildb_data                           |
-| APP_DB_URI               | MongoDB connection string                                 | mongodb://node-xxxx-db:27017         |
-| APP_ENABLED_FEATURES     | Enable features                                           | openapi-spec,metrics,migrations,otel |
-| APP_LOG_LEVEL            | Logging verbosity                                         | debug                                |
-| APP_METRICS_PORT         | Prometheus metrics port                                   | 9091                                 |
-| APP_NILAUTH_BASE_URL     | The nilauth service url for subscriptions and revocations | http://127.0.0.1:30921               |
-| APP_NILAUTH_PUBLIC_KEY   | The nilauth service's secp256k1 public key                | [hex encoded secp256k1 public key]   |
-| APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                        | https://nildb-xxxx.domain.com        |
-| APP_NODE_SECRET_KEY      | Node's private key                                        | [hex encoded secp256k1 private key]  |
-| APP_PORT                 | API service port                                          | 8080                                 |
+| Variable                 | Description                                                    | Example                                  |
+|--------------------------|----------------------------------------------------------------|------------------------------------------|
+| APP_DB_NAME_BASE         | Database name prefix                                           | nildb_data                               |
+| APP_DB_URI               | MongoDB connection string                                      | mongodb://node-xxxx-db:27017             |
+| APP_ENABLED_FEATURES     | Enable features                                                | openapi-spec,metrics,migrations,otel     |
+| APP_LOG_LEVEL            | Logging verbosity                                              | debug                                    |
+| APP_METRICS_PORT         | Prometheus metrics port                                        | 9091                                     |
+| APP_NILAUTH_INSTANCES    | Trusted nilauth instances (format: `baseUrl/publicKey,...`)    | [see below]                              |
+| APP_NILAUTH_CHAIN_ID     | Ethereum chain ID for payment validation                       | 1                                        |
+| APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                             | https://nildb-xxxx.domain.com            |
+| APP_NODE_SECRET_KEY      | Node's private key                                             | [hex encoded secp256k1 private key]      |
+| APP_PORT                 | API service port                                               | 8080                                     |
+
+### Nilauth Configuration
+
+The `APP_NILAUTH_INSTANCES` variable configures which nilauth instances this node trusts for builder authentication. Each instance is specified as `baseUrl/publicKey`, with multiple instances separated by commas.
+
+**Single instance:**
+```bash
+APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
+```
+
+**Multiple instances:**
+```bash
+APP_NILAUTH_INSTANCES=http://nilauth-a:8080/03520e70bd97a5fa...,http://nilauth-b:8080/02abc123def456...
+```
 
 ### Rate Limiting
 
@@ -134,8 +148,8 @@ services:
       - APP_ENABLED_FEATURES=openapi-spec,metrics,migrations
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
-      - APP_NILAUTH_BASE_URL=http://127.0.0.1:30921
-      - APP_NILAUTH_PUBLIC_KEY=037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b
+      - APP_NILAUTH_INSTANCES=http://127.0.0.1:30921/037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b
+      - APP_NILAUTH_CHAIN_ID=1
       - APP_NODE_PUBLIC_ENDPOINT=https://nildb-xxxx.domain.com
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_PORT=8080

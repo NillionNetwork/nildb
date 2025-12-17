@@ -15,8 +15,8 @@ services:
       - APP_ENABLED_FEATURES=openapi,otel,migrations
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
-      - APP_NILAUTH_BASE_URL=http://nilauth:8080
-      - APP_NILAUTH_PUBLIC_KEY=03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
+      - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
+      - APP_NILAUTH_CHAIN_ID=31337
       - APP_NODE_PUBLIC_ENDPOINT=http://localhost:40080
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_PORT=8080
@@ -31,38 +31,48 @@ services:
     ports:
       - "40017:27017"
 
-  nilauth:
-    image: public.ecr.aws/k5d9x2g2/nilauth:main
-    depends_on:
-      - postgres
-      - nilchain
-    volumes:
-      - ./nilauth/config.yaml:/opt/config.yaml
-    command: ["--config-file", "/opt/config.yaml"]
-    ports:
-      - "40921:8080" # main server
-      - "40922:9091" # metrics server
-
   postgres:
     image: postgres:17
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
       - "40432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nil-anvil:
+    image: public.ecr.aws/k5d9x2g2/nil-anvil:local
+    ports:
+      - "40545:8545"
+    healthcheck:
+      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://localhost:8545"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  nilauth:
+    image: public.ecr.aws/k5d9x2g2/nilauth:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nil-anvil:
+        condition: service_healthy
+    volumes:
+      - ./nilauth/config.yaml:/opt/config.yaml
+    command: ["--config-file", "/opt/config.yaml"]
+    ports:
+      - "40921:8080"
+      - "40922:9091"
 
   token-price-api:
     image: caddy:2
     ports:
       - "40923:80"
     command: |
-      caddy respond --listen :80 --body '{"nillion":{"usd":1}}' --header "Content-Type: application/json" 
-
-  nilchain:
-    image: ghcr.io/nillionnetwork/nilchain-devnet:v0.1.0
-    volumes:
-      - ./nilchaind/config/genesis.json:/opt/nilchain/config/genesis.json
-    ports:
-      - "40648:26648" # JSON RPC
+      caddy respond --listen :80 --body '{"nillion":{"usd":1}}' --header "Content-Type: application/json"
 
   otel-collector:
     image: otel/opentelemetry-collector:latest
@@ -70,4 +80,4 @@ services:
     volumes:
       - ./otel-collector/config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "40318:4318"   # OTLP HTTP receiver
+      - "40318:4318"
