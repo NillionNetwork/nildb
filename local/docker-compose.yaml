@@ -44,7 +44,7 @@ services:
       retries: 5
 
   nil-anvil:
-    image: public.ecr.aws/k5d9x2g2/nil-anvil:local
+    image: ghcr.io/nillionnetwork/nil-anvil:main
     ports:
       - "40545:8545"
     healthcheck:
@@ -54,7 +54,7 @@ services:
       retries: 10
 
   nilauth:
-    image: public.ecr.aws/k5d9x2g2/nilauth:local
+    image: ghcr.io/nillionnetwork/nilauth:main
     depends_on:
       postgres:
         condition: service_healthy

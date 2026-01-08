@@ -137,7 +137,7 @@ A nilDB node consists of a MongoDB instance and a RESTful API service. Below is 
 # docker-compose.yaml
 services:
   node-xxxx-api:
-    image: public.ecr.aws/k5d9x2g2/nildb-api:latest # commit sha or semver
+    image: ghcr.io/nillionnetwork/nildb:main # commit sha or semver
     ports:
       - "8080:8080"
     depends_on:
@@ -199,7 +199,7 @@ docker compose -f ./docker-compose.yaml stop
 
 ## Upgrades
 
-1. Modify your image tag (e.g. `public.ecr.aws/k5d9x2g2/nildb-api:0.5.0` -> `public.ecr.aws/k5d9x2g2/nildb-api:0.6.0`)
+1. Modify your image tag (e.g. `ghcr.io/nillionnetwork/nildb:0.5.0` -> `ghcr.io/nillionnetwork/nildb:0.6.0`)
 2. Run `docker compose -f ./docker-compose.yaml up -d`
 
 ## Database migrations

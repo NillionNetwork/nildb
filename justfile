@@ -104,7 +104,7 @@ create-buildinfo:
 # Build local Docker image
 docker-build-local: create-buildinfo
     docker buildx build \
-      --tag public.ecr.aws/k5d9x2g2/nildb-api:local \
+      --tag ghcr.io/nillionnetwork/nildb:local \
       --file ./packages/api/Dockerfile \
       .
 
