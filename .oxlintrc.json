@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "unicorn", "vitest"],
+  "categories": {
+    "correctness": "warn"
+  },
+  "rules": {
+    "no-nested-ternary": "error",
+    "no-unneeded-ternary": "error",
+    "no-unused-vars": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/explicit-function-return-type": "warn",
+    "typescript/no-floating-promises": "off",
+    "typescript/unbound-method": "off",
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/filename-case": ["error", { "case": "kebabCase" }],
+    "import/no-cycle": "error"
+  },
+  "overrides": [
+    {
+      "files": ["packages/api/tests/**/*.ts"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off"
+      }
+    }
+  ]
+}
