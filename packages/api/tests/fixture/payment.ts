@@ -99,7 +99,7 @@ export async function activateSubscriptionWithPayment(
   );
 
   // Step 2: Approve burn contract to spend tokens
-  const amount = parseEther("1"); // 1 mNIL per subscription
+  const amount = parseUnits("1", 6); // 1 mNIL per subscription (NIL token has 6 decimals)
   const approveHash = await walletClient.writeContract({
     address: CONTRACTS.mockErc20,
     abi: erc20Abi,
