@@ -1,15 +1,16 @@
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import { handleTaggedErrors } from "@nildb/common/handler";
-import {
-  OpenApiSpecCommonErrorResponses,
-  OpenApiSpecEmptySuccessResponses,
-} from "@nildb/common/openapi";
+import { OpenApiSpecCommonErrorResponses, OpenApiSpecEmptySuccessResponses } from "@nildb/common/openapi";
 import type { ControllerOptions } from "@nildb/common/types";
 import {
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import { Effect as E, pipe } from "effect";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+import { StatusCodes } from "http-status-codes";
+
 import {
   ByIdRequestParams,
   CreateQueryRequest,
@@ -25,9 +26,7 @@ import {
   RunQueryRequest,
   RunQueryResponse,
 } from "@nillion/nildb-types";
-import { Effect as E, pipe } from "effect";
-import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
+
 import { QueriesDataMapper } from "./queries.mapper.js";
 import * as QueriesService from "./queries.services.js";
 
@@ -56,10 +55,7 @@ export function createQuery(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = QueriesDataMapper.toCreateQueryCommand(
-        payload,
-        builder.did,
-      );
+      const command = QueriesDataMapper.toCreateQueryCommand(payload, builder.did);
 
       return pipe(
         QueriesService.addQuery(c.env, command),
@@ -96,10 +92,7 @@ export function deleteQuery(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
-      const command = QueriesDataMapper.toDeleteQueryByIdCommand(
-        params,
-        builder.did,
-      );
+      const command = QueriesDataMapper.toDeleteQueryByIdCommand(params, builder.did);
 
       return pipe(
         QueriesService.removeQuery(c.env, command),
@@ -187,10 +180,7 @@ export function readQueryById(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
-      const command = QueriesDataMapper.toReadQueryByIdCommand(
-        params,
-        builder.did,
-      );
+      const command = QueriesDataMapper.toReadQueryByIdCommand(params, builder.did);
 
       return pipe(
         QueriesService.getQueryById(c.env, command),
@@ -286,9 +276,7 @@ export function getQueryRunResultById(options: ControllerOptions): void {
 
       return pipe(
         QueriesService.getRunQueryJob(c.env, command, pagination),
-        E.map((run) =>
-          QueriesDataMapper.toGetQueryRunResultByIdResponse(run, pagination),
-        ),
+        E.map((run) => QueriesDataMapper.toGetQueryRunResultByIdResponse(run, pagination)),
         E.map((response) => c.json<ReadQueryRunByIdResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,

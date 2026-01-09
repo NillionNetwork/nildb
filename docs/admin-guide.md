@@ -18,29 +18,31 @@ This section provides task-oriented instructions for node administrators.
 
 The following environment variables are require:
 
-| Variable                 | Description                                                    | Example                                  |
-|--------------------------|----------------------------------------------------------------|------------------------------------------|
-| APP_DB_NAME_BASE         | Database name prefix                                           | nildb_data                               |
-| APP_DB_URI               | MongoDB connection string                                      | mongodb://node-xxxx-db:27017             |
-| APP_ENABLED_FEATURES     | Enable features                                                | openapi-spec,metrics,migrations,otel     |
-| APP_LOG_LEVEL            | Logging verbosity                                              | debug                                    |
-| APP_METRICS_PORT         | Prometheus metrics port                                        | 9091                                     |
-| APP_NILAUTH_INSTANCES    | Trusted nilauth instances (format: `baseUrl/publicKey,...`)    | [see below]                              |
-| APP_NILAUTH_CHAIN_ID     | Ethereum chain ID for payment validation                       | 1                                        |
-| APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                             | https://nildb-xxxx.domain.com            |
-| APP_NODE_SECRET_KEY      | Node's private key                                             | [hex encoded secp256k1 private key]      |
-| APP_PORT                 | API service port                                               | 8080                                     |
+| Variable                 | Description                                                 | Example                              |
+| ------------------------ | ----------------------------------------------------------- | ------------------------------------ |
+| APP_DB_NAME_BASE         | Database name prefix                                        | nildb_data                           |
+| APP_DB_URI               | MongoDB connection string                                   | mongodb://node-xxxx-db:27017         |
+| APP_ENABLED_FEATURES     | Enable features                                             | openapi-spec,metrics,migrations,otel |
+| APP_LOG_LEVEL            | Logging verbosity                                           | debug                                |
+| APP_METRICS_PORT         | Prometheus metrics port                                     | 9091                                 |
+| APP_NILAUTH_INSTANCES    | Trusted nilauth instances (format: `baseUrl/publicKey,...`) | [see below]                          |
+| APP_NILAUTH_CHAIN_ID     | Ethereum chain ID for payment validation                    | 1                                    |
+| APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                          | https://nildb-xxxx.domain.com        |
+| APP_NODE_SECRET_KEY      | Node's private key                                          | [hex encoded secp256k1 private key]  |
+| APP_PORT                 | API service port                                            | 8080                                 |
 
 ### Nilauth Configuration
 
 The `APP_NILAUTH_INSTANCES` variable configures which nilauth instances this node trusts for builder authentication. Each instance is specified as `baseUrl/publicKey`, with multiple instances separated by commas.
 
 **Single instance:**
+
 ```bash
 APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
 ```
 
 **Multiple instances:**
+
 ```bash
 APP_NILAUTH_INSTANCES=http://nilauth-a:8080/03520e70bd97a5fa...,http://nilauth-b:8080/02abc123def456...
 ```
@@ -49,19 +51,18 @@ APP_NILAUTH_INSTANCES=http://nilauth-a:8080/03520e70bd97a5fa...,http://nilauth-b
 
 The following variables control the IP-based rate limiting feature.
 
-| Variable                        | Description                                     | Default |
-|---------------------------------|-------------------------------------------------|---------|
-| APP_RATE_LIMIT_ENABLED          | Enables the rate-limiting feature.              | `true`  |
-| APP_RATE_LIMIT_WINDOW_SECONDS   | The duration of the time window in seconds.     | `60`    |
-| APP_RATE_LIMIT_MAX_REQUESTS     | Max requests per IP within the time window.     | `60`    |
-
+| Variable                      | Description                                 | Default |
+| ----------------------------- | ------------------------------------------- | ------- |
+| APP_RATE_LIMIT_ENABLED        | Enables the rate-limiting feature.          | `true`  |
+| APP_RATE_LIMIT_WINDOW_SECONDS | The duration of the time window in seconds. | `60`    |
+| APP_RATE_LIMIT_MAX_REQUESTS   | Max requests per IP within the time window. | `60`    |
 
 ### OpenTelemetry
 
 When the `otel` feature is enabled in `APP_ENABLED_FEATURES`, the following variables configure OpenTelemetry instrumentation:
 
 | Variable                        | Description                             | Default          | Required |
-|---------------------------------|-----------------------------------------|------------------|----------|
+| ------------------------------- | --------------------------------------- | ---------------- | -------- |
 | OTEL_ENDPOINT                   | OTLP endpoint URL                       | http://localhost | No       |
 | OTEL_SERVICE_NAME               | Service name for telemetry              | nildb            | No       |
 | OTEL_TEAM_NAME                  | Team responsible for the service        | nildb            | No       |
@@ -95,6 +96,7 @@ Values set via `OTEL_RESOURCE_ATTRIBUTES` take precedence over programmatically 
 **Disabling OpenTelemetry SDK:**
 
 To disable OpenTelemetry SDK and prevent telemetry emission while keeping the `otel` feature flag enabled, set the following environment variable:
+
 ```bash
 OTEL_SDK_DISABLED=true
 ```
@@ -113,6 +115,7 @@ docker compose -f local/docker-compose.yaml up -d
 ```
 
 This stack includes:
+
 - **nilDB**: The main API service (port 40080, metrics port 40091)
 - **MongoDB**: Database backend (port 40017)
 - **nilauth**: Authentication service for NUC tokens (port 40921)
@@ -124,6 +127,7 @@ This stack includes:
 The nilDB API will be available at `http://localhost:40080`.
 
 The local stack is configured with `APP_ENABLED_FEATURES=openapi,otel,migrations`, which means:
+
 - Metrics, traces, and logs are sent to the OTel Collector (visible in `docker compose logs otel-collector`)
 - No `/metrics` endpoint is exposed (OTLP push only)
 
@@ -176,6 +180,7 @@ The following endpoints provide operational information:
 
 > ![NOTE]
 > The `/metrics` endpoint behavior depends on feature flags:
+>
 > - **`metrics` only**: Serves metrics at `:9091/metrics` using OpenTelemetry PrometheusExporter
 > - **`otel` enabled**: No `/metrics` endpoint; all telemetry pushed to OTLP collector
 >
@@ -225,8 +230,8 @@ For user-facing operations, there is an OpenAPI documentation interface hosted a
 
 Configure MongoDB with the following backup/snapshot policy. This policy applies to both MongoDB Atlas and self-hosted MongoDB. Details specific to each are mentioned further below.
 
-* Full hourly snapshots with 1-day retention
-* Full daily snapshots with 7-day retention; configured snapshot time: 04:00 UTC
+- Full hourly snapshots with 1-day retention
+- Full daily snapshots with 7-day retention; configured snapshot time: 04:00 UTC
 
 ### MongoDB Atlas
 

@@ -1,15 +1,9 @@
-import { normalizeIdentifier } from "@nillion/nildb-shared";
-import type {
-  ReadProfileResponse,
-  RegisterBuilderRequest,
-  UpdateProfileRequest,
-} from "@nillion/nildb-types";
 import type { Logger } from "pino";
-import type {
-  BuilderDocument,
-  CreateBuilderCommand,
-  UpdateProfileCommand,
-} from "./builders.types.js";
+
+import { normalizeIdentifier } from "@nillion/nildb-shared";
+import type { ReadProfileResponse, RegisterBuilderRequest, UpdateProfileRequest } from "@nillion/nildb-types";
+
+import type { BuilderDocument, CreateBuilderCommand, UpdateProfileCommand } from "./builders.types.js";
 
 /**
  * Builder data mapper.
@@ -34,10 +28,7 @@ export const BuilderDataMapper = {
   /**
    * Convert registration request to create command.
    */
-  toCreateBuilderCommand(
-    dto: RegisterBuilderRequest,
-    log: Logger,
-  ): CreateBuilderCommand {
+  toCreateBuilderCommand(dto: RegisterBuilderRequest, log: Logger): CreateBuilderCommand {
     return {
       did: normalizeIdentifier(dto.did, log),
       name: dto.name,
@@ -47,10 +38,7 @@ export const BuilderDataMapper = {
   /**
    * Convert update request to update command.
    */
-  toUpdateProfileCommand(
-    dto: UpdateProfileRequest,
-    builder: string,
-  ): UpdateProfileCommand {
+  toUpdateProfileCommand(dto: UpdateProfileRequest, builder: string): UpdateProfileCommand {
     return {
       builder,
       updates: {

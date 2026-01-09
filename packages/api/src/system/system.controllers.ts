@@ -1,8 +1,5 @@
 import { handleTaggedErrors } from "@nildb/common/handler";
-import {
-  OpenApiSpecCommonErrorResponses,
-  OpenApiSpecEmptySuccessResponses,
-} from "@nildb/common/openapi";
+import { OpenApiSpecCommonErrorResponses, OpenApiSpecEmptySuccessResponses } from "@nildb/common/openapi";
 import type { ControllerOptions } from "@nildb/common/types";
 import { FeatureFlag, hasFeatureFlag } from "@nildb/env";
 import {
@@ -10,6 +7,10 @@ import {
   loadSubjectAndVerifyAsAdmin,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import { Effect as E, pipe } from "effect";
+import { describeRoute, openAPIRouteHandler, resolver, validator as zValidator } from "hono-openapi";
+import { StatusCodes } from "http-status-codes";
+
 import type { DeleteQueryResponse, LogLevel } from "@nillion/nildb-types";
 import {
   NucCmd,
@@ -20,14 +21,7 @@ import {
   type StartMaintenanceResponse,
   type StopMaintenanceResponse,
 } from "@nillion/nildb-types";
-import { Effect as E, pipe } from "effect";
-import {
-  describeRoute,
-  openAPIRouteHandler,
-  resolver,
-  validator as zValidator,
-} from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
+
 import packageJson from "../../package.json";
 import { SystemDataMapper } from "./system.mapper.js";
 import * as SystemService from "./system.services.js";
@@ -58,11 +52,7 @@ export function readAboutNode(options: ControllerOptions): void {
     async (c) => {
       return await pipe(
         SystemService.getNodeInfo(c.env),
-        E.map((nodeInfo) =>
-          c.json<ReadAboutNodeResponse>(
-            SystemDataMapper.toGetAboutNodeResponse(nodeInfo),
-          ),
-        ),
+        E.map((nodeInfo) => c.json<ReadAboutNodeResponse>(SystemDataMapper.toGetAboutNodeResponse(nodeInfo))),
         handleTaggedErrors(c),
         E.runPromise,
       );
@@ -108,10 +98,7 @@ export function getOpenApiJson(options: ControllerOptions): void {
     bindings: { log },
   } = options;
 
-  const enabled = hasFeatureFlag(
-    options.bindings.config.enabledFeatures,
-    FeatureFlag.OPENAPI,
-  );
+  const enabled = hasFeatureFlag(options.bindings.config.enabledFeatures, FeatureFlag.OPENAPI);
 
   if (!enabled) {
     log.info("The openapi feature is disabled");
@@ -268,9 +255,7 @@ export function readLogLevel(options: ControllerOptions): void {
     async (c) => {
       const level = c.env.log.level as LogLevel;
 
-      return c.json<ReadLogLevelResponse>(
-        SystemDataMapper.toGetLogLevelResponse(level),
-      );
+      return c.json<ReadLogLevelResponse>(SystemDataMapper.toGetLogLevelResponse(level));
     },
   );
 }

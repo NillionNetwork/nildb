@@ -1,8 +1,10 @@
 import { faker } from "@faker-js/faker";
-import { PathsV1 } from "@nillion/nildb-types";
-import { Builder, Did } from "@nillion/nuc";
 import { StatusCodes } from "http-status-codes";
 import { describe } from "vitest";
+
+import { PathsV1 } from "@nillion/nildb-types";
+import { Builder, Did } from "@nillion/nuc";
+
 import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("02-builder-lifecycle.test.js", () => {
@@ -43,9 +45,7 @@ describe("02-builder-lifecycle.test.js", () => {
     c.expect(result.ok).toBe(true);
   });
 
-  it("rejects registration of a builder with a duplicate DID", async ({
-    c,
-  }) => {
+  it("rejects registration of a builder with a duplicate DID", async ({ c }) => {
     const { expect, builder, builderSigner } = c;
     const builderDid = await builderSigner.getDid();
     const builderName = faker.person.fullName();
@@ -64,9 +64,7 @@ describe("02-builder-lifecycle.test.js", () => {
     const result = await builder.getProfile();
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.data._id).toBe(
-        Did.serialize(await builderSigner.getDid()),
-      );
+      expect(result.data.data._id).toBe(Did.serialize(await builderSigner.getDid()));
     }
   });
 

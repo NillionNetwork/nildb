@@ -1,16 +1,17 @@
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import { CollectionsDataMapper } from "@nildb/collections/collections.mapper";
 import { handleTaggedErrors } from "@nildb/common/handler";
-import {
-  OpenApiSpecCommonErrorResponses,
-  OpenApiSpecEmptySuccessResponses,
-} from "@nildb/common/openapi";
+import { OpenApiSpecCommonErrorResponses, OpenApiSpecEmptySuccessResponses } from "@nildb/common/openapi";
 import type { ControllerOptions } from "@nildb/common/types";
 import {
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import { Effect as E, pipe } from "effect";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+import { StatusCodes } from "http-status-codes";
+
 import {
   CreateCollectionIndexRequest,
   type CreateCollectionIndexResponse,
@@ -27,9 +28,7 @@ import {
   ReadCollectionMetadataRequestParams,
   ReadCollectionMetadataResponse,
 } from "@nillion/nildb-types";
-import { Effect as E, pipe } from "effect";
-import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
+
 import * as CollectionsService from "./collections.services.js";
 
 /**
@@ -66,14 +65,8 @@ export function readCollections(options: ControllerOptions): void {
       const pagination = c.req.valid("query");
 
       return pipe(
-        CollectionsService.getBuilderCollections(
-          c.env,
-          builder.did,
-          pagination,
-        ),
-        E.map((paginatedResult) =>
-          CollectionsDataMapper.toListCollectionsResponse(paginatedResult),
-        ),
+        CollectionsService.getBuilderCollections(c.env, builder.did, pagination),
+        E.map((paginatedResult) => CollectionsDataMapper.toListCollectionsResponse(paginatedResult)),
         E.map((response) => c.json<ListCollectionsResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
@@ -108,10 +101,7 @@ export function createCollection(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = CollectionsDataMapper.toCreateCollectionCommand(
-        payload,
-        builder.did,
-      );
+      const command = CollectionsDataMapper.toCreateCollectionCommand(payload, builder.did);
 
       return pipe(
         CollectionsService.addCollection(c.env, command),
@@ -150,10 +140,7 @@ export function deleteCollectionById(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
-      const command = CollectionsDataMapper.toDeleteCollectionCommand(
-        params,
-        builder.did,
-      );
+      const command = CollectionsDataMapper.toDeleteCollectionCommand(params, builder.did);
 
       return pipe(
         CollectionsService.deleteCollection(c.env, command),
@@ -197,16 +184,11 @@ export function readCollectionById(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("param");
-      const command = CollectionsDataMapper.toReadCollectionById(
-        payload,
-        builder.did,
-      );
+      const command = CollectionsDataMapper.toReadCollectionById(payload, builder.did);
 
       return pipe(
         CollectionsService.getCollectionById(c.env, command),
-        E.map((metadata) =>
-          CollectionsDataMapper.toReadMetadataResponse(metadata),
-        ),
+        E.map((metadata) => CollectionsDataMapper.toReadMetadataResponse(metadata)),
         E.map((response) => c.json<ReadCollectionMetadataResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
@@ -242,10 +224,7 @@ export function createCollectionIndex(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = CollectionsDataMapper.toCreateIndexCommand(
-        payload,
-        builder.did,
-      );
+      const command = CollectionsDataMapper.toCreateIndexCommand(payload, builder.did);
 
       return pipe(
         CollectionsService.createIndex(c.env, command),
@@ -284,10 +263,7 @@ export function dropCollectionIndex(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
-      const command = CollectionsDataMapper.toDropIndexCommand(
-        params,
-        builder.did,
-      );
+      const command = CollectionsDataMapper.toDropIndexCommand(params, builder.did);
 
       return pipe(
         CollectionsService.dropIndex(c.env, command),

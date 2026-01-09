@@ -1,6 +1,7 @@
-import { ApiErrorResponse } from "@nillion/nildb-types";
 import { resolver } from "hono-openapi";
 import { ReasonPhrases } from "http-status-codes";
+
+import { ApiErrorResponse } from "@nillion/nildb-types";
 
 export const OpenApiSpecEmptySuccessResponses = {
   200: { description: ReasonPhrases.OK },
@@ -8,7 +9,7 @@ export const OpenApiSpecEmptySuccessResponses = {
   204: { description: ReasonPhrases.NO_CONTENT },
 } as const;
 
-// biome-ignore lint/suspicious/noExplicitAny: Avoid TypeScript portability errors in monorepo — full type is would be very noisy
+// oxlint-disable-next-line typescript/no-explicit-any -- Avoid TypeScript portability errors in monorepo
 export const OpenApiSpecCommonErrorResponses: Record<string, any> = {
   400: {
     description: ReasonPhrases.BAD_REQUEST,

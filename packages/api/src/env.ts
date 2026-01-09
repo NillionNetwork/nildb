@@ -1,14 +1,16 @@
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import { createLogger } from "@nildb/common/logger";
-import { Cache } from "@nillion/nildb-shared";
-import { LogLevel } from "@nillion/nildb-types";
-import { type Did, type Envelope, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import type { LoggerProvider } from "@opentelemetry/sdk-logs";
 import type { Db, MongoClient } from "mongodb";
 import type { Logger } from "pino";
 import { z } from "zod";
+
+import { Cache } from "@nillion/nildb-shared";
+import { LogLevel } from "@nillion/nildb-types";
+import { type Did, type Envelope, Signer } from "@nillion/nuc";
+
 import { initAndCreateDbClients } from "./common/mongo.js";
 import type { UserDocument } from "./users/users.types.js";
 
@@ -41,21 +43,15 @@ const NilauthInstancesSchema = z
       const trimmed = entry.trim();
       const lastSlashIndex = trimmed.lastIndexOf("/");
       if (lastSlashIndex === -1) {
-        throw new Error(
-          `Invalid nilauth instance format: "${trimmed}". Expected "baseUrl/publicKey"`,
-        );
+        throw new Error(`Invalid nilauth instance format: "${trimmed}". Expected "baseUrl/publicKey"`);
       }
       const baseUrl = trimmed.slice(0, lastSlashIndex);
       const publicKey = trimmed.slice(lastSlashIndex + 1);
       if (!publicKey || !baseUrl) {
-        throw new Error(
-          `Invalid nilauth instance format: "${trimmed}". Expected "baseUrl/publicKey"`,
-        );
+        throw new Error(`Invalid nilauth instance format: "${trimmed}". Expected "baseUrl/publicKey"`);
       }
       if (publicKey.length !== PUBLIC_KEY_LENGTH) {
-        throw new Error(
-          `Invalid nilauth public key length: ${publicKey.length}. Expected ${PUBLIC_KEY_LENGTH}`,
-        );
+        throw new Error(`Invalid nilauth public key length: ${publicKey.length}. Expected ${PUBLIC_KEY_LENGTH}`);
       }
       return { publicKey, baseUrl };
     });
@@ -68,9 +64,7 @@ export const EnvVarsSchema = z.object({
   dbNamePrimary: z.string().min(4),
   dbNameData: z.string().min(4),
   dbUri: z.string().startsWith("mongodb"),
-  enabledFeatures: z
-    .string()
-    .transform((d) => d.split(",").map((e) => e.trim())),
+  enabledFeatures: z.string().transform((d) => d.split(",").map((e) => e.trim())),
   logLevel: LogLevel,
   nilauthInstances: NilauthInstancesSchema,
   nilauthChainId: z.coerce.number().int().positive(),
@@ -81,29 +75,14 @@ export const EnvVarsSchema = z.object({
   otelServiceName: z.string().min(1).optional().default("nildb"),
   otelTeamName: z.string().min(1).optional().default("nildb"),
   otelDeploymentEnv: z.string().min(1).optional().default("local"),
-  otelMetricsExportIntervalMs: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .default(60000),
+  otelMetricsExportIntervalMs: z.coerce.number().int().positive().optional().default(60000),
   rateLimitEnabled: z.preprocess((val) => {
     if (val === "true" || val === "1") return true;
     if (val === "false" || val === "0") return false;
     return val;
   }, z.boolean().optional().default(true)),
-  rateLimitWindowSeconds: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .default(60),
-  rateLimitMaxRequests: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .default(1000),
+  rateLimitWindowSeconds: z.coerce.number().int().positive().optional().default(60),
+  rateLimitMaxRequests: z.coerce.number().int().positive().optional().default(1000),
   webPort: z.coerce.number().int().positive(),
 });
 export type EnvVars = z.infer<typeof EnvVarsSchema>;
@@ -219,9 +198,6 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
   };
 }
 
-export function hasFeatureFlag(
-  enabledFeatures: string[],
-  flag: FeatureFlag,
-): boolean {
+export function hasFeatureFlag(enabledFeatures: string[], flag: FeatureFlag): boolean {
   return enabledFeatures.includes(flag);
 }

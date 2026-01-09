@@ -1,9 +1,5 @@
 import * as pino from "pino";
-import {
-  DockerComposeEnvironment,
-  type StartedDockerComposeEnvironment,
-  Wait,
-} from "testcontainers";
+import { DockerComposeEnvironment, type StartedDockerComposeEnvironment, Wait } from "testcontainers";
 import type { TestProject } from "vitest/node";
 
 let environment: StartedDockerComposeEnvironment | undefined;
@@ -19,14 +15,11 @@ const log = pino.pino({
   },
 });
 
-export async function setup(_project: TestProject) {
+export async function setup(_project: TestProject): Promise<void> {
   log.info("🚀 Starting containers...");
 
   try {
-    environment = await new DockerComposeEnvironment(
-      "./packages/api/tests/docker",
-      "docker-compose.yml",
-    )
+    environment = await new DockerComposeEnvironment("./packages/api/tests/docker", "docker-compose.yml")
       .withWaitStrategy("postgres-1", Wait.forHealthCheck())
       .withWaitStrategy("nil-anvil-1", Wait.forHealthCheck())
       .withWaitStrategy("nilauth-1", Wait.forLogMessage("Starting main server"))
@@ -39,7 +32,7 @@ export async function setup(_project: TestProject) {
   }
 }
 
-export async function teardown(_project: TestProject) {
+export async function teardown(_project: TestProject): Promise<void> {
   if (process.env.KEEP_INFRA === "true") {
     log.info("🔄 Keeping infrastructure running (KEEP_INFRA=true)");
     return;

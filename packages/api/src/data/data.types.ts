@@ -1,21 +1,18 @@
 import type { DocumentBase } from "@nildb/common/mongo";
 import type { Acl } from "@nildb/users/users.types";
-import type { PaginationQuery, UuidDto } from "@nillion/nildb-types";
 import type { UUID } from "mongodb";
+
+import type { PaginationQuery, UuidDto } from "@nillion/nildb-types";
 
 /**
  * Standard document base.
  */
-export type StandardDocumentBase<
-  T extends Record<string, unknown> = Record<string, unknown>,
-> = DocumentBase & T;
+export type StandardDocumentBase<T extends Record<string, unknown> = Record<string, unknown>> = DocumentBase & T;
 
 /**
  * Owned document base.
  */
-export type OwnedDocumentBase<
-  T extends Record<string, unknown> = Record<string, unknown>,
-> = StandardDocumentBase<T> & {
+export type OwnedDocumentBase<T extends Record<string, unknown> = Record<string, unknown>> = StandardDocumentBase<T> & {
   _owner: string;
   _acl: Acl[];
 };

@@ -36,13 +36,7 @@ describe("buildAccessControlledFilter", () => {
 
       const originalFilter = { a: 1 };
       const result = E.runSync(
-        buildAccessControlledFilter(
-          {} as any,
-          builderOwnerDid,
-          collectionId,
-          "read",
-          originalFilter,
-        ),
+        buildAccessControlledFilter({} as any, builderOwnerDid, collectionId, "read", originalFilter),
       );
 
       expect(result).toEqual(originalFilter);
@@ -51,15 +45,7 @@ describe("buildAccessControlledFilter", () => {
     it("should fail with ResourceAccessDeniedError if the requester is not the owner", () => {
       mockFind.mockReturnValue(E.succeed(mockStandardCollection));
 
-      const exit = E.runSyncExit(
-        buildAccessControlledFilter(
-          {} as any,
-          otherBuilderDid,
-          collectionId,
-          "read",
-          {},
-        ),
-      );
+      const exit = E.runSyncExit(buildAccessControlledFilter({} as any, otherBuilderDid, collectionId, "read", {}));
 
       expect(Exit.isFailure(exit)).toBe(true);
       if (Exit.isFailure(exit)) {
@@ -83,15 +69,7 @@ describe("buildAccessControlledFilter", () => {
     it("should return only the ACL filter if the original filter is empty", () => {
       mockFind.mockReturnValue(E.succeed(mockOwnedCollection));
 
-      const result = E.runSync(
-        buildAccessControlledFilter(
-          {} as any,
-          requestingBuilderDid,
-          collectionId,
-          "read",
-          {},
-        ),
-      );
+      const result = E.runSync(buildAccessControlledFilter({} as any, requestingBuilderDid, collectionId, "read", {}));
 
       expect(result).toEqual({
         _acl: {
@@ -108,13 +86,7 @@ describe("buildAccessControlledFilter", () => {
 
       const originalFilter = { "data.field": "value" };
       const result = E.runSync(
-        buildAccessControlledFilter(
-          {} as any,
-          requestingBuilderDid,
-          collectionId,
-          "write",
-          originalFilter,
-        ),
+        buildAccessControlledFilter({} as any, requestingBuilderDid, collectionId, "write", originalFilter),
       );
 
       expect(result).toEqual({
@@ -137,13 +109,7 @@ describe("buildAccessControlledFilter", () => {
 
       const originalFilter = { "data.field": "value" };
       const result = E.runSync(
-        buildAccessControlledFilter(
-          {} as any,
-          requestingBuilderDid,
-          collectionId,
-          "execute",
-          originalFilter,
-        ),
+        buildAccessControlledFilter({} as any, requestingBuilderDid, collectionId, "execute", originalFilter),
       );
 
       expect(result).toEqual({

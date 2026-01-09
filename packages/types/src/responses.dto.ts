@@ -8,7 +8,7 @@ export const ApiErrorResponse = z
   .meta({ ref: "ApiErrorResponse" });
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponse>;
 
-export const ApiSuccessResponse = <T extends z.ZodType>(dataSchema: T) =>
+export const ApiSuccessResponse = <T extends z.ZodType>(dataSchema: T): z.ZodObject<{ data: T }> =>
   z.object({
     data: dataSchema,
   });

@@ -1,18 +1,11 @@
-import {
-  type CollectionNotFoundError,
-  DatabaseError,
-  DocumentNotFoundError,
-} from "@nildb/common/errors";
+import { type CollectionNotFoundError, DatabaseError, DocumentNotFoundError } from "@nildb/common/errors";
 import { CollectionName, checkCollectionExists } from "@nildb/common/mongo";
 import type { AppBindings } from "@nildb/env";
-import type { PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
-import {
-  type InsertOneResult,
-  type StrictFilter,
-  type StrictUpdateFilter,
-  UUID,
-} from "mongodb";
+import { type InsertOneResult, type StrictFilter, type StrictUpdateFilter, UUID } from "mongodb";
+
+import type { PaginationQuery } from "@nillion/nildb-types";
+
 import type { RunQueryJobDocument } from "./queries.types.js";
 
 /**
@@ -40,16 +33,9 @@ export function toRunQueryJobDocument(queryId: UUID): RunQueryJobDocument {
 export function insert(
   ctx: AppBindings,
   document: RunQueryJobDocument,
-): E.Effect<
-  InsertOneResult<RunQueryJobDocument>,
-  CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<InsertOneResult<RunQueryJobDocument>, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<RunQueryJobDocument>(
-      ctx,
-      "primary",
-      CollectionName.QueryRuns,
-    ),
+    checkCollectionExists<RunQueryJobDocument>(ctx, "primary", CollectionName.QueryRuns),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
       catch: (cause) => new DatabaseError({ cause, message: "insert" }),
@@ -63,16 +49,9 @@ export function insert(
 export function findOne(
   ctx: AppBindings,
   filter: StrictFilter<RunQueryJobDocument>,
-): E.Effect<
-  RunQueryJobDocument,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<RunQueryJobDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<RunQueryJobDocument>(
-      ctx,
-      "primary",
-      CollectionName.QueryRuns,
-    ),
+    checkCollectionExists<RunQueryJobDocument>(ctx, "primary", CollectionName.QueryRuns),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
@@ -97,10 +76,7 @@ export function findRunByIdWithPaginatedResults(
   ctx: AppBindings,
   _id: UUID,
   pagination: PaginationQuery,
-): E.Effect<
-  (RunQueryJobDocument & { total: number }) | null,
-  CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<(RunQueryJobDocument & { total: number }) | null, CollectionNotFoundError | DatabaseError> {
   const pipeline = [
     { $match: { _id } },
     {
@@ -120,16 +96,9 @@ export function findRunByIdWithPaginatedResults(
   ];
 
   return pipe(
-    checkCollectionExists<RunQueryJobDocument>(
-      ctx,
-      "primary",
-      CollectionName.QueryRuns,
-    ),
+    checkCollectionExists<RunQueryJobDocument>(ctx, "primary", CollectionName.QueryRuns),
     E.tryMapPromise({
-      try: (collection) =>
-        collection
-          .aggregate<RunQueryJobDocument & { total: number }>(pipeline)
-          .next(),
+      try: (collection) => collection.aggregate<RunQueryJobDocument & { total: number }>(pipeline).next(),
       catch: (cause) =>
         new DatabaseError({
           cause,
@@ -146,10 +115,7 @@ export function updateOne(
   ctx: AppBindings,
   _id: UUID,
   data: Partial<RunQueryJobDocument>,
-): E.Effect<
-  void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<RunQueryJobDocument> = { _id };
 
   const update: StrictUpdateFilter<RunQueryJobDocument> = {
@@ -157,11 +123,7 @@ export function updateOne(
   };
 
   return pipe(
-    checkCollectionExists<RunQueryJobDocument>(
-      ctx,
-      "primary",
-      CollectionName.QueryRuns,
-    ),
+    checkCollectionExists<RunQueryJobDocument>(ctx, "primary", CollectionName.QueryRuns),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "updateOne" }),

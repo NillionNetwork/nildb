@@ -1,11 +1,11 @@
 pre-commit:
   commands:
-    biome-format:
+    oxfmt:
       glob: "*.{ts,json,jsonc}"
       # Uses pnpm directly (not justfile) because:
       # - Requires lefthook's {staged_files} variable for incremental formatting
       # - Uses stage_fixed to auto-stage formatted files (lefthook-specific)
-      run: pnpm exec biome format --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
+      run: pnpm exec oxfmt {staged_files}
       stage_fixed: true
 
 commit-msg:

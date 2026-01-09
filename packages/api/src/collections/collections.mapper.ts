@@ -1,3 +1,5 @@
+import { type IndexDirection, UUID } from "mongodb";
+
 import type {
   CreateCollectionIndexRequest,
   CreateCollectionRequest,
@@ -8,7 +10,7 @@ import type {
   ReadCollectionMetadataRequestParams,
   ReadCollectionMetadataResponse,
 } from "@nillion/nildb-types";
-import { type IndexDirection, UUID } from "mongodb";
+
 import type {
   CollectionDocument,
   CollectionMetadata,
@@ -23,9 +25,7 @@ export const CollectionsDataMapper = {
   /**
    *
    */
-  toReadMetadataResponse(
-    metadata: CollectionMetadata,
-  ): ReadCollectionMetadataResponse {
+  toReadMetadataResponse(metadata: CollectionMetadata): ReadCollectionMetadataResponse {
     return {
       data: {
         _id: metadata._id.toString(),
@@ -50,9 +50,7 @@ export const CollectionsDataMapper = {
    * @param paginatedResult The paginated data from the service layer.
    * @returns The final Api response object for listing collections.
    */
-  toListCollectionsResponse(
-    paginatedResult: Paginated<CollectionDocument>,
-  ): ListCollectionsResponse {
+  toListCollectionsResponse(paginatedResult: Paginated<CollectionDocument>): ListCollectionsResponse {
     return {
       data: paginatedResult.data.map((collection) => ({
         id: collection._id.toString(),
@@ -71,10 +69,7 @@ export const CollectionsDataMapper = {
   /**
    *
    */
-  toCreateCollectionCommand(
-    body: CreateCollectionRequest,
-    owner: string,
-  ): CreateCollectionCommand {
+  toCreateCollectionCommand(body: CreateCollectionRequest, owner: string): CreateCollectionCommand {
     return {
       _id: new UUID(body._id),
       name: body.name,
@@ -87,10 +82,7 @@ export const CollectionsDataMapper = {
   /**
    *
    */
-  toDeleteCollectionCommand(
-    dto: DeleteCollectionRequestParams,
-    requesterId: string,
-  ): DeleteCollectionCommand {
+  toDeleteCollectionCommand(dto: DeleteCollectionRequestParams, requesterId: string): DeleteCollectionCommand {
     return {
       _id: new UUID(dto.id),
       requesterId,
@@ -100,10 +92,7 @@ export const CollectionsDataMapper = {
   /**
    *
    */
-  toCreateIndexCommand(
-    dto: CreateCollectionIndexRequest,
-    requesterId: string,
-  ): CreateIndexCommand {
+  toCreateIndexCommand(dto: CreateCollectionIndexRequest, requesterId: string): CreateIndexCommand {
     // Convert keys array to Record<string, IndexDirection>
     const keys: Record<string, IndexDirection> = {};
     for (const keyObj of dto.keys) {
@@ -125,10 +114,7 @@ export const CollectionsDataMapper = {
   /**
    *
    */
-  toDropIndexCommand(
-    body: DropCollectionIndexParams,
-    requesterId: string,
-  ): DropIndexCommand {
+  toDropIndexCommand(body: DropCollectionIndexParams, requesterId: string): DropIndexCommand {
     return {
       collection: new UUID(body.id),
       name: body.name,
@@ -139,10 +125,7 @@ export const CollectionsDataMapper = {
   /**
    *
    */
-  toReadCollectionById(
-    params: ReadCollectionMetadataRequestParams,
-    requesterId: string,
-  ): ReadCollectionByIdCommand {
+  toReadCollectionById(params: ReadCollectionMetadataRequestParams, requesterId: string): ReadCollectionByIdCommand {
     return {
       id: new UUID(params.id),
       requesterId,

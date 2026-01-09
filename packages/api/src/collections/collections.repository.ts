@@ -1,7 +1,4 @@
-import type {
-  CollectionDocument,
-  CollectionMetadata,
-} from "@nildb/collections/collections.types";
+import type { CollectionDocument, CollectionMetadata } from "@nildb/collections/collections.types";
 import {
   type CollectionNotFoundError,
   DatabaseError,
@@ -10,23 +7,12 @@ import {
   IndexNotFoundError,
   InvalidIndexOptionsError,
 } from "@nildb/common/errors";
-import {
-  CollectionName,
-  checkCollectionExists,
-  isMongoError,
-  MongoErrorCode,
-} from "@nildb/common/mongo";
+import { CollectionName, checkCollectionExists, isMongoError, MongoErrorCode } from "@nildb/common/mongo";
 import type { AppBindings } from "@nildb/env";
-import type { PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
-import type {
-  CreateIndexesOptions,
-  DeleteResult,
-  Document,
-  IndexSpecification,
-  StrictFilter,
-  UUID,
-} from "mongodb";
+import type { CreateIndexesOptions, DeleteResult, Document, IndexSpecification, StrictFilter, UUID } from "mongodb";
+
+import type { PaginationQuery } from "@nillion/nildb-types";
 
 /**
  * Insert collection document.
@@ -36,11 +22,7 @@ export function insert(
   document: CollectionDocument,
 ): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<CollectionDocument>(
-      ctx,
-      "primary",
-      CollectionName.Collections,
-    ),
+    checkCollectionExists<CollectionDocument>(ctx, "primary", CollectionName.Collections),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
       catch: (cause) => new DatabaseError({ cause, message: "insert" }),
@@ -56,16 +38,9 @@ export function findMany(
   ctx: AppBindings,
   filter: StrictFilter<CollectionDocument>,
   pagination: PaginationQuery,
-): E.Effect<
-  [CollectionDocument[], number],
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<[CollectionDocument[], number], CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
-    checkCollectionExists<CollectionDocument>(
-      ctx,
-      "primary",
-      CollectionName.Collections,
-    ),
+    checkCollectionExists<CollectionDocument>(ctx, "primary", CollectionName.Collections),
     E.flatMap((collection) =>
       E.all([
         E.tryPromise({
@@ -80,8 +55,7 @@ export function findMany(
         }),
         E.tryPromise({
           try: () => collection.countDocuments(filter),
-          catch: (cause) =>
-            new DatabaseError({ cause, message: "countDocuments" }),
+          catch: (cause) => new DatabaseError({ cause, message: "countDocuments" }),
         }),
       ]),
     ),
@@ -94,16 +68,9 @@ export function findMany(
 export function findAll(
   ctx: AppBindings,
   filter: StrictFilter<CollectionDocument>,
-): E.Effect<
-  CollectionDocument[],
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<CollectionDocument[], CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
-    checkCollectionExists<CollectionDocument>(
-      ctx,
-      "primary",
-      CollectionName.Collections,
-    ),
+    checkCollectionExists<CollectionDocument>(ctx, "primary", CollectionName.Collections),
     E.tryMapPromise({
       try: (collection) => collection.find(filter).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findAll" }),
@@ -117,19 +84,9 @@ export function findAll(
 export function findOne(
   ctx: AppBindings,
   filter: StrictFilter<CollectionDocument>,
-): E.Effect<
-  CollectionDocument,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<CollectionDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
-    checkCollectionExists<CollectionDocument>(
-      ctx,
-      "primary",
-      CollectionName.Collections,
-    ),
+    checkCollectionExists<CollectionDocument>(ctx, "primary", CollectionName.Collections),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
@@ -153,19 +110,9 @@ export function findOne(
 export function deleteOne(
   ctx: AppBindings,
   filter: StrictFilter<CollectionDocument>,
-): E.Effect<
-  CollectionDocument,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<CollectionDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
-    checkCollectionExists<CollectionDocument>(
-      ctx,
-      "primary",
-      CollectionName.Collections,
-    ),
+    checkCollectionExists<CollectionDocument>(ctx, "primary", CollectionName.Collections),
     E.tryMapPromise({
       try: (collection) => collection.findOneAndDelete(filter),
       catch: (cause) => new DatabaseError({ cause, message: "deleteOne" }),
@@ -189,19 +136,9 @@ export function deleteOne(
 export function deleteMany(
   ctx: AppBindings,
   filter: StrictFilter<CollectionDocument>,
-): E.Effect<
-  DeleteResult,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<DeleteResult, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
-    checkCollectionExists<CollectionDocument>(
-      ctx,
-      "primary",
-      CollectionName.Collections,
-    ),
+    checkCollectionExists<CollectionDocument>(ctx, "primary", CollectionName.Collections),
     E.tryMapPromise({
       try: (collection) => collection.deleteMany(filter),
       catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
@@ -225,10 +162,7 @@ export function deleteMany(
 export function getCollectionStats(
   ctx: AppBindings,
   _id: UUID,
-): E.Effect<
-  Omit<CollectionMetadata, "schema">,
-  CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<Omit<CollectionMetadata, "schema">, CollectionNotFoundError | DatabaseError> {
   return pipe(
     checkCollectionExists(ctx, "data", _id.toString()),
     E.flatMap((collection) =>
@@ -262,8 +196,7 @@ export function getCollectionStats(
                 lastWrite,
               };
             },
-            catch: (cause) =>
-              new DatabaseError({ cause, message: "Failed to get writes" }),
+            catch: (cause) => new DatabaseError({ cause, message: "Failed to get writes" }),
           }),
         ),
         E.bind("indexes", () =>
@@ -277,8 +210,7 @@ export function getCollectionStats(
                 unique: index.unique ?? false,
               }));
             },
-            catch: (cause) =>
-              new DatabaseError({ cause, message: "Failed to get indexes" }),
+            catch: (cause) => new DatabaseError({ cause, message: "Failed to get indexes" }),
           }),
         ),
         E.bind("counts", () =>
@@ -307,8 +239,7 @@ export function getCollectionStats(
                 size: stats.size,
               };
             },
-            catch: (cause) =>
-              new DatabaseError({ cause, message: "Failed to get counts" }),
+            catch: (cause) => new DatabaseError({ cause, message: "Failed to get counts" }),
           }),
         ),
       ),
@@ -332,19 +263,13 @@ export function createIndex(
   collection: UUID,
   specification: IndexSpecification,
   options: CreateIndexesOptions,
-): E.Effect<
-  string,
-  CollectionNotFoundError | InvalidIndexOptionsError | DatabaseError
-> {
+): E.Effect<string, CollectionNotFoundError | InvalidIndexOptionsError | DatabaseError> {
   return pipe(
     checkCollectionExists(ctx, "data", collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.createIndex(specification, options),
       catch: (cause) => {
-        if (
-          isMongoError(cause) &&
-          cause.code === MongoErrorCode.CannotCreateIndex
-        ) {
+        if (isMongoError(cause) && cause.code === MongoErrorCode.CannotCreateIndex) {
           return new InvalidIndexOptionsError({
             collection: collection.toString(),
             message: cause.message,
@@ -363,19 +288,13 @@ export function dropIndex(
   ctx: AppBindings,
   collection: UUID,
   name: string,
-): E.Effect<
-  Document,
-  CollectionNotFoundError | IndexNotFoundError | DatabaseError
-> {
+): E.Effect<Document, CollectionNotFoundError | IndexNotFoundError | DatabaseError> {
   return pipe(
     checkCollectionExists(ctx, "data", collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.dropIndex(name),
       catch: (cause) => {
-        if (
-          isMongoError(cause) &&
-          cause.code === MongoErrorCode.IndexNotFound
-        ) {
+        if (isMongoError(cause) && cause.code === MongoErrorCode.IndexNotFound) {
           return new IndexNotFoundError({
             collection: collection.toString(),
             index: name,

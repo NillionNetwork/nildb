@@ -2,6 +2,9 @@
   "name": "@nillion/nildb-types",
   "version": "0.1.0",
   "private": true,
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./dist/lib.js",
   "types": "./dist/lib.d.ts",
@@ -24,18 +27,15 @@
     "tsdown": "^0.15.12",
     "typescript": "^5.9.3"
   },
-  "files": [
-    "dist"
-  ],
   "tsdown": {
+    "clean": true,
     "entry": [
       "src/lib.ts"
     ],
     "format": [
       "esm"
     ],
-    "sourcemap": true,
-    "clean": true,
-    "minify": false
+    "minify": false,
+    "sourcemap": true
   }
 }

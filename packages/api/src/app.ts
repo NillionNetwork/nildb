@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+
 import { buildBuildersRouter } from "./builders/builders.router.js";
 import { buildCollectionsRouter } from "./collections/collections.router.js";
 import type { ControllerOptions } from "./common/types.js";
@@ -26,10 +27,7 @@ export async function buildApp(bindings: AppBindings): Promise<{ app: App }> {
   // Readiness check middleware - block traffic until migrations complete
   app.use("*", async (c, next) => {
     if (!c.env.migrationsComplete && c.req.path !== "/health") {
-      return c.json(
-        { error: "Service not ready, migrations in progress" },
-        503,
-      );
+      return c.json({ error: "Service not ready, migrations in progress" }, 503);
     }
     return next();
   });

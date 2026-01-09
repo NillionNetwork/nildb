@@ -1,20 +1,16 @@
 import * as BuildersService from "@nildb/builders/builders.services";
 import { handleTaggedErrors } from "@nildb/common/handler";
-import {
-  OpenApiSpecCommonErrorResponses,
-  OpenApiSpecEmptySuccessResponses,
-} from "@nildb/common/openapi";
+import { OpenApiSpecCommonErrorResponses, OpenApiSpecEmptySuccessResponses } from "@nildb/common/openapi";
 import type { ControllerOptions } from "@nildb/common/types";
 import { DataMapper } from "@nildb/data/data.mapper";
 import * as DataService from "@nildb/data/data.services";
 import type { OwnedDocumentBase } from "@nildb/data/data.types";
-import {
-  loadNucToken,
-  loadSubjectAndVerifyAsUser,
-  requireNucNamespace,
-} from "@nildb/middleware/capability.middleware";
+import { loadNucToken, loadSubjectAndVerifyAsUser, requireNucNamespace } from "@nildb/middleware/capability.middleware";
 import { UserDataMapper } from "@nildb/users/users.mapper";
 import * as UserService from "@nildb/users/users.services";
+import { Effect as E, pipe } from "effect";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+
 import {
   DeleteDocumentRequestParams,
   type DeleteDocumentResponse,
@@ -32,8 +28,6 @@ import {
   UpdateDataResponse,
   UpdateUserDataRequest,
 } from "@nillion/nildb-types";
-import { Effect as E, pipe } from "effect";
-import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 
 /**
  * Handle GET /v1/users/me
@@ -111,9 +105,7 @@ export function listDataReferences(options: ControllerOptions): void {
       const pagination = c.req.valid("query");
       return pipe(
         UserService.listUserDataReferences(c.env, user.did, pagination),
-        E.map((documents) =>
-          UserDataMapper.toListDataReferencesResponse(documents),
-        ),
+        E.map((documents) => UserDataMapper.toListDataReferencesResponse(documents)),
         E.map((response) => c.json<ListDataReferencesResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
@@ -274,11 +266,7 @@ export function grantAccess(options: ControllerOptions): void {
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");
-      const command = UserDataMapper.toGrantDataAccessCommand(
-        user,
-        payload,
-        c.env.log,
-      );
+      const command = UserDataMapper.toGrantDataAccessCommand(user, payload, c.env.log);
 
       return pipe(
         BuildersService.find(c.env, command.acl.grantee),
@@ -317,11 +305,7 @@ export function revokeAccess(options: ControllerOptions): void {
     async (c) => {
       const user = c.get("user");
       const payload = c.req.valid("json");
-      const command = UserDataMapper.toRevokeDataAccessCommand(
-        user,
-        payload,
-        c.env.log,
-      );
+      const command = UserDataMapper.toRevokeDataAccessCommand(user, payload, c.env.log);
 
       return pipe(
         BuildersService.find(c.env, command.grantee),

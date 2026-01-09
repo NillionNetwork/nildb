@@ -1,5 +1,7 @@
-import { createUuidDto } from "@nillion/nildb-types";
 import { describe } from "vitest";
+
+import { createUuidDto } from "@nillion/nildb-types";
+
 import simpleCollection from "../data/simple.collection.json";
 import simpleQuery from "../data/simple.query.json";
 import { createTestFixtureExtension } from "../fixture/it.js";
@@ -71,9 +73,7 @@ describe("User Endpoints", () => {
     expect(result.data.pagination.offset).toBe(0); // Default offset
   });
 
-  it("can list user data references with explicit pagination", async ({
-    c,
-  }) => {
+  it("can list user data references with explicit pagination", async ({ c }) => {
     const { user, expect } = c;
 
     const result = await user.listDataReferences({

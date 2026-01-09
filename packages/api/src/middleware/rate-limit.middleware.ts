@@ -59,10 +59,7 @@ export function rateLimitMiddleware(options: ControllerOptions): void {
       const ip = keyGenerator(c);
       log.warn({ ip, path: c.req.path }, "Rate limit exceeded for IP address");
 
-      return c.text(
-        ReasonPhrases.TOO_MANY_REQUESTS,
-        StatusCodes.TOO_MANY_REQUESTS,
-      );
+      return c.text(ReasonPhrases.TOO_MANY_REQUESTS, StatusCodes.TOO_MANY_REQUESTS);
     },
   });
 

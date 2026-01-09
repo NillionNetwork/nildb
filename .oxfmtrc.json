@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 120,
+  "experimentalSortImports": {
+    "groups": ["builtin", "external", "internal", ["parent", "sibling", "index"]],
+    "internalPattern": ["@nillion/"],
+    "newlinesBetween": true
+  }
+}

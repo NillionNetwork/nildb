@@ -3,23 +3,20 @@ import { faker } from "@faker-js/faker";
 import { type App, buildApp } from "@nildb/app";
 import type { CollectionType } from "@nildb/collections/collections.types";
 import { mongoMigrateUp } from "@nildb/common/mongo";
-import {
-  type AppBindings,
-  FeatureFlag,
-  hasFeatureFlag,
-  loadBindings,
-} from "@nildb/env";
+import { type AppBindings, FeatureFlag, hasFeatureFlag, loadBindings } from "@nildb/env";
 import type { QueryVariable } from "@nildb/queries/queries.types";
-import { NilauthClient } from "@nillion/nilauth-client";
-import { AdminClient, BuilderClient, UserClient } from "@nillion/nildb-client";
-import { createUuidDto, NucCmd, type UuidDto } from "@nillion/nildb-types";
-import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import dotenv from "dotenv";
 import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
 import * as vitest from "vitest";
+
+import { NilauthClient } from "@nillion/nilauth-client";
+import { AdminClient, BuilderClient, UserClient } from "@nillion/nildb-client";
+import { createUuidDto, NucCmd, type UuidDto } from "@nillion/nildb-types";
+import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
+
 import { createTestLogger } from "./logger.js";
 import { activateSubscriptionWithPayment } from "./payment.js";
 
@@ -129,9 +126,7 @@ export async function buildFixture(
   });
 
   // Create builder client
-  const builderSigner = Signer.fromPrivateKey(
-    process.env.APP_TEST_BUILDER_PRIVATE_KEY!,
-  );
+  const builderSigner = Signer.fromPrivateKey(process.env.APP_TEST_BUILDER_PRIVATE_KEY!);
 
   const nilauth = await NilauthClient.create({
     baseUrl: nilauthBaseUrl,
@@ -147,9 +142,7 @@ export async function buildFixture(
   });
 
   // Create user client
-  const userSigner = Signer.fromPrivateKey(
-    process.env.APP_TEST_USER_PRIVATE_KEY!,
-  );
+  const userSigner = Signer.fromPrivateKey(process.env.APP_TEST_USER_PRIVATE_KEY!);
   const user = new UserClient({
     baseUrl: bindings.config.nodePublicEndpoint,
     signer: userSigner,

@@ -1,4 +1,8 @@
 import type { DocumentBase } from "@nildb/common/mongo";
+import type { DeleteResult, UpdateResult } from "mongodb";
+import { UUID } from "mongodb";
+import type { Logger } from "pino";
+
 import { normalizeIdentifier } from "@nillion/nildb-shared";
 import type {
   CreateDataResponse,
@@ -18,9 +22,7 @@ import type {
   UpdateDataRequest,
   UpdateDataResponse,
 } from "@nillion/nildb-types";
-import type { DeleteResult, UpdateResult } from "mongodb";
-import { UUID } from "mongodb";
-import type { Logger } from "pino";
+
 import type {
   CreateOwnedDataCommand,
   CreateStandardDataCommand,
@@ -94,11 +96,7 @@ export const DataMapper = {
   /**
    * Converts upload owned data request DTO to domain command.
    */
-  toCreateOwnedRecordsCommand(
-    body: CreateOwnedDataRequest,
-    requesterId: string,
-    log: Logger,
-  ): CreateOwnedDataCommand {
+  toCreateOwnedRecordsCommand(body: CreateOwnedDataRequest, requesterId: string, log: Logger): CreateOwnedDataCommand {
     return {
       owner: normalizeIdentifier(body.owner, log),
       collection: new UUID(body.collection),
@@ -114,10 +112,7 @@ export const DataMapper = {
   /**
    * Converts upload standard data request DTO to domain command.
    */
-  toCreateStandardRecordsCommand(
-    body: CreateStandardDataRequest,
-    requesterId: string,
-  ): CreateStandardDataCommand {
+  toCreateStandardRecordsCommand(body: CreateStandardDataRequest, requesterId: string): CreateStandardDataCommand {
     return {
       collection: new UUID(body.collection),
       data: body.data,
@@ -128,10 +123,7 @@ export const DataMapper = {
   /**
    * Converts update data request DTO to domain command.
    */
-  toUpdateDataCommand(
-    dto: UpdateDataRequest,
-    requesterId: string,
-  ): UpdateDataCommand {
+  toUpdateDataCommand(dto: UpdateDataRequest, requesterId: string): UpdateDataCommand {
     return {
       collection: new UUID(dto.collection),
       filter: dto.filter,
@@ -143,10 +135,7 @@ export const DataMapper = {
   /**
    * Converts read data request DTO to domain command.
    */
-  toFindDataCommand(
-    dto: FindDataRequest,
-    requesterId: string,
-  ): FindDataCommand {
+  toFindDataCommand(dto: FindDataRequest, requesterId: string): FindDataCommand {
     return {
       collection: new UUID(dto.collection),
       filter: dto.filter,
@@ -161,9 +150,7 @@ export const DataMapper = {
   /**
    * Converts array of data documents to find response.
    */
-  toFindDataResponse(
-    paginatedResult: Paginated<DocumentBase>,
-  ): FindDataResponse {
+  toFindDataResponse(paginatedResult: Paginated<DocumentBase>): FindDataResponse {
     return {
       data: paginatedResult.data,
       pagination: {
@@ -177,10 +164,7 @@ export const DataMapper = {
   /**
    * Converts delete data request DTO to domain command.
    */
-  toDeleteDataCommand(
-    dto: DeleteDataRequest,
-    requesterId: string,
-  ): DeleteDataCommand {
+  toDeleteDataCommand(dto: DeleteDataRequest, requesterId: string): DeleteDataCommand {
     return {
       collection: new UUID(dto.collection),
       filter: dto.filter,
@@ -191,10 +175,7 @@ export const DataMapper = {
   /**
    * Converts flush data request DTO to domain command.
    */
-  toFlushCollectionCommand(
-    params: FlushDataRequest,
-    requesterId: string,
-  ): FlushDataCommand {
+  toFlushCollectionCommand(params: FlushDataRequest, requesterId: string): FlushDataCommand {
     return {
       collection: new UUID(params.collection),
       requesterId,
@@ -204,10 +185,7 @@ export const DataMapper = {
   /**
    * Converts path parameter to flush collection data command.
    */
-  toFlushDataCommand(
-    params: DataSchemaByIdRequestParams,
-    requesterId: string,
-  ): FlushDataCommand {
+  toFlushDataCommand(params: DataSchemaByIdRequestParams, requesterId: string): FlushDataCommand {
     return {
       collection: new UUID(params.id),
       requesterId,

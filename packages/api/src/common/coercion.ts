@@ -7,13 +7,7 @@ import { type ZodType, z } from "zod";
 /**
  * The set of supported types that a json value can be coerced into.
  */
-export const CoercibleTypesSchema = z.enum([
-  "string",
-  "number",
-  "boolean",
-  "date",
-  "uuid",
-] as const);
+export const CoercibleTypesSchema = z.enum(["string", "number", "boolean", "date", "uuid"] as const);
 export type CoercibleTypes = z.infer<typeof CoercibleTypesSchema>;
 
 /**
@@ -90,9 +84,7 @@ const coercers: Record<CoercibleTypes, ZodType> = {
  * // coerced.filter.user.id is now a UUID object
  * ```
  */
-export function applyCoercions(
-  coercibleMap: CoercibleMap,
-): E.Effect<Record<string, unknown>, DataValidationError> {
+export function applyCoercions(coercibleMap: CoercibleMap): E.Effect<Record<string, unknown>, DataValidationError> {
   const { $coerce, ...values } = coercibleMap;
   if (!$coerce) {
     return E.succeed(values);

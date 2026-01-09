@@ -1,25 +1,17 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
 import type { AppBindings, AppEnv, NilauthInstance } from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
-import { NilauthClient } from "@nillion/nilauth-client";
-import { normalizeIdentifier } from "@nillion/nildb-shared";
-import {
-  Codec,
-  Did,
-  type Did as DidType,
-  type Envelope,
-  Payload,
-  Validator,
-} from "@nillion/nuc";
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
 
+import { NilauthClient } from "@nillion/nilauth-client";
+import { normalizeIdentifier } from "@nillion/nildb-shared";
+import { Codec, Did, type Did as DidType, type Envelope, Payload, Validator } from "@nillion/nuc";
+
 type NilauthInstanceWithDid = NilauthInstance & { did: DidType };
 
-function buildNilauthInstancesWithDids(
-  instances: NilauthInstance[],
-): NilauthInstanceWithDid[] {
+function buildNilauthInstancesWithDids(instances: NilauthInstance[]): NilauthInstanceWithDid[] {
   return instances.map((instance) => ({
     ...instance,
     did: Did.fromPublicKey(instance.publicKey),
@@ -28,26 +20,20 @@ function buildNilauthInstancesWithDids(
 
 function extractRootIssuerDid(envelope: Envelope): string {
   const proofs = envelope.proofs;
-  const rootToken =
-    proofs.length > 0 ? proofs[proofs.length - 1] : envelope.nuc;
+  const rootToken = proofs.length > 0 ? proofs[proofs.length - 1] : envelope.nuc;
   return rootToken.payload.iss.didString;
 }
 
-export function loadNucToken<
-  P extends string = string,
-  I extends Input = BlankInput,
-  E extends AppEnv = AppEnv,
->(bindings: AppBindings): MiddlewareHandler<E, P, I> {
+export function loadNucToken<P extends string = string, I extends Input = BlankInput, E extends AppEnv = AppEnv>(
+  bindings: AppBindings,
+): MiddlewareHandler<E, P, I> {
   const { log } = bindings;
   return async (c, next) => {
     try {
       const authHeader = c.req.header("Authorization") ?? "";
       const [scheme, tokenString] = authHeader.split(" ");
       if (scheme.toLowerCase() !== "bearer") {
-        return c.text(
-          getReasonPhrase(StatusCodes.UNAUTHORIZED),
-          StatusCodes.UNAUTHORIZED,
-        );
+        return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
       }
 
       // We must use the unsafe decode first to extract the subject/claims required
@@ -62,10 +48,7 @@ export function loadNucToken<
       } else {
         log.error({ cause: "unknown" }, "Auth error");
       }
-      return c.text(
-        getReasonPhrase(StatusCodes.UNAUTHORIZED),
-        StatusCodes.UNAUTHORIZED,
-      );
+      return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
     }
   };
 }
@@ -91,10 +74,7 @@ export function loadSubjectAndVerifyAsAdmin<
       } else {
         log.error({ cause: "unknown" }, "Auth error");
       }
-      return c.text(
-        getReasonPhrase(StatusCodes.UNAUTHORIZED),
-        StatusCodes.UNAUTHORIZED,
-      );
+      return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
     }
   };
 }
@@ -105,9 +85,7 @@ export function loadSubjectAndVerifyAsBuilder<
   E extends AppEnv = AppEnv,
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
-  const nilauthInstances = buildNilauthInstancesWithDids(
-    config.nilauthInstances,
-  );
+  const nilauthInstances = buildNilauthInstancesWithDids(config.nilauthInstances);
   const nilauthRootIssuers = nilauthInstances.map((n) => n.did.didString);
 
   return async (c, next) => {
@@ -130,10 +108,7 @@ export function loadSubjectAndVerifyAsBuilder<
 
       if (!builder) {
         c.env.log.debug("Unknown builder: %s", subject);
-        return c.text(
-          getReasonPhrase(StatusCodes.UNAUTHORIZED),
-          StatusCodes.UNAUTHORIZED,
-        );
+        return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
       }
 
       const context = {
@@ -167,40 +142,24 @@ export function loadSubjectAndVerifyAsBuilder<
       // check revocations last because it's costly (in terms of network RTT)
       // Find the nilauth instance that issued the root token in the proof chain
       const rootIssuerDid = extractRootIssuerDid(envelope);
-      const matchingNilauth = nilauthInstances.find(
-        (n) => n.did.didString === rootIssuerDid,
-      );
+      const matchingNilauth = nilauthInstances.find((n) => n.did.didString === rootIssuerDid);
 
       if (!matchingNilauth) {
         // This shouldn't happen if validation passed, but handle defensively
-        log.error(
-          "No matching nilauth instance found for root issuer: %s",
-          rootIssuerDid,
-        );
-        return c.text(
-          getReasonPhrase(StatusCodes.UNAUTHORIZED),
-          StatusCodes.UNAUTHORIZED,
-        );
+        log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid);
+        return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
       }
 
       const nilauthClient = await NilauthClient.create({
         baseUrl: matchingNilauth.baseUrl,
         chainId: config.nilauthChainId,
       });
-      const { revoked } =
-        await nilauthClient.findRevocationsInProofChain(envelope);
+      const { revoked } = await nilauthClient.findRevocationsInProofChain(envelope);
 
       if (revoked.length !== 0) {
         const hashes = revoked.map((r) => r.tokenHash).join(",");
-        log.warn(
-          "Token revoked: revoked_hashes=(%s) auth_token=%O",
-          hashes,
-          token,
-        );
-        return c.text(
-          getReasonPhrase(StatusCodes.UNAUTHORIZED),
-          StatusCodes.UNAUTHORIZED,
-        );
+        log.warn("Token revoked: revoked_hashes=(%s) auth_token=%O", hashes, token);
+        return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
       }
       c.set("builder", builder);
 
@@ -212,18 +171,12 @@ export function loadSubjectAndVerifyAsBuilder<
         // We want to return PAYMENT_REQUIRED when invocation NUC's chain is missing authority from nilauth
         const message = cause.message as string;
         if (message === Validator.ROOT_KEY_SIGNATURE_MISSING) {
-          return c.text(
-            getReasonPhrase(StatusCodes.PAYMENT_REQUIRED),
-            StatusCodes.PAYMENT_REQUIRED,
-          );
+          return c.text(getReasonPhrase(StatusCodes.PAYMENT_REQUIRED), StatusCodes.PAYMENT_REQUIRED);
         }
       } else {
         log.error({ cause: "unknown" }, "Auth error");
       }
-      return c.text(
-        getReasonPhrase(StatusCodes.UNAUTHORIZED),
-        StatusCodes.UNAUTHORIZED,
-      );
+      return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
     }
   };
 }
@@ -255,10 +208,7 @@ export function loadSubjectAndVerifyAsUser<
 
       if (!user) {
         c.env.log.debug("Unknown user: %s", subject);
-        return c.text(
-          getReasonPhrase(StatusCodes.UNAUTHORIZED),
-          StatusCodes.UNAUTHORIZED,
-        );
+        return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
       }
       await Validator.validate(envelope, {
         rootIssuers: [subject],
@@ -271,10 +221,7 @@ export function loadSubjectAndVerifyAsUser<
       } else {
         log.error({ cause: "unknown" }, "Auth error");
       }
-      return c.text(
-        getReasonPhrase(StatusCodes.UNAUTHORIZED),
-        StatusCodes.UNAUTHORIZED,
-      );
+      return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
     }
   };
 }
@@ -293,10 +240,7 @@ export function requireNucNamespace(cmd: string): MiddlewareHandler {
         token.cmd,
         cmd,
       );
-      return c.text(
-        getReasonPhrase(StatusCodes.FORBIDDEN),
-        StatusCodes.FORBIDDEN,
-      );
+      return c.text(getReasonPhrase(StatusCodes.FORBIDDEN), StatusCodes.FORBIDDEN);
     }
 
     return next();

@@ -6,8 +6,8 @@ nilDb is a structured data persistence service that provides a robust, distribut
 
 - [Networks](#networks)
 - [Network topology](#network-topology)
-    - [Clusters](#clusters)
-    - [Node Architecture](#node-architecture)
+  - [Clusters](#clusters)
+  - [Node Architecture](#node-architecture)
 - [Clients](#clients)
 
 ## Networks
@@ -65,4 +65,4 @@ curl https://nildb-a50d.nillion.network/api/v1/data/create \
   -d @data.json
 ```
 
-> ![NOTE] Data encryption is applied using [nilQL-ts](https://github.com/nillionnetwork/nilql-ts) or [nilQL-py](https://github.com/nillionnetwork/nilql-py) before transmission. 
+> ![NOTE] Data encryption is applied using [nilQL-ts](https://github.com/nillionnetwork/nilql-ts) or [nilQL-py](https://github.com/nillionnetwork/nilql-py) before transmission.

@@ -1,5 +1,7 @@
-import { PathsV1 } from "@nillion/nildb-types";
 import { describe } from "vitest";
+
+import { PathsV1 } from "@nillion/nildb-types";
+
 import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("system.test.js", () => {

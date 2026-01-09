@@ -1,4 +1,5 @@
 import z from "zod";
+
 import { PaginatedResponse, PaginationQuerySchema } from "./pagination.dto.js";
 import { ApiSuccessResponse } from "./responses.dto.js";
 
@@ -60,9 +61,7 @@ export type ReadQueriesRequestQuery = z.infer<typeof ReadQueriesRequestQuery>;
 /**
  * Queries list response.
  */
-export const ReadQueriesResponse = PaginatedResponse(
-  QueryDocumentResponse,
-).meta({
+export const ReadQueriesResponse = PaginatedResponse(QueryDocumentResponse).meta({
   ref: "ReadQueriesResponse",
 });
 export type ReadQueriesResponse = z.infer<typeof ReadQueriesResponse>;
@@ -70,11 +69,9 @@ export type ReadQueriesResponse = z.infer<typeof ReadQueriesResponse>;
 /**
  * Read query response.
  */
-export const ReadQueryResponse = ApiSuccessResponse(QueryDocumentResponse).meta(
-  {
-    ref: "ReadQueryResponse",
-  },
-);
+export const ReadQueryResponse = ApiSuccessResponse(QueryDocumentResponse).meta({
+  ref: "ReadQueryResponse",
+});
 export type ReadQueryResponse = z.infer<typeof ReadQueryResponse>;
 
 /**
@@ -91,9 +88,7 @@ export type ByIdRequestParams = z.infer<typeof ByIdRequestParams>;
  * Query run results request query.
  */
 export const ReadQueryRunByIdRequestQuery = PaginationQuerySchema;
-export type ReadQueryRunByIdRequestQuery = z.infer<
-  typeof ReadQueryRunByIdRequestQuery
->;
+export type ReadQueryRunByIdRequestQuery = z.infer<typeof ReadQueryRunByIdRequestQuery>;
 
 /**
  * Query deletion request.
@@ -133,12 +128,7 @@ export type RunQueryResponse = z.infer<typeof RunQueryResponse>;
 /**
  * Query execution status.
  */
-export const RunQueryResultStatus = z.enum([
-  "pending",
-  "running",
-  "complete",
-  "error",
-]);
+export const RunQueryResultStatus = z.enum(["pending", "running", "complete", "error"]);
 export type RunQueryResultStatus = z.infer<typeof RunQueryResultStatus>;
 
 /**

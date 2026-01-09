@@ -1,8 +1,5 @@
 import * as CollectionsService from "@nildb/collections/collections.services";
-import {
-  buildAccessControlledFilter,
-  enforceBuilderOwnership,
-} from "@nildb/common/acl";
+import { buildAccessControlledFilter, enforceBuilderOwnership } from "@nildb/common/acl";
 import { applyCoercions } from "@nildb/common/coercion";
 import type {
   CollectionNotFoundError,
@@ -12,27 +9,18 @@ import type {
   InvalidIndexOptionsError,
   ResourceAccessDeniedError,
 } from "@nildb/common/errors";
-import {
-  addDocumentBaseCoercions,
-  type DocumentBase,
-} from "@nildb/common/mongo";
+import { addDocumentBaseCoercions, type DocumentBase } from "@nildb/common/mongo";
 import { validateData } from "@nildb/common/validator";
 import type { AppBindings } from "@nildb/env";
 import type { QueryDocument } from "@nildb/queries/queries.types";
 import * as UsersService from "@nildb/users/users.services";
-import type {
-  DeleteUserDataCommand,
-  UpdateUserDataCommand,
-} from "@nildb/users/users.types";
-import type { Paginated } from "@nillion/nildb-types";
+import type { DeleteUserDataCommand, UpdateUserDataCommand } from "@nildb/users/users.types";
 import { Effect as E, pipe } from "effect";
-import {
-  type DeleteResult,
-  type Document,
-  type UpdateResult,
-  UUID,
-} from "mongodb";
+import { type DeleteResult, type Document, type UpdateResult, UUID } from "mongodb";
 import type { JsonObject } from "type-fest";
+
+import type { Paginated } from "@nillion/nildb-types";
+
 import * as DataRepository from "./data.repository.js";
 import type {
   CreateOwnedDataCommand,
@@ -55,11 +43,7 @@ export function createOwnedRecords(
   command: CreateOwnedDataCommand,
 ): E.Effect<
   UploadResult,
-  | DataValidationError
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | ResourceAccessDeniedError
+  DataValidationError | DocumentNotFoundError | CollectionNotFoundError | DatabaseError | ResourceAccessDeniedError
 > {
   return pipe(
     E.Do,
@@ -70,20 +54,11 @@ export function createOwnedRecords(
       }),
     ),
     E.tap(({ document }) =>
-      enforceBuilderOwnership(
-        command.requesterId,
-        document.owner,
-        "collection",
-        command.collection,
-      ),
+      enforceBuilderOwnership(command.requesterId, document.owner, "collection", command.collection),
     ),
-    E.bind("data", ({ document }) =>
-      validateData<PartialDataDocumentDto[]>(document.schema, command.data),
-    ),
+    E.bind("data", ({ document }) => validateData<PartialDataDocumentDto[]>(document.schema, command.data)),
     E.bind("result", ({ document, data }) =>
-      DataRepository.insertOwnedData(ctx, document, data, command.owner, [
-        command.acl,
-      ]),
+      DataRepository.insertOwnedData(ctx, document, data, command.owner, [command.acl]),
     ),
     E.flatMap(({ result, document }) =>
       pipe(
@@ -110,11 +85,7 @@ export function createStandardRecords(
   command: CreateStandardDataCommand,
 ): E.Effect<
   UploadResult,
-  | DataValidationError
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | ResourceAccessDeniedError
+  DataValidationError | DocumentNotFoundError | CollectionNotFoundError | DatabaseError | ResourceAccessDeniedError
 > {
   return pipe(
     E.Do,
@@ -125,19 +96,10 @@ export function createStandardRecords(
       }),
     ),
     E.tap(({ document }) =>
-      enforceBuilderOwnership(
-        command.requesterId,
-        document.owner,
-        "collection",
-        command.collection,
-      ),
+      enforceBuilderOwnership(command.requesterId, document.owner, "collection", command.collection),
     ),
-    E.bind("data", ({ document }) =>
-      validateData<PartialDataDocumentDto[]>(document.schema, command.data),
-    ),
-    E.flatMap(({ document, data }) =>
-      DataRepository.insertStandardData(ctx, document, data),
-    ),
+    E.bind("data", ({ document }) => validateData<PartialDataDocumentDto[]>(document.schema, command.data)),
+    E.flatMap(({ document, data }) => DataRepository.insertStandardData(ctx, document, data)),
   );
 }
 
@@ -149,29 +111,15 @@ export function updateRecords(
   command: UpdateDataCommand,
 ): E.Effect<
   UpdateResult,
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | ResourceAccessDeniedError
-  | DocumentNotFoundError
+  CollectionNotFoundError | DatabaseError | DataValidationError | ResourceAccessDeniedError | DocumentNotFoundError
 > {
   const { collection, filter, update, requesterId } = command;
   return pipe(
     applyCoercions(addDocumentBaseCoercions(filter)),
-    E.flatMap((coercedFilter) =>
-      buildAccessControlledFilter(
-        ctx,
-        requesterId,
-        collection,
-        "write",
-        coercedFilter,
-      ),
-    ),
+    E.flatMap((coercedFilter) => buildAccessControlledFilter(ctx, requesterId, collection, "write", coercedFilter)),
     E.flatMap((secureFilter) =>
       UsersService.updateUserData(ctx, collection, secureFilter).pipe(
-        E.flatMap(() =>
-          DataRepository.updateMany(ctx, collection, secureFilter, update),
-        ),
+        E.flatMap(() => DataRepository.updateMany(ctx, collection, secureFilter, update)),
       ),
     ),
   );
@@ -183,18 +131,13 @@ export function updateRecords(
 export function updateRecordsAsOwner(
   ctx: AppBindings,
   command: UpdateUserDataCommand,
-): E.Effect<
-  UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<UpdateResult, CollectionNotFoundError | DatabaseError | DataValidationError> {
   const { collection, filter, update } = command;
   return pipe(
     applyCoercions(addDocumentBaseCoercions(filter)),
     E.flatMap((coercedFilter) =>
       UsersService.updateUserData(ctx, collection, coercedFilter).pipe(
-        E.flatMap(() =>
-          DataRepository.updateMany(ctx, collection, coercedFilter, update),
-        ),
+        E.flatMap(() => DataRepository.updateMany(ctx, collection, coercedFilter, update)),
       ),
     ),
   );
@@ -206,13 +149,7 @@ export function updateRecordsAsOwner(
 export function readRecord(
   ctx: AppBindings,
   command: ReadDataCommand,
-): E.Effect<
-  DocumentBase,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<DocumentBase, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return DataRepository.findOne(ctx, command.collection, command.filter);
 }
 
@@ -224,31 +161,14 @@ export function findRecords(
   command: FindDataCommand,
 ): E.Effect<
   Paginated<DocumentBase>,
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | ResourceAccessDeniedError
-  | DocumentNotFoundError
+  CollectionNotFoundError | DatabaseError | DataValidationError | ResourceAccessDeniedError | DocumentNotFoundError
 > {
   return pipe(
     applyCoercions(addDocumentBaseCoercions(command.filter)),
     E.flatMap((coercedFilter) =>
-      buildAccessControlledFilter(
-        ctx,
-        command.requesterId,
-        command.collection,
-        "read",
-        coercedFilter,
-      ),
+      buildAccessControlledFilter(ctx, command.requesterId, command.collection, "read", coercedFilter),
     ),
-    E.flatMap((secureFilter) =>
-      DataRepository.findMany(
-        ctx,
-        command.collection,
-        secureFilter,
-        command.pagination,
-      ),
-    ),
+    E.flatMap((secureFilter) => DataRepository.findMany(ctx, command.collection, secureFilter, command.pagination)),
     E.map(([data, total]) => ({
       data,
       total,
@@ -266,36 +186,20 @@ export function deleteData(
   command: DeleteDataCommand,
 ): E.Effect<
   DeleteResult,
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | ResourceAccessDeniedError
-  | DocumentNotFoundError,
+  CollectionNotFoundError | DatabaseError | DataValidationError | ResourceAccessDeniedError | DocumentNotFoundError,
   never
 > {
   return pipe(
     applyCoercions(addDocumentBaseCoercions(command.filter)),
     E.flatMap((coercedFilter) =>
-      buildAccessControlledFilter(
-        ctx,
-        command.requesterId,
-        command.collection,
-        "write",
-        coercedFilter,
-      ),
+      buildAccessControlledFilter(ctx, command.requesterId, command.collection, "write", coercedFilter),
     ),
     E.flatMap((secureFilter) =>
       pipe(
         // This deletes the owned documents from the users, the standard documents are skipped.
-        UsersService.deleteUserDataReferences(
-          ctx,
-          command.collection,
-          secureFilter,
-        ),
+        UsersService.deleteUserDataReferences(ctx, command.collection, secureFilter),
         // This updates both owned and standard documents.
-        E.flatMap(() =>
-          DataRepository.deleteMany(ctx, command.collection, secureFilter),
-        ),
+        E.flatMap(() => DataRepository.deleteMany(ctx, command.collection, secureFilter)),
       ),
     ),
   );
@@ -307,25 +211,15 @@ export function deleteData(
 export function deleteDataAsOwner(
   ctx: AppBindings,
   command: DeleteUserDataCommand,
-): E.Effect<
-  DeleteResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError,
-  never
-> {
+): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError | DataValidationError, never> {
   return pipe(
     applyCoercions(addDocumentBaseCoercions(command.filter)),
     E.flatMap((coercedFilter) =>
       pipe(
         // This deletes the owned documents from the users, the standard documents are skipped.
-        UsersService.deleteUserDataReferences(
-          ctx,
-          command.collection,
-          coercedFilter,
-        ),
+        UsersService.deleteUserDataReferences(ctx, command.collection, coercedFilter),
         // This updates both owned and standard documents.
-        E.flatMap(() =>
-          DataRepository.deleteMany(ctx, command.collection, coercedFilter),
-        ),
+        E.flatMap(() => DataRepository.deleteMany(ctx, command.collection, coercedFilter)),
       ),
     ),
   );
@@ -347,11 +241,7 @@ export function create(
 export function drop(
   ctx: AppBindings,
   collection: UUID,
-): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DataValidationError,
-  never
-> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError | DataValidationError, never> {
   return pipe(
     // This deletes the owned documents from the users, the standard documents are skipped.
     UsersService.deleteUserDataReferences(ctx, collection, {}),
@@ -368,33 +258,17 @@ export function flushCollection(
   command: FlushDataCommand,
 ): E.Effect<
   DeleteResult,
-  | DataValidationError
-  | CollectionNotFoundError
-  | DatabaseError
-  | ResourceAccessDeniedError
-  | DocumentNotFoundError,
+  DataValidationError | CollectionNotFoundError | DatabaseError | ResourceAccessDeniedError | DocumentNotFoundError,
   never
 > {
   return pipe(
-    buildAccessControlledFilter(
-      ctx,
-      command.requesterId,
-      command.collection,
-      "write",
-      {},
-    ),
+    buildAccessControlledFilter(ctx, command.requesterId, command.collection, "write", {}),
     E.flatMap((secureFilter) =>
       pipe(
         // This deletes the owned documents from the users, the standard documents are skipped.
-        UsersService.deleteUserDataReferences(
-          ctx,
-          command.collection,
-          secureFilter,
-        ),
+        UsersService.deleteUserDataReferences(ctx, command.collection, secureFilter),
         // This updates both owned and standard documents.
-        E.flatMap(() =>
-          DataRepository.deleteMany(ctx, command.collection, secureFilter),
-        ),
+        E.flatMap(() => DataRepository.deleteMany(ctx, command.collection, secureFilter)),
       ),
     ),
   );
@@ -408,29 +282,12 @@ export function tailData(
   command: RecentDataCommand,
 ): E.Effect<
   DocumentBase[],
-  | CollectionNotFoundError
-  | DatabaseError
-  | ResourceAccessDeniedError
-  | DocumentNotFoundError
-  | DataValidationError,
+  CollectionNotFoundError | DatabaseError | ResourceAccessDeniedError | DocumentNotFoundError | DataValidationError,
   never
 > {
   return pipe(
-    buildAccessControlledFilter(
-      ctx,
-      command.requesterId,
-      command.collection,
-      "read",
-      {},
-    ),
-    E.flatMap((secureFilter) =>
-      DataRepository.tailCollection(
-        ctx,
-        command.collection,
-        command.limit,
-        secureFilter,
-      ),
-    ),
+    buildAccessControlledFilter(ctx, command.requesterId, command.collection, "read", {}),
+    E.flatMap((secureFilter) => DataRepository.tailCollection(ctx, command.collection, command.limit, secureFilter)),
   );
 }
 
@@ -449,20 +306,10 @@ export function runAggregation(
   requesterId: string,
 ): E.Effect<
   JsonObject[],
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | ResourceAccessDeniedError
-  | DocumentNotFoundError
+  CollectionNotFoundError | DatabaseError | DataValidationError | ResourceAccessDeniedError | DocumentNotFoundError
 > {
   return pipe(
-    buildAccessControlledFilter(
-      ctx,
-      requesterId,
-      query.collection,
-      "execute",
-      {},
-    ),
+    buildAccessControlledFilter(ctx, requesterId, query.collection, "execute", {}),
     E.flatMap((secureFilter) => {
       // Prepend the ACL filter as a $match stage to the pipeline
       const securePipeline = [{ $match: secureFilter }, ...pipeline];

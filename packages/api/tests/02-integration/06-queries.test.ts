@@ -1,5 +1,7 @@
-import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
 import { describe } from "vitest";
+
+import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
+
 import simpleCollection from "../data/simple.collection.json";
 import simpleQuery from "../data/simple.query.json";
 import { waitForQueryRun } from "../fixture/assertions.js";
@@ -173,9 +175,7 @@ describe("Query Lifecycle", () => {
     const result = await builder.getQueries();
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("Test setup failed");
-    expect(
-      result.data.data.some((query: any) => query._id === simpleQuery._id),
-    ).toBe(false);
+    expect(result.data.data.some((query: any) => query._id === simpleQuery._id)).toBe(false);
     expect(result.data.pagination.total).toBe(5); // We now have 5 queries total (originally 5, created 1 more in pagination test, deleted 1)
   });
 });

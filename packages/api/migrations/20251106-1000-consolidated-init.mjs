@@ -32,9 +32,7 @@ const EXPECTED_V112_MIGRATIONS = [
  * Checks if this is an upgrade from v1.1.2 by looking for the old `migrations_changelog` collection.
  */
 async function isUpgradeFromV112(db) {
-  const collections = await db
-    .listCollections({ name: "migrations_changelog" })
-    .toArray();
+  const collections = await db.listCollections({ name: "migrations_changelog" }).toArray();
   return collections.length > 0;
 }
 
@@ -46,9 +44,7 @@ async function validateV112Migrations(db) {
   const changelog = db.collection("migrations_changelog");
   const migrations = await changelog.find({}).sort({ appliedAt: 1 }).toArray();
 
-  console.log(
-    `  - Found ${migrations.length} migrations in migrations_changelog`,
-  );
+  console.log(`  - Found ${migrations.length} migrations in migrations_changelog`);
 
   if (migrations.length !== EXPECTED_V112_MIGRATIONS.length) {
     throw new Error(
@@ -57,9 +53,7 @@ async function validateV112Migrations(db) {
   }
 
   // Validate each migration name matches expected
-  const migrationNames = migrations.map((m) =>
-    m.file.replace(/\.(ts|mjs)$/, ""),
-  );
+  const migrationNames = migrations.map((m) => m.file.replace(/\.(ts|mjs)$/, ""));
   for (let i = 0; i < EXPECTED_V112_MIGRATIONS.length; i++) {
     if (migrationNames[i] !== EXPECTED_V112_MIGRATIONS[i]) {
       throw new Error(
@@ -107,14 +101,10 @@ async function createIndexes(db) {
   );
 
   // Unique index on builders.did
-  await db
-    .collection(CollectionName.Builders)
-    .createIndex({ did: 1 }, { unique: true });
+  await db.collection(CollectionName.Builders).createIndex({ did: 1 }, { unique: true });
 
   // Unique index on users.did
-  await db
-    .collection(CollectionName.Users)
-    .createIndex({ did: 1 }, { unique: true });
+  await db.collection(CollectionName.Users).createIndex({ did: 1 }, { unique: true });
 
   console.log("  - Successfully created 3 indexes");
 }

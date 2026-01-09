@@ -14,11 +14,7 @@ describe("queries.services.js", () => {
         address: { path: "$.pipeline[0].$match.wallet" },
       };
       const requestVariables = { address: "abc123", isActive: false };
-      const result = pipe(
-        validateVariables(queryVariables, requestVariables),
-        E.either,
-        E.runSync,
-      );
+      const result = pipe(validateVariables(queryVariables, requestVariables), E.either, E.runSync);
       expect(Either.isLeft(result)).toBeTruthy();
       if (Either.isLeft(result)) {
         const error = result.left;
@@ -32,11 +28,7 @@ describe("queries.services.js", () => {
         address: { path: "$.pipeline[0].$match.wallet" },
       };
       const requestVariables = {};
-      const result = pipe(
-        validateVariables(queryVariables, requestVariables),
-        E.either,
-        E.runSync,
-      );
+      const result = pipe(validateVariables(queryVariables, requestVariables), E.either, E.runSync);
       expect(Either.isLeft(result)).toBeTruthy();
       if (Either.isLeft(result)) {
         const error = result.left;
@@ -51,14 +43,10 @@ describe("queries.services.js", () => {
       queryVariables: Record<string, QueryVariable>,
       pipeline: Record<string, unknown>[],
       requestVariables: Record<string, unknown>,
-    ) {
+    ): { variables: Record<string, unknown>; pipeline: Record<string, unknown>[] } {
       return E.Do.pipe(
-        E.bind("variables", () =>
-          validateVariables(queryVariables, requestVariables),
-        ),
-        E.bind("pipeline", ({ variables }) =>
-          injectVariablesIntoAggregation(queryVariables, pipeline, variables),
-        ),
+        E.bind("variables", () => validateVariables(queryVariables, requestVariables)),
+        E.bind("pipeline", ({ variables }) => injectVariablesIntoAggregation(queryVariables, pipeline, variables)),
         E.runSync,
       );
     }
@@ -71,11 +59,7 @@ describe("queries.services.js", () => {
       const requestVariables: QueryRuntimeVariables = {
         address: "abc123",
       };
-      const actual = executePartialQuery(
-        queryVariables,
-        pipeline,
-        requestVariables,
-      );
+      const actual = executePartialQuery(queryVariables, pipeline, requestVariables);
       const expected = [{ $match: { wallet: "abc123" } }];
       expect(actual.pipeline).toEqual(expected);
     });
@@ -92,30 +76,18 @@ describe("queries.services.js", () => {
         value: 1000,
         isActive: true,
       };
-      const actual = executePartialQuery(
-        queryVariables,
-        pipeline,
-        requestVariables,
-      );
-      const expected = [
-        { $match: { wallet: "abc123", amount: 1000, active: true } },
-      ];
+      const actual = executePartialQuery(queryVariables, pipeline, requestVariables);
+      const expected = [{ $match: { wallet: "abc123", amount: 1000, active: true } }];
       expect(actual.pipeline).toEqual(expected);
     });
 
-    it("should handle optional variables when they are not provided", ({
-      expect,
-    }) => {
+    it("should handle optional variables when they are not provided", ({ expect }) => {
       const queryVariables: Record<string, QueryVariable> = {
         address: { path: "$.pipeline[0].$match.wallet", optional: true },
       };
       const pipeline = [{ $match: { wallet: "default" } }];
       const requestVariables = {};
-      const actual = executePartialQuery(
-        queryVariables,
-        pipeline,
-        requestVariables,
-      );
+      const actual = executePartialQuery(queryVariables, pipeline, requestVariables);
       // Expect the pipeline to be unchanged because the optional variable was not provided
       expect(actual.pipeline).toEqual([{ $match: { wallet: "default" } }]);
     });
@@ -137,10 +109,7 @@ describe("queries.services.js", () => {
               { type: "" },
               { category: { $in: ["", "B"] } },
               {
-                $and: [
-                  { status: "active" },
-                  { nested: { deep: { value: "" } } },
-                ],
+                $and: [{ status: "active" }, { nested: { deep: { value: "" } } }],
               },
             ],
           },
@@ -151,11 +120,7 @@ describe("queries.services.js", () => {
         category1: "A",
         deepValue: "nested-value",
       };
-      const actual = executePartialQuery(
-        queryVariables,
-        pipeline,
-        requestVariables,
-      );
+      const actual = executePartialQuery(queryVariables, pipeline, requestVariables);
       const expected = [
         {
           $match: {
@@ -163,10 +128,7 @@ describe("queries.services.js", () => {
               { type: "special" },
               { category: { $in: ["A", "B"] } },
               {
-                $and: [
-                  { status: "active" },
-                  { nested: { deep: { value: "nested-value" } } },
-                ],
+                $and: [{ status: "active" }, { nested: { deep: { value: "nested-value" } } }],
               },
             ],
           },

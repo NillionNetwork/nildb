@@ -1,15 +1,11 @@
 import { CollectionNotFoundError, DatabaseError } from "@nildb/common/errors";
 import type { AppBindings, EnvVars } from "@nildb/env";
-import type { UuidDto } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import migrateMongo from "migrate-mongo";
-import {
-  type Collection,
-  type Document,
-  MongoClient,
-  MongoError,
-  type UUID,
-} from "mongodb";
+import { type Collection, type Document, MongoClient, MongoError, type UUID } from "mongodb";
+
+import type { UuidDto } from "@nillion/nildb-types";
+
 import type { CoercibleMap } from "./coercion.js";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
@@ -20,16 +16,11 @@ export type DocumentBase<I = UUID> = {
   _updated: Date;
 };
 
-export function addDocumentBaseCoercions(
-  coercibleMap: CoercibleMap,
-): CoercibleMap {
+export function addDocumentBaseCoercions(coercibleMap: CoercibleMap): CoercibleMap {
   const { $coerce, ...document } = coercibleMap;
   const { _id, _updated, _created, ...remainingCoercions } = $coerce ?? {};
 
-  const newCoercions: Record<
-    string,
-    "string" | "number" | "boolean" | "date" | "uuid"
-  > = {
+  const newCoercions: Record<string, "string" | "number" | "boolean" | "date" | "uuid"> = {
     ...remainingCoercions,
     _created: "date",
     _updated: "date",
@@ -52,9 +43,7 @@ export function addDocumentBaseCoercions(
   };
 }
 
-export async function initAndCreateDbClients(
-  env: EnvVars,
-): Promise<AppBindings["db"]> {
+export async function initAndCreateDbClients(env: EnvVars): Promise<AppBindings["db"]> {
   const client = await MongoClient.connect(env.dbUri);
   const primary = client.db(env.dbNamePrimary);
   const data = client.db(env.dbNameData);
@@ -75,10 +64,7 @@ export enum CollectionName {
   Users = "users",
 }
 
-export async function mongoMigrateUp(
-  uri: string,
-  database: string,
-): Promise<void> {
+export async function mongoMigrateUp(uri: string, database: string): Promise<void> {
   console.warn("! Database migration check");
 
   // In dev: this file is at src/common/mongo.ts → ../../migrations
@@ -104,9 +90,7 @@ export async function mongoMigrateUp(
   const { db, client } = await migrateMongo.database.connect();
   try {
     const migratedFiles = await migrateMongo.up(db, client);
-    console.log(
-      `Successfully migrated: ${migratedFiles.length > 0 ? migratedFiles.join(", ") : "no new migrations"}`,
-    );
+    console.log(`Successfully migrated: ${migratedFiles.length > 0 ? migratedFiles.join(", ") : "no new migrations"}`);
   } finally {
     await client.close();
   }

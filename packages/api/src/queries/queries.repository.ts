@@ -5,15 +5,13 @@ import {
   type DataValidationError,
   DocumentNotFoundError,
 } from "@nildb/common/errors";
-import {
-  addDocumentBaseCoercions,
-  CollectionName,
-  checkCollectionExists,
-} from "@nildb/common/mongo";
+import { addDocumentBaseCoercions, CollectionName, checkCollectionExists } from "@nildb/common/mongo";
 import type { AppBindings } from "@nildb/env";
-import type { PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import type { DeleteResult, StrictFilter } from "mongodb";
+
+import type { PaginationQuery } from "@nillion/nildb-types";
+
 import type { QueryDocument } from "./queries.types.js";
 
 /**
@@ -24,11 +22,7 @@ export function insert(
   document: QueryDocument,
 ): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<QueryDocument>(
-      ctx,
-      "primary",
-      CollectionName.Queries,
-    ),
+    checkCollectionExists<QueryDocument>(ctx, "primary", CollectionName.Queries),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
       catch: (cause) => new DatabaseError({ cause, message: "insert" }),
@@ -51,18 +45,11 @@ export function findMany(
   pagination: PaginationQuery,
 ): E.Effect<
   [QueryDocument[], number],
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     E.all([
-      checkCollectionExists<QueryDocument>(
-        ctx,
-        "primary",
-        CollectionName.Queries,
-      ),
+      checkCollectionExists<QueryDocument>(ctx, "primary", CollectionName.Queries),
       applyCoercions(addDocumentBaseCoercions(filter)),
     ]),
     E.flatMap(([collection, documentFilter]) =>
@@ -79,8 +66,7 @@ export function findMany(
         }),
         E.tryPromise({
           try: () => collection.countDocuments(documentFilter),
-          catch: (cause) =>
-            new DatabaseError({ cause, message: "countDocuments" }),
+          catch: (cause) => new DatabaseError({ cause, message: "countDocuments" }),
         }),
       ]),
     ),
@@ -103,22 +89,10 @@ export function findMany(
 export function findOne(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<
-  QueryDocument,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<QueryDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     E.Do,
-    E.bind("collection", () =>
-      checkCollectionExists<QueryDocument>(
-        ctx,
-        "primary",
-        CollectionName.Queries,
-      ),
-    ),
+    E.bind("collection", () => checkCollectionExists<QueryDocument>(ctx, "primary", CollectionName.Queries)),
     E.bind("filter", () => applyCoercions(addDocumentBaseCoercions(filter))),
     E.tryMapPromise({
       try: ({ collection, filter }) => collection.findOne(filter),
@@ -143,27 +117,15 @@ export function findOne(
 export function findOneAndDelete(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<
-  QueryDocument,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<QueryDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     E.all([
-      checkCollectionExists<QueryDocument>(
-        ctx,
-        "primary",
-        CollectionName.Queries,
-      ),
+      checkCollectionExists<QueryDocument>(ctx, "primary", CollectionName.Queries),
       applyCoercions(addDocumentBaseCoercions(filter)),
     ]),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.findOneAndDelete(documentFilter),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "findOneAndDelete" }),
+      try: ([collection, documentFilter]) => collection.findOneAndDelete(documentFilter),
+      catch: (cause) => new DatabaseError({ cause, message: "findOneAndDelete" }),
     }),
     E.flatMap((result) =>
       result === null
@@ -184,25 +146,14 @@ export function findOneAndDelete(
 export function deleteMany(
   ctx: AppBindings,
   filter: StrictFilter<QueryDocument>,
-): E.Effect<
-  DeleteResult,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<DeleteResult, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     E.all([
-      checkCollectionExists<QueryDocument>(
-        ctx,
-        "primary",
-        CollectionName.Queries,
-      ),
+      checkCollectionExists<QueryDocument>(ctx, "primary", CollectionName.Queries),
       applyCoercions(addDocumentBaseCoercions(filter)),
     ]),
     E.tryMapPromise({
-      try: ([collection, documentFilter]) =>
-        collection.deleteMany(documentFilter),
+      try: ([collection, documentFilter]) => collection.deleteMany(documentFilter),
       catch: (cause) => new DatabaseError({ cause, message: "deleteMany" }),
     }),
     E.flatMap((result) =>

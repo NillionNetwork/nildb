@@ -8,12 +8,7 @@ import { CollectionName, checkCollectionExists } from "@nildb/common/mongo";
 import type { OwnedDocumentBase } from "@nildb/data/data.types";
 import type { AppBindings } from "@nildb/env";
 import { UserLoggerMapper } from "@nildb/users/users.mapper";
-import type {
-  Acl,
-  DataDocumentReference,
-  UserDocument,
-} from "@nildb/users/users.types";
-import type { PaginationQuery, UserDataLogs } from "@nillion/nildb-types";
+import type { Acl, DataDocumentReference, UserDocument } from "@nildb/users/users.types";
 import { Effect as E, pipe } from "effect";
 import {
   ObjectId,
@@ -25,6 +20,8 @@ import {
   type UUID,
 } from "mongodb";
 
+import type { PaginationQuery, UserDataLogs } from "@nillion/nildb-types";
+
 const MAX_USER_LOGS = 1000;
 
 /**
@@ -35,10 +32,7 @@ export function upsert(
   user: string,
   data: DataDocumentReference[],
   acl?: Acl,
-): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError | DataValidationError> {
   const documents = data.map((d) => d.document);
   const createDataLogs = UserLoggerMapper.toCreateDataLogs(documents);
   // Add auth when acl provided
@@ -88,10 +82,7 @@ export function upsert(
 export function removeUser(
   ctx: AppBindings,
   filter: Record<string, unknown>,
-): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.Users),
     E.tryMapPromise({
@@ -109,10 +100,7 @@ export function removeData(
   ctx: AppBindings,
   userDid: string,
   data: UUID[],
-): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError | DataValidationError> {
   const filter: StrictFilter<UserDocument> = { did: userDid };
 
   const update: UpdateFilter<UserDocument> = {
@@ -151,10 +139,7 @@ export function updateUserLogs(
   ctx: AppBindings,
   userId: string,
   logs: UserDataLogs[],
-): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError | DataValidationError> {
   const filter = { did: userId };
   const update = {
     $set: {
@@ -183,10 +168,7 @@ export function updateUserLogs(
 export function findById(
   ctx: AppBindings,
   user: string,
-): E.Effect<
-  UserDocument,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<UserDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<UserDocument> = { did: user };
 
   return pipe(
@@ -217,10 +199,7 @@ export function addAclEntry(
   document: UUID,
   owner: string,
   acl: Acl,
-): E.Effect<
-  UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<UpdateResult, CollectionNotFoundError | DatabaseError | DataValidationError> {
   const filter: StrictFilter<OwnedDocumentBase> = {
     _id: document,
     _owner: owner,
@@ -234,11 +213,7 @@ export function addAclEntry(
   };
 
   return pipe(
-    checkCollectionExists<OwnedDocumentBase>(
-      ctx,
-      "data",
-      collection.toString(),
-    ),
+    checkCollectionExists<OwnedDocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "addAclEntry" }),
@@ -255,10 +230,7 @@ export function removeAclEntry(
   document: UUID,
   grantee: string,
   owner: string,
-): E.Effect<
-  UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<UpdateResult, CollectionNotFoundError | DatabaseError | DataValidationError> {
   const filter: StrictFilter<OwnedDocumentBase> = {
     _id: document,
     _owner: owner,
@@ -272,11 +244,7 @@ export function removeAclEntry(
   };
 
   return pipe(
-    checkCollectionExists<OwnedDocumentBase>(
-      ctx,
-      "data",
-      collection.toString(),
-    ),
+    checkCollectionExists<OwnedDocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "removeAclEntry" }),
@@ -314,12 +282,8 @@ export function findDataReferences(
   return pipe(
     checkCollectionExists<UserDocument>(ctx, "primary", CollectionName.Users),
     E.tryMapPromise({
-      try: (collection) =>
-        collection
-          .aggregate<{ data: DataDocumentReference[]; total: number }>(pipeline)
-          .next(),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "findDataReferences" }),
+      try: (collection) => collection.aggregate<{ data: DataDocumentReference[]; total: number }>(pipeline).next(),
+      catch: (cause) => new DatabaseError({ cause, message: "findDataReferences" }),
     }),
     E.flatMap((result) =>
       result

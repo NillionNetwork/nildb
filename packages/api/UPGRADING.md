@@ -5,7 +5,7 @@ This document explains how to upgrade nilDB between major versions.
 ## Version Compatibility
 
 | From Version  | To Version | Upgrade Path                  |
-|---------------|------------|-------------------------------|
+| ------------- | ---------- | ----------------------------- |
 | Fresh install | 1.2.0+     | Direct install                |
 | 1.1.2         | 1.2.0+     | Direct upgrade                |
 | < 1.1.2       | 1.2.0+     | **Two-step upgrade required** |
@@ -15,6 +15,7 @@ This document explains how to upgrade nilDB between major versions.
 ### Overview
 
 Version 1.2.0 consolidates the database migration system:
+
 - **Migration library**: Changed from `mongo-migrate-ts` to `migrate-mongo`
 - **Changelog collection**: Renamed from `migrations_changelog` to `_migrations`
 - **Migration count**: Reduced from 5 migrations to 1 consolidated migration
@@ -37,31 +38,37 @@ mongosh <connection-string> --eval "db.migrations_changelog.count()"
 ### Upgrade Steps
 
 1. **Backup your database**
+
    ```bash
    mongodump --uri="<your-mongodb-uri>" --out=/path/to/backup
    ```
 
 2. **Stop the current nilDB instance**
+
    ```bash
    docker stop <nildb-container>
    ```
 
 3. **Pull the new version**
+
    ```bash
    docker pull <nildb-image>:1.2.0
    ```
 
 4. **Start the new version**
+
    ```bash
    docker start <nildb-container>
    ```
 
 5. **Monitor the migration**
+
    ```bash
    docker logs -f <nildb-container>
    ```
 
    You should see:
+
    ```
    ! Running consolidated init migration
    ! Detected upgrade from v1.1.2
@@ -72,6 +79,7 @@ mongosh <connection-string> --eval "db.migrations_changelog.count()"
    ```
 
 6. **Verify the upgrade**
+
    ```bash
    # Check new changelog format
    mongosh <connection-string> --eval "db._migrations.findOne()"
@@ -85,6 +93,7 @@ mongosh <connection-string> --eval "db.migrations_changelog.count()"
 ### What Happens During Upgrade
 
 The migration automatically:
+
 1. Detects the old `migrations_changelog` collection from v1.1.2
 2. Validates it contains exactly 5 expected migrations
 3. Drops the old `migrations_changelog` collection
@@ -111,6 +120,7 @@ Follow the [v1.1.2 → v1.2.0 upgrade steps](#upgrading-from-v112-to-v120) above
 ## Fresh Installation
 
 For new installations, simply start the latest version. The migration will:
+
 1. Create all 7 collections (`builders`, `users`, `collections`, `queries`, `query_runs`, `config`, `data`)
 2. Create required indexes:
    - `builders.did` (unique)
@@ -126,6 +136,7 @@ For new installations, simply start the latest version. The migration will:
 **Cause**: Your database is not from v1.1.2.
 
 **Solution**:
+
 - If you're on an older version, first upgrade to v1.1.2
 - If migrations are incomplete, manually run v1.1.2 migrations to completion
 - If uncertain, restore from backup and contact support
@@ -135,6 +146,7 @@ For new installations, simply start the latest version. The migration will:
 **Cause**: The migration files in your v1.1.2 installation don't match expected names.
 
 **Solution**:
+
 - Verify you're running official v1.1.2 release
 - Check for custom or modified migrations
 - Restore from backup if migrations were tampered with
@@ -144,6 +156,7 @@ For new installations, simply start the latest version. The migration will:
 **Cause**: The old migration system didn't create a `migrations_changelog` collection.
 
 **Solution**:
+
 - This is expected for fresh installations (not an error)
 - For upgrades, verify you actually had v1.1.2 running previously
 - If uncertain, treat as fresh install (will recreate collections)
@@ -153,11 +166,13 @@ For new installations, simply start the latest version. The migration will:
 If you need to rollback after upgrading:
 
 1. **Stop the new version**
+
    ```bash
    docker stop <nildb-container>
    ```
 
 2. **Restore from backup**
+
    ```bash
    mongorestore --uri="<your-mongodb-uri>" --drop /path/to/backup
    ```

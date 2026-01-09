@@ -19,9 +19,7 @@ export function enforceDataOwnership(
   return pipe(
     E.succeed(
       user.data.some(
-        (s) =>
-          s.document.toString() === document.toString() &&
-          s.collection.toString() === collection.toString(),
+        (s) => s.document.toString() === document.toString() && s.collection.toString() === collection.toString(),
       ),
     ),
     E.flatMap((isAuthorized) => {
@@ -69,11 +67,7 @@ export function buildAccessControlledFilter(
   originalFilter: Record<string, unknown>,
 ): E.Effect<
   Record<string, unknown>,
-  | ResourceAccessDeniedError
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
+  ResourceAccessDeniedError | DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     CollectionsService.find(ctx, { _id: collectionId }),

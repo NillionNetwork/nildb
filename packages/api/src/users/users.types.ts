@@ -1,6 +1,7 @@
 import type { DocumentBase } from "@nildb/common/mongo";
-import type { UserDataLogs } from "@nillion/nildb-types";
 import type { ObjectId, UUID } from "mongodb";
+
+import type { UserDataLogs } from "@nillion/nildb-types";
 
 /**
  * Permission type for ACL operations.

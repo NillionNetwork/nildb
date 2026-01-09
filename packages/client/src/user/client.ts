@@ -12,6 +12,7 @@ import {
   type UpdateUserDataRequest,
 } from "@nillion/nildb-types";
 import { Builder, Did, type Signer } from "@nillion/nuc";
+
 import type { HttpClient } from "../types.js";
 
 type UserClientOptions = {
@@ -110,9 +111,7 @@ export class UserClient {
     }
   }
 
-  async listDataReferences(
-    pagination?: PaginationQuery,
-  ): Promise<Result<ListDataReferencesResponse>> {
+  async listDataReferences(pagination?: PaginationQuery): Promise<Result<ListDataReferencesResponse>> {
     const query = new URLSearchParams();
     if (pagination?.limit) {
       query.set("limit", String(pagination.limit));
@@ -121,9 +120,7 @@ export class UserClient {
       query.set("offset", String(pagination.offset));
     }
     const queryString = query.toString();
-    const path = queryString
-      ? `${PathsV1.users.data.root}?${queryString}`
-      : PathsV1.users.data.root;
+    const path = queryString ? `${PathsV1.users.data.root}?${queryString}` : PathsV1.users.data.root;
 
     const result = await this.request(path);
     if (!result.ok) {
@@ -150,14 +147,9 @@ export class UserClient {
     }
   }
 
-  async readData(
-    collection: string,
-    document: string,
-  ): Promise<Result<ReadDataResponse>> {
+  async readData(collection: string, document: string): Promise<Result<ReadDataResponse>> {
     const result = await this.request(
-      PathsV1.users.data.byId
-        .replace(":collection", collection)
-        .replace(":document", document),
+      PathsV1.users.data.byId.replace(":collection", collection).replace(":document", document),
     );
     if (!result.ok) {
       return result;
@@ -183,9 +175,7 @@ export class UserClient {
     }
   }
 
-  async updateData(
-    body: UpdateUserDataRequest,
-  ): Promise<Result<UpdateDataResponse>> {
+  async updateData(body: UpdateUserDataRequest): Promise<Result<UpdateDataResponse>> {
     const result = await this.request(PathsV1.users.data.root, {
       method: "POST",
       body,
@@ -214,14 +204,9 @@ export class UserClient {
     }
   }
 
-  async deleteData(
-    collection: string,
-    document: string,
-  ): Promise<Result<void>> {
+  async deleteData(collection: string, document: string): Promise<Result<void>> {
     const result = await this.request(
-      PathsV1.users.data.byId
-        .replace(":collection", collection)
-        .replace(":document", document),
+      PathsV1.users.data.byId.replace(":collection", collection).replace(":document", document),
       { method: "DELETE" },
     );
     if (!result.ok) {

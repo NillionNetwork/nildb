@@ -11,6 +11,7 @@ This guide explains how to set up your development environment and contribute co
 ## Development Setup
 
 1. Clone the repository:
+
    ```shell
    git clone git@github.com:NillionNetwork/nildb.git
    cd nildb
@@ -42,6 +43,7 @@ pnpm test   # run the full test suite
 ```
 
 > [!NOTE]
+>
 > - Tests use isolated collections (test_nildb and test_nildb_data)
 > - The test database is dropped at the start of each test run
 

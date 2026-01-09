@@ -4,9 +4,7 @@ import type { JsonObject } from "type-fest";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 
-export class DuplicateEntryError extends Data.TaggedError(
-  "DuplicateEntryError",
-)<{
+export class DuplicateEntryError extends Data.TaggedError("DuplicateEntryError")<{
   document: JsonObject;
 }> {
   humanize(): string[] {
@@ -14,26 +12,17 @@ export class DuplicateEntryError extends Data.TaggedError(
   }
 }
 
-export class ResourceAccessDeniedError extends Data.TaggedError(
-  "ResourceAccessDeniedError",
-)<{
+export class ResourceAccessDeniedError extends Data.TaggedError("ResourceAccessDeniedError")<{
   type: string;
   id: string;
   user: string;
 }> {
   humanize(): string[] {
-    return [
-      this._tag,
-      `type: ${this.type}`,
-      `object: ${this.id}`,
-      `user: ${this.user}`,
-    ];
+    return [this._tag, `type: ${this.type}`, `object: ${this.id}`, `user: ${this.user}`];
   }
 }
 
-export class InvalidIndexOptionsError extends Data.TaggedError(
-  "InvalidIndexOptionsError",
-)<{
+export class InvalidIndexOptionsError extends Data.TaggedError("InvalidIndexOptionsError")<{
   collection: string;
   message: string;
 }> {
@@ -47,11 +36,7 @@ export class IndexNotFoundError extends Data.TaggedError("IndexNotFoundError")<{
   index: string;
 }> {
   humanize(): string[] {
-    return [
-      this._tag,
-      `collection: ${this.collection}`,
-      `index: ${this.index}`,
-    ];
+    return [this._tag, `collection: ${this.collection}`, `index: ${this.index}`];
   }
 }
 
@@ -64,24 +49,16 @@ export class DatabaseError extends Data.TaggedError("DatabaseError")<{
   }
 }
 
-export class DocumentNotFoundError extends Data.TaggedError(
-  "DocumentNotFoundError",
-)<{
+export class DocumentNotFoundError extends Data.TaggedError("DocumentNotFoundError")<{
   collection: string;
   filter: Record<string, unknown>;
 }> {
   humanize(): string[] {
-    return [
-      this._tag,
-      `collection: ${this.collection}`,
-      `filter: ${JSON.stringify(this.filter)}`,
-    ];
+    return [this._tag, `collection: ${this.collection}`, `filter: ${JSON.stringify(this.filter)}`];
   }
 }
 
-export class CollectionNotFoundError extends Data.TaggedError(
-  "CollectionNotFoundError",
-)<{
+export class CollectionNotFoundError extends Data.TaggedError("CollectionNotFoundError")<{
   dbName: string;
   name: string;
 }> {
@@ -92,9 +69,7 @@ export class CollectionNotFoundError extends Data.TaggedError(
 
 export type QueryValidationError = VariableInjectionError | DataValidationError;
 
-export class DataValidationError extends Data.TaggedError(
-  "DataValidationError",
-)<{
+export class DataValidationError extends Data.TaggedError("DataValidationError")<{
   issues: (string | ZodError)[];
   cause: unknown;
 }> {
@@ -114,9 +89,7 @@ export class DataValidationError extends Data.TaggedError(
   }
 }
 
-export class VariableInjectionError extends Data.TaggedError(
-  "VariableInjectionError",
-)<{
+export class VariableInjectionError extends Data.TaggedError("VariableInjectionError")<{
   message: string;
 }> {
   humanize(): string[] {
@@ -143,7 +116,7 @@ export class GrantAccessError extends Data.TaggedError("GrantAccessError")<{
       `type: ${this.type}`,
       `object: ${this.id}`,
       `grantee: ${this.acl.grantee}`,
-      `${this.acl}: [r=${this.acl.read}, w=${this.acl.write}, x=${this.acl.execute}]`,
+      `acl: [r=${this.acl.read}, w=${this.acl.write}, x=${this.acl.execute}]`,
     ];
   }
 }
@@ -154,11 +127,6 @@ export class RevokeAccessError extends Data.TaggedError("RevokeAccessError")<{
   grantee: string;
 }> {
   humanize(): string[] {
-    return [
-      this._tag,
-      `type: ${this.type}`,
-      `object: ${this.id}`,
-      `grantee: ${this.grantee}`,
-    ];
+    return [this._tag, `type: ${this.type}`, `object: ${this.id}`, `grantee: ${this.grantee}`];
   }
 }

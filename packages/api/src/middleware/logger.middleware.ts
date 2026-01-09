@@ -17,14 +17,7 @@ export function loggerMiddleware(options: ControllerOptions): void {
       const status = c.res.status;
 
       // Log to console/OTel (automatic instrumentation handles traces and metrics)
-      const logLevel =
-        status >= 500
-          ? "error"
-          : status >= 400
-            ? "warn"
-            : status >= 300
-              ? "silent"
-              : "debug";
+      const logLevel = getLogLevel(status);
 
       if (logLevel !== "silent") {
         log[logLevel](
@@ -54,4 +47,11 @@ export function loggerMiddleware(options: ControllerOptions): void {
   };
 
   app.use(middleware);
+}
+
+function getLogLevel(status: number): "error" | "warn" | "silent" | "debug" {
+  if (status >= 500) return "error";
+  if (status >= 400) return "warn";
+  if (status >= 300) return "silent";
+  return "debug";
 }

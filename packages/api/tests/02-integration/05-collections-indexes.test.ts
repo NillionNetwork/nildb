@@ -1,5 +1,7 @@
-import { createUuidDto } from "@nillion/nildb-types";
 import { describe } from "vitest";
+
+import { createUuidDto } from "@nillion/nildb-types";
+
 import simpleCollection from "../data/simple.collection.json";
 import { createTestFixtureExtension } from "../fixture/it.js";
 
@@ -25,15 +27,12 @@ describe("Collection Index Management", () => {
     const { builder, expect } = c;
 
     // Create an index on the "name" field
-    const createResult = await builder.createCollectionIndex(
-      simpleCollection._id,
-      {
-        collection: simpleCollection._id,
-        name: "name_index",
-        keys: [{ name: 1 }],
-        unique: false,
-      },
-    );
+    const createResult = await builder.createCollectionIndex(simpleCollection._id, {
+      collection: simpleCollection._id,
+      name: "name_index",
+      keys: [{ name: 1 }],
+      unique: false,
+    });
     expect(createResult.ok).toBe(true);
     if (!createResult.ok) throw new Error("Test setup failed");
 
@@ -43,11 +42,7 @@ describe("Collection Index Management", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("Test setup failed");
     expect(result.data.data.indexes).toBeDefined();
-    expect(
-      result.data.data.indexes.some(
-        (index: any) => index.name === "name_index",
-      ),
-    ).toBe(true);
+    expect(result.data.data.indexes.some((index: any) => index.name === "name_index")).toBe(true);
   });
 
   it("can drop an index from a collection", async ({ c }) => {
@@ -55,10 +50,7 @@ describe("Collection Index Management", () => {
 
     // Drop the index
     const indexName = "name_index";
-    const dropResult = await builder.dropCollectionIndex(
-      simpleCollection._id,
-      indexName,
-    );
+    const dropResult = await builder.dropCollectionIndex(simpleCollection._id, indexName);
     expect(dropResult.ok).toBe(true);
 
     // Verify the index was removed
@@ -66,8 +58,6 @@ describe("Collection Index Management", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("Test setup failed");
-    expect(
-      result.data.data.indexes.some((index: any) => index.name === indexName),
-    ).toBe(false);
+    expect(result.data.data.indexes.some((index: any) => index.name === indexName)).toBe(false);
   });
 });

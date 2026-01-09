@@ -29,6 +29,7 @@ import {
   type UuidDto,
 } from "@nillion/nildb-types";
 import { Builder, Did, type Envelope, type Signer } from "@nillion/nuc";
+
 import type { HttpClient } from "../types.js";
 
 type BuilderClientOptions = {
@@ -49,10 +50,7 @@ export class BuilderClient {
   }
 
   private async createToken(): Promise<string> {
-    const response = await this.nilauth.requestToken(
-      this.options.signer,
-      "nildb",
-    );
+    const response = await this.nilauth.requestToken(this.options.signer, "nildb");
     const { token: rootToken } = response;
 
     const nodeDid = Did.fromPublicKey(this.options.nodePublicKey);
@@ -110,10 +108,7 @@ export class BuilderClient {
 
   async getRootToken(): Promise<Result<Envelope>> {
     try {
-      const response = await this.nilauth.requestToken(
-        this.options.signer,
-        "nildb",
-      );
+      const response = await this.nilauth.requestToken(this.options.signer, "nildb");
       return { ok: true, data: response.token };
     } catch (error) {
       return {
@@ -208,9 +203,7 @@ export class BuilderClient {
     return { ok: true, data: undefined };
   }
 
-  async readCollections(
-    pagination?: PaginationQuery,
-  ): Promise<Result<ListCollectionsResponse>> {
+  async readCollections(pagination?: PaginationQuery): Promise<Result<ListCollectionsResponse>> {
     const query = new URLSearchParams();
     if (pagination?.limit) {
       query.set("limit", String(pagination.limit));
@@ -219,9 +212,7 @@ export class BuilderClient {
       query.set("offset", String(pagination.offset));
     }
     const queryString = query.toString();
-    const path = queryString
-      ? `${PathsV1.collections.root}?${queryString}`
-      : PathsV1.collections.root;
+    const path = queryString ? `${PathsV1.collections.root}?${queryString}` : PathsV1.collections.root;
 
     const result = await this.request(path);
     if (!result.ok) {
@@ -249,24 +240,17 @@ export class BuilderClient {
   }
 
   async deleteCollection(collectionId: string): Promise<Result<void>> {
-    const result = await this.request(
-      PathsV1.collections.byId.replace(":id", collectionId),
-      {
-        method: "DELETE",
-      },
-    );
+    const result = await this.request(PathsV1.collections.byId.replace(":id", collectionId), {
+      method: "DELETE",
+    });
     if (!result.ok) {
       return result;
     }
     return { ok: true, data: undefined };
   }
 
-  async readCollection(
-    collectionId: string,
-  ): Promise<Result<ReadCollectionMetadataResponse>> {
-    const result = await this.request(
-      PathsV1.collections.byId.replace(":id", collectionId),
-    );
+  async readCollection(collectionId: string): Promise<Result<ReadCollectionMetadataResponse>> {
+    const result = await this.request(PathsV1.collections.byId.replace(":id", collectionId));
     if (!result.ok) {
       return result;
     }
@@ -291,31 +275,20 @@ export class BuilderClient {
     }
   }
 
-  async createCollectionIndex(
-    collectionId: string,
-    body: CreateCollectionIndexRequest,
-  ): Promise<Result<void>> {
-    const result = await this.request(
-      PathsV1.collections.indexesById.replace(":id", collectionId),
-      {
-        method: "POST",
-        body,
-      },
-    );
+  async createCollectionIndex(collectionId: string, body: CreateCollectionIndexRequest): Promise<Result<void>> {
+    const result = await this.request(PathsV1.collections.indexesById.replace(":id", collectionId), {
+      method: "POST",
+      body,
+    });
     if (!result.ok) {
       return result;
     }
     return { ok: true, data: undefined };
   }
 
-  async dropCollectionIndex(
-    collectionId: string,
-    indexName: string,
-  ): Promise<Result<void>> {
+  async dropCollectionIndex(collectionId: string, indexName: string): Promise<Result<void>> {
     const result = await this.request(
-      PathsV1.collections.indexesByNameById
-        .replace(":id", collectionId)
-        .replace(":name", indexName),
+      PathsV1.collections.indexesByNameById.replace(":id", collectionId).replace(":name", indexName),
       { method: "DELETE" },
     );
     if (!result.ok) {
@@ -324,9 +297,7 @@ export class BuilderClient {
     return { ok: true, data: undefined };
   }
 
-  async getQueries(
-    pagination?: PaginationQuery,
-  ): Promise<Result<ReadQueriesResponse>> {
+  async getQueries(pagination?: PaginationQuery): Promise<Result<ReadQueriesResponse>> {
     const query = new URLSearchParams();
     if (pagination?.limit) {
       query.set("limit", String(pagination.limit));
@@ -335,9 +306,7 @@ export class BuilderClient {
       query.set("offset", String(pagination.offset));
     }
     const queryString = query.toString();
-    const path = queryString
-      ? `${PathsV1.queries.root}?${queryString}`
-      : PathsV1.queries.root;
+    const path = queryString ? `${PathsV1.queries.root}?${queryString}` : PathsV1.queries.root;
 
     const result = await this.request(path);
     if (!result.ok) {
@@ -365,9 +334,7 @@ export class BuilderClient {
   }
 
   async getQuery(queryId: string): Promise<Result<ReadQueryResponse>> {
-    const result = await this.request(
-      PathsV1.queries.byId.replace(":id", queryId),
-    );
+    const result = await this.request(PathsV1.queries.byId.replace(":id", queryId));
     if (!result.ok) {
       return result;
     }
@@ -404,12 +371,9 @@ export class BuilderClient {
   }
 
   async deleteQuery(queryId: string): Promise<Result<void>> {
-    const result = await this.request(
-      PathsV1.queries.byId.replace(":id", queryId),
-      {
-        method: "DELETE",
-      },
-    );
+    const result = await this.request(PathsV1.queries.byId.replace(":id", queryId), {
+      method: "DELETE",
+    });
     if (!result.ok) {
       return result;
     }
@@ -449,10 +413,7 @@ export class BuilderClient {
     runId: string,
     pagination?: { limit?: number; offset?: number },
   ): Promise<Result<ReadQueryRunByIdResponse>> {
-    const url = new URL(
-      PathsV1.queries.runById.replace(":id", runId),
-      "http://localhost",
-    );
+    const url = new URL(PathsV1.queries.runById.replace(":id", runId), "http://localhost");
     if (pagination) {
       if (pagination.limit !== undefined) {
         url.searchParams.set("limit", pagination.limit.toString());
@@ -487,9 +448,7 @@ export class BuilderClient {
     }
   }
 
-  async createOwnedData(
-    body: CreateOwnedDataRequest,
-  ): Promise<Result<CreateDataResponse>> {
+  async createOwnedData(body: CreateOwnedDataRequest): Promise<Result<CreateDataResponse>> {
     const result = await this.request(PathsV1.data.createOwned, {
       method: "POST",
       body,
@@ -518,9 +477,7 @@ export class BuilderClient {
     }
   }
 
-  async createStandardData(
-    body: CreateStandardDataRequest,
-  ): Promise<Result<CreateDataResponse>> {
+  async createStandardData(body: CreateStandardDataRequest): Promise<Result<CreateDataResponse>> {
     const result = await this.request(PathsV1.data.createStandard, {
       method: "POST",
       body,
@@ -578,9 +535,7 @@ export class BuilderClient {
     }
   }
 
-  async updateData(
-    body: UpdateDataRequest,
-  ): Promise<Result<UpdateDataResponse>> {
+  async updateData(body: UpdateDataRequest): Promise<Result<UpdateDataResponse>> {
     const result = await this.request(PathsV1.data.update, {
       method: "POST",
       body,
@@ -609,9 +564,7 @@ export class BuilderClient {
     }
   }
 
-  async deleteData(
-    body: DeleteDataRequest,
-  ): Promise<Result<DeleteDataResponse>> {
+  async deleteData(body: DeleteDataRequest): Promise<Result<DeleteDataResponse>> {
     const result = await this.request(PathsV1.data.delete, {
       method: "POST",
       body,
@@ -641,25 +594,17 @@ export class BuilderClient {
   }
 
   async flushData(collectionId: string): Promise<Result<void>> {
-    const result = await this.request(
-      PathsV1.data.flushById.replace(":id", collectionId),
-      {
-        method: "DELETE",
-      },
-    );
+    const result = await this.request(PathsV1.data.flushById.replace(":id", collectionId), {
+      method: "DELETE",
+    });
     if (!result.ok) {
       return result;
     }
     return { ok: true, data: undefined };
   }
 
-  async tailData(
-    collection: UuidDto,
-    limit = 10,
-  ): Promise<Result<TailDataResponse>> {
-    const result = await this.request(
-      `${PathsV1.data.tailById.replace(":id", collection)}?limit=${limit}`,
-    );
+  async tailData(collection: UuidDto, limit = 10): Promise<Result<TailDataResponse>> {
+    const result = await this.request(`${PathsV1.data.tailById.replace(":id", collection)}?limit=${limit}`);
     if (!result.ok) {
       return result;
     }

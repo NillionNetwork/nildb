@@ -18,7 +18,6 @@ import {
 import type { AppBindings } from "@nildb/env";
 import type { QueryDocument } from "@nildb/queries/queries.types";
 import type { Acl } from "@nildb/users/users.types";
-import type { PaginationQuery, UuidDto } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import {
   type DeleteResult,
@@ -31,6 +30,9 @@ import {
   UUID,
 } from "mongodb";
 import type { JsonObject } from "type-fest";
+
+import type { PaginationQuery, UuidDto } from "@nillion/nildb-types";
+
 import type {
   CreateFailure,
   OwnedDocumentBase,
@@ -42,31 +44,20 @@ import type {
 /**
  * Create data collection.
  */
-export function createCollection(
-  ctx: AppBindings,
-  id: UUID,
-): E.Effect<void, InvalidIndexOptionsError | DatabaseError> {
+export function createCollection(ctx: AppBindings, id: UUID): E.Effect<void, InvalidIndexOptionsError | DatabaseError> {
   return pipe(
     E.tryPromise({
       try: () => ctx.db.data.createCollection(id.toString()),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "createCollection" }),
+      catch: (cause) => new DatabaseError({ cause, message: "createCollection" }),
     }),
     E.flatMap((collection) =>
       E.all([
         E.tryPromise({
-          try: () =>
-            collection.createIndex(
-              { _updated: 1 },
-              { unique: false, name: "_updated_1" },
-            ),
+          try: () => collection.createIndex({ _updated: 1 }, { unique: false, name: "_updated_1" }),
           catch: (cause) => {
-            if (
-              isMongoError(cause) &&
-              cause.code === MongoErrorCode.IndexNotFound
-            ) {
+            if (isMongoError(cause) && cause.code === MongoErrorCode.IndexNotFound) {
               return new InvalidIndexOptionsError({
-                collection: collection.toString(),
+                collection: collection.collectionName,
                 message: "_updated_1",
               });
             }
@@ -74,18 +65,11 @@ export function createCollection(
           },
         }),
         E.tryPromise({
-          try: () =>
-            collection.createIndex(
-              { _created: 1 },
-              { unique: false, name: "_created_1" },
-            ),
+          try: () => collection.createIndex({ _created: 1 }, { unique: false, name: "_created_1" }),
           catch: (cause) => {
-            if (
-              isMongoError(cause) &&
-              cause.code === MongoErrorCode.IndexNotFound
-            ) {
+            if (isMongoError(cause) && cause.code === MongoErrorCode.IndexNotFound) {
               return new InvalidIndexOptionsError({
-                collection: collection.toString(),
+                collection: collection.collectionName,
                 message: "_created_1",
               });
             }
@@ -119,17 +103,12 @@ export function tailCollection(
 /**
  * Drop data collection.
  */
-export function drop(
-  ctx: AppBindings,
-  collection: UUID,
-): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+export function drop(ctx: AppBindings, collection: UUID): E.Effect<void, CollectionNotFoundError | DatabaseError> {
   return pipe(
     checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: (collection) =>
-        ctx.db.data.dropCollection(collection.collectionName),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "deleteCollection" }),
+      try: (collection) => ctx.db.data.dropCollection(collection.collectionName),
+      catch: (cause) => new DatabaseError({ cause, message: "deleteCollection" }),
     }),
     E.as(void 0),
   );
@@ -146,11 +125,7 @@ export function insertOwnedData(
   acl: Acl[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<OwnedDocumentBase>(
-      ctx,
-      "data",
-      collection._id.toString(),
-    ),
+    checkCollectionExists<OwnedDocumentBase>(ctx, "data", collection._id.toString()),
     E.tryMapPromise({
       try: async (dataCollection) => {
         const created = new Set<UuidDto>();
@@ -161,16 +136,15 @@ export function insertOwnedData(
         const now = new Date();
 
         for (let i = 0; i < data.length; i += batchSize) {
-          const batch: OwnedDocumentBase[] = data
-            .slice(i, i + batchSize)
-            .map((partial) => ({
-              ...partial,
-              _id: new UUID(partial._id),
-              _created: now,
-              _updated: now,
-              _owner: owner,
-              _acl: acl,
-            }));
+          const batch: OwnedDocumentBase[] = data.slice(i, i + batchSize).map((partial) => ({
+            // oxlint-disable-next-line typescript/no-misused-spread -- partial is an object from map callback, not an array
+            ...partial,
+            _id: new UUID(partial._id),
+            _created: now,
+            _updated: now,
+            _owner: owner,
+            _acl: acl,
+          }));
           batches.push(batch);
         }
 
@@ -224,11 +198,7 @@ export function insertStandardData(
   data: PartialDataDocumentDto[],
 ): E.Effect<UploadResult, CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<StandardDocumentBase>(
-      ctx,
-      "data",
-      collection._id.toString(),
-    ),
+    checkCollectionExists<StandardDocumentBase>(ctx, "data", collection._id.toString()),
     E.tryMapPromise({
       try: async (dataCollection) => {
         const created = new Set<UuidDto>();
@@ -239,14 +209,13 @@ export function insertStandardData(
         const now = new Date();
 
         for (let i = 0; i < data.length; i += batchSize) {
-          const batch: DocumentBase[] = data
-            .slice(i, i + batchSize)
-            .map((partial) => ({
-              ...partial,
-              _id: new UUID(partial._id),
-              _created: now,
-              _updated: now,
-            }));
+          const batch: DocumentBase[] = data.slice(i, i + batchSize).map((partial) => ({
+            // oxlint-disable-next-line typescript/no-misused-spread -- partial is an object from map callback, not an array
+            ...partial,
+            _id: new UUID(partial._id),
+            _created: now,
+            _updated: now,
+          }));
           batches.push(batch);
         }
 
@@ -300,18 +269,14 @@ export function updateMany(
   collection: UUID,
   filter: Filter<DocumentBase>,
   update: UpdateFilter<DocumentBase>,
-): E.Effect<
-  UpdateResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<UpdateResult, CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     E.all([
       checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
       applyCoercions(addDocumentBaseCoercions(update)),
     ]),
     E.tryMapPromise({
-      try: ([collection, documentUpdate]) =>
-        collection.updateMany(filter, documentUpdate),
+      try: ([collection, documentUpdate]) => collection.updateMany(filter, documentUpdate),
       catch: (cause) => new DatabaseError({ cause, message: "updateMany" }),
     }),
   );
@@ -324,10 +289,7 @@ export function deleteMany(
   ctx: AppBindings,
   collection: UUID,
   filter: StrictFilter<DocumentBase>,
-): E.Effect<
-  DeleteResult,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<DeleteResult, CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
@@ -346,11 +308,7 @@ export function runAggregation(
   pipeline: Document[],
 ): E.Effect<JsonObject[], CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<DocumentBase>(
-      ctx,
-      "data",
-      query.collection.toString(),
-    ),
+    checkCollectionExists<DocumentBase>(ctx, "data", query.collection.toString()),
     E.tryMapPromise({
       try: (collection) => collection.aggregate(pipeline).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "runAggregation" }),
@@ -372,10 +330,7 @@ export function findMany(
   collection: UUID,
   filter: Filter<DocumentBase>,
   pagination: PaginationQuery,
-): E.Effect<
-  [DocumentBase[], number],
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<[DocumentBase[], number], CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.flatMap((dataCollection) =>
@@ -392,8 +347,7 @@ export function findMany(
         }),
         E.tryPromise({
           try: () => dataCollection.countDocuments(filter),
-          catch: (cause) =>
-            new DatabaseError({ cause, message: "countDocuments" }),
+          catch: (cause) => new DatabaseError({ cause, message: "countDocuments" }),
         }),
       ]),
     ),
@@ -412,15 +366,11 @@ export function findAll(
   ctx: AppBindings,
   collection: UUID,
   filter: Filter<DocumentBase>,
-): E.Effect<
-  DocumentBase[],
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<DocumentBase[], CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({
-      try: (dataCollection) =>
-        dataCollection.find(filter).sort({ _created: -1 }).toArray(),
+      try: (dataCollection) => dataCollection.find(filter).sort({ _created: -1 }).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findAll" }),
     }),
   );
@@ -433,13 +383,7 @@ export function findOne(
   ctx: AppBindings,
   collection: UUID,
   filter: Filter<DocumentBase>,
-): E.Effect<
-  DocumentBase,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<DocumentBase, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     checkCollectionExists<DocumentBase>(ctx, "data", collection.toString()),
     E.tryMapPromise({

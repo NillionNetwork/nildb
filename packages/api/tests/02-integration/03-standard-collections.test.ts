@@ -1,16 +1,17 @@
 import { faker } from "@faker-js/faker";
 import type { StandardDocumentBase } from "@nildb/data/data.types";
-import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
+
+import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
+
 import standardCollectionJson from "../data/wallet.standard.collection.json";
 import standardQueryJson from "../data/wallet.standard.query.json";
 import type { CollectionFixture, QueryFixture } from "../fixture/fixture.js";
 import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("Standard Collections and Queries", () => {
-  const standardCollection =
-    standardCollectionJson as unknown as CollectionFixture;
+  const standardCollection = standardCollectionJson as unknown as CollectionFixture;
   const standardQuery = standardQueryJson as unknown as QueryFixture;
 
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
@@ -76,9 +77,7 @@ describe("Standard Collections and Queries", () => {
     if (!result.ok) throw new Error("Test setup failed");
     expect(result.data.data.created).toHaveLength(3);
 
-    const cursor = bindings.db.data
-      .collection(standardCollection.id.toString())
-      .find({});
+    const cursor = bindings.db.data.collection(standardCollection.id.toString()).find({});
     const records = await cursor.toArray();
     expect(records).toHaveLength(3);
   });
@@ -230,9 +229,7 @@ describe("Standard Collections and Queries", () => {
     if (!result.ok) throw new Error("Test setup failed");
   });
 
-  it("can create wallet test data for standard query execution", async ({
-    c,
-  }) => {
+  it("can create wallet test data for standard query execution", async ({ c }) => {
     const data: WalletRecord[] = Array.from({ length: 5 }, () => ({
       _id: createUuidDto(),
       wallet: faker.finance.ethereumAddress(),
