@@ -2,7 +2,6 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@nillion/nildb-client/*": ["./src/*"],
       "@nillion/nildb-types": ["../types/src/lib.ts"],
