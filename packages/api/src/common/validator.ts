@@ -1,14 +1,13 @@
 import { DataValidationError } from "@nildb/common/errors";
-import { Uuid } from "@nillion/nildb-types";
 import Ajv from "ajv";
-import type { DataValidationCxt } from "ajv/dist/types";
 import * as addFormats from "ajv-formats";
+import type { DataValidationCxt } from "ajv/dist/types";
 import { Effect as E } from "effect";
 import { type ZodSafeParseResult, z } from "zod";
 
-export function validateSchema(
-  schema: Record<string, unknown>,
-): E.Effect<void, DataValidationError> {
+import { Uuid } from "@nillion/nildb-types";
+
+export function validateSchema(schema: Record<string, unknown>): E.Effect<void, DataValidationError> {
   return E.try({
     try: () => {
       const ajv = new Ajv();
@@ -30,10 +29,7 @@ export function validateSchema(
   });
 }
 
-export function validateData<T>(
-  schema: Record<string, unknown>,
-  data: unknown,
-): E.Effect<T, DataValidationError> {
+export function validateData<T>(schema: Record<string, unknown>, data: unknown): E.Effect<T, DataValidationError> {
   return E.try({
     try: () => {
       const ajv = new Ajv();
@@ -46,9 +42,7 @@ export function validateData<T>(
       }
 
       const cause = validator.errors ?? [];
-      const issues = cause.map(
-        (c) => `${c.instancePath}: ${c.message ?? "Unknown error"}`,
-      );
+      const issues = cause.map((c) => `${c.instancePath}: ${c.message ?? "Unknown error"}`);
 
       throw new DataValidationError({ issues, cause });
     },
@@ -81,10 +75,7 @@ function registerFormats(ajv: Ajv): void {
 type SupportedCoercions = "date-time" | "uuid" | "numeric";
 
 function registerCoercions(ajv: Ajv): void {
-  const coercers: Record<
-    SupportedCoercions,
-    (data: string) => ZodSafeParseResult<unknown>
-  > = {
+  const coercers: Record<SupportedCoercions, (data: string) => ZodSafeParseResult<unknown>> = {
     "date-time": (data) =>
       z
         .preprocess((arg) => {

@@ -15,11 +15,13 @@ import { CollectionName } from "@nildb/common/mongo";
 import { validateData } from "@nildb/common/validator";
 import * as DataService from "@nildb/data/data.services";
 import type { AppBindings } from "@nildb/env";
-import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import { cloneDeep, set } from "es-toolkit/compat";
 import type { Document, UUID } from "mongodb";
 import { z } from "zod";
+
+import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
+
 import pipelineSchema from "./mongodb_pipeline.json";
 import * as RunQueryJobsRepository from "./queries.jobs.repository.js";
 import * as QueriesRepository from "./queries.repository.js";
@@ -64,14 +66,7 @@ export function addQuery(
   return pipe(
     validateData(pipelineSchema, document.pipeline),
     E.flatMap(() => CollectionsService.find(ctx, { _id: document.collection })),
-    E.flatMap((collection) =>
-      enforceBuilderOwnership(
-        document.owner,
-        collection.owner,
-        "collection",
-        collection._id,
-      ),
-    ),
+    E.flatMap((collection) => enforceBuilderOwnership(document.owner, collection.owner, "collection", collection._id)),
     E.flatMap(() => QueriesRepository.insert(ctx, document)),
     E.flatMap(() =>
       BuildersService.addQuery(ctx, {
@@ -90,23 +85,14 @@ export function addQuery(
 function executeInBackground(
   ctx: AppBindings,
   runId: UUID,
-  effect: E.Effect<
-    void,
-    DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-  >,
+  effect: E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError>,
 ): void {
   pipe(effect, E.runPromiseExit)
     .then((exit) => {
-      ctx.log.info(
-        { run: runId.toString(), result: exit._tag },
-        "Query run finished",
-      );
+      ctx.log.info({ run: runId.toString(), result: exit._tag }, "Query run finished");
     })
     .catch((error: unknown) => {
-      ctx.log.warn(
-        { run: runId.toString(), error },
-        "Query run threw an unhandled error",
-      );
+      ctx.log.warn({ run: runId.toString(), error }, "Query run threw an unhandled error");
     });
 }
 
@@ -118,25 +104,12 @@ function processAndRunQuery(
   query: QueryDocument,
   runId: UUID,
   command: RunQueryCommand,
-): E.Effect<
-  void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   return pipe(
     E.Do,
-    E.bind("variables", () =>
-      validateVariables(query.variables, command.variables),
-    ),
-    E.bind("pipeline", ({ variables }) =>
-      injectVariablesIntoAggregation(
-        query.variables,
-        query.pipeline,
-        variables,
-      ),
-    ),
-    E.flatMap(({ pipeline }) =>
-      DataService.runAggregation(ctx, query, pipeline, command.requesterId),
-    ),
+    E.bind("variables", () => validateVariables(query.variables, command.variables)),
+    E.bind("pipeline", ({ variables }) => injectVariablesIntoAggregation(query.variables, query.pipeline, variables)),
+    E.flatMap(({ pipeline }) => DataService.runAggregation(ctx, query, pipeline, command.requesterId)),
     E.timeoutFail({
       duration: "30 minutes",
       onTimeout: () =>
@@ -178,14 +151,7 @@ export function runQueryInBackground(
 > {
   return pipe(
     QueriesRepository.findOne(ctx, { _id: command._id }),
-    E.tap((query) =>
-      enforceBuilderOwnership(
-        command.requesterId,
-        query.owner,
-        "query",
-        command._id,
-      ),
-    ),
+    E.tap((query) => enforceBuilderOwnership(command.requesterId, query.owner, "query", command._id)),
     E.flatMap((query) =>
       pipe(
         E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(query._id)),
@@ -224,11 +190,7 @@ export function getRunQueryJob(
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(
-    RunQueryJobsRepository.findRunByIdWithPaginatedResults(
-      ctx,
-      command._id,
-      pagination,
-    ),
+    RunQueryJobsRepository.findRunByIdWithPaginatedResults(ctx, command._id, pagination),
     E.flatMap((result) =>
       result
         ? E.succeed({ document: result, total: result.total })
@@ -250,24 +212,13 @@ export function getQueryById(
   command: ReadQueryByIdCommand,
 ): E.Effect<
   QueryDocument,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | ResourceAccessDeniedError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError | ResourceAccessDeniedError
 > {
   return pipe(
     QueriesRepository.findOne(ctx, {
       _id: command._id,
     }),
-    E.tap((query) =>
-      enforceBuilderOwnership(
-        command.requesterId,
-        query.owner,
-        "query",
-        command._id,
-      ),
-    ),
+    E.tap((query) => enforceBuilderOwnership(command.requesterId, query.owner, "query", command._id)),
   );
 }
 
@@ -285,10 +236,7 @@ export function findQueries(
   pagination: PaginationQuery,
 ): E.Effect<
   Paginated<QueryDocument>,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     QueriesRepository.findMany(ctx, { owner }, pagination),
@@ -310,24 +258,13 @@ export function removeQuery(
   command: DeleteQueryCommand,
 ): E.Effect<
   void,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | ResourceAccessDeniedError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError | ResourceAccessDeniedError
 > {
   return pipe(
     QueriesRepository.findOne(ctx, {
       _id: command._id,
     }),
-    E.tap((document) =>
-      enforceBuilderOwnership(
-        command.requesterId,
-        document.owner,
-        "query",
-        command._id,
-      ),
-    ),
+    E.tap((document) => enforceBuilderOwnership(command.requesterId, document.owner, "query", command._id)),
     E.flatMap((document) =>
       pipe(
         QueriesRepository.findOneAndDelete(ctx, { _id: document._id }),
@@ -350,24 +287,13 @@ export function removeQuery(
 export function deleteBuilderQueries(
   ctx: AppBindings,
   builder: string,
-): E.Effect<
-  void,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
-  return QueriesRepository.deleteMany(ctx, { owner: builder }).pipe(
-    E.tap(() => ctx.cache.builders.taint(builder)),
-  );
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
+  return QueriesRepository.deleteMany(ctx, { owner: builder }).pipe(E.tap(() => ctx.cache.builders.taint(builder)));
 }
 
 export type QueryPrimitive = string | number | boolean | Date | UUID;
 
-export type QueryRuntimeVariables = Record<
-  string,
-  QueryPrimitive | QueryPrimitive[]
->;
+export type QueryRuntimeVariables = Record<string, QueryPrimitive | QueryPrimitive[]>;
 
 /**
  * Validate query variables.
@@ -381,12 +307,9 @@ export function validateVariables(
   const permittedKeys = Object.keys(template);
 
   const missingVariables = permittedKeys.filter(
-    (item) =>
-      !providedKeys.includes(item) && !(template[item].optional ?? false),
+    (item) => !providedKeys.includes(item) && !(template[item].optional ?? false),
   );
-  const unexpectedVariables = providedKeys.filter(
-    (item) => !permittedKeys.includes(item),
-  );
+  const unexpectedVariables = providedKeys.filter((item) => !permittedKeys.includes(item));
   if (missingVariables.length > 0 || unexpectedVariables.length > 0) {
     const issues = [
       "Query execution variables mismatch: ",
@@ -415,12 +338,9 @@ export function validateVariables(
   );
 }
 
-function validateArray<T = unknown>(
-  key: string,
-  value: unknown[],
-): E.Effect<T, DataValidationError> {
-  const allTypesEquals = (types: PrimitiveType[]) => {
-    if (types.length === 0 || types.every((t) => t === types[0])) {
+function validateArray<T = unknown>(key: string, value: unknown[]): E.Effect<T, DataValidationError> {
+  const allTypesEquals = (types: PrimitiveType[]): E.Effect<PrimitiveType[], DataValidationError> => {
+    if (types.every((t) => t === types[0])) {
       return E.succeed(types);
     }
     const issues = ["Unsupported mixed-type array"];
@@ -437,13 +357,8 @@ function validateArray<T = unknown>(
 }
 
 type PrimitiveType = "string" | "number" | "boolean";
-function primitiveType(
-  key: string,
-  value: unknown,
-): E.Effect<PrimitiveType, DataValidationError> {
-  let result:
-    | { data: QueryPrimitive; success: true }
-    | { success: false; error: z.ZodError };
+function primitiveType(key: string, value: unknown): E.Effect<PrimitiveType, DataValidationError> {
+  let result: { data: QueryPrimitive; success: true } | { success: false; error: z.ZodError };
 
   result = z.string().safeParse(value, { error: (_iss) => key });
   if (result.success) {

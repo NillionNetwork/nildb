@@ -1,14 +1,15 @@
 import { handleTaggedErrors } from "@nildb/common/handler";
-import {
-  OpenApiSpecCommonErrorResponses,
-  OpenApiSpecEmptySuccessResponses,
-} from "@nildb/common/openapi";
+import { OpenApiSpecCommonErrorResponses, OpenApiSpecEmptySuccessResponses } from "@nildb/common/openapi";
 import type { ControllerOptions } from "@nildb/common/types";
 import {
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import { Effect as E, pipe } from "effect";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+import { StatusCodes } from "http-status-codes";
+
 import {
   type DeleteBuilderResponse,
   NucCmd,
@@ -19,9 +20,7 @@ import {
   UpdateProfileRequest,
   type UpdateProfileResponse,
 } from "@nillion/nildb-types";
-import { Effect as E, pipe } from "effect";
-import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
+
 import { BuilderDataMapper } from "./builders.mapper.js";
 import * as BuilderService from "./builders.services.js";
 
@@ -46,10 +45,7 @@ export function register(options: ControllerOptions): void {
     zValidator("json", RegisterBuilderRequest),
     async (c) => {
       const payload = c.req.valid("json");
-      const command = BuilderDataMapper.toCreateBuilderCommand(
-        payload,
-        c.env.log,
-      );
+      const command = BuilderDataMapper.toCreateBuilderCommand(payload, c.env.log);
 
       return pipe(
         BuilderService.createBuilder(c.env, command),
@@ -162,10 +158,7 @@ export function updateProfile(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
-      const command = BuilderDataMapper.toUpdateProfileCommand(
-        payload,
-        builder.did,
-      );
+      const command = BuilderDataMapper.toUpdateProfileCommand(payload, builder.did);
 
       return pipe(
         BuilderService.updateProfile(c.env, command),

@@ -1,4 +1,5 @@
 import { describe } from "vitest";
+
 import { createTestFixtureExtension } from "../fixture/it.js";
 
 describe("rate-limiting.test.js", () => {
@@ -10,9 +11,7 @@ describe("rate-limiting.test.js", () => {
   beforeAll(async (_c) => {});
   afterAll(async (_c) => {});
 
-  it("should block requests that exceed the configured rate limit", async ({
-    c,
-  }) => {
+  it("should block requests that exceed the configured rate limit", async ({ c }) => {
     const { expect, system } = c;
     const maxRequests = Number(process.env.APP_RATE_LIMIT_MAX_REQUESTS);
 

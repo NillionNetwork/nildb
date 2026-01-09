@@ -3,6 +3,7 @@ import type { Histogram } from "@opentelemetry/api";
 import { metrics } from "@opentelemetry/api";
 import type { MiddlewareHandler } from "hono";
 import { routePath } from "hono/route";
+
 import packageJson from "../../package.json";
 
 // HTTP semantic convention attributes
@@ -37,9 +38,7 @@ export function metricsMiddleware(options: ControllerOptions): void {
       description: "Duration of HTTP server requests",
       unit: "ms",
       advice: {
-        explicitBucketBoundaries: [
-          5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000,
-        ],
+        explicitBucketBoundaries: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
       },
     });
   }

@@ -1,3 +1,5 @@
+import { UUID } from "mongodb";
+
 import type {
   ByIdRequestParams,
   CreateQueryRequest,
@@ -11,7 +13,7 @@ import type {
   RunQueryRequest,
   RunQueryResponse,
 } from "@nillion/nildb-types";
-import { UUID } from "mongodb";
+
 import type {
   AddQueryCommand,
   DeleteQueryCommand,
@@ -41,13 +43,9 @@ export const QueriesDataMapper = {
    * @param paginatedResult The paginated data from the service layer.
    * @returns The final API response object for listing queries.
    */
-  toGetQueriesResponse(
-    paginatedResult: Paginated<QueryDocument>,
-  ): ReadQueriesResponse {
+  toGetQueriesResponse(paginatedResult: Paginated<QueryDocument>): ReadQueriesResponse {
     return {
-      data: paginatedResult.data.map((doc) =>
-        this.toQueryDocumentResponse(doc),
-      ),
+      data: paginatedResult.data.map((doc) => this.toQueryDocumentResponse(doc)),
       pagination: {
         total: paginatedResult.total,
         limit: paginatedResult.limit,
@@ -60,10 +58,7 @@ export const QueriesDataMapper = {
   /**
    * Converts execute query request DTO to domain command.
    */
-  toRunQueryCommand(
-    dto: RunQueryRequest,
-    requesterId: string,
-  ): RunQueryCommand {
+  toRunQueryCommand(dto: RunQueryRequest, requesterId: string): RunQueryCommand {
     return {
       _id: new UUID(dto._id),
       variables: dto.variables,
@@ -83,9 +78,7 @@ export const QueriesDataMapper = {
   /**
    * Converts params to get query run results by id command.
    */
-  toGetQueryRunResultByIdCommand(
-    params: ByIdRequestParams,
-  ): GetQueryRunByIdCommand {
+  toGetQueryRunResultByIdCommand(params: ByIdRequestParams): GetQueryRunByIdCommand {
     return {
       _id: new UUID(params.id),
     };
@@ -140,10 +133,7 @@ export const QueriesDataMapper = {
   /**
    * Converts add query request DTO to domain command.
    */
-  toCreateQueryCommand(
-    body: CreateQueryRequest,
-    owner: string,
-  ): AddQueryCommand {
+  toCreateQueryCommand(body: CreateQueryRequest, owner: string): AddQueryCommand {
     return {
       _id: new UUID(body._id),
       name: body.name,
@@ -157,10 +147,7 @@ export const QueriesDataMapper = {
   /**
    * Converts delete query request DTO to domain command.
    */
-  toDeleteQueryCommand(
-    dto: DeleteQueryRequest,
-    requesterId: string,
-  ): DeleteQueryCommand {
+  toDeleteQueryCommand(dto: DeleteQueryRequest, requesterId: string): DeleteQueryCommand {
     return {
       _id: new UUID(dto.id),
       requesterId,
@@ -170,10 +157,7 @@ export const QueriesDataMapper = {
   /**
    * Converts query ID params to delete command.
    */
-  toDeleteQueryByIdCommand(
-    params: ByIdRequestParams,
-    requesterId: string,
-  ): DeleteQueryCommand {
+  toDeleteQueryByIdCommand(params: ByIdRequestParams, requesterId: string): DeleteQueryCommand {
     return {
       _id: new UUID(params.id),
       requesterId,
@@ -183,10 +167,7 @@ export const QueriesDataMapper = {
   /**
    * Converts query ID params to read query command.
    */
-  toReadQueryByIdCommand(
-    params: ByIdRequestParams,
-    requesterId: string,
-  ): ReadQueryByIdCommand {
+  toReadQueryByIdCommand(params: ByIdRequestParams, requesterId: string): ReadQueryByIdCommand {
     return {
       _id: new UUID(params.id),
       requesterId,

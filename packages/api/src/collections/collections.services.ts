@@ -21,9 +21,11 @@ import type {
 import { validateSchema } from "@nildb/common/validator";
 import * as DataService from "@nildb/data/data.services";
 import type { AppBindings } from "@nildb/env";
-import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import type { CreateIndexesOptions, IndexSpecification } from "mongodb";
+
+import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
+
 import * as CollectionsRepository from "./collections.repository.js";
 
 /**
@@ -40,10 +42,7 @@ export function getBuilderCollections(
   pagination: PaginationQuery,
 ): E.Effect<
   Paginated<CollectionDocument>,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     CollectionsRepository.findMany(ctx, { owner: id }, pagination),
@@ -65,11 +64,7 @@ export function addCollection(
   command: CreateCollectionCommand,
 ): E.Effect<
   void,
-  | DataValidationError
-  | DocumentNotFoundError
-  | InvalidIndexOptionsError
-  | CollectionNotFoundError
-  | DatabaseError
+  DataValidationError | DocumentNotFoundError | InvalidIndexOptionsError | CollectionNotFoundError | DatabaseError
 > {
   const now = new Date();
   const collection: CollectionDocument = {
@@ -103,13 +98,7 @@ export function addCollection(
 export function find(
   ctx: AppBindings,
   filter: Record<string, unknown>,
-): E.Effect<
-  CollectionDocument,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<CollectionDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return CollectionsRepository.findOne(ctx, filter);
 }
 
@@ -121,22 +110,11 @@ export function deleteCollection(
   command: DeleteCollectionCommand,
 ): E.Effect<
   void,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | ResourceAccessDeniedError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError | ResourceAccessDeniedError
 > {
   return pipe(
     CollectionsRepository.findOne(ctx, { _id: command._id }),
-    E.tap((collection) =>
-      enforceBuilderOwnership(
-        command.requesterId,
-        collection.owner,
-        "collection",
-        command._id,
-      ),
-    ),
+    E.tap((collection) => enforceBuilderOwnership(command.requesterId, collection.owner, "collection", command._id)),
     E.flatMap(() => CollectionsRepository.deleteOne(ctx, { _id: command._id })),
     E.tap((collection) => ctx.cache.builders.taint(collection.owner)),
     E.flatMap((collection) =>
@@ -158,21 +136,11 @@ export function deleteCollection(
 export function deleteBuilderCollections(
   ctx: AppBindings,
   builder: string,
-): E.Effect<
-  void,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-> {
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     CollectionsRepository.findAll(ctx, { owner: builder }),
     E.tap(() => ctx.cache.builders.taint(builder)),
-    E.flatMap((collections) =>
-      E.forEach(collections, (collection) =>
-        DataService.drop(ctx, collection._id),
-      ),
-    ),
+    E.flatMap((collections) => E.forEach(collections, (collection) => DataService.drop(ctx, collection._id))),
     E.flatMap(() => CollectionsRepository.deleteMany(ctx, { owner: builder })),
     E.as(void 0),
   );
@@ -186,28 +154,13 @@ export function getCollectionById(
   command: ReadCollectionByIdCommand,
 ): E.Effect<
   CollectionMetadata,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | ResourceAccessDeniedError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError | ResourceAccessDeniedError
 > {
   return pipe(
     E.Do,
-    E.bind("collection", () =>
-      CollectionsRepository.findOne(ctx, { _id: command.id }),
-    ),
-    E.tap(({ collection }) =>
-      enforceBuilderOwnership(
-        command.requesterId,
-        collection.owner,
-        "collection",
-        command.id,
-      ),
-    ),
-    E.bind("metadata", () =>
-      CollectionsRepository.getCollectionStats(ctx, command.id),
-    ),
+    E.bind("collection", () => CollectionsRepository.findOne(ctx, { _id: command.id })),
+    E.tap(({ collection }) => enforceBuilderOwnership(command.requesterId, collection.owner, "collection", command.id)),
+    E.bind("metadata", () => CollectionsRepository.getCollectionStats(ctx, command.id)),
     E.map(({ collection, metadata }) => ({
       ...metadata,
       schema: collection.schema,
@@ -233,12 +186,7 @@ export function createIndex(
   return pipe(
     CollectionsRepository.findOne(ctx, { _id: command.collection }),
     E.tap((collection) =>
-      enforceBuilderOwnership(
-        command.requesterId,
-        collection.owner,
-        "collection",
-        command.collection,
-      ),
+      enforceBuilderOwnership(command.requesterId, collection.owner, "collection", command.collection),
     ),
     E.flatMap((collection) => {
       const specification: IndexSpecification = command.keys;
@@ -251,12 +199,7 @@ export function createIndex(
         options.expireAfterSeconds = command.ttl;
       }
 
-      return CollectionsRepository.createIndex(
-        ctx,
-        collection._id,
-        specification,
-        options,
-      );
+      return CollectionsRepository.createIndex(ctx, collection._id, specification, options);
     }),
     E.as(void 0),
   );
@@ -280,16 +223,9 @@ export function dropIndex(
   return pipe(
     CollectionsRepository.findOne(ctx, { _id: command.collection }),
     E.tap((collection) =>
-      enforceBuilderOwnership(
-        command.requesterId,
-        collection.owner,
-        "collection",
-        command.collection,
-      ),
+      enforceBuilderOwnership(command.requesterId, collection.owner, "collection", command.collection),
     ),
-    E.flatMap((collection) =>
-      CollectionsRepository.dropIndex(ctx, collection._id, command.name),
-    ),
+    E.flatMap((collection) => CollectionsRepository.dropIndex(ctx, collection._id, command.name)),
     E.as(void 0),
   );
 }

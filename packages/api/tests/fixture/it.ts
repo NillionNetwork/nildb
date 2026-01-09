@@ -1,10 +1,7 @@
 import * as vitest from "vitest";
+
 import type { FixtureContext } from "./fixture.js";
-import {
-  buildFixture,
-  type CollectionFixture,
-  type QueryFixture,
-} from "./fixture.js";
+import { buildFixture, type CollectionFixture, type QueryFixture } from "./fixture.js";
 
 type TestFixtureExtension = {
   it: vitest.TestAPI<{ c: FixtureContext }>;
@@ -32,7 +29,7 @@ export function createTestFixtureExtension(
     },
   });
 
-  const beforeAll = (fn: (c: FixtureContext) => Promise<void>) =>
+  const beforeAll = (fn: (c: FixtureContext) => Promise<void>): void => {
     vitest.beforeAll(async () => {
       try {
         fixture = await buildFixture(opts);
@@ -40,24 +37,21 @@ export function createTestFixtureExtension(
       } catch (cause) {
         // Fallback to `process.stderr` to ensure fixture setup failures are logged during suite setup/teardown
         process.stderr.write("***\n");
-        process.stderr.write(
-          "Critical: Fixture setup failed, stopping test run\n",
-        );
-        process.stderr.write(`${cause}\n`);
+        process.stderr.write("Critical: Fixture setup failed, stopping test run\n");
+        process.stderr.write(`${String(cause)}\n`);
         process.stderr.write("***\n");
         throw new Error("Critical: Fixture setup failed, stopping test run", {
           cause,
         });
       }
     });
+  };
 
-  const afterAll = (fn: (c: FixtureContext) => Promise<void>) =>
+  const afterAll = (fn: (c: FixtureContext) => Promise<void>): void => {
     vitest.afterAll(async () => {
       if (!fixture) {
         // Fallback to `process.stderr` to ensure fixture setup failures are logged during suite setup/teardown
-        process.stderr.write(
-          "Fixture is not initialized, skipping 'afterAll' hook\n",
-        );
+        process.stderr.write("Fixture is not initialized, skipping 'afterAll' hook\n");
         return;
       }
       const { bindings } = fixture;
@@ -70,6 +64,7 @@ export function createTestFixtureExtension(
       await db.client.close(true);
       await fn(fixture);
     });
+  };
 
   return { beforeAll, afterAll, it };
 }

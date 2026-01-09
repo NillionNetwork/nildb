@@ -4,20 +4,11 @@ import {
   DocumentNotFoundError,
   DuplicateEntryError,
 } from "@nildb/common/errors";
-import {
-  CollectionName,
-  checkCollectionExists,
-  MongoErrorCode,
-} from "@nildb/common/mongo";
+import { CollectionName, checkCollectionExists, MongoErrorCode } from "@nildb/common/mongo";
 import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
-import {
-  MongoServerError,
-  type StrictFilter,
-  type StrictUpdateFilter,
-  type UpdateResult,
-  type UUID,
-} from "mongodb";
+import { MongoServerError, type StrictFilter, type StrictUpdateFilter, type UpdateResult, type UUID } from "mongodb";
+
 import type { BuilderDocument } from "./builders.types.js";
 
 /**
@@ -26,23 +17,13 @@ import type { BuilderDocument } from "./builders.types.js";
 export function insert(
   ctx: AppBindings,
   document: BuilderDocument,
-): E.Effect<
-  void,
-  DuplicateEntryError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<void, DuplicateEntryError | CollectionNotFoundError | DatabaseError> {
   return pipe(
-    checkCollectionExists<BuilderDocument>(
-      ctx,
-      "primary",
-      CollectionName.Builders,
-    ),
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
       try: (collection) => collection.insertOne(document),
       catch: (cause) => {
-        if (
-          cause instanceof MongoServerError &&
-          cause.code === MongoErrorCode.Duplicate
-        ) {
+        if (cause instanceof MongoServerError && cause.code === MongoErrorCode.Duplicate) {
           return new DuplicateEntryError({
             document: {
               did: document.did,
@@ -62,10 +43,7 @@ export function insert(
 export function findByIdWithCache(
   ctx: AppBindings,
   builder: string,
-): E.Effect<
-  BuilderDocument,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<BuilderDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const cache = ctx.cache.builders;
   const document = cache.get(builder);
   if (document) {
@@ -75,15 +53,10 @@ export function findByIdWithCache(
   const filter = { did: builder };
 
   return pipe(
-    checkCollectionExists<BuilderDocument>(
-      ctx,
-      "primary",
-      CollectionName.Builders,
-    ),
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "findByIdWithCache" }),
+      catch: (cause) => new DatabaseError({ cause, message: "findByIdWithCache" }),
     }),
     E.flatMap((result) =>
       result === null
@@ -105,18 +78,11 @@ export function findByIdWithCache(
 export function findOne(
   ctx: AppBindings,
   builder: string,
-): E.Effect<
-  BuilderDocument,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<BuilderDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   return pipe(
-    checkCollectionExists<BuilderDocument>(
-      ctx,
-      "primary",
-      CollectionName.Builders,
-    ),
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
       try: (collection) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findOne" }),
@@ -140,18 +106,11 @@ export function findOne(
 export function deleteOneById(
   ctx: AppBindings,
   builder: string,
-): E.Effect<
-  void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   return pipe(
-    checkCollectionExists<BuilderDocument>(
-      ctx,
-      "primary",
-      CollectionName.Builders,
-    ),
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
       try: (collection) => collection.deleteOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "deleteOneById" }),
@@ -177,10 +136,7 @@ export function update(
   ctx: AppBindings,
   builder: string,
   updates: Partial<{ _updated: Date; name: string }>,
-): E.Effect<
-  UpdateResult,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<UpdateResult, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   const update: StrictUpdateFilter<BuilderDocument> = {
@@ -191,11 +147,7 @@ export function update(
   };
 
   return pipe(
-    checkCollectionExists<BuilderDocument>(
-      ctx,
-      "primary",
-      CollectionName.Builders,
-    ),
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "setPublicKey" }),
@@ -220,10 +172,7 @@ export function addCollection(
   ctx: AppBindings,
   builder: string,
   collection: UUID,
-): E.Effect<
-  void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   const update: StrictUpdateFilter<BuilderDocument> = {
@@ -231,11 +180,7 @@ export function addCollection(
   };
 
   return pipe(
-    checkCollectionExists<BuilderDocument>(
-      ctx,
-      "primary",
-      CollectionName.Builders,
-    ),
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "addCollection" }),
@@ -260,10 +205,7 @@ export function removeCollection(
   ctx: AppBindings,
   builder: string,
   collection: UUID,
-): E.Effect<
-  void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   const update: StrictUpdateFilter<BuilderDocument> = {
@@ -271,15 +213,10 @@ export function removeCollection(
   };
 
   return pipe(
-    checkCollectionExists<BuilderDocument>(
-      ctx,
-      "primary",
-      CollectionName.Builders,
-    ),
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
-      catch: (cause) =>
-        new DatabaseError({ cause, message: "removeCollection" }),
+      catch: (cause) => new DatabaseError({ cause, message: "removeCollection" }),
     }),
     E.flatMap((result) =>
       result.modifiedCount === 1
@@ -301,21 +238,14 @@ export function addQuery(
   ctx: AppBindings,
   builder: string,
   query: UUID,
-): E.Effect<
-  void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<BuilderDocument> = { did: builder };
   const update: StrictUpdateFilter<BuilderDocument> = {
     $addToSet: { queries: query },
   };
 
   return pipe(
-    checkCollectionExists<BuilderDocument>(
-      ctx,
-      "primary",
-      CollectionName.Builders,
-    ),
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "addQuery" }),
@@ -340,10 +270,7 @@ export function removeQuery(
   ctx: AppBindings,
   builder: string,
   query: UUID,
-): E.Effect<
-  void,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<BuilderDocument> = { did: builder };
 
   const update: StrictUpdateFilter<BuilderDocument> = {
@@ -351,11 +278,7 @@ export function removeQuery(
   };
 
   return pipe(
-    checkCollectionExists<BuilderDocument>(
-      ctx,
-      "primary",
-      CollectionName.Builders,
-    ),
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
       try: (collection) => collection.updateOne(filter, update),
       catch: (cause) => new DatabaseError({ cause, message: "removeQuery" }),

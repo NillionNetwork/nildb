@@ -10,20 +10,16 @@ import {
 } from "@nildb/common/otel";
 import { Command } from "commander";
 import dotenv from "dotenv";
+
 import packageJson from "../package.json";
 import { buildApp } from "./app.js";
-import {
-  FeatureFlag,
-  hasFeatureFlag,
-  loadBindings,
-  parseConfigFromEnv,
-} from "./env.js";
+import { FeatureFlag, hasFeatureFlag, loadBindings, parseConfigFromEnv } from "./env.js";
 
 export type NilDbCliOptions = {
   envFile: string;
 };
 
-async function main() {
+async function main(): Promise<void> {
   const program = new Command();
 
   program
@@ -42,10 +38,7 @@ async function main() {
   // Parse config early to check for feature flags
   const config = parseConfigFromEnv({});
   const otelEnabled = hasFeatureFlag(config.enabledFeatures, FeatureFlag.OTEL);
-  const metricsEnabled = hasFeatureFlag(
-    config.enabledFeatures,
-    FeatureFlag.METRICS,
-  );
+  const metricsEnabled = hasFeatureFlag(config.enabledFeatures, FeatureFlag.METRICS);
 
   // Validate that only one observability mode is enabled
   if (otelEnabled && metricsEnabled) {
@@ -63,20 +56,14 @@ async function main() {
     // Full OpenTelemetry mode: metrics, traces, and logs to OTLP (no /metrics endpoint)
     otelProviders = await initializeOtel(config);
     if (otelProviders) {
-      console.info(
-        "! OpenTelemetry initialized: metrics, traces, and logs will be pushed to OTLP",
-      );
+      console.info("! OpenTelemetry initialized: metrics, traces, and logs will be pushed to OTLP");
     } else {
-      console.info(
-        "! OpenTelemetry SDK disabled (OTEL_SDK_DISABLED=true); using stdout logging only",
-      );
+      console.info("! OpenTelemetry SDK disabled (OTEL_SDK_DISABLED=true); using stdout logging only");
     }
   } else if (metricsEnabled) {
     // Metrics-only mode: serve metrics on /metrics endpoint (no traces, no logs to OTLP)
     metricsOnlyProviders = await initializeMetricsOnly(config);
-    console.info(
-      `! Metrics-only mode initialized: metrics will be served on :${config.metricsPort}/metrics`,
-    );
+    console.info(`! Metrics-only mode initialized: metrics will be served on :${config.metricsPort}/metrics`);
   }
 
   // Load bindings with OTel logger provider if available (only when otel flag is enabled)
@@ -101,13 +88,10 @@ async function main() {
 
   // Run migrations in background to avoid container liveness probe timeouts
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
-    void (async () => {
+    void (async (): Promise<void> => {
       try {
         bindings.log.info("Starting database migrations...");
-        await mongoMigrateUp(
-          bindings.config.dbUri,
-          bindings.config.dbNamePrimary,
-        );
+        await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
         bindings.migrationsComplete = true;
         bindings.log.info("Database migrations completed successfully");
       } catch (error) {
@@ -120,9 +104,7 @@ async function main() {
   }
 
   const shutdown = async (): Promise<void> => {
-    bindings.log.info(
-      "Received shutdown signal. Starting graceful shutdown...",
-    );
+    bindings.log.info("Received shutdown signal. Starting graceful shutdown...");
 
     try {
       const promises: Promise<unknown>[] = [

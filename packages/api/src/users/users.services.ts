@@ -11,9 +11,11 @@ import {
 import * as DataRepository from "@nildb/data/data.repository";
 import type { AppBindings } from "@nildb/env";
 import { UserDataMapper, UserLoggerMapper } from "@nildb/users/users.mapper";
-import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import type { UpdateResult, UUID } from "mongodb";
+
+import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
+
 import * as UserRepository from "./users.repository.js";
 import type {
   DataDocumentReference,
@@ -38,10 +40,7 @@ import type {
 export function upsertUser(
   ctx: AppBindings,
   command: UpsertUserCommand,
-): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError | DataValidationError> {
   return UserRepository.upsert(ctx, command.user, command.data, command.acl);
 }
 
@@ -61,10 +60,7 @@ export function updateUserData(
   ctx: AppBindings,
   collection: UUID,
   filter: Record<string, unknown>,
-): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DataValidationError
-> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError | DataValidationError> {
   return pipe(
     DataRepository.findAll(ctx, collection, {
       ...filter,
@@ -74,11 +70,7 @@ export function updateUserData(
     E.map((documents) => UserDataMapper.groupByOwner(documents)),
     E.flatMap((documents) =>
       E.forEach(Object.entries(documents), ([owner, ids]) =>
-        UserRepository.updateUserLogs(
-          ctx,
-          owner,
-          UserLoggerMapper.toUpdateDataLogs(ids),
-        ),
+        UserRepository.updateUserLogs(ctx, owner, UserLoggerMapper.toUpdateDataLogs(ids)),
       ),
     ),
   );
@@ -97,10 +89,7 @@ export function updateUserData(
 export function find(
   ctx: AppBindings,
   did: string,
-): E.Effect<
-  UserDocument,
-  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
-> {
+): E.Effect<UserDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   return UserRepository.findById(ctx, did);
 }
 
@@ -121,10 +110,7 @@ export function listUserDataReferences(
   pagination: PaginationQuery,
 ): E.Effect<
   Paginated<DataDocumentReference>,
-  | DocumentNotFoundError
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
     UserRepository.findDataReferences(ctx, did, pagination),
@@ -153,11 +139,7 @@ export function deleteUserDataReferences(
   ctx: AppBindings,
   collection: UUID,
   filter: Record<string, unknown>,
-): E.Effect<
-  void,
-  CollectionNotFoundError | DatabaseError | DataValidationError,
-  never
-> {
+): E.Effect<void, CollectionNotFoundError | DatabaseError | DataValidationError, never> {
   return pipe(
     DataRepository.findAll(ctx, collection, {
       ...filter,
@@ -169,9 +151,7 @@ export function deleteUserDataReferences(
       E.forEach(Object.entries(documents), ([owner, ids]) =>
         pipe(
           UserRepository.removeData(ctx, owner, ids),
-          E.flatMap(() =>
-            UserRepository.removeUser(ctx, { did: owner, data: { $size: 0 } }),
-          ),
+          E.flatMap(() => UserRepository.removeUser(ctx, { did: owner, data: { $size: 0 } })),
         ),
       ),
     ),
@@ -218,9 +198,7 @@ export function grantAccess(
     find(ctx, owner),
     E.tap((user) => enforceDataOwnership(user, document, collection)),
     E.flatMap(() => UserRepository.updateUserLogs(ctx, owner, logs)),
-    E.flatMap(() =>
-      UserRepository.addAclEntry(ctx, collection, document, owner, acl),
-    ),
+    E.flatMap(() => UserRepository.addAclEntry(ctx, collection, document, owner, acl)),
   );
 }
 
@@ -239,20 +217,14 @@ export function revokeAccess(
   command: RevokeAccessToDataCommand,
 ): E.Effect<
   UpdateResult,
-  | CollectionNotFoundError
-  | DatabaseError
-  | DataValidationError
-  | DocumentNotFoundError
-  | ResourceAccessDeniedError
+  CollectionNotFoundError | DatabaseError | DataValidationError | DocumentNotFoundError | ResourceAccessDeniedError
 > {
   const { owner, collection, document, grantee } = command;
   const logs = [UserLoggerMapper.toRevokeAccessLog(collection, grantee)];
   return pipe(
     E.Do,
     E.bind("user", () => find(ctx, owner)),
-    E.bind("collectionDoc", () =>
-      CollectionsService.find(ctx, { _id: collection }),
-    ),
+    E.bind("collectionDoc", () => CollectionsService.find(ctx, { _id: collection })),
     E.tap(({ user }) => enforceDataOwnership(user, document, collection)),
     E.filterOrFail(
       ({ collectionDoc }) => collectionDoc.owner !== grantee,
@@ -265,8 +237,6 @@ export function revokeAccess(
         }),
     ),
     E.flatMap(() => UserRepository.updateUserLogs(ctx, owner, logs)),
-    E.flatMap(() =>
-      UserRepository.removeAclEntry(ctx, collection, document, grantee, owner),
-    ),
+    E.flatMap(() => UserRepository.removeAclEntry(ctx, collection, document, grantee, owner)),
   );
 }

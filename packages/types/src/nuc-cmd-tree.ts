@@ -1,4 +1,13 @@
-function createNucNamespace(base: string) {
+interface NucNamespace {
+  root: string;
+  create: string;
+  read: string;
+  update: string;
+  delete: string;
+  execute: string;
+}
+
+function createNucNamespace(base: string): NucNamespace {
   return {
     root: base,
     create: `${base}/create`,

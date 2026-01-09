@@ -8,9 +8,7 @@ export type Sort = Record<string, 1 | -1>;
 /**
  * Zod schema for common pagination query parameters.
  */
-export const SortQuerySchema = z
-  .record(z.string(), z.union([z.literal(1), z.literal(-1)]))
-  .optional();
+export const SortQuerySchema = z.record(z.string(), z.union([z.literal(1), z.literal(-1)])).optional();
 
 export const PaginationQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(1_000).optional().default(1_000),
@@ -31,11 +29,8 @@ export type Paginated<T> = {
   sort?: Sort;
 };
 
-/**
- * A generic factory for creating a paginated response schema.
- * @param dataSchema The Zod schema for the items in the data array.
- */
-export const PaginatedResponse = <T extends z.ZodTypeAny>(dataSchema: T) =>
+// oxlint-disable-next-line typescript/explicit-function-return-type -- Return type is complex Zod type, inferred via typeof
+const createPaginatedResponse = <T extends z.ZodTypeAny>(dataSchema: T) =>
   z.object({
     data: z.array(dataSchema),
     pagination: z.object({
@@ -45,6 +40,12 @@ export const PaginatedResponse = <T extends z.ZodTypeAny>(dataSchema: T) =>
       sort: SortQuerySchema,
     }),
   });
+
+/**
+ * A generic factory for creating a paginated response schema.
+ * @param dataSchema The Zod schema for the items in the data array.
+ */
+export const PaginatedResponse: typeof createPaginatedResponse = createPaginatedResponse;
 
 /**
  * Zod schema for an optional pagination object in a request body.

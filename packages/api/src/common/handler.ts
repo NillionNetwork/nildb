@@ -12,12 +12,13 @@ import type {
   VariableInjectionError,
 } from "@nildb/common/errors";
 import type { AppEnv } from "@nildb/env";
-import type { ApiErrorResponse } from "@nillion/nildb-types";
 import { Effect as E, pipe } from "effect";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { StatusCodes } from "http-status-codes";
 import { Temporal } from "temporal-polyfill";
+
+import type { ApiErrorResponse } from "@nillion/nildb-types";
 
 export type ApiResponse<T> = { data: T } | ApiErrorResponse;
 
@@ -35,10 +36,7 @@ type KnownError =
   | RevokeAccessError;
 
 export function handleTaggedErrors(c: Context<AppEnv>) {
-  const toResponse = (
-    e: KnownError,
-    statusCode: ContentfulStatusCode,
-  ): E.Effect<Response> => {
+  const toResponse = (e: KnownError, statusCode: ContentfulStatusCode): E.Effect<Response> => {
     const errors = e.humanize();
     c.env.log.debug(errors);
     const payload: ApiErrorResponse = {

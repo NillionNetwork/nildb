@@ -6,6 +6,7 @@ import {
   type SetLogLevelRequest,
 } from "@nillion/nildb-types";
 import { Builder, Did, type Envelope, type Signer } from "@nillion/nuc";
+
 import type { HttpClient } from "../types.js";
 
 type AdminClientOptions = {
@@ -80,10 +81,7 @@ export class AdminClient {
 
   async health(): Promise<Result<string>> {
     try {
-      const url = new URL(
-        PathsV1.system.health,
-        this.options.baseUrl,
-      ).toString();
+      const url = new URL(PathsV1.system.health, this.options.baseUrl).toString();
       const response = await this.httpClient(url);
 
       if (!response.ok) {
@@ -107,10 +105,7 @@ export class AdminClient {
 
   async about(): Promise<Result<ReadAboutNodeResponse>> {
     try {
-      const url = new URL(
-        PathsV1.system.about,
-        this.options.baseUrl,
-      ).toString();
+      const url = new URL(PathsV1.system.about, this.options.baseUrl).toString();
       const response = await this.httpClient(url);
 
       if (!response.ok) {

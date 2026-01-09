@@ -1,12 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type {
-  CollectionNotFoundError,
-  DatabaseError,
-} from "@nildb/common/errors";
+
+import type { CollectionNotFoundError, DatabaseError } from "@nildb/common/errors";
 import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
+
 import * as SystemRepository from "./system.repository.js";
 import type {
   AboutNode,
@@ -23,9 +22,7 @@ let buildInfo: BuildInfo;
 /**
  * Get node information.
  */
-export function getNodeInfo(
-  ctx: AppBindings,
-): E.Effect<AboutNode, CollectionNotFoundError | DatabaseError> {
+export function getNodeInfo(ctx: AppBindings): E.Effect<AboutNode, CollectionNotFoundError | DatabaseError> {
   const { node } = ctx;
 
   return pipe(
@@ -54,7 +51,7 @@ function getBuildInfo(ctx: AppBindings): BuildInfo {
     const buildInfoPath = path.join(__dirname, "../../../buildinfo.json");
     const content = fs.readFileSync(buildInfoPath, "utf-8");
     return JSON.parse(content) as BuildInfo;
-  } catch (_error) {
+  } catch {
     ctx.log.info("No buildinfo.json found using fallback values");
     buildInfo = {
       time: "1970-01-01T00:00:00Z",
@@ -68,10 +65,7 @@ function getBuildInfo(ctx: AppBindings): BuildInfo {
 /**
  * Set node log level.
  */
-export function setLogLevel(
-  ctx: AppBindings,
-  command: SetLogLevelCommand,
-): E.Effect<void, never> {
+export function setLogLevel(ctx: AppBindings, command: SetLogLevelCommand): E.Effect<void, never> {
   return E.sync(() => {
     ctx.log.level = command.level;
     ctx.log.info(`Log level set to: ${command.level}`);
@@ -113,9 +107,7 @@ export function getMaintenanceStatus(
   return pipe(
     SystemRepository.findMaintenanceConfig(ctx),
     E.map((document) =>
-      document
-        ? { active: true, startedAt: document.startedAt }
-        : { active: false, startedAt: new Date(0) },
+      document ? { active: true, startedAt: document.startedAt } : { active: false, startedAt: new Date(0) },
     ),
   );
 }

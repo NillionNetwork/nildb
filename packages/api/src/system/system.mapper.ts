@@ -1,15 +1,6 @@
-import type {
-  LogLevel,
-  ReadAboutNodeResponse,
-  ReadLogLevelResponse,
-  SetLogLevelRequest,
-} from "@nillion/nildb-types";
-import type {
-  AboutNode,
-  SetLogLevelCommand,
-  StartMaintenanceCommand,
-  StopMaintenanceCommand,
-} from "./system.types.js";
+import type { LogLevel, ReadAboutNodeResponse, ReadLogLevelResponse, SetLogLevelRequest } from "@nillion/nildb-types";
+
+import type { AboutNode, SetLogLevelCommand, StartMaintenanceCommand, StopMaintenanceCommand } from "./system.types.js";
 
 /**
  * System data mapper.

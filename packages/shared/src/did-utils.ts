@@ -1,5 +1,6 @@
-import { Did } from "@nillion/nuc";
 import type { Logger } from "pino";
+
+import { Did } from "@nillion/nuc";
 
 const PUBLIC_KEY_HEX_LENGTH = 66;
 
@@ -10,10 +11,7 @@ const PUBLIC_KEY_HEX_LENGTH = 66;
  */
 export function normalizeIdentifier(id: string, log: Logger): string {
   if (typeof id !== "string") {
-    log.warn(
-      { value: id },
-      "! normalizeIdentifier received a non-string value.",
-    );
+    log.warn({ value: id }, "! normalizeIdentifier received a non-string value.");
     return id;
   }
 

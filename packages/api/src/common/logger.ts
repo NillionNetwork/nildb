@@ -1,12 +1,10 @@
 import { SeverityNumber } from "@opentelemetry/api-logs";
 import type { LoggerProvider } from "@opentelemetry/sdk-logs";
 import pino, { type Logger } from "pino";
+
 import packageJson from "../../package.json";
 
-export function createLogger(
-  level: string,
-  loggerProvider?: LoggerProvider,
-): Logger {
+export function createLogger(level: string, loggerProvider?: LoggerProvider): Logger {
   // Always create Pino logger for stdout/stderr visibility
   const pinoLogger = pino({
     base: {
@@ -27,25 +25,17 @@ export function createLogger(
     return new Proxy(pinoLogger, {
       get(target, prop) {
         // Intercept log methods to emit to OTel
-        if (
-          typeof prop === "string" &&
-          ["trace", "debug", "info", "warn", "error", "fatal"].includes(prop)
-        ) {
+        if (typeof prop === "string" && ["trace", "debug", "info", "warn", "error", "fatal"].includes(prop)) {
           return function (this: Logger, ...args: unknown[]) {
             // Call original Pino method
-            const result = (
-              target as unknown as Record<
-                string,
-                (...args: unknown[]) => unknown
-              >
-            )[prop].apply(this, args);
+            const result = (target as unknown as Record<string, (...args: unknown[]) => unknown>)[prop].apply(
+              this,
+              args,
+            );
 
             // Emit to OTel
             const [messageOrObj, ...rest] = args;
-            const message =
-              typeof messageOrObj === "string"
-                ? messageOrObj
-                : String(rest[0] || "");
+            const message = getLogMessage(messageOrObj, rest);
 
             // Convert attributes to proper type for OTel
             const attributes: Record<string, string | number | boolean> = {};
@@ -53,18 +43,14 @@ export function createLogger(
               const obj = messageOrObj as Record<string, unknown>;
               for (const [key, value] of Object.entries(obj)) {
                 // Only include primitive types that OTel supports
-                if (
-                  typeof value === "string" ||
-                  typeof value === "number" ||
-                  typeof value === "boolean"
-                ) {
+                if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
                   attributes[key] = value;
                 } else if (value !== null && value !== undefined) {
                   try {
                     attributes[key] = JSON.stringify(value);
                   } catch {
-                    // Fallback to String() if JSON.stringify fails (e.g., circular refs)
-                    attributes[key] = String(value);
+                    // Fallback to [object] if JSON.stringify fails (e.g., circular refs)
+                    attributes[key] = "[object]";
                   }
                 }
               }
@@ -106,4 +92,14 @@ function mapPinoLevelToOtel(level: string): SeverityNumber {
     default:
       return SeverityNumber.UNSPECIFIED;
   }
+}
+
+function getLogMessage(messageOrObj: unknown, rest: unknown[]): string {
+  if (typeof messageOrObj === "string") {
+    return messageOrObj;
+  }
+  if (typeof rest[0] === "string") {
+    return rest[0];
+  }
+  return "";
 }

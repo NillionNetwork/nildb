@@ -11,13 +11,7 @@ export default defineConfig({
       reportOnFailure: true,
       reporter: ["text", "json-summary", "json"],
       include: ["packages/api/src/**/*.{js,ts}"],
-      exclude: [
-        "**/node_modules/**",
-        "**/dist/**",
-        "**/*.test.js",
-        "**/*.spec.js",
-        "**/tests/**",
-      ],
+      exclude: ["**/node_modules/**", "**/dist/**", "**/*.test.js", "**/*.spec.js", "**/tests/**"],
     },
     projects: [
       {

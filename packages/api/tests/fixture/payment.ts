@@ -8,12 +8,13 @@
  * 4. Validate payment with nilauth
  */
 
-import type { NilauthClient } from "@nillion/nilauth-client";
-import { type Did, Signer } from "@nillion/nuc";
 import { bytesToHex } from "@noble/hashes/utils.js";
-import { createPublicClient, createWalletClient, http, parseEther } from "viem";
+import { createPublicClient, createWalletClient, http, parseUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
+
+import type { NilauthClient } from "@nillion/nilauth-client";
+import { type Did, Signer } from "@nillion/nuc";
 
 // Contract addresses from nil-devnet DeployLocal.s.sol (deterministic)
 const CONTRACTS = {
@@ -24,8 +25,7 @@ const CONTRACTS = {
 // Anvil test user account (Account 1, has ~9,000 mNIL after deployment)
 // This is a well-known Anvil default account - safe to hardcode for local dev
 const ANVIL_TEST_USER = {
-  privateKey:
-    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const,
+  privateKey: "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const,
   address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const,
 };
 
@@ -92,11 +92,7 @@ export async function activateSubscriptionWithPayment(
   });
 
   // Step 1: Create payment resource (subscriber can be anyone, payer is test account)
-  const { resourceHash, payload } = nilauth.createPaymentResource(
-    subscriberDid,
-    "nildb",
-    payerDid,
-  );
+  const { resourceHash, payload } = nilauth.createPaymentResource(subscriberDid, "nildb", payerDid);
 
   // Step 2: Approve burn contract to spend tokens
   const amount = parseUnits("1", 6); // 1 mNIL per subscription (NIL token has 6 decimals)
@@ -126,13 +122,21 @@ export async function activateSubscriptionWithPayment(
     // Check if this is a 412 error (subscription already active)
     // The error chain: NilauthUnreachable -> HTTPError with status 412
     const errorString = String(error);
-    const causeString =
-      error instanceof Error && error.cause ? String(error.cause) : "";
-    const isAlreadyActive =
-      errorString.includes("412") || causeString.includes("412");
+    const causeString = getCauseString(error);
+    const isAlreadyActive = errorString.includes("412") || causeString.includes("412");
     if (!isAlreadyActive) {
       throw error;
     }
     // Subscription already active - that's fine, we're done
   }
+}
+
+function getCauseString(error: unknown): string {
+  if (!(error instanceof Error) || !error.cause) {
+    return "";
+  }
+  if (error.cause instanceof Error) {
+    return error.cause.message;
+  }
+  return JSON.stringify(error.cause);
 }

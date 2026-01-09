@@ -8,24 +8,10 @@ import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { HostMetrics } from "@opentelemetry/host-metrics";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { RuntimeNodeInstrumentation } from "@opentelemetry/instrumentation-runtime-node";
-import {
-  envDetector,
-  processDetector,
-  Resource,
-} from "@opentelemetry/resources";
-import {
-  BatchLogRecordProcessor,
-  LoggerProvider,
-} from "@opentelemetry/sdk-logs";
-import {
-  MeterProvider,
-  type MetricReader,
-  PeriodicExportingMetricReader,
-} from "@opentelemetry/sdk-metrics";
-import {
-  BatchSpanProcessor,
-  NodeTracerProvider,
-} from "@opentelemetry/sdk-trace-node";
+import { envDetector, processDetector, Resource } from "@opentelemetry/resources";
+import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs";
+import { MeterProvider, type MetricReader, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
+import { BatchSpanProcessor, NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import {
   ATTR_CLOUD_PLATFORM,
   ATTR_CLOUD_PROVIDER,
@@ -35,6 +21,7 @@ import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
 } from "@opentelemetry/semantic-conventions/incubating";
+
 import packageJson from "../../package.json";
 
 export type MetricsOnlyProviders = {
@@ -95,9 +82,7 @@ export async function createOtelResource(config: EnvVars): Promise<Resource> {
  * This is used when only the 'metrics' feature flag is enabled (not 'otel').
  * Metrics are served on /metrics endpoint for scraping, not pushed to OTLP.
  */
-export async function initializeMetricsOnly(
-  config: EnvVars,
-): Promise<MetricsOnlyProviders> {
+export async function initializeMetricsOnly(config: EnvVars): Promise<MetricsOnlyProviders> {
   const resource = await createOtelResource(config);
 
   // Prometheus exporter serves metrics on /metrics endpoint
@@ -149,9 +134,7 @@ export async function initializeMetricsOnly(
  * To disable OpenTelemetry SDK without removing the 'otel' feature flag,
  * set the standard OTEL_SDK_DISABLED=true environment variable.
  */
-export async function initializeOtel(
-  config: EnvVars,
-): Promise<OtelProviders | null> {
+export async function initializeOtel(config: EnvVars): Promise<OtelProviders | null> {
   // Check standard OpenTelemetry environment variable to disable the SDK
   if (process.env.OTEL_SDK_DISABLED === "true") {
     return null;
@@ -187,9 +170,7 @@ export async function initializeOtel(
     url: `${config.otelEndpoint}/v1/logs`,
   });
   const loggerProvider = new LoggerProvider({ resource });
-  loggerProvider.addLogRecordProcessor(
-    new BatchLogRecordProcessor(logExporter),
-  );
+  loggerProvider.addLogRecordProcessor(new BatchLogRecordProcessor(logExporter));
 
   // Register automatic instrumentations for MongoDB, etc.
   registerInstrumentations({
@@ -225,13 +206,8 @@ export async function initializeOtel(
  * Gracefully shutdown metrics-only providers.
  * Note: HostMetrics cleanup is handled automatically by MeterProvider shutdown.
  */
-export async function shutdownMetricsOnly(
-  providers: MetricsOnlyProviders,
-): Promise<void> {
-  await Promise.all([
-    providers.meterProvider.shutdown(),
-    providers.prometheusExporter.shutdown(),
-  ]);
+export async function shutdownMetricsOnly(providers: MetricsOnlyProviders): Promise<void> {
+  await Promise.all([providers.meterProvider.shutdown(), providers.prometheusExporter.shutdown()]);
 }
 
 /**

@@ -1,17 +1,16 @@
 import { faker } from "@faker-js/faker";
 import type { App } from "@nildb/app";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
+
 import { NilauthClient } from "@nillion/nilauth-client";
 import { BuilderClient, UserClient } from "@nillion/nildb-client";
 import { Did, Signer } from "@nillion/nuc";
-import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex } from "@noble/hashes/utils.js";
+
 import type { FixtureContext } from "./fixture.js";
 import { activateSubscriptionWithPayment } from "./payment.js";
 
-export async function createRegisteredBuilder(
-  c: FixtureContext,
-  name?: string,
-): Promise<BuilderClient> {
+export async function createRegisteredBuilder(c: FixtureContext, name?: string): Promise<BuilderClient> {
   const { app, bindings } = c;
 
   const builderPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());

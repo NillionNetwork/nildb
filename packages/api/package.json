@@ -2,18 +2,22 @@
   "name": "@nillion/nildb",
   "version": "1.2.0",
   "private": true,
+  "files": [
+    "dist",
+    "migrations"
+  ],
   "type": "module",
-  "scripts": {
-    "build": "tsdown",
-    "start": "node --enable-source-maps dist/main.js",
-    "dev": "tsx src/main.ts"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "development": "./src/index.ts",
       "default": "./dist/index.js"
     }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "start": "node --enable-source-maps dist/main.js",
+    "dev": "tsx src/main.ts"
   },
   "dependencies": {
     "@nillion/nildb-shared": "workspace:*",
@@ -42,8 +46,8 @@
     "@hono/prometheus": "^1.0.2",
     "@hono/standard-validator": "^0.1.5",
     "@hono/zod-validator": "^0.7.5",
-    "@nillion/nildb-client": "workspace:*",
     "@nillion/nilauth-client": "1.0.0-rc.0",
+    "@nillion/nildb-client": "workspace:*",
     "@nillion/nuc": "2.0.0-rc.0",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
@@ -74,25 +78,21 @@
     "zod-openapi": "^5.4.5",
     "zod-validation-error": "^4.0.2"
   },
-  "files": [
-    "dist",
-    "migrations"
-  ],
   "tsdown": {
+    "clean": true,
     "entry": [
       "src/main.ts"
+    ],
+    "external": [
+      "mongodb",
+      "@opentelemetry/*"
     ],
     "format": [
       "esm"
     ],
-    "platform": "node",
-    "target": "node24",
-    "sourcemap": true,
-    "clean": true,
     "minify": false,
-    "external": [
-      "mongodb",
-      "@opentelemetry/*"
-    ]
+    "platform": "node",
+    "sourcemap": true,
+    "target": "node24"
   }
 }

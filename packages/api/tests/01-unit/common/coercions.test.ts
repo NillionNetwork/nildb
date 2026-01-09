@@ -130,10 +130,7 @@ describe("coercion.test.js", () => {
 
   describe("Nested Path and Operator Coercion", () => {
     it("should coerce items within a query operator like $in", () => {
-      const uuidStrs = [
-        "3f5c92dd-214a-49b5-a129-e56c29fe5d3a",
-        "c9a1d2b8-7c8c-4f5b-9d5a-8d7d6f5e4c3b",
-      ];
+      const uuidStrs = ["3f5c92dd-214a-49b5-a129-e56c29fe5d3a", "c9a1d2b8-7c8c-4f5b-9d5a-8d7d6f5e4c3b"];
       const data = {
         _id: { $in: uuidStrs },
         $coerce: { "_id.$in": "uuid" },

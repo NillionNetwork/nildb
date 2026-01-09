@@ -8,6 +8,11 @@ import {
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import { Effect as E, pipe } from "effect";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { StatusCodes } from "http-status-codes";
+
 import {
   CreateDataResponse,
   CreateOwnedDataRequest,
@@ -26,10 +31,7 @@ import {
   UpdateDataRequest,
   UpdateDataResponse,
 } from "@nillion/nildb-types";
-import { Effect as E, pipe } from "effect";
-import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
+
 import { DataMapper } from "./data.mapper.js";
 import * as DataService from "./data.services.js";
 import type { UploadResult } from "./data.types.js";
@@ -301,8 +303,7 @@ export function createOwnedData(options: ControllerOptions): void {
           },
         },
         207: {
-          description:
-            "Multi-Status - Partial success (mix of successes and errors)",
+          description: "Multi-Status - Partial success (mix of successes and errors)",
           content: {
             "application/json": {
               schema: resolver(CreateDataResponse),
@@ -327,11 +328,7 @@ export function createOwnedData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = DataMapper.toCreateOwnedRecordsCommand(
-        payload,
-        builder.did,
-        c.env.log,
-      );
+      const command = DataMapper.toCreateOwnedRecordsCommand(payload, builder.did, c.env.log);
 
       // Validate that at least one permission is granted
       if (!command.acl.read && !command.acl.write && !command.acl.execute) {
@@ -385,8 +382,7 @@ export function createStandardData(options: ControllerOptions): void {
           },
         },
         207: {
-          description:
-            "Multi-Status - Partial success (mix of successes and errors)",
+          description: "Multi-Status - Partial success (mix of successes and errors)",
           content: {
             "application/json": {
               schema: resolver(CreateDataResponse),
@@ -411,10 +407,7 @@ export function createStandardData(options: ControllerOptions): void {
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
-      const command = DataMapper.toCreateStandardRecordsCommand(
-        payload,
-        builder.did,
-      );
+      const command = DataMapper.toCreateStandardRecordsCommand(payload, builder.did);
 
       return pipe(
         DataService.createStandardRecords(c.env, command),

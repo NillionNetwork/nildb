@@ -1,8 +1,7 @@
-import type {
-  OwnedDocumentBase,
-  ReadDataCommand,
-  StandardDocumentBase,
-} from "@nildb/data/data.types";
+import type { OwnedDocumentBase, ReadDataCommand, StandardDocumentBase } from "@nildb/data/data.types";
+import { UUID } from "mongodb";
+import type { Logger } from "pino";
+
 import { normalizeIdentifier } from "@nillion/nildb-shared";
 import type {
   DeleteDocumentRequestParams,
@@ -18,8 +17,7 @@ import type {
   UpdateUserDataRequest,
   UserDataLogs,
 } from "@nillion/nildb-types";
-import { UUID } from "mongodb";
-import type { Logger } from "pino";
+
 import type {
   Acl,
   DataDocumentReference,
@@ -52,10 +50,7 @@ export const UserDataMapper = {
   /**
    * Convert delete params to command.
    */
-  toDeleteDataCommand(
-    user: UserDocument,
-    params: DeleteDocumentRequestParams,
-  ): DeleteUserDataCommand {
+  toDeleteDataCommand(user: UserDocument, params: DeleteDocumentRequestParams): DeleteUserDataCommand {
     return {
       owner: user.did,
       collection: new UUID(params.collection),
@@ -90,9 +85,7 @@ export const UserDataMapper = {
    * @param paginatedResult The paginated data from the service layer.
    * @returns The final Api response object for listing user data references.
    */
-  toListDataReferencesResponse(
-    paginatedResult: Paginated<DataDocumentReference>,
-  ): ListDataReferencesResponse {
+  toListDataReferencesResponse(paginatedResult: Paginated<DataDocumentReference>): ListDataReferencesResponse {
     return {
       data: paginatedResult.data.map((r) => ({
         builder: r.builder,
@@ -124,10 +117,7 @@ export const UserDataMapper = {
   /**
    * Convert ACL params to command.
    */
-  toReadDataAclCommand(
-    user: UserDocument,
-    dto: ReadDataAclRequestParams,
-  ): ReadDataAclCommand {
+  toReadDataAclCommand(user: UserDocument, dto: ReadDataAclRequestParams): ReadDataAclCommand {
     return {
       owner: user.did,
       collection: new UUID(dto.collection),
@@ -138,11 +128,7 @@ export const UserDataMapper = {
   /**
    * Convert grant request to command.
    */
-  toGrantDataAccessCommand(
-    user: UserDocument,
-    body: GrantAccessToDataRequest,
-    log: Logger,
-  ): GrantAccessToDataCommand {
+  toGrantDataAccessCommand(user: UserDocument, body: GrantAccessToDataRequest, log: Logger): GrantAccessToDataCommand {
     return {
       collection: new UUID(body.collection),
       document: new UUID(body.document),
@@ -173,10 +159,7 @@ export const UserDataMapper = {
   /**
    * Convert read params to read command.
    */
-  toReadDataCommand(
-    user: UserDocument,
-    body: ReadDataRequestParams,
-  ): ReadDataCommand {
+  toReadDataCommand(user: UserDocument, body: ReadDataRequestParams): ReadDataCommand {
     return {
       document: new UUID(body.document),
       collection: new UUID(body.collection),

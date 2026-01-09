@@ -6,7 +6,6 @@ This section outlines specific builder-related tasks and is deliberately utilita
 
 An OpenAPI documentation site is available at `{APP_NODE_PUBLIC_ENDPOINT}/openapi.json` when the node is running and the `openapi-spec` feature is enabled.
 
-
 ## Running nilDB Locally
 
 ### Quick Start
@@ -20,7 +19,7 @@ docker compose -f local/docker-compose.yaml up -d
 This starts a single nilDB node along with all required supporting services:
 
 - **nilDB API**: http://localhost:40080
-- **MongoDB**: localhost:40017  
+- **MongoDB**: localhost:40017
 - **nilauth**: http://localhost:40921 (authentication service)
 - **nilchain**: http://localhost:40648 (local blockchain)
 - **PostgreSQL**: localhost:40432 (nilauth database)

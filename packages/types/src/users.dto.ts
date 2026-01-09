@@ -1,4 +1,5 @@
 import z from "zod";
+
 import { PaginatedResponse, PaginationQuerySchema } from "./pagination.dto.js";
 import { ApiSuccessResponse } from "./responses.dto.js";
 
@@ -52,11 +53,9 @@ const UserProfileData = z.object({
 /**
  * User profile response.
  */
-export const ReadUserProfileResponse = ApiSuccessResponse(UserProfileData).meta(
-  {
-    ref: "ReadUserProfileResponse",
-  },
-);
+export const ReadUserProfileResponse = ApiSuccessResponse(UserProfileData).meta({
+  ref: "ReadUserProfileResponse",
+});
 export type ReadUserProfileResponse = z.infer<typeof ReadUserProfileResponse>;
 
 /**
@@ -102,20 +101,16 @@ const DataDocumentReference = z.object({
  * List data references request query.
  */
 export const ListDataReferencesRequestQuery = PaginationQuerySchema;
-export type ListDataReferencesRequestQuery = z.infer<
-  typeof ListDataReferencesRequestQuery
->;
+export type ListDataReferencesRequestQuery = z.infer<typeof ListDataReferencesRequestQuery>;
 
 /**
  * User data references response.
  */
-export const ListDataReferencesResponse = PaginatedResponse(
-  DataDocumentReference,
-).meta({ ref: "ListDataReferencesResponse" });
+export const ListDataReferencesResponse = PaginatedResponse(DataDocumentReference).meta({
+  ref: "ListDataReferencesResponse",
+});
 
-export type ListDataReferencesResponse = z.infer<
-  typeof ListDataReferencesResponse
->;
+export type ListDataReferencesResponse = z.infer<typeof ListDataReferencesResponse>;
 
 /**
  * Data ACL read parameters.
@@ -164,9 +159,7 @@ export type GrantAccessToDataRequest = z.infer<typeof GrantAccessToDataRequest>;
  * Grant data access response.
  */
 export const GrantAccessToDataResponse = z.string();
-export type GrantAccessToDataResponse = z.infer<
-  typeof GrantAccessToDataResponse
->;
+export type GrantAccessToDataResponse = z.infer<typeof GrantAccessToDataResponse>;
 
 /**
  * Revoke data access request.
@@ -178,17 +171,13 @@ export const RevokeAccessToDataRequest = z
     document: z.uuid(),
   })
   .meta({ ref: "RevokeAccessToDataRequest" });
-export type RevokeAccessToDataRequest = z.infer<
-  typeof RevokeAccessToDataRequest
->;
+export type RevokeAccessToDataRequest = z.infer<typeof RevokeAccessToDataRequest>;
 
 /**
  * Revoke data access response.
  */
 export const RevokeAccessToDataResponse = z.string();
-export type RevokeAccessToDataResponse = z.infer<
-  typeof RevokeAccessToDataResponse
->;
+export type RevokeAccessToDataResponse = z.infer<typeof RevokeAccessToDataResponse>;
 
 /**
  * Document deletion parameters.
@@ -200,9 +189,7 @@ export const DeleteDocumentRequestParams = z
   })
   .meta({ ref: "DeleteDocumentRequestParams" });
 
-export type DeleteDocumentRequestParams = z.infer<
-  typeof DeleteDocumentRequestParams
->;
+export type DeleteDocumentRequestParams = z.infer<typeof DeleteDocumentRequestParams>;
 
 /**
  * Document deletion response.
