@@ -1,18 +1,17 @@
 {
   "name": "@nillion/nildb-shared",
-  "version": "0.1.0",
   "private": true,
   "files": [
     "dist"
   ],
   "type": "module",
-  "main": "./dist/lib.js",
-  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.mjs",
+  "types": "./dist/lib.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/lib.d.ts",
+      "types": "./dist/lib.d.mts",
       "development": "./src/lib.ts",
-      "default": "./dist/lib.js"
+      "default": "./dist/lib.mjs"
     }
   },
   "scripts": {

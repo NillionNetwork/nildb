@@ -1,18 +1,17 @@
 {
   "name": "@nillion/nildb-client",
-  "version": "0.1.0",
   "private": true,
   "files": [
     "dist"
   ],
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "development": "./src/index.ts",
-      "default": "./dist/index.js"
+      "default": "./dist/index.mjs"
     }
   },
   "scripts": {
