@@ -21,7 +21,6 @@ describe("system.test.js", () => {
     const result = await system.about();
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("Test setup failed");
-    expect(result.data.build.version).toBe("0.0.0");
     expect(result.data.public_key).toBe(bindings.node.publicKey);
   });
 

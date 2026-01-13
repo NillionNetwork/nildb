@@ -1,3 +1,4 @@
+import { BUILD_COMMIT } from "@nildb/common/buildinfo";
 import { handleTaggedErrors } from "@nildb/common/handler";
 import { OpenApiSpecCommonErrorResponses, OpenApiSpecEmptySuccessResponses } from "@nildb/common/openapi";
 import type { ControllerOptions } from "@nildb/common/types";
@@ -22,7 +23,6 @@ import {
   type StopMaintenanceResponse,
 } from "@nillion/nildb-types";
 
-import packageJson from "../../package.json";
 import { SystemDataMapper } from "./system.mapper.js";
 import * as SystemService from "./system.services.js";
 
@@ -111,7 +111,7 @@ export function getOpenApiJson(options: ControllerOptions): void {
       documentation: {
         info: {
           title: "nilDB API",
-          version: packageJson.version,
+          version: BUILD_COMMIT,
           description:
             "nilDB is a privacy-focused data storage and querying service built for the Nillion Network. It combines schema-validated storage, MongoDB-style aggregation pipelines, and capability-based access control (UCAN) to enable truly user-owned data. Designed to integrate with Nillion's blind computation modules and SDKs, nilDB empowers developers to build applications where users maintain full control and privacy over their data.",
         },
