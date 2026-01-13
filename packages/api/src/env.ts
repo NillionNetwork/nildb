@@ -117,10 +117,10 @@ declare global {
       APP_LOG_LEVEL: string;
       APP_NILAUTH_INSTANCES: string;
       APP_NILAUTH_CHAIN_ID: string;
-      APP_METRICS_PORT?: number;
+      APP_METRICS_PORT?: string;
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;
-      APP_PORT: number;
+      APP_PORT: string;
       APP_RATE_LIMIT_ENABLED?: string;
       APP_RATE_LIMIT_WINDOW_SECONDS?: string;
       APP_RATE_LIMIT_MAX_REQUESTS?: string;

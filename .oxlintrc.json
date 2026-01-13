@@ -2,7 +2,7 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "import", "unicorn", "vitest"],
   "categories": {
-    "correctness": "warn"
+    "correctness": "error"
   },
   "rules": {
     "no-nested-ternary": "error",
@@ -10,8 +10,6 @@
     "no-unused-vars": "error",
     "typescript/no-explicit-any": "error",
     "typescript/explicit-function-return-type": "warn",
-    "typescript/no-floating-promises": "off",
-    "typescript/unbound-method": "off",
     "unicorn/prefer-node-protocol": "error",
     "unicorn/filename-case": ["error", { "case": "kebabCase" }],
     "import/no-cycle": "error"

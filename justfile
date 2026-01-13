@@ -27,11 +27,11 @@ build-deps:
 
 # Check for formatting, lint, and type errors
 check: build-deps
-    pnpm exec tsc -b && pnpm exec oxfmt --check && pnpm exec oxlint --type-aware && pnpm exec tsc -b --noEmit
+    pnpm exec oxfmt --check && pnpm exec oxlint --type-aware && pnpm exec tsgo -b
 
 # Format, fix, and type check all files
 fix:
-    pnpm exec oxfmt && pnpm exec oxlint --fix --type-aware && pnpm exec tsc -b
+    pnpm exec oxfmt && pnpm exec oxlint --fix --type-aware && pnpm exec tsgo -b
 
 # Format all files
 fmt:
