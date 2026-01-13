@@ -46,6 +46,7 @@ export const ReadAboutNodeResponse = z
     build: z.object({
       time: z.iso.datetime(),
       commit: z.string(),
+      version: z.string(),
     }),
     public_key: z.string(),
     url: z.string().url(),

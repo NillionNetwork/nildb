@@ -95,7 +95,8 @@ create-buildinfo:
     cat << EOF > buildinfo.json
     {
       "time": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
-      "commit": "$(git rev-parse HEAD)"
+      "commit": "$(git rev-parse HEAD)",
+      "version": "0.0.0"
     }
     EOF
 

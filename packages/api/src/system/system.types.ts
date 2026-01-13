@@ -44,6 +44,7 @@ export type MaintenanceInfo = {
 export type BuildInfo = {
   time: string;
   commit: string;
+  version: string;
 };
 
 /**

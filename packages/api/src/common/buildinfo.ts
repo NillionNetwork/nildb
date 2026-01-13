@@ -1,9 +1,6 @@
 import fs from "node:fs";
 
-type BuildInfo = {
-  time: string;
-  commit: string;
-};
+import { BuildInfo } from "@nildb/system/system.types";
 
 function loadBuildInfo(): BuildInfo {
   try {
@@ -14,6 +11,7 @@ function loadBuildInfo(): BuildInfo {
     return {
       time: "1970-01-01T00:00:00Z",
       commit: "unknown",
+      version: "0.0.0",
     };
   }
 }
@@ -22,3 +20,4 @@ const buildInfo = loadBuildInfo();
 
 export const BUILD_COMMIT = buildInfo.commit;
 export const BUILD_TIME = buildInfo.time;
+export const BUILD_VERSION = buildInfo.version ?? "0.0.0";
