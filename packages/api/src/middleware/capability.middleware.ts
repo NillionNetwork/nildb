@@ -18,10 +18,10 @@ function buildNilauthInstancesWithDids(instances: NilauthInstance[]): NilauthIns
   }));
 }
 
-function extractRootIssuerDid(envelope: Envelope): string {
+function extractRootIssuerDid(envelope: Envelope): Did {
   const proofs = envelope.proofs;
   const rootToken = proofs.length > 0 ? proofs[proofs.length - 1] : envelope.nuc;
-  return rootToken.payload.iss.didString;
+  return rootToken.payload.iss;
 }
 
 export function loadNucToken<P extends string = string, I extends Input = BlankInput, E extends AppEnv = AppEnv>(
@@ -139,14 +139,13 @@ export function loadSubjectAndVerifyAsBuilder<
         context,
       });
 
-      // check revocations last because it's costly (in terms of network RTT)
+      // Check revocations last because it's costly (in terms of network RTT)
       // Find the nilauth instance that issued the root token in the proof chain
       const rootIssuerDid = extractRootIssuerDid(envelope);
-      const matchingNilauth = nilauthInstances.find((n) => n.did.didString === rootIssuerDid);
+      const matchingNilauth = nilauthInstances.find((n) => Did.areEqual(n.did, rootIssuerDid));
 
       if (!matchingNilauth) {
-        // This shouldn't happen if validation passed, but handle defensively
-        log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid);
+        log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid.didString);
         return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
       }
 
