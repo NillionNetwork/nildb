@@ -11,7 +11,6 @@ import {
 import { Command } from "commander";
 import dotenv from "dotenv";
 
-import packageJson from "../package.json";
 import { buildApp } from "./app.js";
 import { FeatureFlag, hasFeatureFlag, loadBindings, parseConfigFromEnv } from "./env.js";
 
@@ -25,7 +24,6 @@ async function main(): Promise<void> {
   program
     .name("@nillion/nildb")
     .description("nilDB API server cli")
-    .version(packageJson.version)
     .option("--env-file [path]", "Path to the env file (default .env)", ".env")
     .parse(process.argv);
 

@@ -2,7 +2,7 @@ import { SeverityNumber } from "@opentelemetry/api-logs";
 import type { LoggerProvider } from "@opentelemetry/sdk-logs";
 import pino, { type Logger } from "pino";
 
-import packageJson from "../../package.json";
+import { BUILD_COMMIT } from "./buildinfo.js";
 
 export function createLogger(level: string, loggerProvider?: LoggerProvider): Logger {
   // Always create Pino logger for stdout/stderr visibility
@@ -19,7 +19,7 @@ export function createLogger(level: string, loggerProvider?: LoggerProvider): Lo
 
   // If OTel logger provider is available, bridge to it
   if (loggerProvider) {
-    const otelLogger = loggerProvider.getLogger("nildb", packageJson.version);
+    const otelLogger = loggerProvider.getLogger("nildb", BUILD_COMMIT);
 
     // Wrap Pino to emit to both stdout and OTel
     return new Proxy(pinoLogger, {

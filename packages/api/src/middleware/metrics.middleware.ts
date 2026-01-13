@@ -1,10 +1,9 @@
+import { BUILD_COMMIT } from "@nildb/common/buildinfo";
 import type { ControllerOptions } from "@nildb/common/types";
 import type { Histogram } from "@opentelemetry/api";
 import { metrics } from "@opentelemetry/api";
 import type { MiddlewareHandler } from "hono";
 import { routePath } from "hono/route";
-
-import packageJson from "../../package.json";
 
 // HTTP semantic convention attributes
 const ATTR_HTTP_REQUEST_METHOD = "http.request.method";
@@ -32,7 +31,7 @@ export function metricsMiddleware(options: ControllerOptions): void {
 
   // Initialize metrics instruments on first use
   if (!httpServerDuration) {
-    const meter = metrics.getMeter("@nillion/nildb", packageJson.version);
+    const meter = metrics.getMeter("@nillion/nildb", BUILD_COMMIT);
 
     httpServerDuration = meter.createHistogram("http.server.duration", {
       description: "Duration of HTTP server requests",

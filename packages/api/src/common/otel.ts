@@ -22,7 +22,7 @@ import {
   ATTR_SERVICE_VERSION,
 } from "@opentelemetry/semantic-conventions/incubating";
 
-import packageJson from "../../package.json";
+import { BUILD_COMMIT } from "./buildinfo.js";
 
 export type MetricsOnlyProviders = {
   meterProvider: MeterProvider;
@@ -54,7 +54,7 @@ export type OtelProviders = {
 export async function createOtelResource(config: EnvVars): Promise<Resource> {
   const attributes: Record<string, string> = {
     [ATTR_SERVICE_NAME]: config.otelServiceName,
-    [ATTR_SERVICE_VERSION]: packageJson.version,
+    [ATTR_SERVICE_VERSION]: BUILD_COMMIT,
     [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]: config.otelDeploymentEnv,
     [ATTR_SERVICE_INSTANCE_ID]: process.env.HOSTNAME || "unknown",
     "team.name": config.otelTeamName,
