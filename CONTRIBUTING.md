@@ -19,15 +19,14 @@ This guide explains how to set up your development environment and contribute co
 
 2. Install dependencies and configure the environment:
    ```shell
-   pnpm install
-   pnpm install-hooks
+   just init
    cp .env.example .env
    ```
 
 ## Development Server
 
 ```shell
-pnpm start  # runs nilDb
+just dev  # runs nilDB with tsx
 ```
 
 > [!NOTE]
@@ -38,8 +37,8 @@ pnpm start  # runs nilDb
 The following commands are run from the root of the repository. Run these checks before submitting your PR:
 
 ```shell
-pnpm check  # format, lint, and type check
-pnpm test   # run the full test suite
+just check  # format, lint, and type check
+just test   # run the full test suite
 ```
 
 > [!NOTE]

@@ -1,7 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
+import { BUILD_COMMIT, BUILD_TIME } from "@nildb/common/buildinfo";
 import type { CollectionNotFoundError, DatabaseError } from "@nildb/common/errors";
 import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
@@ -17,7 +14,6 @@ import type {
 } from "./system.types.js";
 
 const started = new Date();
-let buildInfo: BuildInfo;
 
 /**
  * Get node information.
@@ -29,7 +25,7 @@ export function getNodeInfo(ctx: AppBindings): E.Effect<AboutNode, CollectionNot
     getMaintenanceStatus(ctx),
     E.map((maintenance) => ({
       started,
-      build: getBuildInfo(ctx),
+      build: getBuildInfo(),
       publicKey: node.publicKey,
       url: node.endpoint,
       maintenance,
@@ -40,25 +36,11 @@ export function getNodeInfo(ctx: AppBindings): E.Effect<AboutNode, CollectionNot
 /**
  * Get build information.
  */
-function getBuildInfo(ctx: AppBindings): BuildInfo {
-  if (buildInfo) {
-    return buildInfo;
-  }
-
-  try {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const buildInfoPath = path.join(__dirname, "../../../buildinfo.json");
-    const content = fs.readFileSync(buildInfoPath, "utf-8");
-    return JSON.parse(content) as BuildInfo;
-  } catch {
-    ctx.log.info("No buildinfo.json found using fallback values");
-    buildInfo = {
-      time: "1970-01-01T00:00:00Z",
-      commit: "unknown",
-    };
-    return buildInfo;
-  }
+function getBuildInfo(): BuildInfo {
+  return {
+    time: BUILD_TIME,
+    commit: BUILD_COMMIT,
+  };
 }
 
 /**
