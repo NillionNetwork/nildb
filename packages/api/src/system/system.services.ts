@@ -1,4 +1,4 @@
-import { BUILD_COMMIT, BUILD_TIME } from "@nildb/common/buildinfo";
+import { BUILD_COMMIT, BUILD_TIME, BUILD_VERSION } from "@nildb/common/buildinfo";
 import type { CollectionNotFoundError, DatabaseError } from "@nildb/common/errors";
 import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
@@ -40,6 +40,7 @@ function getBuildInfo(): BuildInfo {
   return {
     time: BUILD_TIME,
     commit: BUILD_COMMIT,
+    version: BUILD_VERSION,
   };
 }
 
