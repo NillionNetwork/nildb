@@ -214,7 +214,7 @@ export const UserDataMapper = {
  */
 export const UserLoggerMapper = {
   toCreateDataLogs(collections: UUID[]): UserDataLogs[] {
-    return collections.map(this.toCreateDataLog);
+    return collections.map((c) => this.toCreateDataLog(c));
   },
 
   toCreateDataLog(collection: UUID): UserDataLogs {
@@ -222,7 +222,7 @@ export const UserLoggerMapper = {
   },
 
   toDeleteDataLogs(documents: UUID[]): UserDataLogs[] {
-    return documents.map(this.toDeleteDataLog);
+    return documents.map((d) => this.toDeleteDataLog(d));
   },
 
   toDeleteDataLog(collection: UUID): UserDataLogs {
@@ -230,7 +230,7 @@ export const UserLoggerMapper = {
   },
 
   toUpdateDataLogs(documents: UUID[]): UserDataLogs[] {
-    return documents.map(this.toUpdateDataLog);
+    return documents.map((d) => this.toUpdateDataLog(d));
   },
 
   toUpdateDataLog(collection: UUID): UserDataLogs {
