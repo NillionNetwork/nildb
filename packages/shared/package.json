@@ -20,14 +20,14 @@
     "stub": "tsdown --stub"
   },
   "dependencies": {
-    "@nillion/nuc": "2.0.0-rc.0",
+    "@nillion/nuc": "2.0.0",
     "temporal-polyfill": "^0.3.0"
   },
   "devDependencies": {
     "@types/pino": "^7.0.5",
-    "@typescript/native-preview": "7.0.0-dev.20260112.1",
-    "pino": "^10.1.0",
-    "tsdown": "^0.15.12",
+    "@typescript/native-preview": "7.0.0-dev.20260113.1",
+    "pino": "^10.1.1",
+    "tsdown": "0.20.0-beta.1",
     "typescript": "^5.9.3"
   },
   "tsdown": {
