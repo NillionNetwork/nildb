@@ -89,15 +89,13 @@ docker-logs:
 # --- Build & Docker
 # ------------------
 
-# Create build info aretefact for Docker
+# Create build info artifact for Docker
 create-buildinfo:
     #!/usr/bin/env bash
-    VERSION=$(cat packages/api/package.json | jq -r .version)
     cat << EOF > buildinfo.json
     {
       "time": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
-      "commit": "$(git rev-parse HEAD)",
-      "version": "${VERSION}"
+      "commit": "$(git rev-parse HEAD)"
     }
     EOF
 
