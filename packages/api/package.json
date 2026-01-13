@@ -54,6 +54,7 @@
     "@standard-community/standard-json": "^0.3.5",
     "@standard-community/standard-openapi": "^0.2.9",
     "@types/migrate-mongo": "^10.0.6",
+    "@typescript/native-preview": "7.0.0-dev.20260112.1",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "bech32": "^2.0.0",
