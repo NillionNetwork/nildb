@@ -37,11 +37,8 @@ describe("Owned Collections", () => {
   beforeAll(async (c) => {
     const { bindings, app } = c;
 
-    // This builder is created manually with a specific private key to test
-    // interactions where a single DID acts as both a data owner (the default `user` client)
-    // and a builder. Using the `createRegisteredBuilder` helper is not suitable here as it
-    // generates a random private key.
-    const privateKey = process.env.APP_TEST_USER_PRIVATE_KEY!;
+    // Create an unauthorized builder with a random private key
+    const privateKey = bytesToHex(secp256k1.utils.randomSecretKey());
     unauthorizedBuilderSigner = Signer.fromPrivateKey(privateKey);
     const builderDid = await unauthorizedBuilderSigner.getDid();
 
@@ -736,11 +733,25 @@ describe("Owned Collections", () => {
       }
     });
 
-    it("prevents data reads by unauthorized builder", async ({ c }) => {
+    it("prevents data reads with empty filter by unauthorized builder", async ({ c }) => {
       const { expect } = c;
       const result = await unauthorizedBuilder.findData({
         collection: simpleCollection.id,
         filter: {},
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test setup failed");
+      expect(result.data.data).toHaveLength(0);
+      expect(result.data.pagination.total).toBe(0);
+    });
+
+    it("prevents data reads filtering by id for the unauthorized builder", async ({ c }) => {
+      const { expect } = c;
+
+      const result = await unauthorizedBuilder.findData({
+        collection: simpleCollection.id,
+        filter: { _id: unauthorizedTestData.at(0)?._id },
       });
 
       expect(result.ok).toBe(true);
@@ -931,6 +942,38 @@ describe("Owned Collections", () => {
         variables: { name: testDoc.name },
       });
       expect(runQueryResult.ok).toBe(true);
+    });
+
+    it("unauthorized builder cannot bypass ACL with $or filter", async ({ c }) => {
+      const { expect } = c;
+
+      // Use indices 3 and 4 which were never granted access (0 and 2 were granted in earlier tests)
+      const result = await unauthorizedBuilder.findData({
+        collection: simpleCollection.id,
+        filter: {
+          $or: [{ _id: unauthorizedTestData[3]._id }, { name: unauthorizedTestData[3].name }],
+        },
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test failed");
+      expect(result.data.data).toHaveLength(0);
+    });
+
+    it("unauthorized builder cannot bypass ACL with $in filter", async ({ c }) => {
+      const { expect } = c;
+
+      // Use indices 4 and 5 which were never granted access
+      const result = await unauthorizedBuilder.findData({
+        collection: simpleCollection.id,
+        filter: {
+          _id: { $in: [unauthorizedTestData[4]._id, unauthorizedTestData[5]._id] },
+        },
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("Test failed");
+      expect(result.data.data).toHaveLength(0);
     });
   });
 
