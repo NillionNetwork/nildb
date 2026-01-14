@@ -1,6 +1,8 @@
-import type { Logger } from "pino";
+import type pino from "pino";
 
 import { Did } from "@nillion/nuc";
+
+type Logger = pino.Logger;
 
 const PUBLIC_KEY_HEX_LENGTH = 66;
 
