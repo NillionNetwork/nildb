@@ -1,5 +1,6 @@
 export * from "./builders.dto.js";
 export * from "./collections.dto.js";
+export * from "./credits.dto.js";
 export * from "./data.dto.js";
 export * from "./logger.js";
 export * from "./nuc-cmd-tree.js";
