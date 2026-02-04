@@ -130,3 +130,37 @@ export class RevokeAccessError extends Data.TaggedError("RevokeAccessError")<{
     return [this._tag, `type: ${this.type}`, `object: ${this.id}`, `grantee: ${this.grantee}`];
   }
 }
+
+export class InvalidDidError extends Data.TaggedError("InvalidDidError")<{
+  message: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, this.message];
+  }
+}
+
+export class PaymentValidationError extends Data.TaggedError("PaymentValidationError")<{
+  message: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, this.message];
+  }
+}
+
+export class PaymentAlreadyProcessedError extends Data.TaggedError("PaymentAlreadyProcessedError")<{
+  txHash: string;
+  chainId: number;
+}> {
+  humanize(): string[] {
+    return [this._tag, `txHash: ${this.txHash}`, `chainId: ${this.chainId}`];
+  }
+}
+
+export class InsufficientCreditsError extends Data.TaggedError("InsufficientCreditsError")<{
+  required: string;
+  available: number;
+}> {
+  humanize(): string[] {
+    return [this._tag, `required: ${this.required}`, `available: ${this.available}`];
+  }
+}

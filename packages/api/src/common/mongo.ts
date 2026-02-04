@@ -62,6 +62,8 @@ export enum CollectionName {
   QueryRuns = "query_runs",
   Config = "config",
   Users = "users",
+  Payments = "payments",
+  Revocations = "revocations",
 }
 
 export async function mongoMigrateUp(uri: string, database: string): Promise<void> {

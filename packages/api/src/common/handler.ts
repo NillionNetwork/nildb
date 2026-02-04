@@ -6,7 +6,11 @@ import type {
   DuplicateEntryError,
   GrantAccessError,
   IndexNotFoundError,
+  InsufficientCreditsError,
+  InvalidDidError,
   InvalidIndexOptionsError,
+  PaymentAlreadyProcessedError,
+  PaymentValidationError,
   ResourceAccessDeniedError,
   RevokeAccessError,
   VariableInjectionError,
@@ -29,7 +33,11 @@ type KnownError =
   | DocumentNotFoundError
   | DuplicateEntryError
   | IndexNotFoundError
+  | InsufficientCreditsError
+  | InvalidDidError
   | InvalidIndexOptionsError
+  | PaymentAlreadyProcessedError
+  | PaymentValidationError
   | ResourceAccessDeniedError
   | VariableInjectionError
   | GrantAccessError
@@ -66,6 +74,10 @@ export function handleTaggedErrors(c: Context<AppEnv>) {
         VariableInjectionError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
         GrantAccessError: (e) => toResponse(e, StatusCodes.UNAUTHORIZED),
         RevokeAccessError: (e) => toResponse(e, StatusCodes.UNAUTHORIZED),
+        InvalidDidError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
+        PaymentValidationError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
+        PaymentAlreadyProcessedError: (e) => toResponse(e, StatusCodes.CONFLICT),
+        InsufficientCreditsError: (e) => toResponse(e, StatusCodes.PAYMENT_REQUIRED),
       }),
     );
 }

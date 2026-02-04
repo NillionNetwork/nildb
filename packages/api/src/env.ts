@@ -27,6 +27,8 @@ export const FeatureFlag = {
   METRICS: "metrics",
   MIGRATIONS: "migrations",
   OTEL: "otel",
+  CREDITS: "credits",
+  SELF_SIGNED_AUTH: "self_signed_auth",
 } as const;
 
 export type FeatureFlag = (typeof FeatureFlag)[keyof typeof FeatureFlag];
@@ -84,6 +86,14 @@ export const EnvVarsSchema = z.object({
   rateLimitWindowSeconds: z.coerce.number().int().positive().optional().default(60),
   rateLimitMaxRequests: z.coerce.number().int().positive().optional().default(1000),
   webPort: z.coerce.number().int().positive(),
+  // Credit system configuration (optional, only needed when CREDITS feature is enabled)
+  ethereumRpcUrls: z.string().optional(),
+  supportedChainIds: z.string().optional(),
+  nilUsdExchangeRpc: z.string().url().optional(),
+  nilUsdExchangeOracleAddress: z.string().optional(),
+  storageCostPerGbHour: z.coerce.number().positive().optional().default(0.001),
+  freeTierBytes: z.coerce.number().int().nonnegative().optional().default(104857600), // 100MB
+  gracePeriodDays: z.coerce.number().int().positive().optional().default(90),
 });
 export type EnvVars = z.infer<typeof EnvVarsSchema>;
 
@@ -129,6 +139,14 @@ declare global {
       OTEL_TEAM_NAME?: string;
       OTEL_DEPLOYMENT_ENV?: string;
       OTEL_METRICS_EXPORT_INTERVAL_MS?: string;
+      // Credit system env vars
+      APP_ETHEREUM_RPC_URLS?: string;
+      APP_SUPPORTED_CHAIN_IDS?: string;
+      APP_NIL_USD_EXCHANGE_RPC?: string;
+      APP_NIL_USD_EXCHANGE_ORACLE_ADDRESS?: string;
+      APP_STORAGE_COST_PER_GB_HOUR?: string;
+      APP_FREE_TIER_BYTES?: string;
+      APP_GRACE_PERIOD_DAYS?: string;
     }
   }
 }
@@ -190,6 +208,14 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     rateLimitWindowSeconds: process.env.APP_RATE_LIMIT_WINDOW_SECONDS,
     rateLimitMaxRequests: process.env.APP_RATE_LIMIT_MAX_REQUESTS,
     webPort: process.env.APP_PORT,
+    // Credit system
+    ethereumRpcUrls: process.env.APP_ETHEREUM_RPC_URLS,
+    supportedChainIds: process.env.APP_SUPPORTED_CHAIN_IDS,
+    nilUsdExchangeRpc: process.env.APP_NIL_USD_EXCHANGE_RPC,
+    nilUsdExchangeOracleAddress: process.env.APP_NIL_USD_EXCHANGE_ORACLE_ADDRESS,
+    storageCostPerGbHour: process.env.APP_STORAGE_COST_PER_GB_HOUR,
+    freeTierBytes: process.env.APP_FREE_TIER_BYTES,
+    gracePeriodDays: process.env.APP_GRACE_PERIOD_DAYS,
   });
 
   return {

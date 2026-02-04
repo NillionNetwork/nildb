@@ -21,6 +21,7 @@
   "dependencies": {
     "@nillion/nildb-shared": "workspace:*",
     "@nillion/nildb-types": "workspace:*",
+    "@nillion/nilpay-client": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/api-logs": "^0.54.2",
     "@opentelemetry/auto-instrumentations-node": "^0.51.0",
