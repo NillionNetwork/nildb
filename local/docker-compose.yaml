@@ -25,6 +25,11 @@ services:
       - OTEL_TEAM_NAME=nildb
       - OTEL_DEPLOYMENT_ENV=local
       - OTEL_METRICS_EXPORT_INTERVAL_MS=10000
+      # Credit system (uncomment APP_ENABLED_FEATURES line above to add 'credits')
+      - APP_ETHEREUM_RPC_URLS=31337=http://nil-anvil:8545
+      - APP_SUPPORTED_CHAIN_IDS=31337
+      - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
+      - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
 
   mongodb:
     image: mongo:latest
