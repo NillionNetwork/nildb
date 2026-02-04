@@ -1,5 +1,7 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
-import type { AppBindings, AppEnv, NilauthInstance } from "@nildb/env";
+import type { BuilderDocument } from "@nildb/builders/builders.types";
+import * as CreditsRepository from "@nildb/credits/credits.repository";
+import { FeatureFlag, hasFeatureFlag, type AppBindings, type AppEnv, type NilauthInstance } from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
@@ -7,6 +9,7 @@ import { getReasonPhrase, StatusCodes } from "http-status-codes";
 
 import { NilauthClient } from "@nillion/nilauth-client";
 import { normalizeIdentifier } from "@nillion/nildb-shared";
+import { getProofChainHashes } from "@nillion/nilpay-client";
 import { Codec, Did, type Did as DidType, type Envelope, Payload, Validator } from "@nillion/nuc";
 
 type NilauthInstanceWithDid = NilauthInstance & { did: DidType };
@@ -22,6 +25,34 @@ function extractRootIssuerDid(envelope: Envelope): Did {
   const proofs = envelope.proofs;
   const rootToken = proofs.length > 0 ? proofs[proofs.length - 1] : envelope.nuc;
   return rootToken.payload.iss;
+}
+
+/**
+ * Determine if a builder should use self-signed authentication.
+ * Self-signed auth is used when:
+ * 1. SELF_SIGNED_AUTH feature is enabled
+ * 2. Builder has credits enabled (creditsUsd field exists)
+ */
+function shouldUseSelfSignedAuth(config: { enabledFeatures: string[] }, builder: BuilderDocument): boolean {
+  if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.SELF_SIGNED_AUTH)) {
+    return false;
+  }
+  // Builder has credits enabled if they have the creditsUsd field
+  return builder.creditsUsd !== undefined;
+}
+
+/**
+ * Check local revocations for any token in the proof chain.
+ */
+async function checkLocalRevocations(bindings: AppBindings, envelope: Envelope): Promise<string[]> {
+  const tokenHashes = getProofChainHashes(envelope);
+  const revoked = await pipe(
+    CreditsRepository.findRevocationsByTokenHashes(bindings, tokenHashes),
+    E.map((revocations) => revocations.map((r) => r.tokenHash)),
+    E.catchAll(() => E.succeed([] as string[])),
+    E.runPromise,
+  );
+  return revoked;
 }
 
 export function loadNucToken<P extends string = string, I extends Input = BlankInput, E extends AppEnv = AppEnv>(
@@ -128,38 +159,62 @@ export function loadSubjectAndVerifyAsBuilder<
 
       const nildbNodeDid = bindings.node.did;
 
-      await Validator.validate(envelope, {
-        rootIssuers: nilauthRootIssuers,
-        params: {
-          tokenRequirements: {
-            type: "invocation",
-            audience: nildbNodeDid.didString,
+      // Determine which authentication mode to use
+      if (shouldUseSelfSignedAuth(config, builder)) {
+        // Self-signed mode: the user is their own root issuer
+        await Validator.validate(envelope, {
+          rootIssuers: [canonicalSubject],
+          params: {
+            tokenRequirements: {
+              type: "invocation",
+              audience: nildbNodeDid.didString,
+            },
           },
-        },
-        context,
-      });
+          context,
+        });
 
-      // Check revocations last because it's costly (in terms of network RTT)
-      // Find the nilauth instance that issued the root token in the proof chain
-      const rootIssuerDid = extractRootIssuerDid(envelope);
-      const matchingNilauth = nilauthInstances.find((n) => Did.areEqual(n.did, rootIssuerDid));
+        // Check local revocations instead of nilauth
+        const revokedHashes = await checkLocalRevocations(bindings, envelope);
+        if (revokedHashes.length > 0) {
+          log.warn("Token revoked (local): revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);
+          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+        }
+      } else {
+        // Nilauth mode: validate against nilauth root issuers
+        await Validator.validate(envelope, {
+          rootIssuers: nilauthRootIssuers,
+          params: {
+            tokenRequirements: {
+              type: "invocation",
+              audience: nildbNodeDid.didString,
+            },
+          },
+          context,
+        });
 
-      if (!matchingNilauth) {
-        log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid.didString);
-        return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+        // Check revocations last because it's costly (in terms of network RTT)
+        // Find the nilauth instance that issued the root token in the proof chain
+        const rootIssuerDid = extractRootIssuerDid(envelope);
+        const matchingNilauth = nilauthInstances.find((n) => Did.areEqual(n.did, rootIssuerDid));
+
+        if (!matchingNilauth) {
+          log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid.didString);
+          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+        }
+
+        const nilauthClient = await NilauthClient.create({
+          baseUrl: matchingNilauth.baseUrl,
+          chainId: config.nilauthChainId,
+        });
+        const { revoked } = await nilauthClient.findRevocationsInProofChain(envelope);
+
+        if (revoked.length !== 0) {
+          const hashes = revoked.map((r) => r.tokenHash).join(",");
+          log.warn("Token revoked: revoked_hashes=(%s) auth_token=%O", hashes, token);
+          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+        }
       }
 
-      const nilauthClient = await NilauthClient.create({
-        baseUrl: matchingNilauth.baseUrl,
-        chainId: config.nilauthChainId,
-      });
-      const { revoked } = await nilauthClient.findRevocationsInProofChain(envelope);
-
-      if (revoked.length !== 0) {
-        const hashes = revoked.map((r) => r.tokenHash).join(",");
-        log.warn("Token revoked: revoked_hashes=(%s) auth_token=%O", hashes, token);
-        return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
-      }
       c.set("builder", builder);
 
       return next();
