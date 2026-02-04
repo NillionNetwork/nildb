@@ -13,6 +13,8 @@ import dotenv from "dotenv";
 
 import { buildApp } from "./app.js";
 import { FeatureFlag, hasFeatureFlag, loadBindings, parseConfigFromEnv } from "./env.js";
+import { startBillingWorker } from "./workers/billing.worker.js";
+import { startPurgeWorker } from "./workers/purge.worker.js";
 
 export type NilDbCliOptions = {
   envFile: string;
@@ -101,10 +103,18 @@ async function main(): Promise<void> {
     bindings.migrationsComplete = true;
   }
 
+  // Start credit system workers
+  const billingInterval = startBillingWorker(bindings);
+  const purgeInterval = startPurgeWorker(bindings);
+
   const shutdown = async (): Promise<void> => {
     bindings.log.info("Received shutdown signal. Starting graceful shutdown...");
 
     try {
+      // Stop workers
+      if (billingInterval) clearInterval(billingInterval);
+      if (purgeInterval) clearInterval(purgeInterval);
+
       const promises: Promise<unknown>[] = [
         new Promise((resolve) => appServer.close(resolve)),
         bindings.db.client.close(),

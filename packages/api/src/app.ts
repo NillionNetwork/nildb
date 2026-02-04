@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { buildBuildersRouter } from "./builders/builders.router.js";
 import { buildCollectionsRouter } from "./collections/collections.router.js";
 import type { ControllerOptions } from "./common/types.js";
+import { buildCreditsRouter } from "./credits/credits.router.js";
 import { buildDataRouter } from "./data/data.router.js";
 import type { AppBindings, AppEnv } from "./env.js";
 import { injectBindingsMiddleware } from "./middleware/bindings.middleware.js";
@@ -46,6 +47,7 @@ export async function buildApp(bindings: AppBindings): Promise<{ app: App }> {
   buildQueriesRouter(options);
   buildDataRouter(options);
   buildUserRouter(options);
+  buildCreditsRouter(options);
 
   return { app };
 }
