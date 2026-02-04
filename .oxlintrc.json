@@ -5,6 +5,7 @@
     "correctness": "error"
   },
   "rules": {
+    "import/extensions": ["error", "always", { "ignorePackages": true }],
     "no-nested-ternary": "error",
     "no-unneeded-ternary": "error",
     "no-unused-vars": "error",
