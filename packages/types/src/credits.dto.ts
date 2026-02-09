@@ -62,6 +62,16 @@ export const ReadCreditsResponse = ApiSuccessResponse(ReadCreditsData).meta({
 export type ReadCreditsResponse = z.infer<typeof ReadCreditsResponse>;
 
 /**
+ * Contract addresses for a supported chain.
+ */
+export const ChainContractInfoDto = z.object({
+  chainId: z.number().int().positive(),
+  nilTokenAddress: z.string(),
+  burnContractAddress: z.string(),
+});
+export type ChainContractInfoDto = z.infer<typeof ChainContractInfoDto>;
+
+/**
  * Response for reading pricing information.
  */
 const ReadPricingData = z.object({
@@ -69,6 +79,7 @@ const ReadPricingData = z.object({
   freeTierBytes: z.number().int().nonnegative(),
   supportedChainIds: z.array(z.number().int().positive()),
   nilUsdPrice: z.number().positive().nullable(),
+  chains: z.array(ChainContractInfoDto),
 });
 export const ReadPricingResponse = ApiSuccessResponse(ReadPricingData).meta({
   ref: "ReadPricingResponse",

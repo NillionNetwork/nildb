@@ -53,6 +53,7 @@ export const CreditsDataMapper = {
     freeTierBytes: number;
     supportedChainIds: number[];
     nilUsdPrice: number | null;
+    chains: { chainId: number; nilTokenAddress: string; burnContractAddress: string }[];
   }): ReadPricingResponse {
     return {
       data: {
@@ -60,6 +61,7 @@ export const CreditsDataMapper = {
         freeTierBytes: data.freeTierBytes,
         supportedChainIds: data.supportedChainIds,
         nilUsdPrice: data.nilUsdPrice,
+        chains: data.chains,
       },
     };
   },

@@ -24,6 +24,12 @@ describe("09-credits.test.ts", () => {
     expect(body.data.storageCostPerGbHour).toBeTypeOf("number");
     expect(body.data.freeTierBytes).toBeTypeOf("number");
     expect(Array.isArray(body.data.supportedChainIds)).toBe(true);
+    expect(Array.isArray(body.data.chains)).toBe(true);
+    for (const chain of body.data.chains) {
+      expect(chain.chainId).toBeTypeOf("number");
+      expect(chain.nilTokenAddress).toBeTypeOf("string");
+      expect(chain.burnContractAddress).toBeTypeOf("string");
+    }
   });
 
   it("GET /v1/credits returns balance for credit builder", async ({ c }) => {

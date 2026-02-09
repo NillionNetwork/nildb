@@ -8,6 +8,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @nillion/nildb-types build
 RUN pnpm --filter @nillion/nildb-shared build
 RUN pnpm --filter @nillion/nildb-client build
+RUN pnpm --filter @nillion/nilpay-client build
 # Build the api
 RUN pnpm --filter @nillion/nildb build
 RUN pnpm deploy --prod --filter @nillion/nildb /app

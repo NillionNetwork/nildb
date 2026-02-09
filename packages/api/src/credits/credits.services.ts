@@ -12,7 +12,7 @@ import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import { ObjectId } from "mongodb";
 
-import { computeDigest, unilsToUsd } from "@nillion/nilpay-client";
+import { computeDigest, KnownChains, unilsToUsd } from "@nillion/nilpay-client";
 
 import * as CreditsRepository from "./credits.repository.js";
 import type {
@@ -179,6 +179,7 @@ export function getPricing(ctx: AppBindings): {
   freeTierBytes: number;
   supportedChainIds: number[];
   nilUsdPrice: number | null;
+  chains: { chainId: number; nilTokenAddress: string; burnContractAddress: string }[];
 } {
   const { config } = ctx;
 
@@ -191,11 +192,24 @@ export function getPricing(ctx: AppBindings): {
   // Placeholder - in production this would be fetched from the oracle
   const nilUsdPrice: number | null = 0.1;
 
+  const chains = supportedChainIds
+    .map((chainId) => {
+      const known = KnownChains[chainId];
+      if (!known) return null;
+      return {
+        chainId: known.chainId,
+        nilTokenAddress: known.nilTokenAddress,
+        burnContractAddress: known.burnContractAddress,
+      };
+    })
+    .filter((c) => c !== null);
+
   return {
     storageCostPerGbHour: config.storageCostPerGbHour,
     freeTierBytes: config.freeTierBytes,
     supportedChainIds,
     nilUsdPrice,
+    chains,
   };
 }
 
