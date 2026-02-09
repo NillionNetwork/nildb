@@ -84,6 +84,39 @@ export function loadNucToken<P extends string = string, I extends Input = BlankI
   };
 }
 
+export function verifySelfSignedNuc<P extends string = string, I extends Input = BlankInput, E extends AppEnv = AppEnv>(
+  bindings: AppBindings,
+): MiddlewareHandler<E, P, I> {
+  const { log } = bindings;
+  return async (c, next) => {
+    try {
+      const envelope: Envelope = c.get("envelope");
+      const subject = Did.serialize(envelope.nuc.payload.sub);
+      const canonicalSubject = normalizeIdentifier(subject, log);
+
+      await Validator.validate(envelope, {
+        rootIssuers: [canonicalSubject],
+        params: {
+          tokenRequirements: {
+            type: "invocation",
+            audience: bindings.node.did.didString,
+          },
+        },
+      });
+
+      c.set("subjectDid", canonicalSubject);
+      return next();
+    } catch (cause) {
+      if (cause && typeof cause === "object" && "message" in cause) {
+        log.error({ cause: cause.message }, "Auth error");
+      } else {
+        log.error({ cause: "unknown" }, "Auth error");
+      }
+      return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+    }
+  };
+}
+
 export function loadSubjectAndVerifyAsAdmin<
   P extends string = string,
   I extends Input = BlankInput,

@@ -145,7 +145,7 @@ describe("10-dual-mode.test.ts", () => {
     expect(creditNames.some((n: string) => n.startsWith("nilauth-coll-"))).toBe(false);
   });
 
-  it("did:key registration returns error when credits are enabled", async ({ c }) => {
+  it("unauthenticated registration returns 401", async ({ c }) => {
     const { expect, app } = c;
 
     const response = await app.request(PathsV1.builders.register, {
@@ -158,6 +158,6 @@ describe("10-dual-mode.test.ts", () => {
         name: "should-fail",
       }),
     });
-    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 });

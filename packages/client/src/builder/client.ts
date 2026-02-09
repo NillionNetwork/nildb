@@ -121,9 +121,22 @@ export class BuilderClient {
   async register(body: RegisterBuilderRequest): Promise<Result<void>> {
     try {
       const url = new URL(PathsV1.builders.register, this.options.baseUrl);
+      const nodeDid = Did.fromPublicKey(this.options.nodePublicKey);
+      const userDid = await this.options.signer.getDid();
+
+      const token = await Builder.invocation()
+        .audience(nodeDid)
+        .subject(userDid)
+        .command("/nil/db/builders/create")
+        .expiresIn(60_000)
+        .signAndSerialize(this.options.signer);
+
       const response = await this.httpClient(url.toString(), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(body),
       });
 

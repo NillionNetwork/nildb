@@ -158,6 +158,7 @@ export type AppVariables = {
   envelope: Envelope;
   builder: BuilderDocument;
   user: UserDocument;
+  subjectDid: string;
 };
 
 export async function loadBindings(
