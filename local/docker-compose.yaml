@@ -12,7 +12,7 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=openapi,otel,migrations
+      - APP_ENABLED_FEATURES=openapi,otel,migrations,credits,self_signed_auth
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
