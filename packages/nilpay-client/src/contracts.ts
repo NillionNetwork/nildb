@@ -10,6 +10,7 @@ export const BurnContractAbi = [
       { name: "payer", type: "address", indexed: true },
       { name: "amount", type: "uint256", indexed: false },
       { name: "digest", type: "bytes32", indexed: true },
+      { name: "timestamp", type: "uint256", indexed: false },
     ],
   },
   {

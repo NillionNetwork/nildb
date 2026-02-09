@@ -1,5 +1,6 @@
-import { createPublicClient, http } from "viem";
+import { createPublicClient, decodeEventLog, http } from "viem";
 
+import { BurnContractAbi } from "./contracts.js";
 import { computeDigest } from "./digest.js";
 import type { BurnEvent, ChainConfig, PaymentPayload, PaymentValidationResult } from "./types.js";
 
@@ -28,25 +29,23 @@ export async function getBurnEvent(
       continue;
     }
 
-    // Check if this is a LogBurnWithDigest event
-    // The event has indexed payer and digest, so we check for 3 topics
-    if (log.topics[0] && log.topics.length >= 3) {
-      // Decode the event
-      // topics[1] = payer (indexed)
-      // topics[2] = digest (indexed)
-      // data = amount
-
-      const payer = `0x${log.topics[1]?.slice(-40)}` as `0x${string}`;
-      const digest = log.topics[2] as `0x${string}`;
-      const amount = BigInt(log.data);
-
-      return {
-        payer,
-        amount,
-        digest,
-        blockNumber: receipt.blockNumber,
-        transactionHash: txHash,
-      };
+    try {
+      const event = decodeEventLog({
+        abi: BurnContractAbi,
+        data: log.data,
+        topics: log.topics as [signature: `0x${string}`, ...args: `0x${string}`[]],
+      });
+      if (event.eventName === "LogBurnWithDigest") {
+        return {
+          payer: event.args.payer,
+          amount: event.args.amount,
+          digest: event.args.digest,
+          blockNumber: receipt.blockNumber,
+          transactionHash: txHash,
+        };
+      }
+    } catch {
+      continue;
     }
   }
 
