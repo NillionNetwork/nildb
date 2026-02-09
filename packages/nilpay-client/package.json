@@ -10,7 +10,6 @@
   "exports": {
     ".": {
       "types": "./dist/lib.d.mts",
-      "development": "./src/lib.ts",
       "default": "./dist/lib.mjs"
     }
   },
