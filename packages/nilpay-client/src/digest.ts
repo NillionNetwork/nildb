@@ -1,6 +1,6 @@
 import { keccak256, encodeAbiParameters } from "viem";
 
-import type { PaymentPayload } from "./types.js";
+import type { PaymentPayload } from "./types";
 
 /**
  * Compute the canonical digest for a payment payload.

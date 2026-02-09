@@ -30,7 +30,7 @@ import {
   ReadCollectionMetadataResponse,
 } from "@nillion/nildb-types";
 
-import * as CollectionsService from "./collections.services.js";
+import * as CollectionsService from "./collections.services";
 
 /**
  * Handle GET /v1/collections?limit={number}&offset={number}

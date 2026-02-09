@@ -1,3 +1,3 @@
-export * from "./cache.js";
-export * from "./date.js";
-export * from "./did-utils.js";
+export * from "./cache";
+export * from "./date";
+export * from "./did-utils";

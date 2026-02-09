@@ -1,8 +1,8 @@
-export * from "./types.js";
-export * from "./chains.js";
-export * from "./contracts.js";
-export * from "./digest.js";
-export * from "./exchange.js";
-export * from "./revocation.js";
-export * from "./validation.js";
-export { NilpayClient, type NilpayClientConfig } from "./client.js";
+export * from "./types";
+export * from "./chains";
+export * from "./contracts";
+export * from "./digest";
+export * from "./exchange";
+export * from "./revocation";
+export * from "./validation";
+export { NilpayClient, type NilpayClientConfig } from "./client";

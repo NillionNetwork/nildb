@@ -5,14 +5,24 @@
     "correctness": "error"
   },
   "rules": {
-    "import/extensions": ["error", "always", { "ignorePackages": true }],
+    "import/extensions": [
+      "error",
+      {
+        "js": "never"
+      }
+    ],
     "no-nested-ternary": "error",
     "no-unneeded-ternary": "error",
     "no-unused-vars": "error",
     "typescript/no-explicit-any": "error",
     "typescript/explicit-function-return-type": "warn",
     "unicorn/prefer-node-protocol": "error",
-    "unicorn/filename-case": ["error", { "case": "kebabCase" }],
+    "unicorn/filename-case": [
+      "error",
+      {
+        "case": "kebabCase"
+      }
+    ],
     "import/no-cycle": "error"
   },
   "overrides": [

@@ -12,7 +12,7 @@ import * as QueriesService from "@nildb/queries/queries.services";
 import { Effect as E } from "effect";
 import { ObjectId } from "mongodb";
 
-import * as BuildersRepository from "./builders.repository.js";
+import * as BuildersRepository from "./builders.repository";
 import type {
   AddBuilderCollectionCommand,
   AddBuilderQueryCommand,
@@ -21,7 +21,7 @@ import type {
   RemoveBuilderCollectionCommand,
   RemoveBuilderQueryCommand,
   UpdateProfileCommand,
-} from "./builders.types.js";
+} from "./builders.types";
 
 /**
  * Find builder by DID.

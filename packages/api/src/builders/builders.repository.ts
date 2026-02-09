@@ -9,7 +9,7 @@ import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import { MongoServerError, type StrictFilter, type StrictUpdateFilter, type UpdateResult, type UUID } from "mongodb";
 
-import type { BuilderDocument, BuilderStatus } from "./builders.types.js";
+import type { BuilderDocument, BuilderStatus } from "./builders.types";
 
 /**
  * Insert builder document.

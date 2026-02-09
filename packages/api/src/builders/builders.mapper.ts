@@ -3,7 +3,7 @@ import type { Logger } from "pino";
 import { normalizeIdentifier } from "@nillion/nildb-shared";
 import type { ReadProfileResponse, RegisterBuilderRequest, UpdateProfileRequest } from "@nillion/nildb-types";
 
-import type { BuilderDocument, CreateBuilderCommand, UpdateProfileCommand } from "./builders.types.js";
+import type { BuilderDocument, CreateBuilderCommand, UpdateProfileCommand } from "./builders.types";
 
 /**
  * Builder data mapper.

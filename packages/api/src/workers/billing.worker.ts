@@ -3,7 +3,7 @@ import { computeStatus } from "@nildb/credits/credits.services";
 import { FeatureFlag, hasFeatureFlag, type AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 
-import { calculateBillableStorage, calculateBuilderStorage, calculateStorageCost } from "./storage.services.js";
+import { calculateBillableStorage, calculateBuilderStorage, calculateStorageCost } from "./storage.services";
 
 const BILLING_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const BUILDERS_PER_BATCH = 100;

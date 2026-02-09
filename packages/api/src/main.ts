@@ -11,10 +11,10 @@ import {
 import { Command } from "commander";
 import dotenv from "dotenv";
 
-import { buildApp } from "./app.js";
-import { FeatureFlag, hasFeatureFlag, loadBindings, parseConfigFromEnv } from "./env.js";
-import { startBillingWorker } from "./workers/billing.worker.js";
-import { startPurgeWorker } from "./workers/purge.worker.js";
+import { buildApp } from "./app";
+import { FeatureFlag, hasFeatureFlag, loadBindings, parseConfigFromEnv } from "./env";
+import { startBillingWorker } from "./workers/billing.worker";
+import { startPurgeWorker } from "./workers/purge.worker";
 
 export type NilDbCliOptions = {
   envFile: string;

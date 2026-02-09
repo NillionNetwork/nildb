@@ -21,7 +21,7 @@ import type { JsonObject } from "type-fest";
 
 import type { Paginated } from "@nillion/nildb-types";
 
-import * as DataRepository from "./data.repository.js";
+import * as DataRepository from "./data.repository";
 import type {
   CreateOwnedDataCommand,
   CreateStandardDataCommand,
@@ -33,7 +33,7 @@ import type {
   RecentDataCommand,
   UpdateDataCommand,
   UploadResult,
-} from "./data.types.js";
+} from "./data.types";
 
 /**
  * Create owned records.

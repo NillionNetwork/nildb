@@ -4,7 +4,7 @@ import { vi } from "vitest";
 
 import type { ApiErrorResponse, ApiSuccessResponse, ReadQueryRunByIdResponse, UuidDto } from "@nillion/nildb-types";
 
-import type { FixtureContext } from "./fixture.js";
+import type { FixtureContext } from "./fixture";
 
 export function assertDefined<T>(c: FixtureContext, value: T | undefined | null, message?: string): asserts value is T {
   c.expect(value, message ?? "Expected value to be defined, but it was undefined").toBeDefined();

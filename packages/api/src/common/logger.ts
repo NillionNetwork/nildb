@@ -2,7 +2,7 @@ import { SeverityNumber } from "@opentelemetry/api-logs";
 import type { LoggerProvider } from "@opentelemetry/sdk-logs";
 import pino, { type Logger } from "pino";
 
-import { BUILD_COMMIT } from "./buildinfo.js";
+import { BUILD_COMMIT } from "./buildinfo";
 
 export function createLogger(level: string, loggerProvider?: LoggerProvider): Logger {
   // Always create Pino logger for stdout/stderr visibility

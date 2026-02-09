@@ -7,7 +7,9 @@ import { mongoMigrateUp } from "@nildb/common/mongo";
 import { CollectionName } from "@nildb/common/mongo";
 import { type AppBindings, FeatureFlag, hasFeatureFlag, loadBindings } from "@nildb/env";
 import type { QueryVariable } from "@nildb/queries/queries.types";
+// oxlint-disable-next-line import/extensions
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+// oxlint-disable-next-line import/extensions
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import dotenv from "dotenv";
 import { ObjectId } from "mongodb";
@@ -20,8 +22,8 @@ import { AdminClient, BuilderClient, UserClient } from "@nillion/nildb-client";
 import { createUuidDto, NucCmd, type UuidDto } from "@nillion/nildb-types";
 import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
 
-import { createTestLogger } from "./logger.js";
-import { activateSubscriptionWithPayment } from "./payment.js";
+import { createTestLogger } from "./logger";
+import { activateSubscriptionWithPayment } from "./payment";
 
 export type FixtureContext = {
   id: string;

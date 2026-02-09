@@ -23,8 +23,8 @@ import { z } from "zod";
 import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 
 import pipelineSchema from "./mongodb_pipeline.json";
-import * as RunQueryJobsRepository from "./queries.jobs.repository.js";
-import * as QueriesRepository from "./queries.repository.js";
+import * as RunQueryJobsRepository from "./queries.jobs.repository";
+import * as QueriesRepository from "./queries.repository";
 import type {
   AddQueryCommand,
   DeleteQueryCommand,
@@ -34,7 +34,7 @@ import type {
   ReadQueryByIdCommand,
   RunQueryCommand,
   RunQueryJobDocument,
-} from "./queries.types.js";
+} from "./queries.types";
 
 /**
  * Add query.

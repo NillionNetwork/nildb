@@ -23,8 +23,8 @@ import {
   type StopMaintenanceResponse,
 } from "@nillion/nildb-types";
 
-import { SystemDataMapper } from "./system.mapper.js";
-import * as SystemService from "./system.services.js";
+import { SystemDataMapper } from "./system.mapper";
+import * as SystemService from "./system.services";
 
 /**
  * Handle GET /about

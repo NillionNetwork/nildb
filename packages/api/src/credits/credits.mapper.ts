@@ -8,7 +8,7 @@ import type {
   RegisterCreditsResponse,
 } from "@nillion/nildb-types";
 
-import type { RegisterCreditsCommand } from "./credits.types.js";
+import type { RegisterCreditsCommand } from "./credits.types";
 
 export const CreditsDataMapper = {
   toRegisterCreditsCommand(dto: RegisterCreditsRequest): RegisterCreditsCommand {

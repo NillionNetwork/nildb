@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import { PaginatedResponse, PaginationBodySchema } from "./pagination.dto.js";
-import { ApiSuccessResponse } from "./responses.dto.js";
-import { AclDto } from "./users.dto.js";
+import { PaginatedResponse, PaginationBodySchema } from "./pagination.dto";
+import { ApiSuccessResponse } from "./responses.dto";
+import { AclDto } from "./users.dto";
 
 /**
  * Owned data creation request.

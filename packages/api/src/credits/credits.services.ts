@@ -14,14 +14,14 @@ import { ObjectId } from "mongodb";
 
 import { computeDigest, KnownChains, unilsToUsd } from "@nillion/nilpay-client";
 
-import * as CreditsRepository from "./credits.repository.js";
+import * as CreditsRepository from "./credits.repository";
 import type {
   AddRevocationCommand,
   PaymentDocument,
   RegisterCreditsCommand,
   RevocationDocument,
-} from "./credits.types.js";
-import { getChainConfigFromEnv, validatePaymentOnChain, verifyDidMatchesPayer } from "./ethereum.services.js";
+} from "./credits.types";
+import { getChainConfigFromEnv, validatePaymentOnChain, verifyDidMatchesPayer } from "./ethereum.services";
 
 /**
  * Register credits from a payment transaction.

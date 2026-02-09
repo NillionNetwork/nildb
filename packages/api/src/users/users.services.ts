@@ -16,14 +16,14 @@ import type { UpdateResult, UUID } from "mongodb";
 
 import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 
-import * as UserRepository from "./users.repository.js";
+import * as UserRepository from "./users.repository";
 import type {
   DataDocumentReference,
   GrantAccessToDataCommand,
   RevokeAccessToDataCommand,
   UpsertUserCommand,
   UserDocument,
-} from "./users.types.js";
+} from "./users.types";
 
 /**
  * Update or create a user document in the database.

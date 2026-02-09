@@ -33,9 +33,9 @@ import {
   UpdateDataResponse,
 } from "@nillion/nildb-types";
 
-import { DataMapper } from "./data.mapper.js";
-import * as DataService from "./data.services.js";
-import type { UploadResult } from "./data.types.js";
+import { DataMapper } from "./data.mapper";
+import * as DataService from "./data.services";
+import type { UploadResult } from "./data.types";
 
 /**
  * Determines the appropriate HTTP status code for a bulk creation result.

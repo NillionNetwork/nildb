@@ -1,9 +1,9 @@
-import { getChainConfig, parseChainRpcUrls } from "./chains.js";
-import { computeDigest, deserializePayload, serializePayload } from "./digest.js";
-import { getNilUsdPrice, getNilUsdPriceHttp, unilsToUsd, usdToUnils } from "./exchange.js";
-import { getProofChainHashes, hashToken, hashTokenAtIndex } from "./revocation.js";
-import type { ChainConfig, ExchangeRate, PaymentPayload, PaymentValidationResult } from "./types.js";
-import { getBurnEvent, validatePayment } from "./validation.js";
+import { getChainConfig, parseChainRpcUrls } from "./chains";
+import { computeDigest, deserializePayload, serializePayload } from "./digest";
+import { getNilUsdPrice, getNilUsdPriceHttp, unilsToUsd, usdToUnils } from "./exchange";
+import { getProofChainHashes, hashToken, hashTokenAtIndex } from "./revocation";
+import type { ChainConfig, ExchangeRate, PaymentPayload, PaymentValidationResult } from "./types";
+import { getBurnEvent, validatePayment } from "./validation";
 
 export type NilpayClientConfig = {
   chainRpcUrls: Map<number, string>;
@@ -140,12 +140,12 @@ export class NilpayClient {
 }
 
 // Re-export utilities for direct use
-export { computeDigest, deserializePayload, serializePayload } from "./digest.js";
+export { computeDigest, deserializePayload, serializePayload } from "./digest";
 
-export { getNilUsdPrice, getNilUsdPriceHttp, unilsToUsd, usdToUnils } from "./exchange.js";
+export { getNilUsdPrice, getNilUsdPriceHttp, unilsToUsd, usdToUnils } from "./exchange";
 
-export { getBurnEvent, validatePayment } from "./validation.js";
+export { getBurnEvent, validatePayment } from "./validation";
 
-export { getProofChainHashes, hashToken, hashTokenAtIndex } from "./revocation.js";
+export { getProofChainHashes, hashToken, hashTokenAtIndex } from "./revocation";
 
-export { getChainConfig, parseChainRpcUrls, KnownChains } from "./chains.js";
+export { getChainConfig, parseChainRpcUrls, KnownChains } from "./chains";

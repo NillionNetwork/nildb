@@ -6,7 +6,7 @@ import { type Collection, type Document, MongoClient, MongoError, type UUID } fr
 
 import type { UuidDto } from "@nillion/nildb-types";
 
-import type { CoercibleMap } from "./coercion.js";
+import type { CoercibleMap } from "./coercion";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
 // identifier across the cluster.

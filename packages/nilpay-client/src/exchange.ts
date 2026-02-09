@@ -1,7 +1,7 @@
 import { createPublicClient, http } from "viem";
 
-import { ExchangeOracleAbi } from "./contracts.js";
-import type { ExchangeRate } from "./types.js";
+import { ExchangeOracleAbi } from "./contracts";
+import type { ExchangeRate } from "./types";
 
 /**
  * CoinGecko-style API response format.

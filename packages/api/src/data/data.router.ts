@@ -1,6 +1,6 @@
 import type { ControllerOptions } from "@nildb/common/types";
 
-import * as DataController from "./data.controllers.js";
+import * as DataController from "./data.controllers";
 
 /**
  * Registers all data-related routes with the application.

@@ -1,8 +1,8 @@
 import { createPublicClient, decodeEventLog, http } from "viem";
 
-import { BurnContractAbi } from "./contracts.js";
-import { computeDigest } from "./digest.js";
-import type { BurnEvent, ChainConfig, PaymentPayload, PaymentValidationResult } from "./types.js";
+import { BurnContractAbi } from "./contracts";
+import { computeDigest } from "./digest";
+import type { BurnEvent, ChainConfig, PaymentPayload, PaymentValidationResult } from "./types";
 
 /**
  * Fetch the LogBurnWithDigest event from a transaction.

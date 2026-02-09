@@ -1,7 +1,7 @@
 import type { ControllerOptions } from "@nildb/common/types";
 
-import * as CreditsController from "./credits.controllers.js";
-import * as RevocationsController from "./revocations.controllers.js";
+import * as CreditsController from "./credits.controllers";
+import * as RevocationsController from "./revocations.controllers";
 
 /**
  * Build the credits router.

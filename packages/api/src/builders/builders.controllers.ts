@@ -22,8 +22,8 @@ import {
   type UpdateProfileResponse,
 } from "@nillion/nildb-types";
 
-import { BuilderDataMapper } from "./builders.mapper.js";
-import * as BuilderService from "./builders.services.js";
+import { BuilderDataMapper } from "./builders.mapper";
+import * as BuilderService from "./builders.services";
 
 /**
  * Handle POST /v1/builders/register

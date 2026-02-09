@@ -23,7 +23,7 @@ import type {
   ReadQueryByIdCommand,
   RunQueryCommand,
   RunQueryJobDocument,
-} from "./queries.types.js";
+} from "./queries.types";
 
 export const QueriesDataMapper = {
   /**

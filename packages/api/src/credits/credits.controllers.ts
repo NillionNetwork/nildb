@@ -19,8 +19,8 @@ import {
   RegisterCreditsResponse,
 } from "@nillion/nildb-types";
 
-import { CreditsDataMapper } from "./credits.mapper.js";
-import * as CreditsService from "./credits.services.js";
+import { CreditsDataMapper } from "./credits.mapper";
+import * as CreditsService from "./credits.services";
 
 /**
  * Handle POST /v1/credits/register

@@ -22,7 +22,7 @@ import {
   ATTR_SERVICE_VERSION,
 } from "@opentelemetry/semantic-conventions/incubating";
 
-import { BUILD_COMMIT } from "./buildinfo.js";
+import { BUILD_COMMIT } from "./buildinfo";
 
 export type MetricsOnlyProviders = {
   meterProvider: MeterProvider;

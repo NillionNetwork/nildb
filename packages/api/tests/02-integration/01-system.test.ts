@@ -2,7 +2,7 @@ import { describe } from "vitest";
 
 import { PathsV1 } from "@nillion/nildb-types";
 
-import { createTestFixtureExtension } from "../fixture/it.js";
+import { createTestFixtureExtension } from "../fixture/it";
 
 describe("system.test.js", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

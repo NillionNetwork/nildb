@@ -7,7 +7,7 @@ import {
 } from "@nillion/nildb-types";
 import { Builder, Did, type Envelope, type Signer } from "@nillion/nuc";
 
-import type { HttpClient } from "../types.js";
+import type { HttpClient } from "../types";
 
 type AdminClientOptions = {
   baseUrl: string;

@@ -6,7 +6,7 @@ import { describe } from "vitest";
 import type { ReadCreditsResponse, ReadPricingResponse } from "@nillion/nildb-types";
 import { createUuidDto, PathsV1 } from "@nillion/nildb-types";
 
-import { createCreditTestFixtureExtension } from "../fixture/it.js";
+import { createCreditTestFixtureExtension } from "../fixture/it";
 
 describe("09-credits.test.ts", () => {
   const { it, beforeAll, afterAll } = createCreditTestFixtureExtension();

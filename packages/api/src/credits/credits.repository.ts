@@ -9,7 +9,7 @@ import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import { MongoServerError, type StrictFilter } from "mongodb";
 
-import type { PaymentDocument, RevocationDocument } from "./credits.types.js";
+import type { PaymentDocument, RevocationDocument } from "./credits.types";
 
 /**
  * Insert a payment document.

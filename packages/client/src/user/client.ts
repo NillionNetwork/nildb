@@ -13,7 +13,7 @@ import {
 } from "@nillion/nildb-types";
 import { Builder, Did, type Signer } from "@nillion/nuc";
 
-import type { HttpClient } from "../types.js";
+import type { HttpClient } from "../types";
 
 type UserClientOptions = {
   baseUrl: string;

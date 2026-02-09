@@ -1,6 +1,8 @@
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import { createLogger } from "@nildb/common/logger";
+// oxlint-disable-next-line import/extensions
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+// oxlint-disable-next-line import/extensions
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import type { LoggerProvider } from "@opentelemetry/sdk-logs";
 import type { Db, MongoClient } from "mongodb";
@@ -11,8 +13,8 @@ import { Cache } from "@nillion/nildb-shared";
 import { LogLevel } from "@nillion/nildb-types";
 import { type Did, type Envelope, Signer } from "@nillion/nuc";
 
-import { initAndCreateDbClients } from "./common/mongo.js";
-import type { UserDocument } from "./users/users.types.js";
+import { initAndCreateDbClients } from "./common/mongo";
+import type { UserDocument } from "./users/users.types";
 
 export const PRIVATE_KEY_LENGTH = 64;
 export const PUBLIC_KEY_LENGTH = 66;

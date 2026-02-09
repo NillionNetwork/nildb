@@ -4,7 +4,7 @@ import { Effect as E } from "effect";
 
 import { getChainConfig, type ChainConfig, type PaymentPayload, validatePayment } from "@nillion/nilpay-client";
 
-import type { RegisterCreditsCommand } from "./credits.types.js";
+import type { RegisterCreditsCommand } from "./credits.types";
 
 /**
  * Get chain configuration from environment.

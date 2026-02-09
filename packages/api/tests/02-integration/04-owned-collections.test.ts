@@ -2,7 +2,9 @@ import { faker } from "@faker-js/faker";
 import type { CollectionDocument } from "@nildb/collections/collections.types";
 import { CollectionName } from "@nildb/common/mongo";
 import type { OwnedDocumentBase } from "@nildb/data/data.types";
+// oxlint-disable-next-line import/extensions
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+// oxlint-disable-next-line import/extensions
 import { bytesToHex } from "@noble/hashes/utils.js";
 import type { DeleteResult } from "mongodb";
 import { UUID } from "mongodb";
@@ -17,11 +19,11 @@ import simpleCollectionJson from "../data/simple.collection.json";
 import simpleQueryJson from "../data/simple.query.json";
 import collectionJson from "../data/wallet.collection.json";
 import queryJson from "../data/wallet.query.json";
-import { assertDefined, assertDocumentCount, expectBuilder } from "../fixture/assertions.js";
-import type { CollectionFixture, QueryFixture } from "../fixture/fixture.js";
-import { createUserTestClient } from "../fixture/helpers.js";
-import { createTestFixtureExtension } from "../fixture/it.js";
-import { activateSubscriptionWithPayment } from "../fixture/payment.js";
+import { assertDefined, assertDocumentCount, expectBuilder } from "../fixture/assertions";
+import type { CollectionFixture, QueryFixture } from "../fixture/fixture";
+import { createUserTestClient } from "../fixture/helpers";
+import { createTestFixtureExtension } from "../fixture/it";
+import { activateSubscriptionWithPayment } from "../fixture/payment";
 
 describe("Owned Collections", () => {
   const collection = collectionJson as unknown as CollectionFixture;

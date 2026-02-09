@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ApiSuccessResponse } from "./responses.dto.js";
+import { ApiSuccessResponse } from "./responses.dto";
 
 /**
  * Builder status for credit-based access control.

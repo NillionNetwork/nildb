@@ -1,7 +1,9 @@
 import { faker } from "@faker-js/faker";
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import { CollectionName } from "@nildb/common/mongo";
+// oxlint-disable-next-line import/extensions
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+// oxlint-disable-next-line import/extensions
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { StatusCodes } from "http-status-codes";
 import { ObjectId } from "mongodb";
@@ -12,9 +14,9 @@ import { BuilderClient } from "@nillion/nildb-client";
 import { createUuidDto, PathsV1 } from "@nillion/nildb-types";
 import { Did, Signer } from "@nillion/nuc";
 
-import type { CreditFixtureContext } from "../fixture/fixture.js";
-import { createCreditTestFixtureExtension } from "../fixture/it.js";
-import { activateSubscriptionWithPayment } from "../fixture/payment.js";
+import type { CreditFixtureContext } from "../fixture/fixture";
+import { createCreditTestFixtureExtension } from "../fixture/it";
+import { activateSubscriptionWithPayment } from "../fixture/payment";
 
 describe("10-dual-mode.test.ts", () => {
   const { it, beforeAll, afterAll } = createCreditTestFixtureExtension();

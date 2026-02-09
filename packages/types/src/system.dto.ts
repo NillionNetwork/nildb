@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { LogLevel } from "./logger.js";
-import { ApiSuccessResponse } from "./responses.dto.js";
+import { LogLevel } from "./logger";
+import { ApiSuccessResponse } from "./responses.dto";
 
 /**
  * Log level update request.
