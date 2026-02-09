@@ -16,14 +16,14 @@ export function getChainConfigFromEnv(ctx: AppBindings, chainId: number): ChainC
     return null;
   }
 
-  // Parse chain RPC URLs (format: "chainId:url,chainId:url,...")
+  // Parse chain RPC URLs (format: "chainId=url,chainId=url,...")
   const entries = config.ethereumRpcUrls.split(",").map((e) => e.trim());
   for (const entry of entries) {
-    const colonIndex = entry.indexOf(":");
-    if (colonIndex === -1) continue;
+    const eqIndex = entry.indexOf("=");
+    if (eqIndex === -1) continue;
 
-    const idStr = entry.slice(0, colonIndex);
-    const url = entry.slice(colonIndex + 1);
+    const idStr = entry.slice(0, eqIndex);
+    const url = entry.slice(eqIndex + 1);
     const id = Number.parseInt(idStr, 10);
 
     if (id === chainId) {
