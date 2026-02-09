@@ -7,7 +7,7 @@ import {
   DuplicateEntryError,
   InvalidDidError,
 } from "@nildb/common/errors";
-import { FeatureFlag, hasFeatureFlag, type AppBindings } from "@nildb/env";
+import { type AppBindings } from "@nildb/env";
 import * as QueriesService from "@nildb/queries/queries.services";
 import { Effect as E } from "effect";
 import { ObjectId } from "mongodb";
@@ -48,12 +48,10 @@ export function createBuilder(
     );
   }
 
-  // When credits feature is enabled, require did:ethr for new registrations
-  const creditsEnabled = hasFeatureFlag(ctx.config.enabledFeatures, FeatureFlag.CREDITS);
-  if (creditsEnabled && command.did.startsWith("did:key:")) {
+  if (!command.did.startsWith("did:ethr:") && !command.did.startsWith("did:key:")) {
     return E.fail(
       new InvalidDidError({
-        message: "New registrations require did:ethr when credits are enabled",
+        message: "Registration requires did:ethr or did:key",
       }),
     );
   }
@@ -67,6 +65,7 @@ export function createBuilder(
     name: command.name,
     collections: [],
     queries: [],
+    creditsUsd: 0,
   };
 
   return BuildersRepository.insert(ctx, document);
