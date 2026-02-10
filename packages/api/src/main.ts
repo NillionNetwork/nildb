@@ -86,6 +86,15 @@ async function main(): Promise<void> {
     },
   );
 
+  // Start credit system workers after migrations complete
+  let billingInterval: NodeJS.Timeout | null = null;
+  let purgeInterval: NodeJS.Timeout | null = null;
+
+  const startWorkers = (): void => {
+    billingInterval = startBillingWorker(bindings);
+    purgeInterval = startPurgeWorker(bindings);
+  };
+
   // Run migrations in background to avoid container liveness probe timeouts
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
     void (async (): Promise<void> => {
@@ -94,6 +103,7 @@ async function main(): Promise<void> {
         await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
         bindings.migrationsComplete = true;
         bindings.log.info("Database migrations completed successfully");
+        startWorkers();
       } catch (error) {
         bindings.log.error({ error }, "Database migrations failed");
         process.exit(1);
@@ -101,11 +111,8 @@ async function main(): Promise<void> {
     })();
   } else {
     bindings.migrationsComplete = true;
+    startWorkers();
   }
-
-  // Start credit system workers
-  const billingInterval = startBillingWorker(bindings);
-  const purgeInterval = startPurgeWorker(bindings);
 
   const shutdown = async (): Promise<void> => {
     bindings.log.info("Received shutdown signal. Starting graceful shutdown...");
