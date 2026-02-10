@@ -335,6 +335,47 @@ export function addCreditsUsd(
 }
 
 /**
+ * Atomically add credits and set status to active in a single update.
+ * Combines the addCreditsUsd + updateStatus operations to reduce partial failure risk.
+ */
+export function applyCreditsAndActivate(
+  ctx: AppBindings,
+  builder: string,
+  amountUsd: number,
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
+  const now = new Date();
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, {
+          $inc: { creditsUsd: amountUsd },
+          $set: {
+            status: "active",
+            _updated: now,
+            lastCreditTopUp: now,
+            creditsDepleted: null,
+          },
+        }),
+      catch: (cause) => new DatabaseError({ cause, message: "applyCreditsAndActivate" }),
+    }),
+    E.flatMap((result) =>
+      result.matchedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          ),
+    ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/**
  * Deduct credits (in USD) from a builder's balance.
  * Credits cannot go below 0.
  */
