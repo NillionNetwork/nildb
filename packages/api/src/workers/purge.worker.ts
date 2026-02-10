@@ -1,3 +1,7 @@
+// LIMITATION: This worker uses setInterval and assumes a single application instance per database.
+// Running multiple instances against the same database will cause duplicate purge operations.
+// Horizontal scaling would require distributed locking (e.g. MongoDB advisory locks).
+
 import * as BuildersRepository from "@nildb/builders/builders.repository";
 import * as CollectionsService from "@nildb/collections/collections.services";
 import { FeatureFlag, hasFeatureFlag, type AppBindings } from "@nildb/env";
