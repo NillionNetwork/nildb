@@ -151,9 +151,13 @@ export function readPricing(options: ControllerOptions): void {
       },
     }),
     async (c) => {
-      const result = CreditsService.getPricing(c.env);
-      const response = CreditsDataMapper.toReadPricingResponse(result);
-      return c.json<ReadPricingResponse>(response);
+      return pipe(
+        CreditsService.getPricing(c.env),
+        E.map((result) => CreditsDataMapper.toReadPricingResponse(result)),
+        E.map((response) => c.json<ReadPricingResponse>(response)),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
     },
   );
 }

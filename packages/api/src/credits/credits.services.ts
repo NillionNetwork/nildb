@@ -12,7 +12,7 @@ import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import { ObjectId } from "mongodb";
 
-import { computeDigest, KnownChains, unilsToUsd } from "@nillion/nilpay-client";
+import { computeDigest, getNilUsdPriceHttp, KnownChains, unilsToUsd } from "@nillion/nilpay-client";
 
 import * as CreditsRepository from "./credits.repository";
 import type {
@@ -91,13 +91,15 @@ export function registerCredits(
       )
     : E.succeed(command.amountUnils);
 
-  // Use a placeholder exchange rate.
-  // In production, this would be fetched from the oracle.
-  const nilUsdPrice = 0.1; // Placeholder: $0.10 per NIL
-
   return pipe(
     validationEffect,
-    E.flatMap((amountUnils) => {
+    E.flatMap((amountUnils) =>
+      pipe(
+        fetchNilUsdPrice(ctx),
+        E.map((nilUsdPrice) => ({ amountUnils, nilUsdPrice })),
+      ),
+    ),
+    E.flatMap(({ amountUnils, nilUsdPrice }) => {
       const amountUsd = unilsToUsd(amountUnils, nilUsdPrice);
 
       const now = new Date();
@@ -118,10 +120,8 @@ export function registerCredits(
       return pipe(
         // Insert payment (will fail if already processed)
         CreditsRepository.insertPayment(ctx, paymentDoc),
-        // Add credits to builder
-        E.flatMap(() => BuildersRepository.addCreditsUsd(ctx, builderDid, amountUsd)),
-        // Update status to active
-        E.flatMap(() => BuildersRepository.updateStatus(ctx, builderDid, "active", null)),
+        // Add credits and activate builder in a single update
+        E.flatMap(() => BuildersRepository.applyCreditsAndActivate(ctx, builderDid, amountUsd)),
         // Return updated balance and status
         E.flatMap(() => BuildersRepository.findOne(ctx, builderDid)),
         E.map((builder) => ({
@@ -174,13 +174,16 @@ export function getBalance(
 /**
  * Get pricing information.
  */
-export function getPricing(ctx: AppBindings): {
-  storageCostPerGbHour: number;
-  freeTierBytes: number;
-  supportedChainIds: number[];
-  nilUsdPrice: number | null;
-  chains: { chainId: number; nilTokenAddress: string; burnContractAddress: string }[];
-} {
+export function getPricing(ctx: AppBindings): E.Effect<
+  {
+    storageCostPerGbHour: number;
+    freeTierBytes: number;
+    supportedChainIds: number[];
+    nilUsdPrice: number | null;
+    chains: { chainId: number; nilTokenAddress: string; burnContractAddress: string }[];
+  },
+  never
+> {
   const { config } = ctx;
 
   const supportedChainIds =
@@ -188,9 +191,6 @@ export function getPricing(ctx: AppBindings): {
       ?.split(",")
       .map((s) => Number.parseInt(s.trim(), 10))
       .filter(Boolean) ?? [];
-
-  // Placeholder - in production this would be fetched from the oracle
-  const nilUsdPrice: number | null = 0.1;
 
   const chains = supportedChainIds
     .map((chainId) => {
@@ -204,13 +204,41 @@ export function getPricing(ctx: AppBindings): {
     })
     .filter((c) => c !== null);
 
-  return {
-    storageCostPerGbHour: config.storageCostPerGbHour,
-    freeTierBytes: config.freeTierBytes,
-    supportedChainIds,
-    nilUsdPrice,
-    chains,
-  };
+  return pipe(
+    fetchNilUsdPrice(ctx),
+    E.catchAll(() => E.succeed(null as number | null)),
+    E.map((nilUsdPrice) => ({
+      storageCostPerGbHour: config.storageCostPerGbHour,
+      freeTierBytes: config.freeTierBytes,
+      supportedChainIds,
+      nilUsdPrice,
+      chains,
+    })),
+  );
+}
+
+/**
+ * Fetch the current NIL/USD price from the configured exchange API.
+ * Fails if the API URL or coin ID is not configured.
+ */
+function fetchNilUsdPrice(ctx: AppBindings): E.Effect<number, PaymentValidationError> {
+  const { nilUsdExchangeApiUrl, nilUsdExchangeCoinId } = ctx.config;
+
+  if (!nilUsdExchangeApiUrl || !nilUsdExchangeCoinId) {
+    return E.fail(
+      new PaymentValidationError({
+        message: "Exchange API not configured: nilUsdExchangeApiUrl and nilUsdExchangeCoinId are required",
+      }),
+    );
+  }
+
+  return E.tryPromise({
+    try: () => getNilUsdPriceHttp(nilUsdExchangeApiUrl, nilUsdExchangeCoinId),
+    catch: (cause) =>
+      new PaymentValidationError({
+        message: `Failed to fetch NIL/USD price: ${cause instanceof Error ? cause.message : String(cause)}`,
+      }),
+  }).pipe(E.map((rate) => rate.nilUsdPrice));
 }
 
 /**
