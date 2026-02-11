@@ -10,9 +10,42 @@ import { getReasonPhrase, StatusCodes } from "http-status-codes";
 import { NilauthClient } from "@nillion/nilauth-client";
 import { normalizeIdentifier } from "@nillion/nildb-shared";
 import { getProofChainHashes } from "@nillion/nilpay-client";
-import { Codec, Did, type Did as DidType, type Envelope, Payload, Validator } from "@nillion/nuc";
+import { Codec, Did, type Did as DidType, type Envelope, type Nuc, Payload, Validator } from "@nillion/nuc";
 
 type NilauthInstanceWithDid = NilauthInstance & { did: DidType };
+
+/**
+ * Parse the supportedChainIds config string into a number array.
+ * Returns empty array if not configured.
+ */
+function parseSupportedChainIds(raw: string | undefined): number[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => Number.parseInt(s.trim(), 10))
+    .filter(Boolean);
+}
+
+/**
+ * Validate that any EIP-712 signed tokens in the envelope were signed on a supported chain.
+ * Skips validation if supportedChainIds is empty (not configured).
+ */
+export function validateEip712ChainId(envelope: Envelope, supportedChainIds: number[]): void {
+  if (supportedChainIds.length === 0) return;
+
+  const tokens: Nuc[] = [envelope.nuc, ...envelope.proofs];
+  for (const token of tokens) {
+    const header = JSON.parse(Buffer.from(token.rawHeader, "base64url").toString());
+    if (header.typ !== "nuc+eip712") continue;
+
+    const tokenChainId = header.meta?.domain?.chainId;
+    if (tokenChainId !== undefined && !supportedChainIds.includes(tokenChainId)) {
+      throw new Error(
+        `EIP-712 token signed on chain ${tokenChainId}, expected one of [${supportedChainIds.join(", ")}]`,
+      );
+    }
+  }
+}
 
 function buildNilauthInstancesWithDids(instances: NilauthInstance[]): NilauthInstanceWithDid[] {
   return instances.map((instance) => ({
@@ -151,6 +184,7 @@ export function loadSubjectAndVerifyAsBuilder<
   const { log, config } = bindings;
   const nilauthInstances = buildNilauthInstancesWithDids(config.nilauthInstances);
   const nilauthRootIssuers = nilauthInstances.map((n) => n.did.didString);
+  const supportedChainIds = parseSupportedChainIds(config.supportedChainIds);
 
   return async (c, next) => {
     try {
@@ -206,6 +240,8 @@ export function loadSubjectAndVerifyAsBuilder<
           context,
         });
 
+        validateEip712ChainId(envelope, supportedChainIds);
+
         // Check local revocations instead of nilauth
         const revokedHashes = await checkLocalRevocations(bindings, envelope);
         if (revokedHashes.length > 0) {
@@ -224,6 +260,8 @@ export function loadSubjectAndVerifyAsBuilder<
           },
           context,
         });
+
+        validateEip712ChainId(envelope, supportedChainIds);
 
         // Check revocations last because it's costly (in terms of network RTT)
         // Find the nilauth instance that issued the root token in the proof chain
