@@ -56,6 +56,35 @@ export function findPaymentByTxHashAndChain(
 }
 
 /**
+ * Find payments by payer DID with pagination.
+ */
+export function findPaymentsByPayer(
+  ctx: AppBindings,
+  payerDid: string,
+  limit: number,
+  offset: number,
+): E.Effect<{ data: PaymentDocument[]; total: number }, CollectionNotFoundError | DatabaseError> {
+  const filter: StrictFilter<PaymentDocument> = { payerDid };
+
+  return pipe(
+    checkCollectionExists<PaymentDocument>(ctx, "primary", CollectionName.Payments),
+    E.flatMap((collection) =>
+      E.all([
+        E.tryPromise({
+          try: () => collection.find(filter).sort({ processedAt: -1 }).skip(offset).limit(limit).toArray(),
+          catch: (cause) => new DatabaseError({ cause, message: "findPaymentsByPayer" }),
+        }),
+        E.tryPromise({
+          try: () => collection.countDocuments(filter),
+          catch: (cause) => new DatabaseError({ cause, message: "findPaymentsByPayer:count" }),
+        }),
+      ]),
+    ),
+    E.map(([data, total]) => ({ data, total })),
+  );
+}
+
+/**
  * Insert a revocation document.
  */
 export function insertRevocation(

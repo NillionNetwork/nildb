@@ -12,8 +12,10 @@ import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 
 import {
   NucCmd,
+  PaginationQuerySchema,
   PathsV1,
   ReadCreditsResponse,
+  ReadPaymentsResponse,
   ReadPricingResponse,
   RegisterCreditsRequest,
   RegisterCreditsResponse,
@@ -114,6 +116,55 @@ export function readCredits(options: ControllerOptions): void {
         CreditsService.getBalance(c.env, builder.did),
         E.map((result) => CreditsDataMapper.toReadCreditsResponse(result)),
         E.map((response) => c.json<ReadCreditsResponse>(response)),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+/**
+ * Handle GET /v1/credits/payments
+ * Get payment history for the authenticated builder.
+ */
+export function readPayments(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.credits.payments;
+
+  if (!hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.CREDITS)) {
+    return;
+  }
+
+  app.get(
+    path,
+    describeRoute({
+      tags: ["Credits"],
+      security: [{ bearerAuth: [] }],
+      summary: "Get payment history",
+      responses: {
+        200: {
+          description: "OK",
+          content: {
+            "application/json": {
+              schema: resolver(ReadPaymentsResponse),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("query", PaginationQuerySchema),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsBuilder(bindings),
+    requireNucNamespace(NucCmd.nil.db.credits.read),
+    async (c) => {
+      const builder = c.get("builder");
+      const { limit, offset } = c.req.valid("query");
+
+      return pipe(
+        CreditsService.getPaymentHistory(c.env, builder.did, limit, offset),
+        E.map((result) => CreditsDataMapper.toReadPaymentsResponse(result)),
+        E.map((response) => c.json<ReadPaymentsResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );

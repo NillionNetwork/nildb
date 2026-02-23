@@ -10,6 +10,7 @@ import * as RevocationsController from "./revocations.controllers";
 export function buildCreditsRouter(options: ControllerOptions): void {
   CreditsController.registerCredits(options);
   CreditsController.readCredits(options);
+  CreditsController.readPayments(options);
   CreditsController.readPricing(options);
   RevocationsController.revokeToken(options);
   RevocationsController.lookupRevocations(options);

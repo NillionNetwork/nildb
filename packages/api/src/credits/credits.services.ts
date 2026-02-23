@@ -291,6 +291,24 @@ export function computeStatus(
 }
 
 /**
+ * Get payment history for a builder.
+ */
+export function getPaymentHistory(
+  ctx: AppBindings,
+  builderDid: string,
+  limit: number,
+  offset: number,
+): E.Effect<
+  { data: PaymentDocument[]; total: number; limit: number; offset: number },
+  CollectionNotFoundError | DatabaseError
+> {
+  return pipe(
+    CreditsRepository.findPaymentsByPayer(ctx, builderDid, limit, offset),
+    E.map(({ data, total }) => ({ data, total, limit, offset })),
+  );
+}
+
+/**
  * Add a token revocation.
  */
 export function addRevocation(

@@ -4,11 +4,12 @@ import type {
   BuilderStatusDto,
   ReadCreditsResponse,
   ReadPricingResponse,
+  ReadPaymentsResponse,
   RegisterCreditsRequest,
   RegisterCreditsResponse,
 } from "@nillion/nildb-types";
 
-import type { RegisterCreditsCommand } from "./credits.types";
+import type { PaymentDocument, RegisterCreditsCommand } from "./credits.types";
 
 export const CreditsDataMapper = {
   toRegisterCreditsCommand(dto: RegisterCreditsRequest): RegisterCreditsCommand {
@@ -62,6 +63,28 @@ export const CreditsDataMapper = {
         supportedChainIds: data.supportedChainIds,
         nilUsdPrice: data.nilUsdPrice,
         chains: data.chains,
+      },
+    };
+  },
+
+  toReadPaymentsResponse(data: {
+    data: PaymentDocument[];
+    total: number;
+    limit: number;
+    offset: number;
+  }): ReadPaymentsResponse {
+    return {
+      data: data.data.map((p) => ({
+        txHash: p.txHash,
+        chainId: p.chainId,
+        amountUnils: p.amountUnils,
+        amountUsd: p.amountUsd,
+        processedAt: p.processedAt.toISOString(),
+      })),
+      pagination: {
+        total: data.total,
+        limit: data.limit,
+        offset: data.offset,
       },
     };
   },

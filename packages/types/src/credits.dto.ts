@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { PaginatedResponse } from "./pagination.dto";
 import { ApiSuccessResponse } from "./responses.dto";
 
 /**
@@ -85,6 +86,25 @@ export const ReadPricingResponse = ApiSuccessResponse(ReadPricingData).meta({
   ref: "ReadPricingResponse",
 });
 export type ReadPricingResponse = z.infer<typeof ReadPricingResponse>;
+
+/**
+ * A single payment history item.
+ */
+const PaymentHistoryItemDto = z.object({
+  txHash: z.string(),
+  chainId: z.number().int().positive(),
+  amountUnils: z.string(),
+  amountUsd: z.number(),
+  processedAt: z.string(), // ISO 8601
+});
+
+/**
+ * Response for reading payment history.
+ */
+export const ReadPaymentsResponse = PaginatedResponse(PaymentHistoryItemDto).meta({
+  ref: "ReadPaymentsResponse",
+});
+export type ReadPaymentsResponse = z.infer<typeof ReadPaymentsResponse>;
 
 /**
  * Request to revoke a token.
