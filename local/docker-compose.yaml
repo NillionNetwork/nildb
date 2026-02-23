@@ -1,6 +1,5 @@
 services:
   nildb_1:
-    profiles: ["app"]
     build:
       context: ..
       dockerfile: packages/api/Dockerfile
@@ -26,7 +25,6 @@ services:
       - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
 
   nildb_2:
-    profiles: ["app"]
     build:
       context: ..
       dockerfile: packages/api/Dockerfile
@@ -52,7 +50,6 @@ services:
       - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
 
   nildb_3:
-    profiles: ["app"]
     build:
       context: ..
       dockerfile: packages/api/Dockerfile
