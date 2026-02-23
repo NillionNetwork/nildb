@@ -1,0 +1,46 @@
+name: CD nilpay-client
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: "publish-nilpay-client"
+  cancel-in-progress: true
+
+permissions:
+  id-token: write # Required for NPM Trusted Publisher
+  contents: read
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.check-version.outputs.local_version_is_higher }}
+      tag: ${{ steps.check-version.outputs.tag }}
+      version: ${{ steps.check-version.outputs.local_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install
+      - id: check-version
+        run: pnpm exec tsx bin/check-nilpay-client-version.ts
+
+  publish:
+    needs: check-version
+    if: needs.check-version.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install
+      - run: pnpm --filter @nillion/nilpay-client build
+      - run: pnpm --filter @nillion/nilpay-client publish --provenance --access public --no-git-checks
