@@ -18,12 +18,12 @@
     "stub": "tsdown --stub"
   },
   "dependencies": {
-    "@nillion/nuc": "2.0.0",
-    "viem": "^2.25.0"
+    "@nillion/nuc": "file:../../vendor/nillion-nuc-2.0.0.tgz",
+    "viem": "^2.46.2"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260113.1",
-    "tsdown": "0.20.1",
+    "@typescript/native-preview": "7.0.0-dev.20260223.1",
+    "tsdown": "0.20.3",
     "typescript": "^5.9.3"
   },
   "tsdown": {
