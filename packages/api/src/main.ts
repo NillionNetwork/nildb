@@ -11,8 +11,10 @@ import {
 import { Command } from "commander";
 import dotenv from "dotenv";
 
-import { buildApp } from "./app.js";
-import { FeatureFlag, hasFeatureFlag, loadBindings, parseConfigFromEnv } from "./env.js";
+import { buildApp } from "./app";
+import { FeatureFlag, hasFeatureFlag, loadBindings, parseConfigFromEnv } from "./env";
+import { startBillingWorker } from "./workers/billing.worker";
+import { startPurgeWorker } from "./workers/purge.worker";
 
 export type NilDbCliOptions = {
   envFile: string;
@@ -52,7 +54,7 @@ async function main(): Promise<void> {
 
   if (otelEnabled) {
     // Full OpenTelemetry mode: metrics, traces, and logs to OTLP (no /metrics endpoint)
-    otelProviders = await initializeOtel(config);
+    otelProviders = initializeOtel(config);
     if (otelProviders) {
       console.info("! OpenTelemetry initialized: metrics, traces, and logs will be pushed to OTLP");
     } else {
@@ -60,7 +62,7 @@ async function main(): Promise<void> {
     }
   } else if (metricsEnabled) {
     // Metrics-only mode: serve metrics on /metrics endpoint (no traces, no logs to OTLP)
-    metricsOnlyProviders = await initializeMetricsOnly(config);
+    metricsOnlyProviders = initializeMetricsOnly(config);
     console.info(`! Metrics-only mode initialized: metrics will be served on :${config.metricsPort}/metrics`);
   }
 
@@ -84,6 +86,15 @@ async function main(): Promise<void> {
     },
   );
 
+  // Start credit system workers after migrations complete
+  let billingInterval: NodeJS.Timeout | null = null;
+  let purgeInterval: NodeJS.Timeout | null = null;
+
+  const startWorkers = (): void => {
+    billingInterval = startBillingWorker(bindings);
+    purgeInterval = startPurgeWorker(bindings);
+  };
+
   // Run migrations in background to avoid container liveness probe timeouts
   if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
     void (async (): Promise<void> => {
@@ -92,6 +103,7 @@ async function main(): Promise<void> {
         await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
         bindings.migrationsComplete = true;
         bindings.log.info("Database migrations completed successfully");
+        startWorkers();
       } catch (error) {
         bindings.log.error({ error }, "Database migrations failed");
         process.exit(1);
@@ -99,12 +111,17 @@ async function main(): Promise<void> {
     })();
   } else {
     bindings.migrationsComplete = true;
+    startWorkers();
   }
 
   const shutdown = async (): Promise<void> => {
     bindings.log.info("Received shutdown signal. Starting graceful shutdown...");
 
     try {
+      // Stop workers
+      if (billingInterval) clearInterval(billingInterval);
+      if (purgeInterval) clearInterval(purgeInterval);
+
       const promises: Promise<unknown>[] = [
         new Promise((resolve) => appServer.close(resolve)),
         bindings.db.client.close(),

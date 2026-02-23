@@ -27,7 +27,7 @@ import type {
   RevokeAccessToDataCommand,
   UpdateUserDataCommand,
   UserDocument,
-} from "./users.types.js";
+} from "./users.types";
 
 /**
  * User data mapper.

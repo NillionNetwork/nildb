@@ -3,7 +3,7 @@ import { describe } from "vitest";
 import { createUuidDto } from "@nillion/nildb-types";
 
 import simpleCollection from "../data/simple.collection.json";
-import { createTestFixtureExtension } from "../fixture/it.js";
+import { createTestFixtureExtension } from "../fixture/it";
 
 describe("Collection Index Management", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

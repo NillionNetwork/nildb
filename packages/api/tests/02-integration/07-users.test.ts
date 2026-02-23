@@ -4,7 +4,7 @@ import { createUuidDto } from "@nillion/nildb-types";
 
 import simpleCollection from "../data/simple.collection.json";
 import simpleQuery from "../data/simple.query.json";
-import { createTestFixtureExtension } from "../fixture/it.js";
+import { createTestFixtureExtension } from "../fixture/it";
 
 describe("User Endpoints", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

@@ -1,7 +1,7 @@
 import z from "zod";
 
-import { PaginatedResponse, PaginationQuerySchema } from "./pagination.dto.js";
-import { ApiSuccessResponse } from "./responses.dto.js";
+import { PaginatedResponse, PaginationQuerySchema } from "./pagination.dto";
+import { ApiSuccessResponse } from "./responses.dto";
 
 /**
  * MongoDB aggregation pipeline variable validation.

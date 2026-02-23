@@ -7,6 +7,7 @@ import {
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import { requireCredits } from "@nildb/middleware/credit-gate.middleware";
 import { Effect as E, pipe } from "effect";
 import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 import { StatusCodes } from "http-status-codes";
@@ -27,8 +28,8 @@ import {
   RunQueryResponse,
 } from "@nillion/nildb-types";
 
-import { QueriesDataMapper } from "./queries.mapper.js";
-import * as QueriesService from "./queries.services.js";
+import { QueriesDataMapper } from "./queries.mapper";
+import * as QueriesService from "./queries.services";
 
 /**
  * Handle POST /v1/queries
@@ -52,6 +53,7 @@ export function createQuery(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.create),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -89,6 +91,7 @@ export function deleteQuery(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.delete),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
@@ -133,6 +136,7 @@ export function readQueries(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.read),
+    requireCredits("read"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const pagination = c.req.valid("query");
@@ -177,6 +181,7 @@ export function readQueryById(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.read),
+    requireCredits("read"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
@@ -222,6 +227,7 @@ export function runQuery(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.execute),
+    requireCredits("execute"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -268,6 +274,7 @@ export function getQueryRunResultById(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.queries.read),
+    requireCredits("read"),
     async (c) => {
       const _builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");

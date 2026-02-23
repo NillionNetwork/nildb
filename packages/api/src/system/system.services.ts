@@ -3,7 +3,7 @@ import type { CollectionNotFoundError, DatabaseError } from "@nildb/common/error
 import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 
-import * as SystemRepository from "./system.repository.js";
+import * as SystemRepository from "./system.repository";
 import type {
   AboutNode,
   BuildInfo,
@@ -11,7 +11,7 @@ import type {
   SetLogLevelCommand,
   StartMaintenanceCommand,
   StopMaintenanceCommand,
-} from "./system.types.js";
+} from "./system.types";
 
 const started = new Date();
 

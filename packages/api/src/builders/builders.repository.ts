@@ -9,7 +9,7 @@ import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import { MongoServerError, type StrictFilter, type StrictUpdateFilter, type UpdateResult, type UUID } from "mongodb";
 
-import type { BuilderDocument } from "./builders.types.js";
+import type { BuilderDocument, BuilderStatus } from "./builders.types";
 
 /**
  * Insert builder document.
@@ -293,5 +293,259 @@ export function removeQuery(
             }),
           ),
     ),
+  );
+}
+
+/**
+ * Add credits (in USD) to a builder's balance.
+ */
+export function addCreditsUsd(
+  ctx: AppBindings,
+  builder: string,
+  amountUsd: number,
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, {
+          $inc: { creditsUsd: amountUsd },
+          $set: {
+            _updated: new Date(),
+            lastCreditTopUp: new Date(),
+            creditsDepleted: null,
+          },
+        }),
+      catch: (cause) => new DatabaseError({ cause, message: "addCreditsUsd" }),
+    }),
+    E.flatMap((result) =>
+      result.matchedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          ),
+    ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/**
+ * Atomically add credits and set status to active in a single update.
+ * Combines the addCreditsUsd + updateStatus operations to reduce partial failure risk.
+ */
+export function applyCreditsAndActivate(
+  ctx: AppBindings,
+  builder: string,
+  amountUsd: number,
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
+  const now = new Date();
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, {
+          $inc: { creditsUsd: amountUsd },
+          $set: {
+            status: "active",
+            _updated: now,
+            lastCreditTopUp: now,
+            creditsDepleted: null,
+          },
+        }),
+      catch: (cause) => new DatabaseError({ cause, message: "applyCreditsAndActivate" }),
+    }),
+    E.flatMap((result) =>
+      result.matchedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          ),
+    ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/**
+ * Deduct credits (in USD) from a builder's balance.
+ * Credits cannot go below 0.
+ */
+export function deductCreditsUsd(
+  ctx: AppBindings,
+  builder: string,
+  amountUsd: number,
+): E.Effect<
+  { newBalance: number; depleted: boolean },
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: async (collection) => {
+        // Use findOneAndUpdate with $max to prevent negative balance
+        const result = await collection.findOneAndUpdate(
+          filter,
+          [
+            {
+              $set: {
+                creditsUsd: { $max: [{ $subtract: [{ $ifNull: ["$creditsUsd", 0] }, amountUsd] }, 0] },
+                _updated: new Date(),
+              },
+            },
+          ],
+          { returnDocument: "after" },
+        );
+        return result;
+      },
+      catch: (cause) => new DatabaseError({ cause, message: "deductCreditsUsd" }),
+    }),
+    E.flatMap((result) =>
+      result === null
+        ? E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          )
+        : E.succeed({
+            newBalance: result.creditsUsd ?? 0,
+            depleted: (result.creditsUsd ?? 0) <= 0,
+          }),
+    ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/**
+ * Update builder status.
+ */
+export function updateStatus(
+  ctx: AppBindings,
+  builder: string,
+  status: BuilderStatus,
+  creditsDepleted?: Date | null,
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
+
+  const setFields: Record<string, unknown> = {
+    status,
+    _updated: new Date(),
+  };
+
+  if (creditsDepleted !== undefined) {
+    setFields.creditsDepleted = creditsDepleted;
+  }
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, { $set: setFields }),
+      catch: (cause) => new DatabaseError({ cause, message: "updateStatus" }),
+    }),
+    E.flatMap((result) =>
+      result.matchedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          ),
+    ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/**
+ * Update storage snapshot for billing.
+ */
+export function updateStorageSnapshot(
+  ctx: AppBindings,
+  builder: string,
+  storageBytes: number,
+  billingTime: Date,
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
+  const filter: StrictFilter<BuilderDocument> = { did: builder };
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, {
+          $set: {
+            storageBytes,
+            lastBillingCycle: billingTime,
+            _updated: new Date(),
+          },
+        }),
+      catch: (cause) => new DatabaseError({ cause, message: "updateStorageSnapshot" }),
+    }),
+    E.flatMap((result) =>
+      result.matchedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(
+            new DocumentNotFoundError({
+              collection: CollectionName.Builders,
+              filter,
+            }),
+          ),
+    ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/**
+ * Find builders that need billing (last billed before a certain time).
+ */
+export function findBuildersForBilling(
+  ctx: AppBindings,
+  lastBilledBefore: Date,
+  limit: number,
+): E.Effect<BuilderDocument[], CollectionNotFoundError | DatabaseError> {
+  // Find builders with credits enabled (have creditsUsd field) and need billing
+  const filter = {
+    creditsUsd: { $exists: true },
+    $or: [{ lastBillingCycle: { $lt: lastBilledBefore } }, { lastBillingCycle: { $exists: false } }],
+  };
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) => collection.find(filter).limit(limit).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "findBuildersForBilling" }),
+    }),
+  );
+}
+
+/**
+ * Find builders pending purge.
+ */
+export function findBuildersPendingPurge(
+  ctx: AppBindings,
+  creditsDepletesBefore: Date,
+  limit: number,
+): E.Effect<BuilderDocument[], CollectionNotFoundError | DatabaseError> {
+  const filter: StrictFilter<BuilderDocument> = {
+    status: "pending_purge",
+    creditsDepleted: { $lt: creditsDepletesBefore },
+  };
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) => collection.find(filter).limit(limit).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "findBuildersPendingPurge" }),
+    }),
   );
 }

@@ -1,6 +1,6 @@
 import type { ControllerOptions } from "@nildb/common/types";
 
-import * as SystemController from "./system.controllers.js";
+import * as SystemController from "./system.controllers";
 
 /**
  * Registers the system domain.

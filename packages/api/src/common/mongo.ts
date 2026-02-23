@@ -6,7 +6,7 @@ import { type Collection, type Document, MongoClient, MongoError, type UUID } fr
 
 import type { UuidDto } from "@nillion/nildb-types";
 
-import type { CoercibleMap } from "./coercion.js";
+import type { CoercibleMap } from "./coercion";
 
 // A common base for all documents. UUID v4 is used so that records have a unique but stable
 // identifier across the cluster.
@@ -62,6 +62,8 @@ export enum CollectionName {
   QueryRuns = "query_runs",
   Config = "config",
   Users = "users",
+  Payments = "payments",
+  Revocations = "revocations",
 }
 
 export async function mongoMigrateUp(uri: string, database: string): Promise<void> {

@@ -8,6 +8,7 @@ import {
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import { requireCredits } from "@nildb/middleware/credit-gate.middleware";
 import { Effect as E, pipe } from "effect";
 import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 import { StatusCodes } from "http-status-codes";
@@ -29,7 +30,7 @@ import {
   ReadCollectionMetadataResponse,
 } from "@nillion/nildb-types";
 
-import * as CollectionsService from "./collections.services.js";
+import * as CollectionsService from "./collections.services";
 
 /**
  * Handle GET /v1/collections?limit={number}&offset={number}
@@ -60,6 +61,7 @@ export function readCollections(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.collections.read),
+    requireCredits("read"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const pagination = c.req.valid("query");
@@ -98,6 +100,7 @@ export function createCollection(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.collections.create),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -137,6 +140,7 @@ export function deleteCollectionById(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.collections.delete),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
@@ -181,6 +185,7 @@ export function readCollectionById(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.collections.read),
+    requireCredits("read"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("param");
@@ -221,6 +226,7 @@ export function createCollectionIndex(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.collections.update),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -260,6 +266,7 @@ export function dropCollectionIndex(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.collections.update),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");

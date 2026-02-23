@@ -6,7 +6,7 @@ import { type InsertOneResult, type StrictFilter, type StrictUpdateFilter, UUID 
 
 import type { PaginationQuery } from "@nillion/nildb-types";
 
-import type { RunQueryJobDocument } from "./queries.types.js";
+import type { RunQueryJobDocument } from "./queries.types";
 
 /**
  * Create query job document.

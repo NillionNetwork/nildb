@@ -45,6 +45,10 @@ fmt:
 dev:
     pnpm --filter @nillion/nildb dev
 
+# Run nildb from source against local Docker infra (auto-restarts on changes)
+dev-local:
+    cd packages/api && pnpm exec tsx watch --clear-screen=false src/main.ts --env-file .env.local
+
 # Build nildb
 build: build-deps
     pnpm --filter @nillion/nildb build

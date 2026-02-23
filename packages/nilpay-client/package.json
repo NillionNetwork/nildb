@@ -1,0 +1,42 @@
+{
+  "name": "@nillion/nilpay-client",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": "https://github.com/NillionNetwork/nildb",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/lib.mjs",
+  "types": "./dist/lib.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.mts",
+      "default": "./dist/lib.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "stub": "tsdown --stub"
+  },
+  "dependencies": {
+    "@nillion/nuc": "^2.0.1",
+    "viem": "^2.46.2"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260223.1",
+    "tsdown": "0.20.3",
+    "typescript": "^5.9.3"
+  },
+  "tsdown": {
+    "clean": true,
+    "entry": [
+      "src/lib.ts"
+    ],
+    "format": [
+      "esm"
+    ],
+    "minify": false,
+    "sourcemap": true
+  }
+}

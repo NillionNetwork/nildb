@@ -28,6 +28,10 @@ export const NucCmd = {
       collections: createNucNamespace("/nil/db/collections"),
       queries: createNucNamespace("/nil/db/queries"),
       users: createNucNamespace("/nil/db/users"),
+      credits: createNucNamespace("/nil/db/credits"),
     },
+  },
+  nuc: {
+    revoke: "/nuc/revoke",
   },
 } as const;

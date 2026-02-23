@@ -9,7 +9,9 @@
       "@nillion/nildb-shared": ["../shared/src/lib.ts"],
       "@nillion/nildb-shared/*": ["../shared/src/*"],
       "@nillion/nildb-client": ["../client/src/index.ts"],
-      "@nillion/nildb-client/*": ["../client/src/*"]
+      "@nillion/nildb-client/*": ["../client/src/*"],
+      "@nillion/nilpay-client": ["../nilpay-client/src/lib.ts"],
+      "@nillion/nilpay-client/*": ["../nilpay-client/src/*"]
     }
   },
   "include": ["./src/**/*.ts", "./tests/**/*.ts", "../types/src/**/*.ts"]

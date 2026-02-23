@@ -12,7 +12,7 @@ import type { DeleteResult, StrictFilter } from "mongodb";
 
 import type { PaginationQuery } from "@nillion/nildb-types";
 
-import type { QueryDocument } from "./queries.types.js";
+import type { QueryDocument } from "./queries.types";
 
 /**
  * Insert query document.

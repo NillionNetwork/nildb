@@ -1,6 +1,17 @@
 import type { ObjectId, UUID } from "mongodb";
 
 /**
+ * Builder status for credit-based access control.
+ */
+export type BuilderStatus =
+  | "free_tier" // Using free tier (no credits required)
+  | "active" // Has credits, full access
+  | "warning" // Credits low, still full access
+  | "read_only" // No credits, read-only access
+  | "suspended" // Long-term no credits, profile only
+  | "pending_purge"; // Scheduled for data deletion
+
+/**
  * Builder document.
  */
 export type BuilderDocument = {
@@ -11,6 +22,13 @@ export type BuilderDocument = {
   name: string;
   collections: UUID[];
   queries: UUID[];
+  // Credit system fields (optional for backward compatibility)
+  creditsUsd?: number;
+  status?: BuilderStatus;
+  storageBytes?: number;
+  lastBillingCycle?: Date;
+  lastCreditTopUp?: Date | null;
+  creditsDepleted?: Date | null;
 };
 
 /**

@@ -19,7 +19,7 @@ import type {
   DeleteCollectionCommand,
   DropIndexCommand,
   ReadCollectionByIdCommand,
-} from "./collections.types.js";
+} from "./collections.types";
 
 export const CollectionsDataMapper = {
   /**

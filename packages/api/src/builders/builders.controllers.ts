@@ -5,6 +5,7 @@ import {
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
+  verifySelfSignedNuc,
 } from "@nildb/middleware/capability.middleware";
 import { Effect as E, pipe } from "effect";
 import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
@@ -21,31 +22,40 @@ import {
   type UpdateProfileResponse,
 } from "@nillion/nildb-types";
 
-import { BuilderDataMapper } from "./builders.mapper.js";
-import * as BuilderService from "./builders.services.js";
+import { BuilderDataMapper } from "./builders.mapper";
+import * as BuilderService from "./builders.services";
 
 /**
  * Handle POST /v1/builders/register
  */
 export function register(options: ControllerOptions): void {
-  const { app } = options;
+  const { app, bindings } = options;
   const path = PathsV1.builders.register;
 
   app.post(
     path,
     describeRoute({
       tags: ["Builders"],
+      security: [{ bearerAuth: [] }],
       summary: "Register builder",
       responses: {
         201: OpenApiSpecEmptySuccessResponses["201"],
         400: OpenApiSpecCommonErrorResponses["400"],
-        500: OpenApiSpecCommonErrorResponses["500"],
+        ...OpenApiSpecCommonErrorResponses,
       },
     }),
     zValidator("json", RegisterBuilderRequest),
+    loadNucToken(bindings),
+    verifySelfSignedNuc(bindings),
+    requireNucNamespace(NucCmd.nil.db.builders.create),
     async (c) => {
       const payload = c.req.valid("json");
       const command = BuilderDataMapper.toCreateBuilderCommand(payload, c.env.log);
+      const subjectDid = c.get("subjectDid");
+
+      if (command.did !== subjectDid) {
+        return c.text("Token subject does not match registration DID", StatusCodes.FORBIDDEN);
+      }
 
       return pipe(
         BuilderService.createBuilder(c.env, command),

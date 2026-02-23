@@ -8,6 +8,7 @@
  * 4. Validate payment with nilauth
  */
 
+// oxlint-disable-next-line import/extensions
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { createPublicClient, createWalletClient, http, parseUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";

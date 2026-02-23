@@ -1,13 +1,18 @@
 /** biome-ignore-all lint/nursery/noImportCycles: this a cycle wrt fixture and response handler */
 import { faker } from "@faker-js/faker";
 import { type App, buildApp } from "@nildb/app";
+import type { BuilderDocument } from "@nildb/builders/builders.types";
 import type { CollectionType } from "@nildb/collections/collections.types";
 import { mongoMigrateUp } from "@nildb/common/mongo";
+import { CollectionName } from "@nildb/common/mongo";
 import { type AppBindings, FeatureFlag, hasFeatureFlag, loadBindings } from "@nildb/env";
 import type { QueryVariable } from "@nildb/queries/queries.types";
+// oxlint-disable-next-line import/extensions
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+// oxlint-disable-next-line import/extensions
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import dotenv from "dotenv";
+import { ObjectId } from "mongodb";
 import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
 import * as vitest from "vitest";
@@ -17,8 +22,8 @@ import { AdminClient, BuilderClient, UserClient } from "@nillion/nildb-client";
 import { createUuidDto, NucCmd, type UuidDto } from "@nillion/nildb-types";
 import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
 
-import { createTestLogger } from "./logger.js";
-import { activateSubscriptionWithPayment } from "./payment.js";
+import { createTestLogger } from "./logger";
+import { activateSubscriptionWithPayment } from "./payment";
 
 export type FixtureContext = {
   id: string;
@@ -221,4 +226,136 @@ export async function buildFixture(
     log.info("Test suite ready");
   }
   return c;
+}
+
+export type CreditFixtureContext = {
+  id: string;
+  log: Logger;
+  app: App;
+  bindings: AppBindings & {
+    node: {
+      signer: Signer;
+      did: NucDid;
+      publicKey: string;
+      endpoint: string;
+    };
+  };
+  system: AdminClient;
+  creditBuilder: {
+    signer: Signer;
+    did: string;
+    /** Create a self-signed NUC invocation token for the credit builder */
+    createToken: (command?: string) => Promise<string>;
+  };
+  expect: vitest.ExpectStatic;
+};
+
+/**
+ * Build a fixture for credit system integration tests.
+ * Enables credits + self_signed_auth feature flags and registers a builder
+ * directly in the DB with creditsUsd set (bypassing the did:key restriction).
+ */
+export async function buildCreditFixture(): Promise<CreditFixtureContext> {
+  dotenv.config({
+    path: ["./packages/api/env.test", "./packages/api/env.test.nilauthclient"],
+  });
+  const id = new Date().toISOString().replaceAll(":", "").replaceAll(".", "_");
+  const log = createTestLogger(id);
+
+  // Use unique db names for each test
+  process.env.APP_DB_NAME_BASE = `${process.env.APP_DB_NAME_BASE}_${id}`;
+  process.env.APP_ENABLED_FEATURES = "openapi,migrations,credits,self_signed_auth";
+
+  log.info(`Enabled features: ${process.env.APP_ENABLED_FEATURES}`);
+
+  const bindings = await loadBindings();
+
+  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
+    await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
+    bindings.migrationsComplete = true;
+    log.info("Ran db migrations");
+  } else {
+    bindings.migrationsComplete = true;
+  }
+
+  log.info("Bootstrapping credit test fixture");
+
+  const { app } = await buildApp(bindings);
+
+  const nodePrivateKeyBytes = hexToBytes(bindings.config.nodeSecretKey);
+  const nodePublicKey = bytesToHex(secp256k1.getPublicKey(nodePrivateKeyBytes));
+  const nodeSigner = Signer.fromPrivateKey(nodePrivateKeyBytes);
+  const nodeDid = await nodeSigner.getDid();
+
+  const node = {
+    signer: nodeSigner,
+    did: nodeDid,
+    publicKey: nodePublicKey,
+    endpoint: bindings.config.nodePublicEndpoint,
+  };
+
+  // Create system client (admin delegation from node)
+  const adminPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
+  const adminSigner = Signer.fromPrivateKey(adminPrivateKey);
+  const adminDid = await adminSigner.getDid();
+  const nodeDelegation = await Builder.delegation()
+    .subject(adminDid)
+    .command(NucCmd.nil.db.root)
+    .audience(adminDid)
+    .expiresIn(1000 * 60 * 5)
+    .sign(node.signer);
+  const system = new AdminClient({
+    baseUrl: bindings.config.nodePublicEndpoint,
+    signer: adminSigner,
+    nodePublicKey: node.publicKey,
+    nodeDelegation,
+    httpClient: app.request,
+  });
+
+  // Create credit builder by inserting directly into DB
+  // (bypasses the did:key check that exists when credits are enabled)
+  const creditBuilderPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
+  const creditBuilderSigner = Signer.fromPrivateKey(creditBuilderPrivateKey);
+  const creditBuilderDid = Did.serialize(await creditBuilderSigner.getDid());
+
+  const now = new Date();
+  const builderDoc: BuilderDocument = {
+    _id: new ObjectId(),
+    did: creditBuilderDid,
+    _created: now,
+    _updated: now,
+    name: faker.person.fullName(),
+    collections: [],
+    queries: [],
+    creditsUsd: 0,
+    storageBytes: 0,
+  };
+
+  await bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders).insertOne(builderDoc);
+  log.info({ did: creditBuilderDid }, "Credit builder inserted");
+
+  const createToken = async (command = "/nil/db"): Promise<string> => {
+    const builderDid = await creditBuilderSigner.getDid();
+    return Builder.invocation()
+      .command(command)
+      .audience(node.did)
+      .subject(builderDid)
+      .expiresIn(1000 * 60)
+      .signAndSerialize(creditBuilderSigner);
+  };
+
+  const expect = vitest.expect;
+  return {
+    id,
+    log,
+    app,
+    bindings: { ...bindings, node },
+    system,
+    creditBuilder: {
+      signer: creditBuilderSigner,
+      did: creditBuilderDid,
+      createToken,
+    },
+    expect,
+  };
 }

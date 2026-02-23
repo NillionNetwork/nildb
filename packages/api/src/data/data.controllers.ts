@@ -8,6 +8,7 @@ import {
   loadSubjectAndVerifyAsBuilder,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import { requireCredits } from "@nildb/middleware/credit-gate.middleware";
 import { Effect as E, pipe } from "effect";
 import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -32,9 +33,9 @@ import {
   UpdateDataResponse,
 } from "@nillion/nildb-types";
 
-import { DataMapper } from "./data.mapper.js";
-import * as DataService from "./data.services.js";
-import type { UploadResult } from "./data.types.js";
+import { DataMapper } from "./data.mapper";
+import * as DataService from "./data.services";
+import type { UploadResult } from "./data.types";
 
 /**
  * Determines the appropriate HTTP status code for a bulk creation result.
@@ -88,6 +89,7 @@ export function deleteData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.data.delete),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
@@ -128,6 +130,7 @@ export function flushData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.data.delete),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder");
       const params = c.req.valid("param");
@@ -172,6 +175,7 @@ export function findData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.data.read),
+    requireCredits("read"),
     async (c) => {
       const builder = c.get("builder");
       const payload = c.req.valid("json");
@@ -218,6 +222,7 @@ export function tailData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.data.read),
+    requireCredits("read"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const param = c.req.valid("param");
@@ -264,6 +269,7 @@ export function updateData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.data.update),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -325,6 +331,7 @@ export function createOwnedData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.data.create),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");
@@ -404,6 +411,7 @@ export function createStandardData(options: ControllerOptions): void {
     loadNucToken(bindings),
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nil.db.data.create),
+    requireCredits("write"),
     async (c) => {
       const builder = c.get("builder") as BuilderDocument;
       const payload = c.req.valid("json");

@@ -5,7 +5,7 @@ import { describe } from "vitest";
 import { PathsV1 } from "@nillion/nildb-types";
 import { Builder, Did } from "@nillion/nuc";
 
-import { createTestFixtureExtension } from "../fixture/it.js";
+import { createTestFixtureExtension } from "../fixture/it";
 
 describe("02-builder-lifecycle.test.js", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

@@ -21,11 +21,11 @@
   "dependencies": {
     "@nillion/nilauth-client": "2.0.0",
     "@nillion/nildb-types": "workspace:*",
-    "@nillion/nuc": "2.0.0"
+    "@nillion/nuc": "^2.0.1"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260113.1",
-    "tsdown": "0.20.0-beta.1"
+    "@typescript/native-preview": "7.0.0-dev.20260223.1",
+    "tsdown": "0.20.3"
   },
   "tsdown": {
     "clean": true,

@@ -5,13 +5,14 @@ import {
   type DataValidationError,
   type DocumentNotFoundError,
   DuplicateEntryError,
+  InvalidDidError,
 } from "@nildb/common/errors";
-import type { AppBindings } from "@nildb/env";
+import { type AppBindings } from "@nildb/env";
 import * as QueriesService from "@nildb/queries/queries.services";
 import { Effect as E } from "effect";
 import { ObjectId } from "mongodb";
 
-import * as BuildersRepository from "./builders.repository.js";
+import * as BuildersRepository from "./builders.repository";
 import type {
   AddBuilderCollectionCommand,
   AddBuilderQueryCommand,
@@ -20,7 +21,7 @@ import type {
   RemoveBuilderCollectionCommand,
   RemoveBuilderQueryCommand,
   UpdateProfileCommand,
-} from "./builders.types.js";
+} from "./builders.types";
 
 /**
  * Find builder by DID.
@@ -38,11 +39,19 @@ export function find(
 export function createBuilder(
   ctx: AppBindings,
   command: CreateBuilderCommand,
-): E.Effect<void, DuplicateEntryError | CollectionNotFoundError | DatabaseError> {
+): E.Effect<void, DuplicateEntryError | InvalidDidError | CollectionNotFoundError | DatabaseError> {
   if (command.did === ctx.node.did.didString) {
     return E.fail(
       new DuplicateEntryError({
         document: { name: command.name, did: command.did },
+      }),
+    );
+  }
+
+  if (!command.did.startsWith("did:ethr:") && !command.did.startsWith("did:key:")) {
+    return E.fail(
+      new InvalidDidError({
+        message: "Registration requires did:ethr or did:key",
       }),
     );
   }
@@ -56,6 +65,7 @@ export function createBuilder(
     name: command.name,
     collections: [],
     queries: [],
+    creditsUsd: 0,
   };
 
   return BuildersRepository.insert(ctx, document);

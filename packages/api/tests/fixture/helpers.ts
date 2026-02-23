@@ -1,14 +1,16 @@
 import { faker } from "@faker-js/faker";
 import type { App } from "@nildb/app";
+// oxlint-disable-next-line import/extensions
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+// oxlint-disable-next-line import/extensions
 import { bytesToHex } from "@noble/hashes/utils.js";
 
 import { NilauthClient } from "@nillion/nilauth-client";
 import { BuilderClient, UserClient } from "@nillion/nildb-client";
 import { Did, Signer } from "@nillion/nuc";
 
-import type { FixtureContext } from "./fixture.js";
-import { activateSubscriptionWithPayment } from "./payment.js";
+import type { FixtureContext } from "./fixture";
+import { activateSubscriptionWithPayment } from "./payment";
 
 export async function createRegisteredBuilder(c: FixtureContext, name?: string): Promise<BuilderClient> {
   const { app, bindings } = c;

@@ -1,6 +1,6 @@
 import type { ControllerOptions } from "@nildb/common/types";
 
-import * as BuilderController from "./builders.controllers.js";
+import * as BuilderController from "./builders.controllers";
 
 /**
  * Registers the builders domain.

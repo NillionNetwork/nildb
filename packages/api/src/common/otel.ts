@@ -8,7 +8,13 @@ import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { HostMetrics } from "@opentelemetry/host-metrics";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { RuntimeNodeInstrumentation } from "@opentelemetry/instrumentation-runtime-node";
-import { envDetector, processDetector, Resource } from "@opentelemetry/resources";
+import {
+  type Resource,
+  detectResources,
+  envDetector,
+  processDetector,
+  resourceFromAttributes,
+} from "@opentelemetry/resources";
 import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs";
 import { MeterProvider, type MetricReader, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { BatchSpanProcessor, NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
@@ -22,7 +28,7 @@ import {
   ATTR_SERVICE_VERSION,
 } from "@opentelemetry/semantic-conventions/incubating";
 
-import { BUILD_COMMIT } from "./buildinfo.js";
+import { BUILD_COMMIT } from "./buildinfo";
 
 export type MetricsOnlyProviders = {
   meterProvider: MeterProvider;
@@ -51,7 +57,7 @@ export type OtelProviders = {
  *
  * Environment variables take precedence over programmatically set values.
  */
-export async function createOtelResource(config: EnvVars): Promise<Resource> {
+export function createOtelResource(config: EnvVars): Resource {
   const attributes: Record<string, string> = {
     [ATTR_SERVICE_NAME]: config.otelServiceName,
     [ATTR_SERVICE_VERSION]: BUILD_COMMIT,
@@ -67,14 +73,13 @@ export async function createOtelResource(config: EnvVars): Promise<Resource> {
     attributes[ATTR_CLOUD_REGION] = process.env.AWS_REGION;
   }
 
-  const baseResource = new Resource(attributes);
+  const baseResource = resourceFromAttributes(attributes);
 
   // Detect resource attributes from environment (OTEL_RESOURCE_ATTRIBUTES)
   // Environment variables take precedence over programmatic values
-  const envResource = await envDetector.detect();
-  const processResource = await processDetector.detect();
+  const detected = detectResources({ detectors: [envDetector, processDetector] });
 
-  return baseResource.merge(envResource).merge(processResource);
+  return baseResource.merge(detected);
 }
 
 /**
@@ -82,8 +87,8 @@ export async function createOtelResource(config: EnvVars): Promise<Resource> {
  * This is used when only the 'metrics' feature flag is enabled (not 'otel').
  * Metrics are served on /metrics endpoint for scraping, not pushed to OTLP.
  */
-export async function initializeMetricsOnly(config: EnvVars): Promise<MetricsOnlyProviders> {
-  const resource = await createOtelResource(config);
+export function initializeMetricsOnly(config: EnvVars): MetricsOnlyProviders {
+  const resource = createOtelResource(config);
 
   // Prometheus exporter serves metrics on /metrics endpoint
   const prometheusExporter = new PrometheusExporter({
@@ -134,20 +139,22 @@ export async function initializeMetricsOnly(config: EnvVars): Promise<MetricsOnl
  * To disable OpenTelemetry SDK without removing the 'otel' feature flag,
  * set the standard OTEL_SDK_DISABLED=true environment variable.
  */
-export async function initializeOtel(config: EnvVars): Promise<OtelProviders | null> {
+export function initializeOtel(config: EnvVars): OtelProviders | null {
   // Check standard OpenTelemetry environment variable to disable the SDK
   if (process.env.OTEL_SDK_DISABLED === "true") {
     return null;
   }
 
-  const resource = await createOtelResource(config);
+  const resource = createOtelResource(config);
 
   // Configure tracing
   const traceExporter = new OTLPTraceExporter({
     url: `${config.otelEndpoint}/v1/traces`,
   });
-  const tracerProvider = new NodeTracerProvider({ resource });
-  tracerProvider.addSpanProcessor(new BatchSpanProcessor(traceExporter));
+  const tracerProvider = new NodeTracerProvider({
+    resource,
+    spanProcessors: [new BatchSpanProcessor(traceExporter)],
+  });
   tracerProvider.register();
 
   // Configure metrics with OTLP exporter only (no Prometheus endpoint)
@@ -169,8 +176,10 @@ export async function initializeOtel(config: EnvVars): Promise<OtelProviders | n
   const logExporter = new OTLPLogExporter({
     url: `${config.otelEndpoint}/v1/logs`,
   });
-  const loggerProvider = new LoggerProvider({ resource });
-  loggerProvider.addLogRecordProcessor(new BatchLogRecordProcessor(logExporter));
+  const loggerProvider = new LoggerProvider({
+    resource,
+    processors: [new BatchLogRecordProcessor(logExporter)],
+  });
 
   // Register automatic instrumentations for MongoDB, etc.
   registerInstrumentations({

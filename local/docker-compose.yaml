@@ -1,42 +1,90 @@
 services:
-  nildb:
+  nildb_1:
     build:
       context: ..
       dockerfile: packages/api/Dockerfile
     ports:
-      - "40080:8080"
-      - "40091:9091"
+      - "8081:8080"
     depends_on:
       - mongodb
       - otel-collector
     environment:
-      - APP_DB_NAME_BASE=nildb
+      - APP_DB_NAME_BASE=nildb_1
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=openapi,otel,migrations
+      - APP_ENABLED_FEATURES=migrations,credits,self_signed_auth
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
       - APP_NILAUTH_CHAIN_ID=31337
-      - APP_NODE_PUBLIC_ENDPOINT=http://localhost:40080
+      - APP_NODE_PUBLIC_ENDPOINT=http://localhost:8080
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_PORT=8080
-      - OTEL_ENDPOINT=http://otel-collector:4318
-      - OTEL_SERVICE_NAME=nildb
-      - OTEL_TEAM_NAME=nildb
-      - OTEL_DEPLOYMENT_ENV=local
-      - OTEL_METRICS_EXPORT_INTERVAL_MS=10000
+      - APP_ETHEREUM_RPC_URLS=31337=http://nil-anvil:8545
+      - APP_SUPPORTED_CHAIN_IDS=31337
+      - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
+      - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
+
+  nildb_2:
+    build:
+      context: ..
+      dockerfile: packages/api/Dockerfile
+    ports:
+      - "8082:8080"
+    depends_on:
+      - mongodb
+      - otel-collector
+    environment:
+      - APP_DB_NAME_BASE=nildb_2
+      - APP_DB_URI=mongodb://mongodb:27017
+      - APP_ENABLED_FEATURES=migrations,credits,self_signed_auth
+      - APP_LOG_LEVEL=debug
+      - APP_METRICS_PORT=9091
+      - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
+      - APP_NILAUTH_CHAIN_ID=31337
+      - APP_NODE_PUBLIC_ENDPOINT=http://localhost:8080
+      - APP_NODE_SECRET_KEY=72344d71de216bc5819f7a55a7e86f8ed354ca58d25468d97e29671e0b34d77d
+      - APP_PORT=8080
+      - APP_ETHEREUM_RPC_URLS=31337=http://nil-anvil:8545
+      - APP_SUPPORTED_CHAIN_IDS=31337
+      - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
+      - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
+
+  nildb_3:
+    build:
+      context: ..
+      dockerfile: packages/api/Dockerfile
+    ports:
+      - "8083:8080"
+    depends_on:
+      - mongodb
+      - otel-collector
+    environment:
+      - APP_DB_NAME_BASE=nildb_3
+      - APP_DB_URI=mongodb://mongodb:27017
+      - APP_ENABLED_FEATURES=migrations,credits,self_signed_auth
+      - APP_LOG_LEVEL=debug
+      - APP_METRICS_PORT=9091
+      - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
+      - APP_NILAUTH_CHAIN_ID=31337
+      - APP_NODE_PUBLIC_ENDPOINT=http://localhost:8080
+      - APP_NODE_SECRET_KEY=a4b99d1b8e116230eb964c349009c590d6647f88c0f920d3b022713a9a6b19fb
+      - APP_PORT=8080
+      - APP_ETHEREUM_RPC_URLS=31337=http://nil-anvil:8545
+      - APP_SUPPORTED_CHAIN_IDS=31337
+      - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
+      - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
 
   mongodb:
     image: mongo:latest
     ports:
-      - "40017:27017"
+      - "27017:27017"
 
   postgres:
     image: postgres:17
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
-      - "40432:5432"
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -46,7 +94,7 @@ services:
   nil-anvil:
     image: ghcr.io/nillionnetwork/nil-anvil:main
     ports:
-      - "40545:8545"
+      - "8545:8545"
     healthcheck:
       test: ["CMD", "cast", "chain-id", "--rpc-url", "http://localhost:8545"]
       interval: 5s
@@ -64,13 +112,13 @@ services:
       - ./nilauth/config.yaml:/opt/config.yaml
     command: ["--config-file", "/opt/config.yaml"]
     ports:
-      - "40921:8080"
-      - "40922:9091"
+      - "8084:8080"
+      - "9092:9091"
 
   token-price-api:
     image: caddy:2
     ports:
-      - "40923:80"
+      - "8085:80"
     command: |
       caddy respond --listen :80 --body '{"nillion":{"usd":1}}' --header "Content-Type: application/json"
 
@@ -80,4 +128,4 @@ services:
     volumes:
       - ./otel-collector/config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "40318:4318"
+      - "4318:4318"

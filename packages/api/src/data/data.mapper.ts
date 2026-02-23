@@ -32,7 +32,7 @@ import type {
   RecentDataCommand,
   UpdateDataCommand,
   UploadResult,
-} from "./data.types.js";
+} from "./data.types";
 
 export const DataMapper = {
   /**

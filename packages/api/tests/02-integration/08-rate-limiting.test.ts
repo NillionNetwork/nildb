@@ -1,6 +1,6 @@
 import { describe } from "vitest";
 
-import { createTestFixtureExtension } from "../fixture/it.js";
+import { createTestFixtureExtension } from "../fixture/it";
 
 describe("rate-limiting.test.js", () => {
   process.env.APP_RATE_LIMIT_ENABLED = "true";

@@ -26,7 +26,7 @@ import type { CreateIndexesOptions, IndexSpecification } from "mongodb";
 
 import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 
-import * as CollectionsRepository from "./collections.repository.js";
+import * as CollectionsRepository from "./collections.repository";
 
 /**
  * Retrieves a paginated list of a builder's collections

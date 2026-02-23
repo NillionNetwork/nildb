@@ -1,7 +1,7 @@
 import * as vitest from "vitest";
 
-import type { FixtureContext } from "./fixture.js";
-import { buildFixture, type CollectionFixture, type QueryFixture } from "./fixture.js";
+import type { CreditFixtureContext, FixtureContext } from "./fixture";
+import { buildCreditFixture, buildFixture, type CollectionFixture, type QueryFixture } from "./fixture";
 
 type TestFixtureExtension = {
   it: vitest.TestAPI<{ c: FixtureContext }>;
@@ -61,6 +61,62 @@ export function createTestFixtureExtension(
         await db.client.db(config.dbNamePrimary).dropDatabase();
         await db.client.db(config.dbNameData).dropDatabase();
       }
+      await db.client.close(true);
+      await fn(fixture);
+    });
+  };
+
+  return { beforeAll, afterAll, it };
+}
+
+type CreditTestFixtureExtension = {
+  it: vitest.TestAPI<{ c: CreditFixtureContext }>;
+  beforeAll: (fn: (c: CreditFixtureContext) => Promise<void>) => void;
+  afterAll: (fn: (c: CreditFixtureContext) => Promise<void>) => void;
+};
+
+export function createCreditTestFixtureExtension(): CreditTestFixtureExtension {
+  let fixture: CreditFixtureContext | null = null;
+
+  const it = vitest.test.extend<{ c: CreditFixtureContext }>({
+    c: async ({ expect }, use) => {
+      const ctx: CreditFixtureContext = {
+        ...fixture!,
+        expect,
+      };
+
+      await use(ctx);
+    },
+  });
+
+  const beforeAll = (fn: (c: CreditFixtureContext) => Promise<void>): void => {
+    vitest.beforeAll(async () => {
+      try {
+        fixture = await buildCreditFixture();
+        await fn(fixture);
+      } catch (cause) {
+        process.stderr.write("***\n");
+        process.stderr.write("Critical: Credit fixture setup failed, stopping test run\n");
+        process.stderr.write(`${String(cause)}\n`);
+        process.stderr.write("***\n");
+        throw new Error("Critical: Credit fixture setup failed, stopping test run", {
+          cause,
+        });
+      }
+    });
+  };
+
+  const afterAll = (fn: (c: CreditFixtureContext) => Promise<void>): void => {
+    vitest.afterAll(async () => {
+      if (!fixture) {
+        process.stderr.write("Credit fixture is not initialized, skipping 'afterAll' hook\n");
+        return;
+      }
+      const { bindings } = fixture;
+      const { config, db } = bindings;
+
+      await db.client.db(config.dbNamePrimary).dropDatabase();
+      await db.client.db(config.dbNameData).dropDatabase();
       await db.client.close(true);
       await fn(fixture);
     });

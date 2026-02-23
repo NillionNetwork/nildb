@@ -1,6 +1,6 @@
 import type { ControllerOptions } from "@nildb/common/types";
 
-import * as UserController from "./users.controllers.js";
+import * as UserController from "./users.controllers";
 
 /**
  * Registers the users domain.

@@ -4,8 +4,8 @@ import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
 
 import simpleCollection from "../data/simple.collection.json";
 import simpleQuery from "../data/simple.query.json";
-import { waitForQueryRun } from "../fixture/assertions.js";
-import { createTestFixtureExtension } from "../fixture/it.js";
+import { waitForQueryRun } from "../fixture/assertions";
+import { createTestFixtureExtension } from "../fixture/it";
 
 describe("Query Lifecycle", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();

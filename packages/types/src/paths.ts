@@ -58,4 +58,14 @@ export const PathsV1 = {
       },
     },
   },
+  credits: {
+    root: Path.parse("/v1/credits"),
+    register: Path.parse("/v1/credits/register"),
+    pricing: Path.parse("/v1/credits/pricing"),
+    payments: Path.parse("/v1/credits/payments"),
+  },
+  revocations: {
+    revoke: Path.parse("/v1/revocations/revoke"),
+    lookup: Path.parse("/v1/revocations/lookup"),
+  },
 } as const;

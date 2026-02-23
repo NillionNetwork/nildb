@@ -19,12 +19,12 @@
   },
   "dependencies": {
     "http-status-codes": "^2.3.0",
-    "mongodb": "^7.0.0",
-    "zod": "^4.3.5"
+    "mongodb": "^7.1.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260113.1",
-    "tsdown": "0.20.0-beta.1"
+    "@typescript/native-preview": "7.0.0-dev.20260223.1",
+    "tsdown": "0.20.3"
   },
   "tsdown": {
     "clean": true,
