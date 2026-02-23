@@ -206,7 +206,7 @@ export function loadSubjectAndVerifyAsBuilder<
 
       if (!builder) {
         c.env.log.debug("Unknown builder: %s", subject);
-        return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+        return c.text(getReasonPhrase(StatusCodes.NOT_FOUND), StatusCodes.NOT_FOUND);
       }
 
       const context = {

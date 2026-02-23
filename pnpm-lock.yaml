@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
   injectWorkspacePackages: true
 
+overrides:
+  '@nillion/nuc': file:../nuc-ts
+
 importers:
 
   .:
@@ -156,13 +159,13 @@ importers:
         version: 0.7.6(hono@4.11.4)(zod@4.3.5)
       '@nillion/nilauth-client':
         specifier: 2.0.0
-        version: 2.0.0(@nillion/nuc@2.0.0(pino@10.1.1)(typescript@5.9.3))(pino@10.1.1)
+        version: 2.0.0(@nillion/nuc@file:../nuc-ts(pino@10.1.1)(typescript@5.9.3))(pino@10.1.1)
       '@nillion/nildb-client':
         specifier: workspace:*
         version: link:../client
       '@nillion/nuc':
-        specifier: 2.0.0
-        version: 2.0.0(pino@10.1.1)(typescript@5.9.3)
+        specifier: file:../../../nuc-ts
+        version: file:../nuc-ts(pino@10.1.1)(typescript@5.9.3)
       '@noble/curves':
         specifier: ^2.0.1
         version: 2.0.1
@@ -255,13 +258,13 @@ importers:
     dependencies:
       '@nillion/nilauth-client':
         specifier: 2.0.0
-        version: 2.0.0(@nillion/nuc@2.0.0(pino@10.1.1)(typescript@5.9.3))(pino@10.1.1)
+        version: 2.0.0(@nillion/nuc@file:../nuc-ts(pino@10.1.1)(typescript@5.9.3))(pino@10.1.1)
       '@nillion/nildb-types':
         specifier: workspace:*
         version: link:../types
       '@nillion/nuc':
-        specifier: 2.0.0
-        version: 2.0.0(pino@10.1.1)(typescript@5.9.3)
+        specifier: file:../../../nuc-ts
+        version: file:../nuc-ts(pino@10.1.1)(typescript@5.9.3)
     devDependencies:
       '@typescript/native-preview':
         specifier: 7.0.0-dev.20260113.1
@@ -273,8 +276,8 @@ importers:
   packages/nilpay-client:
     dependencies:
       '@nillion/nuc':
-        specifier: 2.0.0
-        version: 2.0.0(pino@10.1.1)(typescript@5.9.3)
+        specifier: file:../../../nuc-ts
+        version: file:../nuc-ts(pino@10.1.1)(typescript@5.9.3)
       viem:
         specifier: ^2.25.0
         version: 2.44.1(typescript@5.9.3)(zod@4.3.5)
@@ -292,8 +295,8 @@ importers:
   packages/shared:
     dependencies:
       '@nillion/nuc':
-        specifier: 2.0.0
-        version: 2.0.0(pino@10.1.1)(typescript@5.9.3)
+        specifier: file:../../../nuc-ts
+        version: file:../nuc-ts(pino@10.1.1)(typescript@5.9.3)
       temporal-polyfill:
         specifier: ^0.3.0
         version: 0.3.0
@@ -705,13 +708,14 @@ packages:
 
   '@nillion/nilauth-client@2.0.0':
     resolution: {integrity: sha512-0E/aCB4vfIHHjS94kOUdjaRlgk/c6OUpAjtAs27WjqsOWlDk1/2ZTlOmUfDMpae8JlAzTsINci7K1QZ3DEBRiw==}
+    version: 2.0.0
     engines: {node: '>=24'}
     peerDependencies:
       '@nillion/nuc': ^2.0.0
       pino: ^10.1.0
 
-  '@nillion/nuc@2.0.0':
-    resolution: {integrity: sha512-nMu5bUP8d535RhF51PASiC+jkG752B50zm/fN81piJcmLDxIM92mu34iVZ4It38Y7qrpENYt6t3fTuZbKU+cRg==}
+  '@nillion/nuc@file:../nuc-ts':
+    resolution: {directory: ../nuc-ts, type: directory}
     engines: {node: '>=24'}
     peerDependencies:
       pino: ^10.1.0
@@ -4128,16 +4132,16 @@ snapshots:
       '@tybys/wasm-util': 0.10.1
     optional: true
 
-  '@nillion/nilauth-client@2.0.0(@nillion/nuc@2.0.0(pino@10.1.1)(typescript@5.9.3))(pino@10.1.1)':
+  '@nillion/nilauth-client@2.0.0(@nillion/nuc@file:../nuc-ts(pino@10.1.1)(typescript@5.9.3))(pino@10.1.1)':
     dependencies:
-      '@nillion/nuc': 2.0.0(pino@10.1.1)(typescript@5.9.3)
+      '@nillion/nuc': file:../nuc-ts(pino@10.1.1)(typescript@5.9.3)
       '@noble/hashes': 2.0.1
       canonicalize: 2.1.0
       ky: 1.14.2
       pino: 10.1.1
       zod: 4.3.5
 
-  '@nillion/nuc@2.0.0(pino@10.1.1)(typescript@5.9.3)':
+  '@nillion/nuc@file:../nuc-ts(pino@10.1.1)(typescript@5.9.3)':
     dependencies:
       '@noble/curves': 2.0.1
       '@noble/hashes': 2.0.1
