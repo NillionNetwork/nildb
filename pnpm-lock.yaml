@@ -5,9 +5,6 @@ settings:
   excludeLinksFromLockfile: false
   injectWorkspacePackages: true
 
-overrides:
-  '@nillion/nuc': file:vendor/nillion-nuc-2.0.0.tgz
-
 importers:
 
   .:
@@ -159,13 +156,13 @@ importers:
         version: 0.7.6(hono@4.12.2)(zod@4.3.6)
       '@nillion/nilauth-client':
         specifier: 2.0.0
-        version: 2.0.0(@nillion/nuc@file:vendor/nillion-nuc-2.0.0.tgz(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)
+        version: 2.0.0(@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)
       '@nillion/nildb-client':
         specifier: workspace:*
         version: link:../client
       '@nillion/nuc':
-        specifier: file:../../vendor/nillion-nuc-2.0.0.tgz
-        version: file:vendor/nillion-nuc-2.0.0.tgz(pino@10.3.1)(typescript@5.9.3)
+        specifier: ^2.0.1
+        version: 2.0.1(pino@10.3.1)(typescript@5.9.3)
       '@noble/curves':
         specifier: ^2.0.1
         version: 2.0.1
@@ -258,13 +255,13 @@ importers:
     dependencies:
       '@nillion/nilauth-client':
         specifier: 2.0.0
-        version: 2.0.0(@nillion/nuc@file:vendor/nillion-nuc-2.0.0.tgz(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)
+        version: 2.0.0(@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)
       '@nillion/nildb-types':
         specifier: workspace:*
         version: link:../types
       '@nillion/nuc':
-        specifier: file:../../vendor/nillion-nuc-2.0.0.tgz
-        version: file:vendor/nillion-nuc-2.0.0.tgz(pino@10.3.1)(typescript@5.9.3)
+        specifier: ^2.0.1
+        version: 2.0.1(pino@10.3.1)(typescript@5.9.3)
     devDependencies:
       '@typescript/native-preview':
         specifier: 7.0.0-dev.20260223.1
@@ -276,8 +273,8 @@ importers:
   packages/nilpay-client:
     dependencies:
       '@nillion/nuc':
-        specifier: file:../../vendor/nillion-nuc-2.0.0.tgz
-        version: file:vendor/nillion-nuc-2.0.0.tgz(pino@10.3.1)(typescript@5.9.3)
+        specifier: ^2.0.1
+        version: 2.0.1(pino@10.3.1)(typescript@5.9.3)
       viem:
         specifier: ^2.46.2
         version: 2.46.2(typescript@5.9.3)(zod@4.3.6)
@@ -295,8 +292,8 @@ importers:
   packages/shared:
     dependencies:
       '@nillion/nuc':
-        specifier: file:../../vendor/nillion-nuc-2.0.0.tgz
-        version: file:vendor/nillion-nuc-2.0.0.tgz(pino@10.3.1)(typescript@5.9.3)
+        specifier: ^2.0.1
+        version: 2.0.1(pino@10.3.1)(typescript@5.9.3)
       temporal-polyfill:
         specifier: ^0.3.0
         version: 0.3.0
@@ -707,15 +704,13 @@ packages:
 
   '@nillion/nilauth-client@2.0.0':
     resolution: {integrity: sha512-0E/aCB4vfIHHjS94kOUdjaRlgk/c6OUpAjtAs27WjqsOWlDk1/2ZTlOmUfDMpae8JlAzTsINci7K1QZ3DEBRiw==}
-    version: 2.0.0
     engines: {node: '>=24'}
     peerDependencies:
       '@nillion/nuc': ^2.0.0
       pino: ^10.1.0
 
-  '@nillion/nuc@file:vendor/nillion-nuc-2.0.0.tgz':
-    resolution: {integrity: sha512-XpZM/fwdzB22fN3JS7ESybMRLOpn1y5ucqSaxRe7Sr87p180nkvCdQAF9fHAiDAlbQyNWX3pPw5JZE3YIZnkfg==, tarball: file:vendor/nillion-nuc-2.0.0.tgz}
-    version: 2.0.0
+  '@nillion/nuc@2.0.1':
+    resolution: {integrity: sha512-iP+GbnIh0v/GKmyk9yEZWiB7GvyBOd1EqcmJtCtRlOJvGf6yARw3I5hMbNLMW74zYWJwLUS/EYK8Igb15lxSOg==}
     engines: {node: '>=24'}
     peerDependencies:
       pino: ^10.1.0
@@ -3921,16 +3916,16 @@ snapshots:
       '@tybys/wasm-util': 0.10.1
     optional: true
 
-  '@nillion/nilauth-client@2.0.0(@nillion/nuc@file:vendor/nillion-nuc-2.0.0.tgz(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)':
+  '@nillion/nilauth-client@2.0.0(@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)':
     dependencies:
-      '@nillion/nuc': file:vendor/nillion-nuc-2.0.0.tgz(pino@10.3.1)(typescript@5.9.3)
+      '@nillion/nuc': 2.0.1(pino@10.3.1)(typescript@5.9.3)
       '@noble/hashes': 2.0.1
       canonicalize: 2.1.0
       ky: 1.14.3
       pino: 10.3.1
       zod: 4.3.6
 
-  '@nillion/nuc@file:vendor/nillion-nuc-2.0.0.tgz(pino@10.3.1)(typescript@5.9.3)':
+  '@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3)':
     dependencies:
       '@noble/curves': 2.0.1
       '@noble/hashes': 2.0.1

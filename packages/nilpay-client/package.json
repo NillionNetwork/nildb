@@ -18,7 +18,7 @@
     "stub": "tsdown --stub"
   },
   "dependencies": {
-    "@nillion/nuc": "file:../../vendor/nillion-nuc-2.0.0.tgz",
+    "@nillion/nuc": "^2.0.1",
     "viem": "^2.46.2"
   },
   "devDependencies": {

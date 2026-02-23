@@ -21,7 +21,7 @@
   "dependencies": {
     "@nillion/nilauth-client": "2.0.0",
     "@nillion/nildb-types": "workspace:*",
-    "@nillion/nuc": "file:../../vendor/nillion-nuc-2.0.0.tgz"
+    "@nillion/nuc": "^2.0.1"
   },
   "devDependencies": {
     "@typescript/native-preview": "7.0.0-dev.20260223.1",
