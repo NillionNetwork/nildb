@@ -95,6 +95,7 @@ export const EnvVarsSchema = z.object({
   nilUsdExchangeOracleAddress: z.string().optional(),
   nilUsdExchangeApiUrl: z.string().url().optional(),
   nilUsdExchangeCoinId: z.string().optional(),
+  nilUsdExchangeApiKey: z.string().optional(),
   storageCostPerGbHour: z.coerce.number().positive().optional().default(0.001),
   freeTierBytes: z.coerce.number().int().nonnegative().optional().default(104857600), // 100MB
   gracePeriodDays: z.coerce.number().int().positive().optional().default(90),
@@ -150,6 +151,7 @@ declare global {
       APP_NIL_USD_EXCHANGE_ORACLE_ADDRESS?: string;
       APP_NIL_USD_EXCHANGE_API_URL?: string;
       APP_NIL_USD_EXCHANGE_COIN_ID?: string;
+      APP_NIL_USD_EXCHANGE_API_KEY?: string;
       APP_STORAGE_COST_PER_GB_HOUR?: string;
       APP_FREE_TIER_BYTES?: string;
       APP_GRACE_PERIOD_DAYS?: string;
@@ -222,6 +224,7 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     nilUsdExchangeOracleAddress: process.env.APP_NIL_USD_EXCHANGE_ORACLE_ADDRESS,
     nilUsdExchangeApiUrl: process.env.APP_NIL_USD_EXCHANGE_API_URL,
     nilUsdExchangeCoinId: process.env.APP_NIL_USD_EXCHANGE_COIN_ID,
+    nilUsdExchangeApiKey: process.env.APP_NIL_USD_EXCHANGE_API_KEY,
     storageCostPerGbHour: process.env.APP_STORAGE_COST_PER_GB_HOUR,
     freeTierBytes: process.env.APP_FREE_TIER_BYTES,
     gracePeriodDays: process.env.APP_GRACE_PERIOD_DAYS,

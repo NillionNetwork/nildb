@@ -233,7 +233,7 @@ function fetchNilUsdPrice(ctx: AppBindings): E.Effect<number, PaymentValidationE
   }
 
   return E.tryPromise({
-    try: () => getNilUsdPriceHttp(nilUsdExchangeApiUrl, nilUsdExchangeCoinId),
+    try: () => getNilUsdPriceHttp(nilUsdExchangeApiUrl, nilUsdExchangeCoinId, ctx.config.nilUsdExchangeApiKey),
     catch: (cause) =>
       new PaymentValidationError({
         message: `Failed to fetch NIL/USD price: ${cause instanceof Error ? cause.message : String(cause)}`,
