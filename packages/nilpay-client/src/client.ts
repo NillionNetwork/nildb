@@ -14,6 +14,7 @@ export type NilpayClientConfig = {
   // HTTP API config (CoinGecko-compatible)
   exchangeApiUrl?: string;
   exchangeCoinId?: string;
+  exchangeApiKey?: string;
 };
 
 /**
@@ -26,6 +27,7 @@ export class NilpayClient {
   private readonly exchangeOracleRpcUrl?: string;
   private readonly exchangeApiUrl?: string;
   private readonly exchangeCoinId?: string;
+  private readonly exchangeApiKey?: string;
 
   constructor(config: NilpayClientConfig) {
     this.chainRpcUrls = config.chainRpcUrls;
@@ -34,6 +36,7 @@ export class NilpayClient {
     this.exchangeOracleRpcUrl = config.exchangeOracleRpcUrl;
     this.exchangeApiUrl = config.exchangeApiUrl;
     this.exchangeCoinId = config.exchangeCoinId;
+    this.exchangeApiKey = config.exchangeApiKey;
   }
 
   /**
@@ -46,6 +49,7 @@ export class NilpayClient {
     exchangeOracleRpcUrl?: string;
     exchangeApiUrl?: string;
     exchangeCoinId?: string;
+    exchangeApiKey?: string;
   }): NilpayClient {
     const chainRpcUrls = parseChainRpcUrls(env.chainRpcUrls);
     const supportedChainIds = env.supportedChainIds
@@ -61,6 +65,7 @@ export class NilpayClient {
       exchangeOracleRpcUrl: env.exchangeOracleRpcUrl,
       exchangeApiUrl: env.exchangeApiUrl,
       exchangeCoinId: env.exchangeCoinId,
+      exchangeApiKey: env.exchangeApiKey,
     });
   }
 
@@ -115,7 +120,7 @@ export class NilpayClient {
   async getNilUsdPrice(): Promise<ExchangeRate> {
     // Prefer HTTP API (simpler, faster)
     if (this.exchangeApiUrl && this.exchangeCoinId) {
-      return getNilUsdPriceHttp(this.exchangeApiUrl, this.exchangeCoinId);
+      return getNilUsdPriceHttp(this.exchangeApiUrl, this.exchangeCoinId, this.exchangeApiKey);
     }
     // Fall back to on-chain oracle
     if (this.exchangeOracleAddress && this.exchangeOracleRpcUrl) {

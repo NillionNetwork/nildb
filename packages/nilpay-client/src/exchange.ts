@@ -16,12 +16,18 @@ type CoinGeckoResponse = Record<string, { usd: number }>;
  * @param coinId - Coin identifier (e.g., "nillion")
  * @returns The current NIL/USD price and timestamp
  */
-export async function getNilUsdPriceHttp(apiUrl: string, coinId: string): Promise<ExchangeRate> {
+export async function getNilUsdPriceHttp(apiUrl: string, coinId: string, apiKey?: string): Promise<ExchangeRate> {
   const url = new URL("/api/v3/simple/price", apiUrl);
   url.searchParams.set("ids", coinId);
   url.searchParams.set("vs_currencies", "usd");
 
-  const response = await fetch(url.toString());
+  const headers: Record<string, string> = {};
+  if (apiKey) {
+    const headerName = apiUrl.includes("pro-api.coingecko.com") ? "x-cg-pro-api-key" : "x-cg-demo-api-key";
+    headers[headerName] = apiKey;
+  }
+
+  const response = await fetch(url.toString(), { headers });
   if (!response.ok) {
     throw new Error(`Failed to fetch token price: ${response.status} ${response.statusText}`);
   }
