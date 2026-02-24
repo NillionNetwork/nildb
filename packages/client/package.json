@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@typescript/native-preview": "7.0.0-dev.20260223.1",
-    "tsdown": "0.20.3"
+    "tsdown": "0.20.1"
   },
   "tsdown": {
     "clean": true,
