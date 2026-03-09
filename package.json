@@ -12,7 +12,6 @@
     "@types/semver": "^7.7.1",
     "@typescript/native-preview": "7.0.0-dev.20260223.1",
     "@vitest/coverage-v8": "4.0.18",
-    "lefthook": "^2.1.1",
     "oxfmt": "^0.35.0",
     "oxlint": "^1.50.0",
     "oxlint-tsgolint": "^0.14.2",

@@ -1,0 +1,63 @@
+"$schema" = "https://prek.j178.dev/docs/prek.schema.json"
+
+[[repos]]
+repo = "local"
+
+# --- pre-commit ---
+
+[[repos.hooks]]
+id = "oxfmt"
+name = "Format staged files"
+entry = "pnpm exec oxfmt"
+language = "system"
+types_or = ["ts", "json"]
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "hadolint"
+name = "Lint Dockerfile"
+entry = "hadolint"
+language = "system"
+files = "Dockerfile"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "actionlint"
+name = "Lint GitHub Actions workflows"
+entry = "actionlint"
+language = "system"
+files = '\.github/workflows/.*\.ya?ml$'
+always_run = true
+pass_filenames = false
+stages = ["pre-commit"]
+
+# --- commit-msg ---
+
+[[repos.hooks]]
+id = "commitlint"
+name = "Lint commit message"
+entry = "pnpm commitlint --edit"
+language = "system"
+always_run = true
+pass_filenames = false
+stages = ["commit-msg"]
+
+# --- pre-push ---
+
+[[repos.hooks]]
+id = "check"
+name = "Check (format + lint + types)"
+entry = "mise run check"
+language = "system"
+always_run = true
+pass_filenames = false
+stages = ["pre-push"]
+
+[[repos.hooks]]
+id = "test"
+name = "Run tests"
+entry = "mise run test"
+language = "system"
+always_run = true
+pass_filenames = false
+stages = ["pre-push"]

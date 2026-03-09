@@ -1,0 +1,145 @@
+[tools]
+node = "24"
+pnpm = "10"
+prek = "latest"
+hadolint = "latest"
+actionlint = "latest"
+
+[tasks.install]
+description = "Install dependencies"
+run = "pnpm install"
+
+[tasks.init]
+description = "Setup repository (install deps and git hooks)"
+depends = ["install"]
+run = "prek install"
+
+# --- Quality ---
+
+[tasks.build-deps]
+description = "Build workspace dependencies"
+run = """
+pnpm --filter @nillion/nildb-types build
+pnpm --filter @nillion/nildb-shared build
+pnpm --filter @nillion/nildb-client build
+"""
+
+[tasks.fmt]
+description = "Format all files"
+run = "pnpm exec oxfmt"
+
+[tasks."fmt:check"]
+description = "Check formatting"
+run = "pnpm exec oxfmt --check"
+
+[tasks.lint]
+description = "Lint and auto-fix"
+depends = ["build-deps"]
+run = "pnpm exec oxlint --fix --type-aware"
+
+[tasks."lint:check"]
+description = "Lint (no auto-fix)"
+depends = ["build-deps"]
+run = "pnpm exec oxlint --type-aware"
+
+[tasks.typecheck]
+description = "Type check"
+depends = ["build-deps"]
+run = "pnpm exec tsgo -b"
+
+[tasks.check]
+description = "Format check + lint + type check"
+depends = ["fmt:check", "lint:check", "typecheck"]
+
+[tasks.fix]
+description = "Auto-fix formatting and lint issues"
+depends = ["fmt", "lint", "typecheck"]
+
+# --- Application ---
+
+[tasks.dev]
+description = "Run the application using tsx"
+run = "pnpm --filter @nillion/nildb dev"
+
+[tasks.dev-local]
+description = "Run nildb against local Docker infra (auto-restarts)"
+dir = "packages/api"
+run = "pnpm exec tsx watch --clear-screen=false src/main.ts --env-file .env.local"
+
+[tasks.build]
+description = "Build nildb"
+depends = ["build-deps"]
+run = "pnpm --filter @nillion/nildb build"
+
+# --- Testing ---
+
+[tasks.test]
+description = "Run all tests (unit & integration)"
+depends = ["build-deps"]
+run = "pnpm exec vitest run"
+
+[tasks.test-unit]
+description = "Run unit tests"
+depends = ["build-deps"]
+run = "pnpm exec vitest run --project=unit"
+
+[tasks.test-integration]
+description = "Run integration tests (requires docker-up)"
+depends = ["build-deps"]
+run = "pnpm exec vitest run --project=integration"
+
+[tasks.test-coverage]
+description = "Run tests with coverage"
+depends = ["build-deps"]
+run = "pnpm exec vitest run --coverage"
+
+# --- Docker ---
+
+[tasks.docker-up]
+description = "Start local dev infrastructure"
+dir = "local"
+run = "docker compose up -d"
+
+[tasks.docker-down]
+description = "Stop local dev infrastructure"
+dir = "local"
+run = "docker compose down"
+
+[tasks.docker-logs]
+description = "View docker logs"
+dir = "local"
+run = "docker compose logs -f"
+
+# --- Build & Docker ---
+
+[tasks.create-buildinfo]
+description = "Create build info artifact for Docker"
+run = """
+cat << EOF > buildinfo.json
+{
+  "time": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
+  "commit": "$(git rev-parse HEAD)",
+  "version": "0.0.0"
+}
+EOF
+"""
+
+[tasks.docker-build-local]
+description = "Build local Docker image"
+depends = ["create-buildinfo"]
+run = """
+docker buildx build \
+  --tag ghcr.io/nillionnetwork/nildb:local \
+  --file ./packages/api/Dockerfile \
+  .
+"""
+
+# --- Cleanup ---
+
+[tasks.clean]
+description = "Clean build artifacts"
+run = """
+rm -f buildinfo.json
+rm -rf node_modules
+rm -rf coverage
+"""
