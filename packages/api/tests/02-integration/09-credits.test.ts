@@ -7,7 +7,7 @@ import { StatusCodes } from "http-status-codes";
 import { ObjectId, UUID } from "mongodb";
 import { describe } from "vitest";
 
-import type { ReadCreditsResponse, ReadPricingResponse } from "@nillion/nildb-types";
+import type { AdminCreditTopUpResponse, ReadCreditsResponse, ReadPricingResponse } from "@nillion/nildb-types";
 import { createUuidDto, PathsV1 } from "@nillion/nildb-types";
 
 import { createCreditTestFixtureExtension } from "../fixture/it";
@@ -512,5 +512,185 @@ describe("09-credits.test.ts", () => {
 
     // Clean up
     await builders.deleteOne({ did: purgeBuilderDid });
+  });
+
+  // --- Admin credit topup tests ---
+
+  it("admin topup increases builder balance", async ({ c }) => {
+    const { expect, app, bindings, creditBuilder, admin } = c;
+    const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
+
+    // Set builder with storage above free tier so status reflects credits (not free_tier)
+    await builders.updateOne(
+      { did: creditBuilder.did },
+      {
+        $set: {
+          creditsUsd: 0,
+          creditsDepleted: null,
+          storageBytes: 200 * 1024 * 1024,
+          status: "warning",
+        },
+      },
+    );
+    bindings.cache.builders.delete(creditBuilder.did);
+
+    const token = await admin.createToken("/nil/db/admin/create");
+    const response = await app.request(PathsV1.admin.creditTopUp, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        builderDid: creditBuilder.did,
+        amountUsd: 5.0,
+        reason: "test topup",
+      }),
+    });
+    expect(response.status).toBe(StatusCodes.OK);
+
+    const body = (await response.json()) as AdminCreditTopUpResponse;
+    expect(body.data.builderDid).toBe(creditBuilder.did);
+    expect(body.data.amountUsd).toBe(5);
+    expect(body.data.newBalance).toBe(5);
+    expect(body.data.status).toBe("active");
+
+    // Verify via GET /v1/credits
+    bindings.cache.builders.delete(creditBuilder.did);
+    const creditsToken = await creditBuilder.createToken("/nil/db/credits/read");
+    const creditsResponse = await app.request(PathsV1.credits.root, {
+      headers: { Authorization: `Bearer ${creditsToken}` },
+    });
+    const creditsBody = (await creditsResponse.json()) as ReadCreditsResponse;
+    expect(creditsBody.data.creditsUsd).toBe(5);
+  });
+
+  it("admin topup restores a suspended builder", async ({ c }) => {
+    const { expect, app, bindings, creditBuilder, admin } = c;
+    const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
+
+    // Set builder to suspended state with storage above free tier
+    await builders.updateOne(
+      { did: creditBuilder.did },
+      {
+        $set: {
+          creditsUsd: 0,
+          creditsDepleted: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+          storageBytes: 200 * 1024 * 1024,
+          status: "suspended",
+        },
+      },
+    );
+    bindings.cache.builders.delete(creditBuilder.did);
+
+    const token = await admin.createToken("/nil/db/admin/create");
+    const response = await app.request(PathsV1.admin.creditTopUp, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        builderDid: creditBuilder.did,
+        amountUsd: 10.0,
+        reason: "restore suspended builder",
+      }),
+    });
+    expect(response.status).toBe(StatusCodes.OK);
+
+    const body = (await response.json()) as AdminCreditTopUpResponse;
+    expect(body.data.status).toBe("active");
+
+    // Verify builder can now perform write operations
+    bindings.cache.builders.delete(creditBuilder.did);
+    const writeToken = await creditBuilder.createToken("/nil/db/collections");
+    const writeResponse = await app.request(PathsV1.collections.root, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${writeToken}`,
+      },
+      body: JSON.stringify({
+        _id: createUuidDto(),
+        type: "standard",
+        name: "test-collection-after-topup",
+        schema: {},
+      }),
+    });
+    expect(writeResponse.status).toBe(StatusCodes.CREATED);
+  });
+
+  it("admin topup for builder without credits enabled fails", async ({ c }) => {
+    const { expect, app, bindings, admin } = c;
+    const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
+
+    // Insert a builder without creditsUsd field (credits not enabled for this builder)
+    const noCreditBuilderDid = `did:key:z6Mk${crypto.randomUUID().replace(/-/g, "")}`;
+    const now = new Date();
+    await builders.insertOne({
+      _id: new ObjectId(),
+      did: noCreditBuilderDid,
+      _created: now,
+      _updated: now,
+      name: "no-credit-builder",
+      collections: [],
+      queries: [],
+      storageBytes: 0,
+    });
+
+    const token = await admin.createToken("/nil/db/admin/create");
+    const response = await app.request(PathsV1.admin.creditTopUp, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        builderDid: noCreditBuilderDid,
+        amountUsd: 5.0,
+        reason: "should fail",
+      }),
+    });
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+
+    // Clean up
+    await builders.deleteOne({ did: noCreditBuilderDid });
+  });
+
+  it("non-admin token is rejected for topup", async ({ c }) => {
+    const { expect, app, creditBuilder } = c;
+
+    // Use the creditBuilder's signer to create a token with admin command
+    const token = await creditBuilder.createToken("/nil/db/admin/create");
+    const response = await app.request(PathsV1.admin.creditTopUp, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        builderDid: creditBuilder.did,
+        amountUsd: 5.0,
+        reason: "should be rejected",
+      }),
+    });
+    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+  });
+
+  it("missing auth token is rejected for topup", async ({ c }) => {
+    const { expect, app, creditBuilder } = c;
+
+    const response = await app.request(PathsV1.admin.creditTopUp, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        builderDid: creditBuilder.did,
+        amountUsd: 5.0,
+        reason: "should be rejected",
+      }),
+    });
+    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 });
