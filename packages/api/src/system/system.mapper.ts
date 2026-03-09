@@ -42,7 +42,7 @@ export const SystemDataMapper = {
         active: about.maintenance.active,
         started_at: about.maintenance.startedAt.toISOString(),
       },
-      ...(about.adminPublicKey && { admin_public_key: about.adminPublicKey }),
+      ...(about.adminAddress && { admin_address: about.adminAddress }),
     };
   },
 

@@ -28,7 +28,7 @@ export type AboutNode = {
   publicKey: string;
   url: string;
   maintenance: MaintenanceInfo;
-  adminPublicKey?: string;
+  adminAddress?: string;
 };
 
 /**

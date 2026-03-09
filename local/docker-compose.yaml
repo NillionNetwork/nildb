@@ -23,6 +23,7 @@ services:
       - APP_SUPPORTED_CHAIN_IDS=31337
       - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
       - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
+      - APP_ADMIN_ADDRESS=0xdFb76ED3789fB9e4d676be4c0608395a47337Cd9
 
   nildb_2:
     build:
@@ -48,6 +49,7 @@ services:
       - APP_SUPPORTED_CHAIN_IDS=31337
       - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
       - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
+      - APP_ADMIN_ADDRESS=0xdFb76ED3789fB9e4d676be4c0608395a47337Cd9
 
   nildb_3:
     build:
@@ -73,6 +75,7 @@ services:
       - APP_SUPPORTED_CHAIN_IDS=31337
       - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
       - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
+      - APP_ADMIN_ADDRESS=0xdFb76ED3789fB9e4d676be4c0608395a47337Cd9
 
   mongodb:
     image: mongo:latest

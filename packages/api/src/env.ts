@@ -99,7 +99,10 @@ export const EnvVarsSchema = z.object({
   storageCostPerGbHour: z.coerce.number().positive().optional().default(0.001),
   freeTierBytes: z.coerce.number().int().nonnegative().optional().default(104857600), // 100MB
   gracePeriodDays: z.coerce.number().int().positive().optional().default(90),
-  adminPublicKey: z.string().length(PUBLIC_KEY_LENGTH).optional(),
+  adminAddress: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{40}$/)
+    .optional(),
 });
 export type EnvVars = z.infer<typeof EnvVarsSchema>;
 
@@ -122,7 +125,7 @@ export type AppBindings = {
   };
   admin?: {
     did: DidType;
-    publicKey: string;
+    address: string;
   };
   migrationsComplete: boolean;
 };
@@ -160,7 +163,7 @@ declare global {
       APP_STORAGE_COST_PER_GB_HOUR?: string;
       APP_FREE_TIER_BYTES?: string;
       APP_GRACE_PERIOD_DAYS?: string;
-      APP_ADMIN_PUBLIC_KEY?: string;
+      APP_ADMIN_ADDRESS?: string;
     }
   }
 }
@@ -185,10 +188,10 @@ export async function loadBindings(
   const signer = Signer.fromPrivateKey(config.nodeSecretKey);
   const did = await signer.getDid();
 
-  const admin = config.adminPublicKey
+  const admin = config.adminAddress
     ? {
-        did: Did.fromPublicKey(config.adminPublicKey),
-        publicKey: config.adminPublicKey,
+        did: Did.parse(`did:ethr:${config.adminAddress}`),
+        address: config.adminAddress,
       }
     : undefined;
 
@@ -242,7 +245,7 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     storageCostPerGbHour: process.env.APP_STORAGE_COST_PER_GB_HOUR,
     freeTierBytes: process.env.APP_FREE_TIER_BYTES,
     gracePeriodDays: process.env.APP_GRACE_PERIOD_DAYS,
-    adminPublicKey: process.env.APP_ADMIN_PUBLIC_KEY,
+    adminAddress: process.env.APP_ADMIN_ADDRESS,
   });
 
   return {
