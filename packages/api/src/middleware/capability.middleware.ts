@@ -150,6 +150,44 @@ export function verifySelfSignedNuc<P extends string = string, I extends Input =
   };
 }
 
+export function loadSubjectAndVerifyAsCreditAdmin<
+  P extends string = string,
+  I extends Input = BlankInput,
+  E extends AppEnv = AppEnv,
+>(bindings: AppBindings): MiddlewareHandler<E, P, I> {
+  const { log } = bindings;
+
+  return async (c, next) => {
+    if (!bindings.admin) {
+      return c.text(getReasonPhrase(StatusCodes.FORBIDDEN), StatusCodes.FORBIDDEN);
+    }
+
+    try {
+      const envelope: Envelope = c.get("envelope");
+
+      await Validator.validate(envelope, {
+        rootIssuers: [bindings.admin.did.didString],
+        params: {
+          tokenRequirements: {
+            type: "invocation",
+            audience: bindings.node.did.didString,
+          },
+        },
+      });
+
+      c.set("subjectDid", bindings.admin.did.didString);
+      return next();
+    } catch (cause) {
+      if (cause && typeof cause === "object" && "message" in cause) {
+        log.error({ cause: cause.message }, "Admin auth error");
+      } else {
+        log.error({ cause: "unknown" }, "Admin auth error");
+      }
+      return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+    }
+  };
+}
+
 export function loadSubjectAndVerifyAsAdmin<
   P extends string = string,
   I extends Input = BlankInput,

@@ -2,6 +2,7 @@ import * as BuildersRepository from "@nildb/builders/builders.repository";
 import type { BuilderDocument, BuilderStatus } from "@nildb/builders/builders.types";
 import {
   type CollectionNotFoundError,
+  CreditsNotEnabledError,
   type DatabaseError,
   type DocumentNotFoundError,
   type DuplicateEntryError,
@@ -17,6 +18,7 @@ import { computeDigest, getNilUsdPriceHttp, KnownChains, unilsToUsd } from "@nil
 import * as CreditsRepository from "./credits.repository";
 import type {
   AddRevocationCommand,
+  AdminCreditGrantDocument,
   PaymentDocument,
   RegisterCreditsCommand,
   RevocationDocument,
@@ -325,6 +327,50 @@ export function addRevocation(
   };
 
   return CreditsRepository.insertRevocation(ctx, doc);
+}
+
+/**
+ * Admin top-up: add credits to a builder's balance directly.
+ */
+export function adminTopUpCredits(
+  ctx: AppBindings,
+  adminDid: string,
+  builderDid: string,
+  amountUsd: number,
+  reason?: string,
+): E.Effect<
+  { builderDid: string; amountUsd: number; newBalance: number; status: BuilderStatus },
+  CreditsNotEnabledError | DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  return pipe(
+    BuildersRepository.findOne(ctx, builderDid),
+    E.flatMap((builder) => {
+      if (builder.creditsUsd === undefined) {
+        return E.fail(new CreditsNotEnabledError({ builderDid }));
+      }
+      return E.succeed(builder);
+    }),
+    E.flatMap(() => BuildersRepository.applyCreditsAndActivate(ctx, builderDid, amountUsd)),
+    E.flatMap(() => {
+      const now = new Date();
+      const grantDoc: AdminCreditGrantDocument = {
+        _id: new ObjectId(),
+        _created: now,
+        builderDid,
+        adminDid,
+        amountUsd,
+        reason,
+      };
+      return CreditsRepository.insertAdminCreditGrant(ctx, grantDoc);
+    }),
+    E.flatMap(() => BuildersRepository.findOne(ctx, builderDid)),
+    E.map((builder) => ({
+      builderDid,
+      amountUsd,
+      newBalance: builder.creditsUsd ?? 0,
+      status: computeStatus(builder, ctx.config),
+    })),
+  );
 }
 
 /**

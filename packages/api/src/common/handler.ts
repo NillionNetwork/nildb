@@ -1,5 +1,6 @@
 import type {
   CollectionNotFoundError,
+  CreditsNotEnabledError,
   DatabaseError,
   DataValidationError,
   DocumentNotFoundError,
@@ -28,6 +29,7 @@ export type ApiResponse<T> = { data: T } | ApiErrorResponse;
 
 type KnownError =
   | CollectionNotFoundError
+  | CreditsNotEnabledError
   | DataValidationError
   | DatabaseError
   | DocumentNotFoundError
@@ -75,6 +77,7 @@ export function handleTaggedErrors(c: Context<AppEnv>) {
         GrantAccessError: (e) => toResponse(e, StatusCodes.UNAUTHORIZED),
         RevokeAccessError: (e) => toResponse(e, StatusCodes.UNAUTHORIZED),
         InvalidDidError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
+        CreditsNotEnabledError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
         PaymentValidationError: (e) => toResponse(e, StatusCodes.BAD_REQUEST),
         PaymentAlreadyProcessedError: (e) => toResponse(e, StatusCodes.CONFLICT),
         InsufficientCreditsError: (e) => toResponse(e, StatusCodes.PAYMENT_REQUIRED),

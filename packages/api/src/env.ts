@@ -11,7 +11,7 @@ import { z } from "zod";
 
 import { Cache } from "@nillion/nildb-shared";
 import { LogLevel } from "@nillion/nildb-types";
-import { type Did, type Envelope, Signer } from "@nillion/nuc";
+import { Did, type Did as DidType, type Envelope, Signer } from "@nillion/nuc";
 
 import { initAndCreateDbClients } from "./common/mongo";
 import type { UserDocument } from "./users/users.types";
@@ -99,6 +99,7 @@ export const EnvVarsSchema = z.object({
   storageCostPerGbHour: z.coerce.number().positive().optional().default(0.001),
   freeTierBytes: z.coerce.number().int().nonnegative().optional().default(104857600), // 100MB
   gracePeriodDays: z.coerce.number().int().positive().optional().default(90),
+  adminPublicKey: z.string().length(PUBLIC_KEY_LENGTH).optional(),
 });
 export type EnvVars = z.infer<typeof EnvVarsSchema>;
 
@@ -116,7 +117,11 @@ export type AppBindings = {
   node: {
     endpoint: string;
     signer: Signer;
-    did: Did;
+    did: DidType;
+    publicKey: string;
+  };
+  admin?: {
+    did: DidType;
     publicKey: string;
   };
   migrationsComplete: boolean;
@@ -155,6 +160,7 @@ declare global {
       APP_STORAGE_COST_PER_GB_HOUR?: string;
       APP_FREE_TIER_BYTES?: string;
       APP_GRACE_PERIOD_DAYS?: string;
+      APP_ADMIN_PUBLIC_KEY?: string;
     }
   }
 }
@@ -179,6 +185,13 @@ export async function loadBindings(
   const signer = Signer.fromPrivateKey(config.nodeSecretKey);
   const did = await signer.getDid();
 
+  const admin = config.adminPublicKey
+    ? {
+        did: Did.fromPublicKey(config.adminPublicKey),
+        publicKey: config.adminPublicKey,
+      }
+    : undefined;
+
   return {
     config,
     cache: {
@@ -192,6 +205,7 @@ export async function loadBindings(
       publicKey,
       endpoint: config.nodePublicEndpoint,
     },
+    admin,
     migrationsComplete: false,
   };
 }
@@ -228,6 +242,7 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     storageCostPerGbHour: process.env.APP_STORAGE_COST_PER_GB_HOUR,
     freeTierBytes: process.env.APP_FREE_TIER_BYTES,
     gracePeriodDays: process.env.APP_GRACE_PERIOD_DAYS,
+    adminPublicKey: process.env.APP_ADMIN_PUBLIC_KEY,
   });
 
   return {

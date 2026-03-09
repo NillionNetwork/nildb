@@ -1,3 +1,4 @@
+import * as BuildersRepository from "@nildb/builders/builders.repository";
 import { handleTaggedErrors } from "@nildb/common/handler";
 import { OpenApiSpecCommonErrorResponses } from "@nildb/common/openapi";
 import type { ControllerOptions } from "@nildb/common/types";
@@ -5,12 +6,18 @@ import { FeatureFlag, hasFeatureFlag } from "@nildb/env";
 import {
   loadNucToken,
   loadSubjectAndVerifyAsBuilder,
+  loadSubjectAndVerifyAsCreditAdmin,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
 import { Effect as E, pipe } from "effect";
 import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
+import { z } from "zod";
 
 import {
+  AdminCreditTopUpRequest,
+  type AdminCreditTopUpResponse,
+  type AdminListBuildersResponse,
+  type BuilderStatusDto,
   NucCmd,
   PaginationQuerySchema,
   PathsV1,
@@ -206,6 +213,124 @@ export function readPricing(options: ControllerOptions): void {
         CreditsService.getPricing(c.env),
         E.map((result) => CreditsDataMapper.toReadPricingResponse(result)),
         E.map((response) => c.json<ReadPricingResponse>(response)),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+/**
+ * Handle POST /v1/admin/credits/topup
+ * Admin top-up credits for a builder.
+ */
+export function adminCreditTopUp(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.creditTopUp;
+
+  if (!hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.CREDITS) || !bindings.admin) {
+    return;
+  }
+
+  app.post(
+    path,
+    describeRoute({
+      tags: ["Admin"],
+      security: [{ bearerAuth: [] }],
+      summary: "Admin credit top-up",
+      responses: {
+        200: {
+          description: "OK",
+          content: {
+            "application/json": {
+              schema: resolver(AdminCreditTopUpRequest),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", AdminCreditTopUpRequest),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsCreditAdmin(bindings),
+    requireNucNamespace(NucCmd.nil.db.admin.create),
+    async (c) => {
+      const { builderDid, amountUsd, reason } = c.req.valid("json");
+      const adminDid = c.get("subjectDid");
+
+      return pipe(
+        CreditsService.adminTopUpCredits(c.env, adminDid, builderDid, amountUsd, reason),
+        E.map(
+          (result): AdminCreditTopUpResponse => ({
+            data: {
+              builderDid: result.builderDid,
+              amountUsd: result.amountUsd,
+              newBalance: result.newBalance,
+              status: result.status as BuilderStatusDto,
+            },
+          }),
+        ),
+        E.map((response) => c.json<AdminCreditTopUpResponse>(response)),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+const AdminListBuildersQuerySchema = PaginationQuerySchema.extend({
+  search: z.string().optional(),
+});
+
+/**
+ * Handle GET /v1/admin/builders
+ * List builders for admin view.
+ */
+export function adminListBuilders(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.builders;
+
+  if (!hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.CREDITS) || !bindings.admin) {
+    return;
+  }
+
+  app.get(
+    path,
+    describeRoute({
+      tags: ["Admin"],
+      security: [{ bearerAuth: [] }],
+      summary: "List builders (admin)",
+      responses: {
+        200: {
+          description: "OK",
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("query", AdminListBuildersQuerySchema),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsCreditAdmin(bindings),
+    requireNucNamespace(NucCmd.nil.db.admin.read),
+    async (c) => {
+      const { limit, offset, search } = c.req.valid("query");
+
+      return pipe(
+        BuildersRepository.findAll(c.env, search, limit, offset),
+        E.map(
+          ({ data, total }): AdminListBuildersResponse => ({
+            data: data.map((b) => ({
+              did: b.did,
+              name: b.name,
+              creditsUsd: b.creditsUsd,
+              status: (b.creditsUsd !== undefined
+                ? CreditsService.computeStatus(b, c.env.config)
+                : b.status) as BuilderStatusDto,
+              storageBytes: b.storageBytes ?? 0,
+            })),
+            pagination: { total, limit, offset },
+          }),
+        ),
+        E.map((response) => c.json<AdminListBuildersResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );

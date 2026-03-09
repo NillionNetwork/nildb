@@ -54,6 +54,7 @@ export const ReadAboutNodeResponse = z
       active: z.boolean(),
       started_at: z.iso.datetime(),
     }),
+    admin_public_key: z.string().optional(),
   })
   .meta({ ref: "ReadAboutNodeResponse" });
 

@@ -68,4 +68,8 @@ export const PathsV1 = {
     revoke: Path.parse("/v1/revocations/revoke"),
     lookup: Path.parse("/v1/revocations/lookup"),
   },
+  admin: {
+    creditTopUp: Path.parse("/v1/admin/credits/topup"),
+    builders: Path.parse("/v1/admin/builders"),
+  },
 } as const;

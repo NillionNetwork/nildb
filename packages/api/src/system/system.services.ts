@@ -29,6 +29,7 @@ export function getNodeInfo(ctx: AppBindings): E.Effect<AboutNode, CollectionNot
       publicKey: node.publicKey,
       url: node.endpoint,
       maintenance,
+      adminPublicKey: ctx.admin?.publicKey,
     })),
   );
 }

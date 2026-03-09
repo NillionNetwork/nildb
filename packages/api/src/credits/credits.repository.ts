@@ -9,7 +9,7 @@ import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import { MongoServerError, type StrictFilter } from "mongodb";
 
-import type { PaymentDocument, RevocationDocument } from "./credits.types";
+import type { AdminCreditGrantDocument, PaymentDocument, RevocationDocument } from "./credits.types";
 
 /**
  * Insert a payment document.
@@ -145,6 +145,23 @@ export function findRevocationsByTokenHashes(
       try: (collection) => collection.find(filter).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findRevocationsByTokenHashes" }),
     }),
+  );
+}
+
+/**
+ * Insert an admin credit grant document.
+ */
+export function insertAdminCreditGrant(
+  ctx: AppBindings,
+  document: AdminCreditGrantDocument,
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<AdminCreditGrantDocument>(ctx, "primary", CollectionName.AdminCreditGrants),
+    E.tryMapPromise({
+      try: (collection) => collection.insertOne(document),
+      catch: (cause) => new DatabaseError({ cause, message: "insertAdminCreditGrant" }),
+    }),
+    E.as(void 0),
   );
 }
 
