@@ -1,8 +1,6 @@
 services:
   nildb_1:
-    build:
-      context: ..
-      dockerfile: packages/api/Dockerfile
+    image: ghcr.io/nillionnetwork/nildb:local
     ports:
       - "8081:8080"
     depends_on:
@@ -26,9 +24,7 @@ services:
       - APP_ADMIN_ADDRESS=0xdFb76ED3789fB9e4d676be4c0608395a47337Cd9
 
   nildb_2:
-    build:
-      context: ..
-      dockerfile: packages/api/Dockerfile
+    image: ghcr.io/nillionnetwork/nildb:local
     ports:
       - "8082:8080"
     depends_on:
@@ -52,9 +48,7 @@ services:
       - APP_ADMIN_ADDRESS=0xdFb76ED3789fB9e4d676be4c0608395a47337Cd9
 
   nildb_3:
-    build:
-      context: ..
-      dockerfile: packages/api/Dockerfile
+    image: ghcr.io/nillionnetwork/nildb:local
     ports:
       - "8083:8080"
     depends_on:
