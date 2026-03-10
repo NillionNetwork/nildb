@@ -260,10 +260,10 @@ export type CreditFixtureContext = {
 
 /**
  * Build a fixture for credit system integration tests.
- * Enables credits + self_signed_auth feature flags and registers a builder
- * directly in the DB with creditsUsd set (bypassing the did:key restriction).
+ * Enables credits feature flag and registers a builder directly in the DB
+ * with creditsUsd set (bypassing the did:key restriction).
  */
-export async function buildCreditFixture(): Promise<CreditFixtureContext> {
+export async function buildCreditFixture(opts: { extraFeatures?: string[] } = {}): Promise<CreditFixtureContext> {
   dotenv.config({
     path: ["./packages/api/env.test", "./packages/api/env.test.nilauthclient"],
   });
@@ -272,7 +272,8 @@ export async function buildCreditFixture(): Promise<CreditFixtureContext> {
 
   // Use unique db names for each test
   process.env.APP_DB_NAME_BASE = `${process.env.APP_DB_NAME_BASE}_${id}`;
-  process.env.APP_ENABLED_FEATURES = "openapi,migrations,credits,self_signed_auth";
+  const features = ["openapi", "migrations", "credits", ...(opts.extraFeatures ?? [])];
+  process.env.APP_ENABLED_FEATURES = features.join(",");
 
   // Generate admin Ethereum account and set env var before loadBindings()
   // so that bindings.admin gets populated with the did:ethr: identity

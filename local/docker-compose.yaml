@@ -9,7 +9,7 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb_1
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=migrations,credits,self_signed_auth
+      - APP_ENABLED_FEATURES=migrations,credits,nilauth
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
@@ -33,7 +33,7 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb_2
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=migrations,credits,self_signed_auth
+      - APP_ENABLED_FEATURES=migrations,credits,nilauth
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
@@ -57,7 +57,7 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb_3
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=migrations,credits,self_signed_auth
+      - APP_ENABLED_FEATURES=migrations,credits,nilauth
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14

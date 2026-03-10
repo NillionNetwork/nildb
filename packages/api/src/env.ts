@@ -30,7 +30,7 @@ export const FeatureFlag = {
   MIGRATIONS: "migrations",
   OTEL: "otel",
   CREDITS: "credits",
-  SELF_SIGNED_AUTH: "self_signed_auth",
+  NILAUTH: "nilauth",
 } as const;
 
 export type FeatureFlag = (typeof FeatureFlag)[keyof typeof FeatureFlag];
@@ -42,7 +42,10 @@ export type AppEnv = {
 
 const NilauthInstancesSchema = z
   .string()
+  .optional()
+  .default("")
   .transform((value): NilauthInstance[] => {
+    if (!value) return [];
     return value.split(",").map((entry) => {
       const trimmed = entry.trim();
       const lastSlashIndex = trimmed.lastIndexOf("/");
@@ -59,9 +62,6 @@ const NilauthInstancesSchema = z
       }
       return { publicKey, baseUrl };
     });
-  })
-  .refine((instances) => instances.length > 0, {
-    message: "At least one nilauth instance is required",
   });
 
 export const EnvVarsSchema = z.object({
@@ -71,7 +71,7 @@ export const EnvVarsSchema = z.object({
   enabledFeatures: z.string().transform((d) => d.split(",").map((e) => e.trim())),
   logLevel: LogLevel,
   nilauthInstances: NilauthInstancesSchema,
-  nilauthChainId: z.coerce.number().int().positive(),
+  nilauthChainId: z.coerce.number().int().nonnegative().optional().default(0),
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.url(),
   metricsPort: z.coerce.number().int().positive(),
@@ -138,8 +138,8 @@ declare global {
       APP_DB_URI: string;
       APP_ENABLED_FEATURES: string;
       APP_LOG_LEVEL: string;
-      APP_NILAUTH_INSTANCES: string;
-      APP_NILAUTH_CHAIN_ID: string;
+      APP_NILAUTH_INSTANCES?: string;
+      APP_NILAUTH_CHAIN_ID?: string;
       APP_METRICS_PORT?: string;
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;

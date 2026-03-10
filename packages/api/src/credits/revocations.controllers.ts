@@ -29,8 +29,8 @@ export function revokeToken(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.revocations.revoke;
 
-  // Only register route if self-signed auth feature is enabled
-  if (!hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.SELF_SIGNED_AUTH)) {
+  // Only register route if credits feature is enabled
+  if (!hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.CREDITS)) {
     return;
   }
 
@@ -80,8 +80,8 @@ export function lookupRevocations(options: ControllerOptions): void {
   const { app, bindings } = options;
   const path = PathsV1.revocations.lookup;
 
-  // Only register route if self-signed auth feature is enabled
-  if (!hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.SELF_SIGNED_AUTH)) {
+  // Only register route if credits feature is enabled
+  if (!hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.CREDITS)) {
     return;
   }
 

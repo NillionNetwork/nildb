@@ -61,17 +61,17 @@ function extractRootIssuerDid(envelope: Envelope): Did {
 }
 
 /**
- * Determine if a builder should use self-signed authentication.
- * Self-signed auth is used when:
- * 1. SELF_SIGNED_AUTH feature is enabled
- * 2. Builder has credits enabled (creditsUsd field exists)
+ * Determine if a builder should use nilauth (delegated) authentication.
+ * Nilauth auth is used when:
+ * 1. NILAUTH feature flag is enabled
+ * 2. Builder does not have credits (creditsUsd field is undefined)
  */
-function shouldUseSelfSignedAuth(config: { enabledFeatures: string[] }, builder: BuilderDocument): boolean {
-  if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.SELF_SIGNED_AUTH)) {
+function shouldUseNilauthAuth(config: { enabledFeatures: string[] }, builder: BuilderDocument): boolean {
+  if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
     return false;
   }
-  // Builder has credits enabled if they have the creditsUsd field
-  return builder.creditsUsd !== undefined;
+  // Nilauth mode only applies to builders without credits
+  return builder.creditsUsd === undefined;
 }
 
 /**
@@ -220,9 +220,13 @@ export function loadSubjectAndVerifyAsBuilder<
   E extends AppEnv = AppEnv,
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
-  const nilauthInstances = buildNilauthInstancesWithDids(config.nilauthInstances);
-  const nilauthRootIssuers = nilauthInstances.map((n) => n.did.didString);
   const supportedChainIds = parseSupportedChainIds(config.supportedChainIds);
+
+  // Only build nilauth instances when the feature is enabled
+  const nilauthInstances = hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)
+    ? buildNilauthInstancesWithDids(config.nilauthInstances)
+    : [];
+  const nilauthRootIssuers = nilauthInstances.map((n) => n.did.didString);
 
   return async (c, next) => {
     try {
@@ -265,28 +269,7 @@ export function loadSubjectAndVerifyAsBuilder<
       const nildbNodeDid = bindings.node.did;
 
       // Determine which authentication mode to use
-      if (shouldUseSelfSignedAuth(config, builder)) {
-        // Self-signed mode: the user is their own root issuer
-        await Validator.validate(envelope, {
-          rootIssuers: [canonicalSubject],
-          params: {
-            tokenRequirements: {
-              type: "invocation",
-              audience: nildbNodeDid.didString,
-            },
-          },
-          context,
-        });
-
-        validateEip712ChainId(envelope, supportedChainIds);
-
-        // Check local revocations instead of nilauth
-        const revokedHashes = await checkLocalRevocations(bindings, envelope);
-        if (revokedHashes.length > 0) {
-          log.warn("Token revoked (local): revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);
-          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
-        }
-      } else {
+      if (shouldUseNilauthAuth(config, builder)) {
         // Nilauth mode: validate against nilauth root issuers
         await Validator.validate(envelope, {
           rootIssuers: nilauthRootIssuers,
@@ -320,6 +303,27 @@ export function loadSubjectAndVerifyAsBuilder<
         if (revoked.length !== 0) {
           const hashes = revoked.map((r) => r.tokenHash).join(",");
           log.warn("Token revoked: revoked_hashes=(%s) auth_token=%O", hashes, token);
+          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+        }
+      } else {
+        // Self-signed mode: the user is their own root issuer
+        await Validator.validate(envelope, {
+          rootIssuers: [canonicalSubject],
+          params: {
+            tokenRequirements: {
+              type: "invocation",
+              audience: nildbNodeDid.didString,
+            },
+          },
+          context,
+        });
+
+        validateEip712ChainId(envelope, supportedChainIds);
+
+        // Check local revocations instead of nilauth
+        const revokedHashes = await checkLocalRevocations(bindings, envelope);
+        if (revokedHashes.length > 0) {
+          log.warn("Token revoked (local): revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);
           return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
         }
       }
