@@ -47,9 +47,17 @@ description = "Type check"
 depends = ["build-deps"]
 run = "pnpm exec tsgo -b"
 
+[tasks.hadolint]
+description = "Lint Dockerfiles"
+run = "hadolint --ignore DL3059 packages/api/Dockerfile"
+
+[tasks.actionlint]
+description = "Lint GitHub Actions workflows"
+run = "actionlint"
+
 [tasks.check]
-description = "Format check + lint + type check"
-depends = ["fmt:check", "lint:check", "typecheck"]
+description = "Format check + lint + type check + Dockerfile + CI workflows"
+depends = ["fmt:check", "lint:check", "typecheck", "hadolint", "actionlint"]
 
 [tasks.fix]
 description = "Auto-fix formatting and lint issues"

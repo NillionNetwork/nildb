@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Set short SHA
         id: vars
-        run: echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+        run: echo "short_sha=$(echo "${{ github.sha }}" | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
   build-and-push-arch:
     needs: setup
