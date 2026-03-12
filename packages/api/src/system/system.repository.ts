@@ -1,7 +1,7 @@
 import { type CollectionNotFoundError, DatabaseError } from "@nildb/common/errors";
 import { CollectionName, checkCollectionExists } from "@nildb/common/mongo";
 import type { AppBindings } from "@nildb/env";
-import type { MaintenanceStatusDocument } from "@nildb/system/system.types";
+import type { MaintenanceStatusDocument, PricingConfigDocument } from "@nildb/system/system.types";
 import { Effect as E, pipe } from "effect";
 import type { StrictFilter, StrictUpdateFilter, UpdateOptions } from "mongodb";
 
@@ -71,5 +71,56 @@ export function findMaintenanceConfig(
       try: (collection) => collection.findOne(filter),
       catch: (cause) => new DatabaseError({ cause, message: "findMaintenanceConfig" }),
     }),
+  );
+}
+
+/**
+ * Find pricing configuration.
+ */
+export function findPricingConfig(
+  ctx: AppBindings,
+): E.Effect<PricingConfigDocument | null, CollectionNotFoundError | DatabaseError> {
+  const filter: StrictFilter<PricingConfigDocument> = {
+    _type: "pricing",
+  };
+
+  return pipe(
+    checkCollectionExists<PricingConfigDocument>(ctx, "primary", CollectionName.Config),
+    E.tryMapPromise({
+      try: (collection) => collection.findOne(filter),
+      catch: (cause) => new DatabaseError({ cause, message: "findPricingConfig" }),
+    }),
+  );
+}
+
+/**
+ * Upsert pricing configuration.
+ */
+export function upsertPricingConfig(
+  ctx: AppBindings,
+  storageCostPerGbHour: number,
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+  const filter: StrictFilter<PricingConfigDocument> = {
+    _type: "pricing",
+  };
+  const update: StrictUpdateFilter<PricingConfigDocument> = {
+    $set: {
+      _type: "pricing",
+      storageCostPerGbHour,
+      _updated: new Date(),
+    },
+    $setOnInsert: {
+      _created: new Date(),
+    },
+  };
+  const options: UpdateOptions = { upsert: true };
+
+  return pipe(
+    checkCollectionExists<PricingConfigDocument>(ctx, "primary", CollectionName.Config),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne(filter, update, options),
+      catch: (cause) => new DatabaseError({ cause, message: "upsertPricingConfig" }),
+    }),
+    E.as(void 0),
   );
 }

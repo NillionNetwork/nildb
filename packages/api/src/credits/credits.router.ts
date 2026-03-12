@@ -15,5 +15,6 @@ export function buildCreditsRouter(options: ControllerOptions): void {
   RevocationsController.revokeToken(options);
   RevocationsController.lookupRevocations(options);
   CreditsController.adminCreditTopUp(options);
+  CreditsController.adminUpdatePricing(options);
   CreditsController.adminListBuilders(options);
 }

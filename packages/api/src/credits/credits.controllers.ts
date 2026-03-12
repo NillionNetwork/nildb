@@ -9,6 +9,7 @@ import {
   loadSubjectAndVerifyAsCreditAdmin,
   requireNucNamespace,
 } from "@nildb/middleware/capability.middleware";
+import * as SystemRepository from "@nildb/system/system.repository";
 import { Effect as E, pipe } from "effect";
 import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 import { z } from "zod";
@@ -17,6 +18,8 @@ import {
   AdminCreditTopUpRequest,
   type AdminCreditTopUpResponse,
   type AdminListBuildersResponse,
+  AdminUpdatePricingRequest,
+  type AdminUpdatePricingResponse,
   type BuilderStatusDto,
   NucCmd,
   PaginationQuerySchema,
@@ -271,6 +274,58 @@ export function adminCreditTopUp(options: ControllerOptions): void {
           }),
         ),
         E.map((response) => c.json<AdminCreditTopUpResponse>(response)),
+        handleTaggedErrors(c),
+        E.runPromise,
+      );
+    },
+  );
+}
+
+/**
+ * Handle PUT /v1/admin/pricing
+ * Update storage pricing configuration.
+ */
+export function adminUpdatePricing(options: ControllerOptions): void {
+  const { app, bindings } = options;
+  const path = PathsV1.admin.pricing;
+
+  if (!hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.CREDITS) || !bindings.admin) {
+    return;
+  }
+
+  app.put(
+    path,
+    describeRoute({
+      tags: ["Admin"],
+      security: [{ bearerAuth: [] }],
+      summary: "Update storage pricing",
+      responses: {
+        200: {
+          description: "OK",
+          content: {
+            "application/json": {
+              schema: resolver(AdminUpdatePricingRequest),
+            },
+          },
+        },
+        ...OpenApiSpecCommonErrorResponses,
+      },
+    }),
+    zValidator("json", AdminUpdatePricingRequest),
+    loadNucToken(bindings),
+    loadSubjectAndVerifyAsCreditAdmin(bindings),
+    requireNucNamespace(NucCmd.nil.db.admin.create),
+    async (c) => {
+      const { storageCostPerGbHour } = c.req.valid("json");
+
+      return pipe(
+        SystemRepository.upsertPricingConfig(c.env, storageCostPerGbHour),
+        E.map(() => {
+          c.env.config.storageCostPerGbHour = storageCostPerGbHour;
+          return c.json<AdminUpdatePricingResponse>({
+            data: { storageCostPerGbHour },
+          });
+        }),
         handleTaggedErrors(c),
         E.runPromise,
       );

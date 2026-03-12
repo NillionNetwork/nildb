@@ -48,3 +48,24 @@ export const AdminListBuildersResponse = PaginatedResponse(AdminBuilderDto).meta
   ref: "AdminListBuildersResponse",
 });
 export type AdminListBuildersResponse = z.infer<typeof AdminListBuildersResponse>;
+
+/**
+ * Request to update storage pricing.
+ */
+export const AdminUpdatePricingRequest = z
+  .object({
+    storageCostPerGbHour: z.number().positive(),
+  })
+  .meta({ ref: "AdminUpdatePricingRequest" });
+export type AdminUpdatePricingRequest = z.infer<typeof AdminUpdatePricingRequest>;
+
+/**
+ * Response after updating storage pricing.
+ */
+const AdminUpdatePricingData = z.object({
+  storageCostPerGbHour: z.number().positive(),
+});
+export const AdminUpdatePricingResponse = ApiSuccessResponse(AdminUpdatePricingData).meta({
+  ref: "AdminUpdatePricingResponse",
+});
+export type AdminUpdatePricingResponse = z.infer<typeof AdminUpdatePricingResponse>;

@@ -7,7 +7,12 @@ import { StatusCodes } from "http-status-codes";
 import { ObjectId, UUID } from "mongodb";
 import { describe } from "vitest";
 
-import type { AdminCreditTopUpResponse, ReadCreditsResponse, ReadPricingResponse } from "@nillion/nildb-types";
+import type {
+  AdminCreditTopUpResponse,
+  AdminUpdatePricingResponse,
+  ReadCreditsResponse,
+  ReadPricingResponse,
+} from "@nillion/nildb-types";
 import { createUuidDto, PathsV1 } from "@nillion/nildb-types";
 
 import { createCreditTestFixtureExtension } from "../fixture/it";
@@ -692,5 +697,88 @@ describe("09-credits.test.ts", () => {
       }),
     });
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+  });
+
+  // --- Admin pricing tests ---
+
+  it("PUT /v1/admin/pricing updates storage cost", async ({ c }) => {
+    const { expect, app, bindings, admin } = c;
+
+    const originalCost = bindings.config.storageCostPerGbHour;
+    const newCost = 0.0005;
+
+    const token = await admin.createToken("/nil/db/admin/create");
+    const response = await app.request(PathsV1.admin.pricing, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ storageCostPerGbHour: newCost }),
+    });
+    expect(response.status).toBe(StatusCodes.OK);
+
+    const body = (await response.json()) as AdminUpdatePricingResponse;
+    expect(body.data.storageCostPerGbHour).toBe(newCost);
+
+    // Verify in-memory config was updated
+    expect(bindings.config.storageCostPerGbHour).toBe(newCost);
+
+    // Verify persisted in DB
+    const pricingDoc = await bindings.db.primary.collection(CollectionName.Config).findOne({ _type: "pricing" });
+    expect(pricingDoc).not.toBeNull();
+    expect(pricingDoc!.storageCostPerGbHour).toBe(newCost);
+
+    // Verify GET /v1/credits/pricing reflects the new value
+    const pricingResponse = await app.request(PathsV1.credits.pricing);
+    const pricingBody = (await pricingResponse.json()) as ReadPricingResponse;
+    expect(pricingBody.data.storageCostPerGbHour).toBe(newCost);
+
+    // Restore original cost
+    bindings.config.storageCostPerGbHour = originalCost;
+    await bindings.db.primary.collection(CollectionName.Config).deleteOne({ _type: "pricing" });
+  });
+
+  it("PUT /v1/admin/pricing rejects non-admin tokens", async ({ c }) => {
+    const { expect, app, creditBuilder } = c;
+
+    const token = await creditBuilder.createToken("/nil/db/admin/create");
+    const response = await app.request(PathsV1.admin.pricing, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ storageCostPerGbHour: 0.001 }),
+    });
+    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+  });
+
+  it("PUT /v1/admin/pricing rejects invalid values", async ({ c }) => {
+    const { expect, app, admin } = c;
+
+    const token = await admin.createToken("/nil/db/admin/create");
+
+    // Negative value
+    const response = await app.request(PathsV1.admin.pricing, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ storageCostPerGbHour: -1 }),
+    });
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+
+    // Zero value
+    const response2 = await app.request(PathsV1.admin.pricing, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ storageCostPerGbHour: 0 }),
+    });
+    expect(response2.status).toBe(StatusCodes.BAD_REQUEST);
   });
 });

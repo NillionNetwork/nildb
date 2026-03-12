@@ -13,7 +13,7 @@ import { Cache } from "@nillion/nildb-shared";
 import { LogLevel } from "@nillion/nildb-types";
 import { Did, type Did as DidType, type Envelope, Signer } from "@nillion/nuc";
 
-import { initAndCreateDbClients } from "./common/mongo";
+import { CollectionName, initAndCreateDbClients } from "./common/mongo";
 import type { UserDocument } from "./users/users.types";
 
 export const PRIVATE_KEY_LENGTH = 64;
@@ -95,7 +95,7 @@ export const EnvVarsSchema = z.object({
   nilUsdExchangeApiUrl: z.string().url().optional(),
   nilUsdExchangeCoinId: z.string().optional(),
   nilUsdExchangeApiKey: z.string().optional(),
-  storageCostPerGbHour: z.coerce.number().positive().optional().default(0.001),
+  storageCostPerGbHour: z.coerce.number().positive().optional().default(0.00035),
   freeTierBytes: z.coerce.number().int().nonnegative().optional().default(104857600), // 100MB
   gracePeriodDays: z.coerce.number().int().positive().optional().default(90),
   adminAddress: z
@@ -158,7 +158,7 @@ declare global {
       APP_NIL_USD_EXCHANGE_API_URL?: string;
       APP_NIL_USD_EXCHANGE_COIN_ID?: string;
       APP_NIL_USD_EXCHANGE_API_KEY?: string;
-      APP_STORAGE_COST_PER_GB_HOUR?: string;
+      // APP_STORAGE_COST_PER_GB_HOUR removed — pricing is now admin-configured via API
       APP_FREE_TIER_BYTES?: string;
       APP_GRACE_PERIOD_DAYS?: string;
       APP_ADMIN_ADDRESS?: string;
@@ -193,12 +193,24 @@ export async function loadBindings(
       }
     : undefined;
 
+  const db = await initAndCreateDbClients(config);
+
+  // Load persisted pricing override from config collection
+  try {
+    const pricingDoc = await db.primary.collection(CollectionName.Config).findOne({ _type: "pricing" });
+    if (pricingDoc && typeof pricingDoc.storageCostPerGbHour === "number") {
+      config.storageCostPerGbHour = pricingDoc.storageCostPerGbHour;
+    }
+  } catch {
+    // Config collection may not exist yet (pre-migration); use default
+  }
+
   return {
     config,
     cache: {
       builders: new Cache<string, BuilderDocument>(),
     },
-    db: await initAndCreateDbClients(config),
+    db,
     log: createLogger(config.logLevel, loggerProvider),
     node: {
       signer,
@@ -239,7 +251,7 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     nilUsdExchangeApiUrl: process.env.APP_NIL_USD_EXCHANGE_API_URL,
     nilUsdExchangeCoinId: process.env.APP_NIL_USD_EXCHANGE_COIN_ID,
     nilUsdExchangeApiKey: process.env.APP_NIL_USD_EXCHANGE_API_KEY,
-    storageCostPerGbHour: process.env.APP_STORAGE_COST_PER_GB_HOUR,
+    // storageCostPerGbHour: uses schema default (admin-configurable via API, persisted in DB)
     freeTierBytes: process.env.APP_FREE_TIER_BYTES,
     gracePeriodDays: process.env.APP_GRACE_PERIOD_DAYS,
     adminAddress: process.env.APP_ADMIN_ADDRESS,
