@@ -24,8 +24,8 @@
     "@nillion/nuc": "^2.0.1"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260223.1",
-    "tsdown": "0.20.1"
+    "@typescript/native-preview": "7.0.0-dev.20260312.1",
+    "tsdown": "0.21.2"
   },
   "tsdown": {
     "clean": true,
