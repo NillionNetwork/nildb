@@ -1,7 +1,14 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import * as CreditsRepository from "@nildb/credits/credits.repository";
-import { FeatureFlag, hasFeatureFlag, type AppBindings, type AppEnv, type NilauthInstance } from "@nildb/env";
+import {
+  FeatureFlag,
+  hasFeatureFlag,
+  parseEthereumChains,
+  type AppBindings,
+  type AppEnv,
+  type NilauthInstance,
+} from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
@@ -13,18 +20,6 @@ import { getProofChainHashes } from "@nillion/nilpay-client";
 import { Codec, Did, type Did as DidType, type Envelope, type Nuc, Payload, Validator } from "@nillion/nuc";
 
 type NilauthInstanceWithDid = NilauthInstance & { did: DidType };
-
-/**
- * Parse the supportedChainIds config string into a number array.
- * Returns empty array if not configured.
- */
-function parseSupportedChainIds(raw: string | undefined): number[] {
-  if (!raw) return [];
-  return raw
-    .split(",")
-    .map((s) => Number.parseInt(s.trim(), 10))
-    .filter(Boolean);
-}
 
 /**
  * Validate that any EIP-712 signed tokens in the envelope were signed on a supported chain.
@@ -220,7 +215,7 @@ export function loadSubjectAndVerifyAsBuilder<
   E extends AppEnv = AppEnv,
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
-  const supportedChainIds = parseSupportedChainIds(config.supportedChainIds);
+  const supportedChainIds = [...parseEthereumChains(config.ethereumRpcUrls).keys()];
 
   // Only build nilauth instances when the feature is enabled
   const nilauthInstances = hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)

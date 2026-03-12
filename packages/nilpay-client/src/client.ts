@@ -7,7 +7,6 @@ import { getBurnEvent, validatePayment } from "./validation";
 
 export type NilpayClientConfig = {
   chainRpcUrls: Map<number, string>;
-  supportedChainIds: number[];
   // On-chain oracle config (Chainlink-compatible)
   exchangeOracleAddress?: `0x${string}`;
   exchangeOracleRpcUrl?: string;
@@ -22,7 +21,6 @@ export type NilpayClientConfig = {
  */
 export class NilpayClient {
   private readonly chainRpcUrls: Map<number, string>;
-  private readonly supportedChainIds: Set<number>;
   private readonly exchangeOracleAddress?: `0x${string}`;
   private readonly exchangeOracleRpcUrl?: string;
   private readonly exchangeApiUrl?: string;
@@ -31,7 +29,6 @@ export class NilpayClient {
 
   constructor(config: NilpayClientConfig) {
     this.chainRpcUrls = config.chainRpcUrls;
-    this.supportedChainIds = new Set(config.supportedChainIds);
     this.exchangeOracleAddress = config.exchangeOracleAddress;
     this.exchangeOracleRpcUrl = config.exchangeOracleRpcUrl;
     this.exchangeApiUrl = config.exchangeApiUrl;
@@ -44,7 +41,6 @@ export class NilpayClient {
    */
   static fromEnv(env: {
     chainRpcUrls: string;
-    supportedChainIds: string;
     exchangeOracleAddress?: string;
     exchangeOracleRpcUrl?: string;
     exchangeApiUrl?: string;
@@ -52,15 +48,9 @@ export class NilpayClient {
     exchangeApiKey?: string;
   }): NilpayClient {
     const chainRpcUrls = parseChainRpcUrls(env.chainRpcUrls);
-    const supportedChainIds = env.supportedChainIds
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((s) => Number.parseInt(s, 10));
 
     return new NilpayClient({
       chainRpcUrls,
-      supportedChainIds,
       exchangeOracleAddress: env.exchangeOracleAddress as `0x${string}` | undefined,
       exchangeOracleRpcUrl: env.exchangeOracleRpcUrl,
       exchangeApiUrl: env.exchangeApiUrl,
@@ -73,7 +63,7 @@ export class NilpayClient {
    * Check if a chain ID is supported.
    */
   isChainSupported(chainId: number): boolean {
-    return this.supportedChainIds.has(chainId);
+    return this.chainRpcUrls.has(chainId);
   }
 
   /**

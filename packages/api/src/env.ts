@@ -90,7 +90,6 @@ export const EnvVarsSchema = z.object({
   webPort: z.coerce.number().int().positive(),
   // Credit system configuration (optional, only needed when CREDITS feature is enabled)
   ethereumRpcUrls: z.string().optional(),
-  supportedChainIds: z.string().optional(),
   nilUsdExchangeRpc: z.string().url().optional(),
   nilUsdExchangeOracleAddress: z.string().optional(),
   nilUsdExchangeApiUrl: z.string().url().optional(),
@@ -154,7 +153,6 @@ declare global {
       OTEL_METRICS_EXPORT_INTERVAL_MS?: string;
       // Credit system env vars
       APP_ETHEREUM_RPC_URLS?: string;
-      APP_SUPPORTED_CHAIN_IDS?: string;
       APP_NIL_USD_EXCHANGE_RPC?: string;
       APP_NIL_USD_EXCHANGE_ORACLE_ADDRESS?: string;
       APP_NIL_USD_EXCHANGE_API_URL?: string;
@@ -236,7 +234,6 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     webPort: process.env.APP_PORT,
     // Credit system
     ethereumRpcUrls: process.env.APP_ETHEREUM_RPC_URLS,
-    supportedChainIds: process.env.APP_SUPPORTED_CHAIN_IDS,
     nilUsdExchangeRpc: process.env.APP_NIL_USD_EXCHANGE_RPC,
     nilUsdExchangeOracleAddress: process.env.APP_NIL_USD_EXCHANGE_ORACLE_ADDRESS,
     nilUsdExchangeApiUrl: process.env.APP_NIL_USD_EXCHANGE_API_URL,
@@ -252,6 +249,29 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     ...config,
     ...overrides,
   };
+}
+
+/**
+ * Parse the "chainId=url,chainId=url,..." format into a Map.
+ */
+export function parseEthereumChains(raw: string | undefined): Map<number, string> {
+  const result = new Map<number, string>();
+  if (!raw) return result;
+
+  const entries = raw
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  for (const entry of entries) {
+    const eqIndex = entry.indexOf("=");
+    if (eqIndex === -1) continue;
+    const id = Number.parseInt(entry.slice(0, eqIndex), 10);
+    const url = entry.slice(eqIndex + 1);
+    if (!Number.isNaN(id) && url) {
+      result.set(id, url);
+    }
+  }
+  return result;
 }
 
 export function hasFeatureFlag(enabledFeatures: string[], flag: FeatureFlag): boolean {

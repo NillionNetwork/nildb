@@ -10,6 +10,7 @@ import {
   PaymentValidationError,
 } from "@nildb/common/errors";
 import type { AppBindings } from "@nildb/env";
+import { parseEthereumChains } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import { ObjectId } from "mongodb";
 
@@ -52,11 +53,11 @@ export function registerCredits(
   }
 
   // Verify chain is supported
-  const supportedChainIds = config.supportedChainIds?.split(",").map((s) => Number.parseInt(s.trim(), 10)) ?? [];
-  if (supportedChainIds.length > 0 && !supportedChainIds.includes(command.chainId)) {
+  const ethereumChains = parseEthereumChains(config.ethereumRpcUrls);
+  if (ethereumChains.size > 0 && !ethereumChains.has(command.chainId)) {
     return E.fail(
       new PaymentValidationError({
-        message: `Chain ${command.chainId} is not supported. Supported chains: ${supportedChainIds.join(", ")}`,
+        message: `Chain ${command.chainId} is not supported. Supported chains: ${[...ethereumChains.keys()].join(", ")}`,
       }),
     );
   }
@@ -188,11 +189,7 @@ export function getPricing(ctx: AppBindings): E.Effect<
 > {
   const { config } = ctx;
 
-  const supportedChainIds =
-    config.supportedChainIds
-      ?.split(",")
-      .map((s) => Number.parseInt(s.trim(), 10))
-      .filter(Boolean) ?? [];
+  const supportedChainIds = [...parseEthereumChains(config.ethereumRpcUrls).keys()];
 
   const chains = supportedChainIds
     .map((chainId) => {
