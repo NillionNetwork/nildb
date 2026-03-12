@@ -10,7 +10,7 @@ export function corsMiddleware(options: ControllerOptions): void {
     cors({
       origin: (origin) => origin,
       allowHeaders: ["Content-Type", "Authorization"],
-      allowMethods: ["GET", "POST", "DELETE"],
+      allowMethods: ["GET", "POST", "PUT", "DELETE"],
       maxAge: 3600,
       credentials: true,
     }),
