@@ -29,6 +29,7 @@ export const NucCmd = {
       queries: createNucNamespace("/nil/db/queries"),
       users: createNucNamespace("/nil/db/users"),
       credits: createNucNamespace("/nil/db/credits"),
+      admin: createNucNamespace("/nil/db/admin"),
     },
   },
   nuc: {

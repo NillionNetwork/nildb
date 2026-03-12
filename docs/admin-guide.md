@@ -18,18 +18,18 @@ This section provides task-oriented instructions for node administrators.
 
 The following environment variables are require:
 
-| Variable                 | Description                                                 | Example                              |
-| ------------------------ | ----------------------------------------------------------- | ------------------------------------ |
-| APP_DB_NAME_BASE         | Database name prefix                                        | nildb_data                           |
-| APP_DB_URI               | MongoDB connection string                                   | mongodb://node-xxxx-db:27017         |
-| APP_ENABLED_FEATURES     | Enable features                                             | openapi-spec,metrics,migrations,otel |
-| APP_LOG_LEVEL            | Logging verbosity                                           | debug                                |
-| APP_METRICS_PORT         | Prometheus metrics port                                     | 9091                                 |
-| APP_NILAUTH_INSTANCES    | Trusted nilauth instances (format: `baseUrl/publicKey,...`) | [see below]                          |
-| APP_NILAUTH_CHAIN_ID     | Ethereum chain ID for payment validation                    | 1                                    |
-| APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                          | https://nildb-xxxx.domain.com        |
-| APP_NODE_SECRET_KEY      | Node's private key                                          | [hex encoded secp256k1 private key]  |
-| APP_PORT                 | API service port                                            | 8080                                 |
+| Variable                 | Description                                                 | Example                             |
+| ------------------------ | ----------------------------------------------------------- | ----------------------------------- |
+| APP_DB_NAME_BASE         | Database name prefix                                        | nildb_data                          |
+| APP_DB_URI               | MongoDB connection string                                   | mongodb://node-xxxx-db:27017        |
+| APP_ENABLED_FEATURES     | Enable features                                             | openapi,metrics,migrations,nilauth  |
+| APP_LOG_LEVEL            | Logging verbosity                                           | debug                               |
+| APP_METRICS_PORT         | Prometheus metrics port                                     | 9091                                |
+| APP_NILAUTH_INSTANCES    | Trusted nilauth instances (required when `nilauth` enabled) | [see below]                         |
+| APP_NILAUTH_CHAIN_ID     | Ethereum chain ID (required when `nilauth` enabled)         | 1                                   |
+| APP_NODE_PUBLIC_ENDPOINT | Public URL of node                                          | https://nildb-xxxx.domain.com       |
+| APP_NODE_SECRET_KEY      | Node's private key                                          | [hex encoded secp256k1 private key] |
+| APP_PORT                 | API service port                                            | 8080                                |
 
 ### Nilauth Configuration
 
@@ -46,6 +46,19 @@ APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae
 ```bash
 APP_NILAUTH_INSTANCES=http://nilauth-a:8080/03520e70bd97a5fa...,http://nilauth-b:8080/02abc123def456...
 ```
+
+### Feature Flags
+
+The `APP_ENABLED_FEATURES` variable accepts a comma-separated list of feature flags:
+
+| Flag         | Description                                                                                                          |
+| ------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `openapi`    | Serves OpenAPI spec and Swagger UI at `/api/v1/openapi/docs/`                                                        |
+| `metrics`    | Exposes Prometheus metrics on the metrics port (mutually exclusive with `otel`)                                      |
+| `migrations` | Runs database migrations automatically on startup                                                                    |
+| `otel`       | Pushes metrics, traces, and logs to an OTLP endpoint (mutually exclusive with `metrics`)                             |
+| `credits`    | Enables the credit/billing system for builders                                                                       |
+| `nilauth`    | Enables nilauth (delegated) authentication for builders without credits. When off, all builders use self-signed auth |
 
 ### Rate Limiting
 

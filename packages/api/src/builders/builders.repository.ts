@@ -38,6 +38,39 @@ export function insert(
 }
 
 /**
+ * Find all builders with optional search and pagination.
+ */
+export function findAll(
+  ctx: AppBindings,
+  search: string | undefined,
+  limit: number,
+  offset: number,
+): E.Effect<{ data: BuilderDocument[]; total: number }, CollectionNotFoundError | DatabaseError> {
+  const filter: Record<string, unknown> = {};
+  if (search) {
+    const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    filter.$or = [{ did: { $regex: escaped, $options: "i" } }, { name: { $regex: escaped, $options: "i" } }];
+  }
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.flatMap((collection) =>
+      E.all([
+        E.tryPromise({
+          try: () => collection.find(filter).sort({ _created: -1 }).skip(offset).limit(limit).toArray(),
+          catch: (cause) => new DatabaseError({ cause, message: "findAll" }),
+        }),
+        E.tryPromise({
+          try: () => collection.countDocuments(filter),
+          catch: (cause) => new DatabaseError({ cause, message: "findAll:count" }),
+        }),
+      ]),
+    ),
+    E.map(([data, total]) => ({ data, total })),
+  );
+}
+
+/**
  * Find builder by ID with cache.
  */
 export function findByIdWithCache(

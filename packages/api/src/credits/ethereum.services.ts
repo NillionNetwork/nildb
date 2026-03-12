@@ -1,5 +1,6 @@
 import { PaymentValidationError } from "@nildb/common/errors";
 import type { AppBindings } from "@nildb/env";
+import { parseEthereumChains } from "@nildb/env";
 import { Effect as E } from "effect";
 
 import { getChainConfig, type ChainConfig, type PaymentPayload, validatePayment } from "@nillion/nilpay-client";
@@ -10,28 +11,10 @@ import type { RegisterCreditsCommand } from "./credits.types";
  * Get chain configuration from environment.
  */
 export function getChainConfigFromEnv(ctx: AppBindings, chainId: number): ChainConfig | null {
-  const { config } = ctx;
-
-  if (!config.ethereumRpcUrls) {
-    return null;
-  }
-
-  // Parse chain RPC URLs (format: "chainId=url,chainId=url,...")
-  const entries = config.ethereumRpcUrls.split(",").map((e) => e.trim());
-  for (const entry of entries) {
-    const eqIndex = entry.indexOf("=");
-    if (eqIndex === -1) continue;
-
-    const idStr = entry.slice(0, eqIndex);
-    const url = entry.slice(eqIndex + 1);
-    const id = Number.parseInt(idStr, 10);
-
-    if (id === chainId) {
-      return getChainConfig(chainId, url);
-    }
-  }
-
-  return null;
+  const chains = parseEthereumChains(ctx.config.ethereumRpcUrls);
+  const rpcUrl = chains.get(chainId);
+  if (!rpcUrl) return null;
+  return getChainConfig(chainId, rpcUrl);
 }
 
 /**

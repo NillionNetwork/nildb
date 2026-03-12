@@ -51,8 +51,8 @@ export function getChainConfig(chainId: number, rpcUrl: string): ChainConfig | n
 
 /**
  * Parse chain RPC URLs from environment format.
- * Format: "chainId:url,chainId:url,..."
- * Example: "1:https://eth.rpc.com,11155111:https://sepolia.rpc.com"
+ * Format: "chainId=url,chainId=url,..."
+ * Example: "1=https://eth.rpc.com,11155111=https://sepolia.rpc.com"
  */
 export function parseChainRpcUrls(input: string): Map<number, string> {
   const result = new Map<number, string>();
@@ -62,12 +62,12 @@ export function parseChainRpcUrls(input: string): Map<number, string> {
     .filter(Boolean);
 
   for (const entry of entries) {
-    const colonIndex = entry.indexOf(":");
-    if (colonIndex === -1) {
-      throw new Error(`Invalid chain RPC format: "${entry}". Expected "chainId:url"`);
+    const eqIndex = entry.indexOf("=");
+    if (eqIndex === -1) {
+      throw new Error(`Invalid chain RPC format: "${entry}". Expected "chainId=url"`);
     }
-    const chainIdStr = entry.slice(0, colonIndex);
-    const url = entry.slice(colonIndex + 1);
+    const chainIdStr = entry.slice(0, eqIndex);
+    const url = entry.slice(eqIndex + 1);
     const chainId = Number.parseInt(chainIdStr, 10);
     if (Number.isNaN(chainId)) {
       throw new Error(`Invalid chain ID: "${chainIdStr}"`);

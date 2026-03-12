@@ -2,6 +2,7 @@ import * as BuildersRepository from "@nildb/builders/builders.repository";
 import type { BuilderDocument, BuilderStatus } from "@nildb/builders/builders.types";
 import {
   type CollectionNotFoundError,
+  CreditsNotEnabledError,
   type DatabaseError,
   type DocumentNotFoundError,
   type DuplicateEntryError,
@@ -9,6 +10,7 @@ import {
   PaymentValidationError,
 } from "@nildb/common/errors";
 import type { AppBindings } from "@nildb/env";
+import { parseEthereumChains } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import { ObjectId } from "mongodb";
 
@@ -17,6 +19,7 @@ import { computeDigest, getNilUsdPriceHttp, KnownChains, unilsToUsd } from "@nil
 import * as CreditsRepository from "./credits.repository";
 import type {
   AddRevocationCommand,
+  AdminCreditGrantDocument,
   PaymentDocument,
   RegisterCreditsCommand,
   RevocationDocument,
@@ -50,11 +53,11 @@ export function registerCredits(
   }
 
   // Verify chain is supported
-  const supportedChainIds = config.supportedChainIds?.split(",").map((s) => Number.parseInt(s.trim(), 10)) ?? [];
-  if (supportedChainIds.length > 0 && !supportedChainIds.includes(command.chainId)) {
+  const ethereumChains = parseEthereumChains(config.ethereumRpcUrls);
+  if (ethereumChains.size > 0 && !ethereumChains.has(command.chainId)) {
     return E.fail(
       new PaymentValidationError({
-        message: `Chain ${command.chainId} is not supported. Supported chains: ${supportedChainIds.join(", ")}`,
+        message: `Chain ${command.chainId} is not supported. Supported chains: ${[...ethereumChains.keys()].join(", ")}`,
       }),
     );
   }
@@ -186,11 +189,7 @@ export function getPricing(ctx: AppBindings): E.Effect<
 > {
   const { config } = ctx;
 
-  const supportedChainIds =
-    config.supportedChainIds
-      ?.split(",")
-      .map((s) => Number.parseInt(s.trim(), 10))
-      .filter(Boolean) ?? [];
+  const supportedChainIds = [...parseEthereumChains(config.ethereumRpcUrls).keys()];
 
   const chains = supportedChainIds
     .map((chainId) => {
@@ -233,7 +232,7 @@ function fetchNilUsdPrice(ctx: AppBindings): E.Effect<number, PaymentValidationE
   }
 
   return E.tryPromise({
-    try: () => getNilUsdPriceHttp(nilUsdExchangeApiUrl, nilUsdExchangeCoinId),
+    try: () => getNilUsdPriceHttp(nilUsdExchangeApiUrl, nilUsdExchangeCoinId, ctx.config.nilUsdExchangeApiKey),
     catch: (cause) =>
       new PaymentValidationError({
         message: `Failed to fetch NIL/USD price: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -325,6 +324,50 @@ export function addRevocation(
   };
 
   return CreditsRepository.insertRevocation(ctx, doc);
+}
+
+/**
+ * Admin top-up: add credits to a builder's balance directly.
+ */
+export function adminTopUpCredits(
+  ctx: AppBindings,
+  adminDid: string,
+  builderDid: string,
+  amountUsd: number,
+  reason?: string,
+): E.Effect<
+  { builderDid: string; amountUsd: number; newBalance: number; status: BuilderStatus },
+  CreditsNotEnabledError | DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+> {
+  return pipe(
+    BuildersRepository.findOne(ctx, builderDid),
+    E.flatMap((builder) => {
+      if (builder.creditsUsd === undefined) {
+        return E.fail(new CreditsNotEnabledError({ builderDid }));
+      }
+      return E.succeed(builder);
+    }),
+    E.flatMap(() => BuildersRepository.applyCreditsAndActivate(ctx, builderDid, amountUsd)),
+    E.flatMap(() => {
+      const now = new Date();
+      const grantDoc: AdminCreditGrantDocument = {
+        _id: new ObjectId(),
+        _created: now,
+        builderDid,
+        adminDid,
+        amountUsd,
+        reason,
+      };
+      return CreditsRepository.insertAdminCreditGrant(ctx, grantDoc);
+    }),
+    E.flatMap(() => BuildersRepository.findOne(ctx, builderDid)),
+    E.map((builder) => ({
+      builderDid,
+      amountUsd,
+      newBalance: builder.creditsUsd ?? 0,
+      status: computeStatus(builder, ctx.config),
+    })),
+  );
 }
 
 /**

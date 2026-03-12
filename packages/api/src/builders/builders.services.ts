@@ -7,7 +7,7 @@ import {
   DuplicateEntryError,
   InvalidDidError,
 } from "@nildb/common/errors";
-import { type AppBindings } from "@nildb/env";
+import { type AppBindings, FeatureFlag, hasFeatureFlag } from "@nildb/env";
 import * as QueriesService from "@nildb/queries/queries.services";
 import { Effect as E } from "effect";
 import { ObjectId } from "mongodb";
@@ -57,6 +57,7 @@ export function createBuilder(
   }
 
   const now = new Date();
+  const creditsEnabled = hasFeatureFlag(ctx.config.enabledFeatures, FeatureFlag.CREDITS);
   const document: BuilderDocument = {
     _id: new ObjectId(),
     did: command.did,
@@ -65,7 +66,7 @@ export function createBuilder(
     name: command.name,
     collections: [],
     queries: [],
-    creditsUsd: 0,
+    ...(creditsEnabled ? { creditsUsd: 0 } : {}),
   };
 
   return BuildersRepository.insert(ctx, document);

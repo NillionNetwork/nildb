@@ -75,7 +75,7 @@ type CreditTestFixtureExtension = {
   afterAll: (fn: (c: CreditFixtureContext) => Promise<void>) => void;
 };
 
-export function createCreditTestFixtureExtension(): CreditTestFixtureExtension {
+export function createCreditTestFixtureExtension(opts: { extraFeatures?: string[] } = {}): CreditTestFixtureExtension {
   let fixture: CreditFixtureContext | null = null;
 
   const it = vitest.test.extend<{ c: CreditFixtureContext }>({
@@ -92,7 +92,7 @@ export function createCreditTestFixtureExtension(): CreditTestFixtureExtension {
   const beforeAll = (fn: (c: CreditFixtureContext) => Promise<void>): void => {
     vitest.beforeAll(async () => {
       try {
-        fixture = await buildCreditFixture();
+        fixture = await buildCreditFixture(opts);
         await fn(fixture);
       } catch (cause) {
         process.stderr.write("***\n");

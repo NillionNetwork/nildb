@@ -156,6 +156,14 @@ export class PaymentAlreadyProcessedError extends Data.TaggedError("PaymentAlrea
   }
 }
 
+export class CreditsNotEnabledError extends Data.TaggedError("CreditsNotEnabledError")<{
+  builderDid: string;
+}> {
+  humanize(): string[] {
+    return [this._tag, `builder ${this.builderDid} does not have credits enabled`];
+  }
+}
+
 export class InsufficientCreditsError extends Data.TaggedError("InsufficientCreditsError")<{
   required: string;
   available: number;

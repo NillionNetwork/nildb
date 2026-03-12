@@ -20,6 +20,14 @@ export type MaintenanceStatusDocument = BaseConfigDocument & {
 };
 
 /**
+ * Pricing configuration document.
+ */
+export type PricingConfigDocument = BaseConfigDocument & {
+  _type: "pricing";
+  storageCostPerGbHour: number;
+};
+
+/**
  * Node information.
  */
 export type AboutNode = {
@@ -28,6 +36,7 @@ export type AboutNode = {
   publicKey: string;
   url: string;
   maintenance: MaintenanceInfo;
+  adminAddress?: string;
 };
 
 /**

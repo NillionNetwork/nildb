@@ -1,7 +1,14 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import * as CreditsRepository from "@nildb/credits/credits.repository";
-import { FeatureFlag, hasFeatureFlag, type AppBindings, type AppEnv, type NilauthInstance } from "@nildb/env";
+import {
+  FeatureFlag,
+  hasFeatureFlag,
+  parseEthereumChains,
+  type AppBindings,
+  type AppEnv,
+  type NilauthInstance,
+} from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
@@ -13,18 +20,6 @@ import { getProofChainHashes } from "@nillion/nilpay-client";
 import { Codec, Did, type Did as DidType, type Envelope, type Nuc, Payload, Validator } from "@nillion/nuc";
 
 type NilauthInstanceWithDid = NilauthInstance & { did: DidType };
-
-/**
- * Parse the supportedChainIds config string into a number array.
- * Returns empty array if not configured.
- */
-function parseSupportedChainIds(raw: string | undefined): number[] {
-  if (!raw) return [];
-  return raw
-    .split(",")
-    .map((s) => Number.parseInt(s.trim(), 10))
-    .filter(Boolean);
-}
 
 /**
  * Validate that any EIP-712 signed tokens in the envelope were signed on a supported chain.
@@ -61,17 +56,17 @@ function extractRootIssuerDid(envelope: Envelope): Did {
 }
 
 /**
- * Determine if a builder should use self-signed authentication.
- * Self-signed auth is used when:
- * 1. SELF_SIGNED_AUTH feature is enabled
- * 2. Builder has credits enabled (creditsUsd field exists)
+ * Determine if a builder should use nilauth (delegated) authentication.
+ * Nilauth auth is used when:
+ * 1. NILAUTH feature flag is enabled
+ * 2. Builder does not have credits (creditsUsd field is undefined)
  */
-function shouldUseSelfSignedAuth(config: { enabledFeatures: string[] }, builder: BuilderDocument): boolean {
-  if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.SELF_SIGNED_AUTH)) {
+function shouldUseNilauthAuth(config: { enabledFeatures: string[] }, builder: BuilderDocument): boolean {
+  if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
     return false;
   }
-  // Builder has credits enabled if they have the creditsUsd field
-  return builder.creditsUsd !== undefined;
+  // Nilauth mode only applies to builders without credits
+  return builder.creditsUsd === undefined;
 }
 
 /**
@@ -150,6 +145,44 @@ export function verifySelfSignedNuc<P extends string = string, I extends Input =
   };
 }
 
+export function loadSubjectAndVerifyAsCreditAdmin<
+  P extends string = string,
+  I extends Input = BlankInput,
+  E extends AppEnv = AppEnv,
+>(bindings: AppBindings): MiddlewareHandler<E, P, I> {
+  const { log } = bindings;
+
+  return async (c, next) => {
+    if (!bindings.admin) {
+      return c.text(getReasonPhrase(StatusCodes.FORBIDDEN), StatusCodes.FORBIDDEN);
+    }
+
+    try {
+      const envelope: Envelope = c.get("envelope");
+
+      await Validator.validate(envelope, {
+        rootIssuers: [bindings.admin.did.didString],
+        params: {
+          tokenRequirements: {
+            type: "invocation",
+            audience: bindings.node.did.didString,
+          },
+        },
+      });
+
+      c.set("subjectDid", bindings.admin.did.didString);
+      return next();
+    } catch (cause) {
+      if (cause && typeof cause === "object" && "message" in cause) {
+        log.error({ cause: cause.message }, "Admin auth error");
+      } else {
+        log.error({ cause: "unknown" }, "Admin auth error");
+      }
+      return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+    }
+  };
+}
+
 export function loadSubjectAndVerifyAsAdmin<
   P extends string = string,
   I extends Input = BlankInput,
@@ -182,9 +215,13 @@ export function loadSubjectAndVerifyAsBuilder<
   E extends AppEnv = AppEnv,
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
-  const nilauthInstances = buildNilauthInstancesWithDids(config.nilauthInstances);
+  const supportedChainIds = [...parseEthereumChains(config.ethereumRpcUrls).keys()];
+
+  // Only build nilauth instances when the feature is enabled
+  const nilauthInstances = hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)
+    ? buildNilauthInstancesWithDids(config.nilauthInstances)
+    : [];
   const nilauthRootIssuers = nilauthInstances.map((n) => n.did.didString);
-  const supportedChainIds = parseSupportedChainIds(config.supportedChainIds);
 
   return async (c, next) => {
     try {
@@ -227,28 +264,7 @@ export function loadSubjectAndVerifyAsBuilder<
       const nildbNodeDid = bindings.node.did;
 
       // Determine which authentication mode to use
-      if (shouldUseSelfSignedAuth(config, builder)) {
-        // Self-signed mode: the user is their own root issuer
-        await Validator.validate(envelope, {
-          rootIssuers: [canonicalSubject],
-          params: {
-            tokenRequirements: {
-              type: "invocation",
-              audience: nildbNodeDid.didString,
-            },
-          },
-          context,
-        });
-
-        validateEip712ChainId(envelope, supportedChainIds);
-
-        // Check local revocations instead of nilauth
-        const revokedHashes = await checkLocalRevocations(bindings, envelope);
-        if (revokedHashes.length > 0) {
-          log.warn("Token revoked (local): revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);
-          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
-        }
-      } else {
+      if (shouldUseNilauthAuth(config, builder)) {
         // Nilauth mode: validate against nilauth root issuers
         await Validator.validate(envelope, {
           rootIssuers: nilauthRootIssuers,
@@ -282,6 +298,27 @@ export function loadSubjectAndVerifyAsBuilder<
         if (revoked.length !== 0) {
           const hashes = revoked.map((r) => r.tokenHash).join(",");
           log.warn("Token revoked: revoked_hashes=(%s) auth_token=%O", hashes, token);
+          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+        }
+      } else {
+        // Self-signed mode: the user is their own root issuer
+        await Validator.validate(envelope, {
+          rootIssuers: [canonicalSubject],
+          params: {
+            tokenRequirements: {
+              type: "invocation",
+              audience: nildbNodeDid.didString,
+            },
+          },
+          context,
+        });
+
+        validateEip712ChainId(envelope, supportedChainIds);
+
+        // Check local revocations instead of nilauth
+        const revokedHashes = await checkLocalRevocations(bindings, envelope);
+        if (revokedHashes.length > 0) {
+          log.warn("Token revoked (local): revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);
           return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
         }
       }

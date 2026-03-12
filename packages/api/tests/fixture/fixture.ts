@@ -15,6 +15,8 @@ import dotenv from "dotenv";
 import { ObjectId } from "mongodb";
 import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
+import { getAddress } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import * as vitest from "vitest";
 
 import { NilauthClient } from "@nillion/nilauth-client";
@@ -247,15 +249,21 @@ export type CreditFixtureContext = {
     /** Create a self-signed NUC invocation token for the credit builder */
     createToken: (command?: string) => Promise<string>;
   };
+  admin: {
+    signer: Signer;
+    did: string;
+    /** Create a self-signed NUC invocation token for the admin */
+    createToken: (command?: string) => Promise<string>;
+  };
   expect: vitest.ExpectStatic;
 };
 
 /**
  * Build a fixture for credit system integration tests.
- * Enables credits + self_signed_auth feature flags and registers a builder
- * directly in the DB with creditsUsd set (bypassing the did:key restriction).
+ * Enables credits feature flag and registers a builder directly in the DB
+ * with creditsUsd set (bypassing the did:key restriction).
  */
-export async function buildCreditFixture(): Promise<CreditFixtureContext> {
+export async function buildCreditFixture(opts: { extraFeatures?: string[] } = {}): Promise<CreditFixtureContext> {
   dotenv.config({
     path: ["./packages/api/env.test", "./packages/api/env.test.nilauthclient"],
   });
@@ -264,7 +272,14 @@ export async function buildCreditFixture(): Promise<CreditFixtureContext> {
 
   // Use unique db names for each test
   process.env.APP_DB_NAME_BASE = `${process.env.APP_DB_NAME_BASE}_${id}`;
-  process.env.APP_ENABLED_FEATURES = "openapi,migrations,credits,self_signed_auth";
+  const features = ["openapi", "migrations", "credits", ...(opts.extraFeatures ?? [])];
+  process.env.APP_ENABLED_FEATURES = features.join(",");
+
+  // Generate admin Ethereum account and set env var before loadBindings()
+  // so that bindings.admin gets populated with the did:ethr: identity
+  const adminEthPrivateKey = generatePrivateKey();
+  const adminEthAccount = privateKeyToAccount(adminEthPrivateKey);
+  process.env.APP_ADMIN_ADDRESS = getAddress(adminEthAccount.address);
 
   log.info(`Enabled features: ${process.env.APP_ENABLED_FEATURES}`);
 
@@ -295,18 +310,18 @@ export async function buildCreditFixture(): Promise<CreditFixtureContext> {
   };
 
   // Create system client (admin delegation from node)
-  const adminPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
-  const adminSigner = Signer.fromPrivateKey(adminPrivateKey);
-  const adminDid = await adminSigner.getDid();
+  const systemPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
+  const systemSigner = Signer.fromPrivateKey(systemPrivateKey);
+  const systemDid = await systemSigner.getDid();
   const nodeDelegation = await Builder.delegation()
-    .subject(adminDid)
+    .subject(systemDid)
     .command(NucCmd.nil.db.root)
-    .audience(adminDid)
+    .audience(systemDid)
     .expiresIn(1000 * 60 * 5)
     .sign(node.signer);
   const system = new AdminClient({
     baseUrl: bindings.config.nodePublicEndpoint,
-    signer: adminSigner,
+    signer: systemSigner,
     nodePublicKey: node.publicKey,
     nodeDelegation,
     httpClient: app.request,
@@ -344,6 +359,30 @@ export async function buildCreditFixture(): Promise<CreditFixtureContext> {
       .signAndSerialize(creditBuilderSigner);
   };
 
+  // Create admin signer using native did:ethr pattern (same as nuc-ts's createNativeEthrSigner)
+  const adminDidString = `did:ethr:${getAddress(adminEthAccount.address)}`;
+  const adminDidParsed = Did.parse(adminDidString);
+  const adminEthrSigner: Signer = {
+    header: { alg: "ES256K" as const, typ: "nuc" as const },
+    getDid: async () => adminDidParsed,
+    sign: async (data: Uint8Array): Promise<Uint8Array> => {
+      const signatureHex = await adminEthAccount.signMessage({
+        message: { raw: data },
+      });
+      const cleanHex = signatureHex.startsWith("0x") ? signatureHex.slice(2) : signatureHex;
+      return hexToBytes(cleanHex);
+    },
+  };
+
+  const createAdminToken = async (command = "/nil/db/admin/create"): Promise<string> => {
+    return Builder.invocation()
+      .command(command)
+      .audience(node.did)
+      .subject(adminDidParsed)
+      .expiresIn(1000 * 60)
+      .signAndSerialize(adminEthrSigner);
+  };
+
   const expect = vitest.expect;
   return {
     id,
@@ -355,6 +394,11 @@ export async function buildCreditFixture(): Promise<CreditFixtureContext> {
       signer: creditBuilderSigner,
       did: creditBuilderDid,
       createToken,
+    },
+    admin: {
+      signer: adminEthrSigner,
+      did: adminDidString,
+      createToken: createAdminToken,
     },
     expect,
   };

@@ -11,9 +11,9 @@ import { z } from "zod";
 
 import { Cache } from "@nillion/nildb-shared";
 import { LogLevel } from "@nillion/nildb-types";
-import { type Did, type Envelope, Signer } from "@nillion/nuc";
+import { Did, type Did as DidType, type Envelope, Signer } from "@nillion/nuc";
 
-import { initAndCreateDbClients } from "./common/mongo";
+import { CollectionName, initAndCreateDbClients } from "./common/mongo";
 import type { UserDocument } from "./users/users.types";
 
 export const PRIVATE_KEY_LENGTH = 64;
@@ -30,7 +30,7 @@ export const FeatureFlag = {
   MIGRATIONS: "migrations",
   OTEL: "otel",
   CREDITS: "credits",
-  SELF_SIGNED_AUTH: "self_signed_auth",
+  NILAUTH: "nilauth",
 } as const;
 
 export type FeatureFlag = (typeof FeatureFlag)[keyof typeof FeatureFlag];
@@ -42,7 +42,10 @@ export type AppEnv = {
 
 const NilauthInstancesSchema = z
   .string()
+  .optional()
+  .default("")
   .transform((value): NilauthInstance[] => {
+    if (!value) return [];
     return value.split(",").map((entry) => {
       const trimmed = entry.trim();
       const lastSlashIndex = trimmed.lastIndexOf("/");
@@ -59,9 +62,6 @@ const NilauthInstancesSchema = z
       }
       return { publicKey, baseUrl };
     });
-  })
-  .refine((instances) => instances.length > 0, {
-    message: "At least one nilauth instance is required",
   });
 
 export const EnvVarsSchema = z.object({
@@ -71,7 +71,7 @@ export const EnvVarsSchema = z.object({
   enabledFeatures: z.string().transform((d) => d.split(",").map((e) => e.trim())),
   logLevel: LogLevel,
   nilauthInstances: NilauthInstancesSchema,
-  nilauthChainId: z.coerce.number().int().positive(),
+  nilauthChainId: z.coerce.number().int().nonnegative().optional().default(0),
   nodeSecretKey: z.string().length(PRIVATE_KEY_LENGTH),
   nodePublicEndpoint: z.url(),
   metricsPort: z.coerce.number().int().positive(),
@@ -90,14 +90,18 @@ export const EnvVarsSchema = z.object({
   webPort: z.coerce.number().int().positive(),
   // Credit system configuration (optional, only needed when CREDITS feature is enabled)
   ethereumRpcUrls: z.string().optional(),
-  supportedChainIds: z.string().optional(),
   nilUsdExchangeRpc: z.string().url().optional(),
   nilUsdExchangeOracleAddress: z.string().optional(),
   nilUsdExchangeApiUrl: z.string().url().optional(),
   nilUsdExchangeCoinId: z.string().optional(),
-  storageCostPerGbHour: z.coerce.number().positive().optional().default(0.001),
+  nilUsdExchangeApiKey: z.string().optional(),
+  storageCostPerGbHour: z.coerce.number().positive().optional().default(0.00035),
   freeTierBytes: z.coerce.number().int().nonnegative().optional().default(104857600), // 100MB
   gracePeriodDays: z.coerce.number().int().positive().optional().default(90),
+  adminAddress: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{40}$/)
+    .optional(),
 });
 export type EnvVars = z.infer<typeof EnvVarsSchema>;
 
@@ -115,8 +119,12 @@ export type AppBindings = {
   node: {
     endpoint: string;
     signer: Signer;
-    did: Did;
+    did: DidType;
     publicKey: string;
+  };
+  admin?: {
+    did: DidType;
+    address: string;
   };
   migrationsComplete: boolean;
 };
@@ -129,8 +137,8 @@ declare global {
       APP_DB_URI: string;
       APP_ENABLED_FEATURES: string;
       APP_LOG_LEVEL: string;
-      APP_NILAUTH_INSTANCES: string;
-      APP_NILAUTH_CHAIN_ID: string;
+      APP_NILAUTH_INSTANCES?: string;
+      APP_NILAUTH_CHAIN_ID?: string;
       APP_METRICS_PORT?: string;
       APP_NODE_SECRET_KEY: string;
       APP_NODE_PUBLIC_ENDPOINT: string;
@@ -145,14 +153,15 @@ declare global {
       OTEL_METRICS_EXPORT_INTERVAL_MS?: string;
       // Credit system env vars
       APP_ETHEREUM_RPC_URLS?: string;
-      APP_SUPPORTED_CHAIN_IDS?: string;
       APP_NIL_USD_EXCHANGE_RPC?: string;
       APP_NIL_USD_EXCHANGE_ORACLE_ADDRESS?: string;
       APP_NIL_USD_EXCHANGE_API_URL?: string;
       APP_NIL_USD_EXCHANGE_COIN_ID?: string;
-      APP_STORAGE_COST_PER_GB_HOUR?: string;
+      APP_NIL_USD_EXCHANGE_API_KEY?: string;
+      // APP_STORAGE_COST_PER_GB_HOUR removed — pricing is now admin-configured via API
       APP_FREE_TIER_BYTES?: string;
       APP_GRACE_PERIOD_DAYS?: string;
+      APP_ADMIN_ADDRESS?: string;
     }
   }
 }
@@ -177,12 +186,31 @@ export async function loadBindings(
   const signer = Signer.fromPrivateKey(config.nodeSecretKey);
   const did = await signer.getDid();
 
+  const admin = config.adminAddress
+    ? {
+        did: Did.parse(`did:ethr:${config.adminAddress}`),
+        address: config.adminAddress,
+      }
+    : undefined;
+
+  const db = await initAndCreateDbClients(config);
+
+  // Load persisted pricing override from config collection
+  try {
+    const pricingDoc = await db.primary.collection(CollectionName.Config).findOne({ _type: "pricing" });
+    if (pricingDoc && typeof pricingDoc.storageCostPerGbHour === "number") {
+      config.storageCostPerGbHour = pricingDoc.storageCostPerGbHour;
+    }
+  } catch {
+    // Config collection may not exist yet (pre-migration); use default
+  }
+
   return {
     config,
     cache: {
       builders: new Cache<string, BuilderDocument>(),
     },
-    db: await initAndCreateDbClients(config),
+    db,
     log: createLogger(config.logLevel, loggerProvider),
     node: {
       signer,
@@ -190,6 +218,7 @@ export async function loadBindings(
       publicKey,
       endpoint: config.nodePublicEndpoint,
     },
+    admin,
     migrationsComplete: false,
   };
 }
@@ -217,20 +246,44 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     webPort: process.env.APP_PORT,
     // Credit system
     ethereumRpcUrls: process.env.APP_ETHEREUM_RPC_URLS,
-    supportedChainIds: process.env.APP_SUPPORTED_CHAIN_IDS,
     nilUsdExchangeRpc: process.env.APP_NIL_USD_EXCHANGE_RPC,
     nilUsdExchangeOracleAddress: process.env.APP_NIL_USD_EXCHANGE_ORACLE_ADDRESS,
     nilUsdExchangeApiUrl: process.env.APP_NIL_USD_EXCHANGE_API_URL,
     nilUsdExchangeCoinId: process.env.APP_NIL_USD_EXCHANGE_COIN_ID,
-    storageCostPerGbHour: process.env.APP_STORAGE_COST_PER_GB_HOUR,
+    nilUsdExchangeApiKey: process.env.APP_NIL_USD_EXCHANGE_API_KEY,
+    // storageCostPerGbHour: uses schema default (admin-configurable via API, persisted in DB)
     freeTierBytes: process.env.APP_FREE_TIER_BYTES,
     gracePeriodDays: process.env.APP_GRACE_PERIOD_DAYS,
+    adminAddress: process.env.APP_ADMIN_ADDRESS,
   });
 
   return {
     ...config,
     ...overrides,
   };
+}
+
+/**
+ * Parse the "chainId=url,chainId=url,..." format into a Map.
+ */
+export function parseEthereumChains(raw: string | undefined): Map<number, string> {
+  const result = new Map<number, string>();
+  if (!raw) return result;
+
+  const entries = raw
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  for (const entry of entries) {
+    const eqIndex = entry.indexOf("=");
+    if (eqIndex === -1) continue;
+    const id = Number.parseInt(entry.slice(0, eqIndex), 10);
+    const url = entry.slice(eqIndex + 1);
+    if (!Number.isNaN(id) && url) {
+      result.set(id, url);
+    }
+  }
+  return result;
 }
 
 export function hasFeatureFlag(enabledFeatures: string[], flag: FeatureFlag): boolean {

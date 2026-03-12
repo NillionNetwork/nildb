@@ -7,13 +7,13 @@ import { getBurnEvent, validatePayment } from "./validation";
 
 export type NilpayClientConfig = {
   chainRpcUrls: Map<number, string>;
-  supportedChainIds: number[];
   // On-chain oracle config (Chainlink-compatible)
   exchangeOracleAddress?: `0x${string}`;
   exchangeOracleRpcUrl?: string;
   // HTTP API config (CoinGecko-compatible)
   exchangeApiUrl?: string;
   exchangeCoinId?: string;
+  exchangeApiKey?: string;
 };
 
 /**
@@ -21,19 +21,19 @@ export type NilpayClientConfig = {
  */
 export class NilpayClient {
   private readonly chainRpcUrls: Map<number, string>;
-  private readonly supportedChainIds: Set<number>;
   private readonly exchangeOracleAddress?: `0x${string}`;
   private readonly exchangeOracleRpcUrl?: string;
   private readonly exchangeApiUrl?: string;
   private readonly exchangeCoinId?: string;
+  private readonly exchangeApiKey?: string;
 
   constructor(config: NilpayClientConfig) {
     this.chainRpcUrls = config.chainRpcUrls;
-    this.supportedChainIds = new Set(config.supportedChainIds);
     this.exchangeOracleAddress = config.exchangeOracleAddress;
     this.exchangeOracleRpcUrl = config.exchangeOracleRpcUrl;
     this.exchangeApiUrl = config.exchangeApiUrl;
     this.exchangeCoinId = config.exchangeCoinId;
+    this.exchangeApiKey = config.exchangeApiKey;
   }
 
   /**
@@ -41,26 +41,21 @@ export class NilpayClient {
    */
   static fromEnv(env: {
     chainRpcUrls: string;
-    supportedChainIds: string;
     exchangeOracleAddress?: string;
     exchangeOracleRpcUrl?: string;
     exchangeApiUrl?: string;
     exchangeCoinId?: string;
+    exchangeApiKey?: string;
   }): NilpayClient {
     const chainRpcUrls = parseChainRpcUrls(env.chainRpcUrls);
-    const supportedChainIds = env.supportedChainIds
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((s) => Number.parseInt(s, 10));
 
     return new NilpayClient({
       chainRpcUrls,
-      supportedChainIds,
       exchangeOracleAddress: env.exchangeOracleAddress as `0x${string}` | undefined,
       exchangeOracleRpcUrl: env.exchangeOracleRpcUrl,
       exchangeApiUrl: env.exchangeApiUrl,
       exchangeCoinId: env.exchangeCoinId,
+      exchangeApiKey: env.exchangeApiKey,
     });
   }
 
@@ -68,7 +63,7 @@ export class NilpayClient {
    * Check if a chain ID is supported.
    */
   isChainSupported(chainId: number): boolean {
-    return this.supportedChainIds.has(chainId);
+    return this.chainRpcUrls.has(chainId);
   }
 
   /**
@@ -115,7 +110,7 @@ export class NilpayClient {
   async getNilUsdPrice(): Promise<ExchangeRate> {
     // Prefer HTTP API (simpler, faster)
     if (this.exchangeApiUrl && this.exchangeCoinId) {
-      return getNilUsdPriceHttp(this.exchangeApiUrl, this.exchangeCoinId);
+      return getNilUsdPriceHttp(this.exchangeApiUrl, this.exchangeCoinId, this.exchangeApiKey);
     }
     // Fall back to on-chain oracle
     if (this.exchangeOracleAddress && this.exchangeOracleRpcUrl) {

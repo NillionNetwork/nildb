@@ -21,11 +21,6 @@ export const SetLogLevelResponse = z.string();
 export type SetLogLevelResponse = z.infer<typeof SetLogLevelResponse>;
 
 /**
- * Health check response type.
- */
-export type HealthCheckResponse = typeof Response;
-
-/**
  * Start maintenance response.
  */
 export const StartMaintenanceResponse = z.string();
@@ -54,6 +49,7 @@ export const ReadAboutNodeResponse = z
       active: z.boolean(),
       started_at: z.iso.datetime(),
     }),
+    admin_address: z.string().optional(),
   })
   .meta({ ref: "ReadAboutNodeResponse" });
 

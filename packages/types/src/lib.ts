@@ -1,3 +1,4 @@
+export * from "./admin.dto";
 export * from "./builders.dto";
 export * from "./collections.dto";
 export * from "./credits.dto";

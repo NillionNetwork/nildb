@@ -42,6 +42,18 @@ export type RegisterCreditsCommand = {
 };
 
 /**
+ * Admin credit grant document - records an admin-initiated credit top-up.
+ */
+export type AdminCreditGrantDocument = {
+  _id: ObjectId;
+  _created: Date;
+  builderDid: string;
+  adminDid: string;
+  amountUsd: number;
+  reason?: string;
+};
+
+/**
  * Command to add a revocation.
  */
 export type AddRevocationCommand = {

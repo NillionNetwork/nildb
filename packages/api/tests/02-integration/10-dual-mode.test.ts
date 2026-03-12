@@ -19,7 +19,7 @@ import { createCreditTestFixtureExtension } from "../fixture/it";
 import { activateSubscriptionWithPayment } from "../fixture/payment";
 
 describe("10-dual-mode.test.ts", () => {
-  const { it, beforeAll, afterAll } = createCreditTestFixtureExtension();
+  const { it, beforeAll, afterAll } = createCreditTestFixtureExtension({ extraFeatures: ["nilauth"] });
 
   let nilauthBuilder: BuilderClient;
 

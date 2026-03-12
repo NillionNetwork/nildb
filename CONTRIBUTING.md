@@ -4,8 +4,8 @@ This guide explains how to set up your development environment and contribute co
 
 ## Prerequisites
 
-- Node.js >= 24
-- pnpm >= 10
+- [mise](https://mise.jdx.dev) (manages Node.js + pnpm versions)
+- [prek](https://github.com/prek-sh/prek) (git hooks)
 - Docker
 
 ## Development Setup
@@ -19,14 +19,14 @@ This guide explains how to set up your development environment and contribute co
 
 2. Install dependencies and configure the environment:
    ```shell
-   just init
+   mise run init
    cp .env.example .env
    ```
 
 ## Development Server
 
 ```shell
-just dev  # runs nilDB with tsx
+mise run dev  # runs nilDB with tsx
 ```
 
 > [!NOTE]
@@ -37,8 +37,8 @@ just dev  # runs nilDB with tsx
 The following commands are run from the root of the repository. Run these checks before submitting your PR:
 
 ```shell
-just check  # format, lint, and type check
-just test   # run the full test suite
+mise run check  # format, lint, and type check
+mise run test   # run the full test suite
 ```
 
 > [!NOTE]

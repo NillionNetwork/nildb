@@ -1,8 +1,6 @@
 services:
   nildb_1:
-    build:
-      context: ..
-      dockerfile: packages/api/Dockerfile
+    image: ghcr.io/nillionnetwork/nildb:local
     ports:
       - "8081:8080"
     depends_on:
@@ -11,7 +9,7 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb_1
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=migrations,credits,self_signed_auth
+      - APP_ENABLED_FEATURES=migrations,credits,nilauth
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
@@ -20,14 +18,12 @@ services:
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_PORT=8080
       - APP_ETHEREUM_RPC_URLS=31337=http://nil-anvil:8545
-      - APP_SUPPORTED_CHAIN_IDS=31337
       - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
       - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
+      - APP_ADMIN_ADDRESS=0xdFb76ED3789fB9e4d676be4c0608395a47337Cd9
 
   nildb_2:
-    build:
-      context: ..
-      dockerfile: packages/api/Dockerfile
+    image: ghcr.io/nillionnetwork/nildb:local
     ports:
       - "8082:8080"
     depends_on:
@@ -36,7 +32,7 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb_2
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=migrations,credits,self_signed_auth
+      - APP_ENABLED_FEATURES=migrations,credits,nilauth
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
@@ -45,14 +41,12 @@ services:
       - APP_NODE_SECRET_KEY=72344d71de216bc5819f7a55a7e86f8ed354ca58d25468d97e29671e0b34d77d
       - APP_PORT=8080
       - APP_ETHEREUM_RPC_URLS=31337=http://nil-anvil:8545
-      - APP_SUPPORTED_CHAIN_IDS=31337
       - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
       - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
+      - APP_ADMIN_ADDRESS=0xdFb76ED3789fB9e4d676be4c0608395a47337Cd9
 
   nildb_3:
-    build:
-      context: ..
-      dockerfile: packages/api/Dockerfile
+    image: ghcr.io/nillionnetwork/nildb:local
     ports:
       - "8083:8080"
     depends_on:
@@ -61,7 +55,7 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb_3
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=migrations,credits,self_signed_auth
+      - APP_ENABLED_FEATURES=migrations,credits,nilauth
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
       - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
@@ -70,9 +64,9 @@ services:
       - APP_NODE_SECRET_KEY=a4b99d1b8e116230eb964c349009c590d6647f88c0f920d3b022713a9a6b19fb
       - APP_PORT=8080
       - APP_ETHEREUM_RPC_URLS=31337=http://nil-anvil:8545
-      - APP_SUPPORTED_CHAIN_IDS=31337
       - APP_NIL_USD_EXCHANGE_API_URL=http://token-price-api:80
       - APP_NIL_USD_EXCHANGE_COIN_ID=nillion
+      - APP_ADMIN_ADDRESS=0xdFb76ED3789fB9e4d676be4c0608395a47337Cd9
 
   mongodb:
     image: mongo:latest

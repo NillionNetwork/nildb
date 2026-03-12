@@ -20,13 +20,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - uses: pnpm/action-setup@v4
-      - uses: extractions/setup-just@v3
-      - run: just install
-      - run: just check
+      - uses: jdx/mise-action@v2
+      - run: mise run install
+      - run: mise run check
 
   test:
     needs: check
@@ -35,13 +31,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - uses: pnpm/action-setup@v4
-      - uses: extractions/setup-just@v3
-      - run: just install
-      - run: just test-coverage
+      - uses: jdx/mise-action@v2
+      - run: mise run install
+      - run: mise run test-coverage
       - uses: davelosert/vitest-coverage-report-action@v2
         if: always()
         with:
