@@ -1,5 +1,4 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
-import type { BuilderDocument } from "@nildb/builders/builders.types";
 import * as CreditsRepository from "@nildb/credits/credits.repository";
 import {
   FeatureFlag,
@@ -53,20 +52,6 @@ function extractRootIssuerDid(envelope: Envelope): Did {
   const proofs = envelope.proofs;
   const rootToken = proofs.length > 0 ? proofs[proofs.length - 1] : envelope.nuc;
   return rootToken.payload.iss;
-}
-
-/**
- * Determine if a builder should use nilauth (delegated) authentication.
- * Nilauth auth is used when:
- * 1. NILAUTH feature flag is enabled
- * 2. Builder does not have credits (creditsUsd field is undefined)
- */
-function shouldUseNilauthAuth(config: { enabledFeatures: string[] }, builder: BuilderDocument): boolean {
-  if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
-    return false;
-  }
-  // Nilauth mode only applies to builders without credits
-  return builder.creditsUsd === undefined;
 }
 
 /**
@@ -262,25 +247,44 @@ export function loadSubjectAndVerifyAsBuilder<
       };
 
       const nildbNodeDid = bindings.node.did;
-
-      // Determine which authentication mode to use
-      if (shouldUseNilauthAuth(config, builder)) {
-        // Nilauth mode: validate against nilauth root issuers
-        await Validator.validate(envelope, {
-          rootIssuers: nilauthRootIssuers,
-          params: {
-            tokenRequirements: {
-              type: "invocation",
-              audience: nildbNodeDid.didString,
-            },
+      const validationParams = {
+        params: {
+          tokenRequirements: {
+            type: "invocation" as const,
+            audience: nildbNodeDid.didString,
           },
-          context,
+        },
+        context,
+      };
+
+      // Auth mode: when NILAUTH flag is on, try nilauth first, fall back to self-signed.
+      // This allows migrated builders (creditsUsd set) to keep using nilauth tokens
+      // during the transition period, while new credit-only builders use self-signed.
+      let usedNilauth = false;
+
+      if (hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
+        try {
+          await Validator.validate(envelope, {
+            ...validationParams,
+            rootIssuers: nilauthRootIssuers,
+          });
+          usedNilauth = true;
+        } catch {
+          // Nilauth validation failed — fall back to self-signed below
+        }
+      }
+
+      if (!usedNilauth) {
+        await Validator.validate(envelope, {
+          ...validationParams,
+          rootIssuers: [canonicalSubject],
         });
+      }
 
-        validateEip712ChainId(envelope, supportedChainIds);
+      validateEip712ChainId(envelope, supportedChainIds);
 
-        // Check revocations last because it's costly (in terms of network RTT)
-        // Find the nilauth instance that issued the root token in the proof chain
+      // Check revocations based on which auth mode succeeded
+      if (usedNilauth) {
         const rootIssuerDid = extractRootIssuerDid(envelope);
         const matchingNilauth = nilauthInstances.find((n) => Did.areEqual(n.did, rootIssuerDid));
 
@@ -301,21 +305,6 @@ export function loadSubjectAndVerifyAsBuilder<
           return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
         }
       } else {
-        // Self-signed mode: the user is their own root issuer
-        await Validator.validate(envelope, {
-          rootIssuers: [canonicalSubject],
-          params: {
-            tokenRequirements: {
-              type: "invocation",
-              audience: nildbNodeDid.didString,
-            },
-          },
-          context,
-        });
-
-        validateEip712ChainId(envelope, supportedChainIds);
-
-        // Check local revocations instead of nilauth
         const revokedHashes = await checkLocalRevocations(bindings, envelope);
         if (revokedHashes.length > 0) {
           log.warn("Token revoked (local): revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);

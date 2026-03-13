@@ -166,6 +166,27 @@ export function insertAdminCreditGrant(
 }
 
 /**
+ * Insert multiple admin credit grant documents.
+ */
+export function insertAdminCreditGrants(
+  ctx: AppBindings,
+  documents: AdminCreditGrantDocument[],
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+  if (documents.length === 0) {
+    return E.succeed(void 0);
+  }
+
+  return pipe(
+    checkCollectionExists<AdminCreditGrantDocument>(ctx, "primary", CollectionName.AdminCreditGrants),
+    E.tryMapPromise({
+      try: (collection) => collection.insertMany(documents),
+      catch: (cause) => new DatabaseError({ cause, message: "insertAdminCreditGrants" }),
+    }),
+    E.as(void 0),
+  );
+}
+
+/**
  * Delete expired revocations (manual cleanup if TTL index doesn't work).
  */
 export function deleteExpiredRevocations(ctx: AppBindings): E.Effect<number, CollectionNotFoundError | DatabaseError> {

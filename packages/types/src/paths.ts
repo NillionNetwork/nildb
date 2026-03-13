@@ -72,5 +72,6 @@ export const PathsV1 = {
     creditTopUp: Path.parse("/v1/admin/credits/topup"),
     pricing: Path.parse("/v1/admin/pricing"),
     builders: Path.parse("/v1/admin/builders"),
+    migrateBuilders: Path.parse("/v1/admin/builders/migrate-to-credits"),
   },
 } as const;

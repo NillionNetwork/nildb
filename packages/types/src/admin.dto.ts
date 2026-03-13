@@ -69,3 +69,30 @@ export const AdminUpdatePricingResponse = ApiSuccessResponse(AdminUpdatePricingD
   ref: "AdminUpdatePricingResponse",
 });
 export type AdminUpdatePricingResponse = z.infer<typeof AdminUpdatePricingResponse>;
+
+/**
+ * Request to migrate nilauth builders to the credit system.
+ */
+export const AdminMigrateBuildersRequest = z
+  .object({
+    creditsPerBuilder: z.number().positive().default(1000),
+  })
+  .meta({ ref: "AdminMigrateBuildersRequest" });
+export type AdminMigrateBuildersRequest = z.infer<typeof AdminMigrateBuildersRequest>;
+
+/**
+ * Response after migrating builders.
+ */
+const AdminMigratedBuilderDto = z.object({
+  did: z.string(),
+  creditsGranted: z.number(),
+});
+const AdminMigrateBuildersData = z.object({
+  migrated: z.number().int().nonnegative(),
+  creditsPerBuilder: z.number(),
+  builders: z.array(AdminMigratedBuilderDto),
+});
+export const AdminMigrateBuildersResponse = ApiSuccessResponse(AdminMigrateBuildersData).meta({
+  ref: "AdminMigrateBuildersResponse",
+});
+export type AdminMigrateBuildersResponse = z.infer<typeof AdminMigrateBuildersResponse>;
