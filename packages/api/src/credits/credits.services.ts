@@ -204,7 +204,10 @@ export function getPricing(ctx: AppBindings): E.Effect<
 
   return pipe(
     fetchNilUsdPrice(ctx),
-    E.catchAll(() => E.succeed(null as number | null)),
+    E.catchAll((error) => {
+      ctx.log.error("Failed to fetch NIL/USD exchange rate: %O", error);
+      return E.succeed(null as number | null);
+    }),
     E.map((nilUsdPrice) => ({
       storageCostPerGbHour: config.storageCostPerGbHour,
       freeTierBytes: config.freeTierBytes,
