@@ -75,7 +75,7 @@ export type AdminUpdatePricingResponse = z.infer<typeof AdminUpdatePricingRespon
  */
 export const AdminMigrateBuildersRequest = z
   .object({
-    creditsPerBuilder: z.number().positive().default(1000),
+    creditsPerBuilder: z.number().nonnegative().default(0),
   })
   .meta({ ref: "AdminMigrateBuildersRequest" });
 export type AdminMigrateBuildersRequest = z.infer<typeof AdminMigrateBuildersRequest>;
