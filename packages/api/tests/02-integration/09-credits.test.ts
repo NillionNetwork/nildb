@@ -625,11 +625,11 @@ describe("09-credits.test.ts", () => {
     expect(writeResponse.status).toBe(StatusCodes.CREATED);
   });
 
-  it("admin topup for builder without credits enabled fails", async ({ c }) => {
+  it("admin topup initialises credits for builder without creditsUsd", async ({ c }) => {
     const { expect, app, bindings, admin } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
-    // Insert a builder without creditsUsd field (credits not enabled for this builder)
+    // Insert a builder without creditsUsd field (e.g. a nilauth-only builder)
     const noCreditBuilderDid = `did:key:z6Mk${crypto.randomUUID().replace(/-/g, "")}`;
     const now = new Date();
     await builders.insertOne({
@@ -653,10 +653,14 @@ describe("09-credits.test.ts", () => {
       body: JSON.stringify({
         builderDid: noCreditBuilderDid,
         amountUsd: 5.0,
-        reason: "should fail",
+        reason: "initialise credits",
       }),
     });
-    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+    expect(response.status).toBe(StatusCodes.OK);
+
+    const body = (await response.json()) as { data: { newBalance: number; status: string } };
+    expect(body.data.newBalance).toBe(5.0);
+    expect(body.data.status).toBe("free_tier");
 
     // Clean up
     await builders.deleteOne({ did: noCreditBuilderDid });

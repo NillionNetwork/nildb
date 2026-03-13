@@ -2,7 +2,6 @@ import * as BuildersRepository from "@nildb/builders/builders.repository";
 import type { BuilderDocument, BuilderStatus } from "@nildb/builders/builders.types";
 import {
   type CollectionNotFoundError,
-  CreditsNotEnabledError,
   type DatabaseError,
   type DocumentNotFoundError,
   type DuplicateEntryError,
@@ -337,16 +336,10 @@ export function adminTopUpCredits(
   reason?: string,
 ): E.Effect<
   { builderDid: string; amountUsd: number; newBalance: number; status: BuilderStatus },
-  CreditsNotEnabledError | DocumentNotFoundError | CollectionNotFoundError | DatabaseError
+  DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(
     BuildersRepository.findOne(ctx, builderDid),
-    E.flatMap((builder) => {
-      if (builder.creditsUsd === undefined) {
-        return E.fail(new CreditsNotEnabledError({ builderDid }));
-      }
-      return E.succeed(builder);
-    }),
     E.flatMap(() => BuildersRepository.applyCreditsAndActivate(ctx, builderDid, amountUsd)),
     E.flatMap(() => {
       const now = new Date();
@@ -380,5 +373,59 @@ export function checkRevocations(
   return pipe(
     CreditsRepository.findRevocationsByTokenHashes(ctx, tokenHashes),
     E.map((revocations) => revocations.map((r) => r.tokenHash)),
+  );
+}
+
+/**
+ * Migrate nilauth builders to the credit system.
+ * Finds all builders without creditsUsd and grants them a flat credit amount.
+ * Idempotent — returns { migrated: 0 } if no unmigrated builders exist.
+ */
+export function migrateBuildersToCreditSystem(
+  ctx: AppBindings,
+  adminDid: string,
+  creditsPerBuilder: number,
+): E.Effect<
+  { migrated: number; creditsPerBuilder: number; builders: { did: string; creditsGranted: number }[] },
+  CollectionNotFoundError | DatabaseError
+> {
+  return pipe(
+    BuildersRepository.findUnmigrated(ctx),
+    E.flatMap((unmigrated) => {
+      if (unmigrated.length === 0) {
+        return E.succeed({ migrated: 0, creditsPerBuilder, builders: [] });
+      }
+
+      const now = new Date();
+      const dids = unmigrated.map((b) => b.did);
+
+      return pipe(
+        // Use the explicit DID list to avoid race with new registrations
+        BuildersRepository.migrateToCredits(ctx, dids, creditsPerBuilder, now),
+        E.flatMap(() => {
+          const grantDocs: AdminCreditGrantDocument[] = unmigrated.map((builder) => ({
+            _id: new ObjectId(),
+            _created: now,
+            builderDid: builder.did,
+            adminDid,
+            amountUsd: creditsPerBuilder,
+            reason: "nilauth migration",
+          }));
+
+          return CreditsRepository.insertAdminCreditGrants(ctx, grantDocs);
+        }),
+        E.map(() => {
+          for (const did of dids) {
+            ctx.cache.builders.delete(did);
+          }
+
+          return {
+            migrated: unmigrated.length,
+            creditsPerBuilder,
+            builders: dids.map((did) => ({ did, creditsGranted: creditsPerBuilder })),
+          };
+        }),
+      );
+    }),
   );
 }

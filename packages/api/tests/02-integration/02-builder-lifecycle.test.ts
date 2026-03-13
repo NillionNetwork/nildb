@@ -19,7 +19,7 @@ describe("02-builder-lifecycle.test.js", () => {
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
-  it("self-signed tokens are rejected from paid route", async ({ c }) => {
+  it("self-signed tokens are accepted when nilauth is enabled (dual-mode auth)", async ({ c }) => {
     const { expect, app, builderSigner, bindings } = c;
 
     const builderDid = await builderSigner.getDid();
@@ -36,7 +36,7 @@ describe("02-builder-lifecycle.test.js", () => {
         Authorization: `Bearer ${selfSignedToken}`,
       },
     });
-    expect(response.status).toBe(StatusCodes.PAYMENT_REQUIRED);
+    expect(response.status).toBe(StatusCodes.OK);
   });
 
   it("builder can access paid routes", async ({ c }) => {

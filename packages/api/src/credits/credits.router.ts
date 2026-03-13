@@ -17,4 +17,5 @@ export function buildCreditsRouter(options: ControllerOptions): void {
   CreditsController.adminCreditTopUp(options);
   CreditsController.adminUpdatePricing(options);
   CreditsController.adminListBuilders(options);
+  CreditsController.adminMigrateBuilders(options);
 }
