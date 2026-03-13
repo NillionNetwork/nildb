@@ -62,7 +62,6 @@ async function checkLocalRevocations(bindings: AppBindings, envelope: Envelope):
   const revoked = await pipe(
     CreditsRepository.findRevocationsByTokenHashes(bindings, tokenHashes),
     E.map((revocations) => revocations.map((r) => r.tokenHash)),
-    E.catchAll(() => E.succeed([] as string[])),
     E.runPromise,
   );
   return revoked;
@@ -222,7 +221,10 @@ export function loadSubjectAndVerifyAsBuilder<
       // load builder
       const builder = await pipe(
         BuilderRepository.findByIdWithCache(bindings, canonicalSubject),
-        E.catchAll((_e) => E.succeed(null)),
+        E.catchAll((error) => {
+          log.error("Builder lookup failed for %s: %O", canonicalSubject, error);
+          return E.succeed(null);
+        }),
         E.runPromise,
       );
 
@@ -353,7 +355,10 @@ export function loadSubjectAndVerifyAsUser<
       // load user
       const user = await pipe(
         UserRepository.findById(bindings, canonicalSubject),
-        E.catchAll((_e) => E.succeed(null)),
+        E.catchAll((error) => {
+          log.error("User lookup failed for %s: %O", canonicalSubject, error);
+          return E.succeed(null);
+        }),
         E.runPromise,
       );
 
