@@ -45,7 +45,7 @@ export function findAll(
   search: string | undefined,
   limit: number,
   offset: number,
-): E.Effect<{ data: BuilderDocument[]; total: number }, CollectionNotFoundError | DatabaseError> {
+): E.Effect<{ data: BuilderDocument[]; total: number; unmigrated: number }, CollectionNotFoundError | DatabaseError> {
   const filter: Record<string, unknown> = {};
   if (search) {
     const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -64,9 +64,13 @@ export function findAll(
           try: () => collection.countDocuments(filter),
           catch: (cause) => new DatabaseError({ cause, message: "findAll:count" }),
         }),
+        E.tryPromise({
+          try: () => collection.countDocuments({ creditsUsd: { $exists: false } }),
+          catch: (cause) => new DatabaseError({ cause, message: "findAll:unmigrated" }),
+        }),
       ]),
     ),
-    E.map(([data, total]) => ({ data, total })),
+    E.map(([data, total, unmigrated]) => ({ data, total, unmigrated })),
   );
 }
 
