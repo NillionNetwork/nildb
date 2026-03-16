@@ -3,6 +3,7 @@
 // Horizontal scaling would require distributed locking (e.g. MongoDB advisory locks).
 
 import * as BuildersRepository from "@nildb/builders/builders.repository";
+import type { BuilderDocument } from "@nildb/builders/builders.types";
 import { computeStatus } from "@nildb/credits/credits.services";
 import { FeatureFlag, hasFeatureFlag, type AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
@@ -10,96 +11,114 @@ import { Effect as E, pipe } from "effect";
 import { calculateBillableStorage, calculateBuilderStorage, calculateStorageCost } from "./storage.services";
 
 const BILLING_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
-const BUILDERS_PER_BATCH = 100;
 
 /**
  * Run a single billing cycle.
- * Finds builders that haven't been billed in the last hour and bills them.
+ * Fetches all credit-enabled builders, computes storage for each,
+ * and bills those exceeding the free tier.
  */
 export async function runBillingCycle(bindings: AppBindings): Promise<void> {
   const { log, config } = bindings;
 
-  // Only run if credits feature is enabled
   if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.CREDITS)) {
     return;
   }
 
+  const startMs = Date.now();
   log.info("Starting billing cycle");
 
   try {
-    const oneHourAgo = new Date(Date.now() - BILLING_INTERVAL_MS);
+    const builders = await pipe(BuildersRepository.findAllCreditBuilders(bindings), E.runPromise);
 
-    const builders = await pipe(
-      BuildersRepository.findBuildersForBilling(bindings, oneHourAgo, BUILDERS_PER_BATCH),
-      E.runPromise,
-    );
-
-    log.info("Found %d builders to bill", builders.length);
+    let freeTier = 0;
+    let billed = 0;
+    let errors = 0;
+    let totalStorageBytes = 0;
+    let totalBilledUsd = 0;
 
     for (const builder of builders) {
       try {
-        await billBuilder(bindings, builder.did);
+        const result = await billBuilder(bindings, builder);
+        totalStorageBytes += result.storageBytes;
+        if (result.cost > 0) {
+          billed++;
+          totalBilledUsd += result.cost;
+        } else {
+          freeTier++;
+        }
       } catch (error) {
+        errors++;
         log.error({ error, builderId: builder.did }, "Failed to bill builder");
       }
     }
 
-    log.info("Billing cycle complete");
+    log.info(
+      {
+        builders: builders.length,
+        freeTier,
+        billed,
+        errors,
+        totalStorageBytes,
+        totalBilledUsd: Math.round(totalBilledUsd * 1_000_000) / 1_000_000,
+        durationMs: Date.now() - startMs,
+      },
+      "Billing cycle complete",
+    );
   } catch (error) {
     log.error({ error }, "Billing cycle failed");
   }
 }
 
 /**
- * Bill a single builder.
+ * Bill a single builder. Returns storage and cost metrics for aggregation.
  */
-async function billBuilder(bindings: AppBindings, builderId: string): Promise<void> {
+async function billBuilder(
+  bindings: AppBindings,
+  builder: BuilderDocument,
+): Promise<{ storageBytes: number; cost: number }> {
   const { log, config } = bindings;
+  const builderId = builder.did;
 
-  // Get fresh builder data
-  const builder = await pipe(BuildersRepository.findOne(bindings, builderId), E.runPromise);
-
-  // Calculate current storage
   const storageBytes = await calculateBuilderStorage(bindings, builder);
-
-  // Calculate billable storage
   const billableBytes = calculateBillableStorage(storageBytes, config.freeTierBytes);
 
   const now = new Date();
 
-  // Calculate hours since last billing
+  // Always update storage snapshot and lastBillingCycle
+  await pipe(BuildersRepository.updateStorageSnapshot(bindings, builderId, storageBytes, now), E.runPromise);
+
+  if (billableBytes <= 0) {
+    return { storageBytes, cost: 0 };
+  }
+
   const lastBilling = builder.lastBillingCycle ?? builder._created;
   const hoursSinceLastBilling = (now.getTime() - lastBilling.getTime()) / (1000 * 60 * 60);
 
-  // Calculate cost
   const cost = calculateStorageCost(billableBytes, config.storageCostPerGbHour, hoursSinceLastBilling);
 
   log.debug({ builderId, storageBytes, billableBytes, hoursSinceLastBilling, cost }, "Billing builder");
 
-  // Update storage snapshot
-  await pipe(BuildersRepository.updateStorageSnapshot(bindings, builderId, storageBytes, now), E.runPromise);
-
-  // Deduct credits if there's a cost
-  if (cost > 0) {
-    const { newBalance, depleted } = await pipe(
-      BuildersRepository.deductCreditsUsd(bindings, builderId, cost),
-      E.runPromise,
-    );
-
-    log.debug({ builderId, newBalance, depleted }, "Builder balance updated");
-
-    // Update status based on new balance
-    const updatedBuilder = await pipe(BuildersRepository.findOne(bindings, builderId), E.runPromise);
-
-    const newStatus = computeStatus(updatedBuilder, config);
-
-    // Update status if it changed
-    if (newStatus !== builder.status) {
-      const creditsDepleted = depleted && !builder.creditsDepleted ? new Date() : builder.creditsDepleted;
-      await pipe(BuildersRepository.updateStatus(bindings, builderId, newStatus, creditsDepleted), E.runPromise);
-      log.info("Builder %s status changed from %s to %s", builderId, builder.status, newStatus);
-    }
+  if (cost <= 0) {
+    return { storageBytes, cost: 0 };
   }
+
+  const { newBalance, depleted } = await pipe(
+    BuildersRepository.deductCreditsUsd(bindings, builderId, cost),
+    E.runPromise,
+  );
+
+  log.debug({ builderId, newBalance, depleted }, "Builder balance updated");
+
+  // Compute status from known data — no need to re-fetch the builder
+  const newStatus = computeStatus({ ...builder, storageBytes, creditsUsd: newBalance }, config);
+
+  if (newStatus !== builder.status) {
+    const creditsDepleted = depleted && !builder.creditsDepleted ? new Date() : builder.creditsDepleted;
+    await pipe(BuildersRepository.updateStatus(bindings, builderId, newStatus, creditsDepleted), E.runPromise);
+    log.info({ builderId, from: builder.status, to: newStatus }, "Builder status changed");
+  }
+
+  return { storageBytes, cost };
 }
 
 /**

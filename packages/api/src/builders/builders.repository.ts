@@ -543,24 +543,16 @@ export function updateStorageSnapshot(
 }
 
 /**
- * Find builders that need billing (last billed before a certain time).
+ * Find all builders with credits enabled.
  */
-export function findBuildersForBilling(
+export function findAllCreditBuilders(
   ctx: AppBindings,
-  lastBilledBefore: Date,
-  limit: number,
 ): E.Effect<BuilderDocument[], CollectionNotFoundError | DatabaseError> {
-  // Find builders with credits enabled (have creditsUsd field) and need billing
-  const filter = {
-    creditsUsd: { $exists: true },
-    $or: [{ lastBillingCycle: { $lt: lastBilledBefore } }, { lastBillingCycle: { $exists: false } }],
-  };
-
   return pipe(
     checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
     E.tryMapPromise({
-      try: (collection) => collection.find(filter).limit(limit).toArray(),
-      catch: (cause) => new DatabaseError({ cause, message: "findBuildersForBilling" }),
+      try: (collection) => collection.find({ creditsUsd: { $exists: true } }).toArray(),
+      catch: (cause) => new DatabaseError({ cause, message: "findAllCreditBuilders" }),
     }),
   );
 }
