@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { BuilderStatusDto } from "./credits.dto";
-import { PaginatedResponse } from "./pagination.dto";
+import { SortQuerySchema } from "./pagination.dto";
 import { ApiSuccessResponse } from "./responses.dto";
 
 /**
@@ -43,10 +43,20 @@ const AdminBuilderDto = z.object({
 
 /**
  * Paginated list of builders for admin view.
+ * Extends the standard pagination with an unmigrated count for the migration banner.
  */
-export const AdminListBuildersResponse = PaginatedResponse(AdminBuilderDto).meta({
-  ref: "AdminListBuildersResponse",
-});
+export const AdminListBuildersResponse = z
+  .object({
+    data: z.array(AdminBuilderDto),
+    pagination: z.object({
+      total: z.number().int().min(0),
+      limit: z.number().int().min(1),
+      offset: z.number().int().min(0),
+      sort: SortQuerySchema,
+      unmigrated: z.number().int().min(0),
+    }),
+  })
+  .meta({ ref: "AdminListBuildersResponse" });
 export type AdminListBuildersResponse = z.infer<typeof AdminListBuildersResponse>;
 
 /**

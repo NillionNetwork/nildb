@@ -374,7 +374,7 @@ export function adminListBuilders(options: ControllerOptions): void {
       return pipe(
         BuildersRepository.findAll(c.env, search, limit, offset),
         E.map(
-          ({ data, total }): AdminListBuildersResponse => ({
+          ({ data, total, unmigrated }): AdminListBuildersResponse => ({
             data: data.map((b) => ({
               did: b.did,
               name: b.name,
@@ -384,7 +384,7 @@ export function adminListBuilders(options: ControllerOptions): void {
                 : b.status) as BuilderStatusDto,
               storageBytes: b.storageBytes ?? 0,
             })),
-            pagination: { total, limit, offset },
+            pagination: { total, limit, offset, unmigrated },
           }),
         ),
         E.map((response) => c.json<AdminListBuildersResponse>(response)),
