@@ -1,4 +1,4 @@
-import { describe } from "vitest";
+import { describe, expect } from "vitest";
 
 import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
 
@@ -11,7 +11,7 @@ describe("Query Lifecycle", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
 
   beforeAll(async (c) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     simpleCollection._id = createUuidDto();
 
@@ -59,7 +59,7 @@ describe("Query Lifecycle", () => {
   afterAll(async (_c) => {});
 
   it("can list queries with default pagination", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     const result = await builder.getQueries();
     expect(result.ok).toBe(true);
@@ -71,7 +71,7 @@ describe("Query Lifecycle", () => {
   });
 
   it("can read the created query", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     const result = await builder.getQuery(simpleQuery._id);
 
@@ -83,7 +83,7 @@ describe("Query Lifecycle", () => {
   });
 
   it("can list queries with explicit pagination", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     const result = await builder.getQueries({
       limit: 2,
@@ -99,7 +99,7 @@ describe("Query Lifecycle", () => {
   });
 
   it("can run the query and fetch its results", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     // Execute the query with a variable that matches one document
     const targetName = "name2";
@@ -121,7 +121,7 @@ describe("Query Lifecycle", () => {
   });
 
   it("can run a query and paginate its results", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     // Create a query that returns all documents
     const allDocsQueryId = createUuidDto();
@@ -165,7 +165,7 @@ describe("Query Lifecycle", () => {
   });
 
   it("can delete the query", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     // Delete the query
     const deleteResult = await builder.deleteQuery(simpleQuery._id);

@@ -1,24 +1,14 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
 import * as CreditsRepository from "@nildb/credits/credits.repository";
-import {
-  FeatureFlag,
-  hasFeatureFlag,
-  parseEthereumChains,
-  type AppBindings,
-  type AppEnv,
-  type NilauthInstance,
-} from "@nildb/env";
+import { parseEthereumChains, type AppBindings, type AppEnv } from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
 
-import { NilauthClient } from "@nillion/nilauth-client";
 import { normalizeIdentifier } from "@nillion/nildb-shared";
 import { getProofChainHashes } from "@nillion/nilpay-client";
-import { Codec, Did, type Did as DidType, type Envelope, type Nuc, Payload, Validator } from "@nillion/nuc";
-
-type NilauthInstanceWithDid = NilauthInstance & { did: DidType };
+import { Codec, Did, type Envelope, type Nuc, Payload, Validator } from "@nillion/nuc";
 
 /**
  * Validate that any EIP-712 signed tokens in the envelope were signed on a supported chain.
@@ -39,19 +29,6 @@ export function validateEip712ChainId(envelope: Envelope, supportedChainIds: num
       );
     }
   }
-}
-
-function buildNilauthInstancesWithDids(instances: NilauthInstance[]): NilauthInstanceWithDid[] {
-  return instances.map((instance) => ({
-    ...instance,
-    did: Did.fromPublicKey(instance.publicKey),
-  }));
-}
-
-function extractRootIssuerDid(envelope: Envelope): Did {
-  const proofs = envelope.proofs;
-  const rootToken = proofs.length > 0 ? proofs[proofs.length - 1] : envelope.nuc;
-  return rootToken.payload.iss;
 }
 
 /**
@@ -201,12 +178,6 @@ export function loadSubjectAndVerifyAsBuilder<
   const { log, config } = bindings;
   const supportedChainIds = [...parseEthereumChains(config.ethereumRpcUrls).keys()];
 
-  // Only build nilauth instances when the feature is enabled
-  const nilauthInstances = hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)
-    ? buildNilauthInstancesWithDids(config.nilauthInstances)
-    : [];
-  const nilauthRootIssuers = nilauthInstances.map((n) => n.did.didString);
-
   return async (c, next) => {
     try {
       const envelope: Envelope = c.get("envelope");
@@ -249,7 +220,9 @@ export function loadSubjectAndVerifyAsBuilder<
       };
 
       const nildbNodeDid = bindings.node.did;
-      const validationParams = {
+
+      await Validator.validate(envelope, {
+        rootIssuers: [canonicalSubject],
         params: {
           tokenRequirements: {
             type: "invocation" as const,
@@ -257,61 +230,15 @@ export function loadSubjectAndVerifyAsBuilder<
           },
         },
         context,
-      };
-
-      // Auth mode: when NILAUTH flag is on, try nilauth first, fall back to self-signed.
-      // This allows migrated builders (creditsUsd set) to keep using nilauth tokens
-      // during the transition period, while new credit-only builders use self-signed.
-      let usedNilauth = false;
-
-      if (hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
-        try {
-          await Validator.validate(envelope, {
-            ...validationParams,
-            rootIssuers: nilauthRootIssuers,
-          });
-          usedNilauth = true;
-        } catch {
-          // Nilauth validation failed — fall back to self-signed below
-        }
-      }
-
-      if (!usedNilauth) {
-        await Validator.validate(envelope, {
-          ...validationParams,
-          rootIssuers: [canonicalSubject],
-        });
-      }
+      });
 
       validateEip712ChainId(envelope, supportedChainIds);
 
-      // Check revocations based on which auth mode succeeded
-      if (usedNilauth) {
-        const rootIssuerDid = extractRootIssuerDid(envelope);
-        const matchingNilauth = nilauthInstances.find((n) => Did.areEqual(n.did, rootIssuerDid));
-
-        if (!matchingNilauth) {
-          log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid.didString);
-          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
-        }
-
-        const nilauthClient = await NilauthClient.create({
-          baseUrl: matchingNilauth.baseUrl,
-          chainId: config.nilauthChainId,
-        });
-        const { revoked } = await nilauthClient.findRevocationsInProofChain(envelope);
-
-        if (revoked.length !== 0) {
-          const hashes = revoked.map((r) => r.tokenHash).join(",");
-          log.warn("Token revoked: revoked_hashes=(%s) auth_token=%O", hashes, token);
-          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
-        }
-      } else {
-        const revokedHashes = await checkLocalRevocations(bindings, envelope);
-        if (revokedHashes.length > 0) {
-          log.warn("Token revoked (local): revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);
-          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
-        }
+      // Check local revocations
+      const revokedHashes = await checkLocalRevocations(bindings, envelope);
+      if (revokedHashes.length > 0) {
+        log.warn("Token revoked: revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);
+        return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
       }
 
       c.set("builder", builder);
@@ -320,12 +247,6 @@ export function loadSubjectAndVerifyAsBuilder<
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
         log.error({ cause: cause.message }, "Auth error");
-
-        // We want to return PAYMENT_REQUIRED when invocation NUC's chain is missing authority from nilauth
-        const message = cause.message as string;
-        if (message === Validator.ROOT_KEY_SIGNATURE_MISSING) {
-          return c.text(getReasonPhrase(StatusCodes.PAYMENT_REQUIRED), StatusCodes.PAYMENT_REQUIRED);
-        }
       } else {
         log.error({ cause: "unknown" }, "Auth error");
       }

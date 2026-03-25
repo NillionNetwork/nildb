@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import type { StandardDocumentBase } from "@nildb/data/data.types";
 import type { DeleteResult } from "mongodb";
-import { describe } from "vitest";
+import { describe, expect } from "vitest";
 
 import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
 
@@ -21,7 +21,7 @@ describe("Standard Collections and Queries", () => {
 
   // Standard Collection Management Tests
   it("can add standard collection", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     const _id = createUuidDto();
     const result = await builder.createCollection({
@@ -45,7 +45,7 @@ describe("Standard Collections and Queries", () => {
   };
 
   it("can upload standard data", async ({ c }) => {
-    const { expect, bindings, builder } = c;
+    const { bindings, builder } = c;
 
     const data: StandardRecord[] = [
       {
@@ -83,7 +83,7 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("rejects standard data that does not conform", async ({ c }) => {
-    const { expect, builder } = c;
+    const { builder } = c;
 
     const data: StandardRecord[] = [
       {
@@ -106,7 +106,7 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("can read standard data by a single id", async ({ c }) => {
-    const { expect, bindings, builder } = c;
+    const { bindings, builder } = c;
 
     const expected = await bindings.db.data
       .collection<StandardDocumentBase>(standardCollection.id.toString())
@@ -128,7 +128,7 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("can find standard data with pagination", async ({ c }) => {
-    const { expect, builder } = c;
+    const { builder } = c;
 
     // Total data count is 3 at this point in the test file
     const result = await builder.findData({
@@ -146,7 +146,7 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("can update data via filter", async ({ c }) => {
-    const { expect, builder } = c;
+    const { builder } = c;
 
     const result = await builder.updateData({
       collection: standardCollection.id,
@@ -160,7 +160,7 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("can delete standard data", async ({ c }) => {
-    const { expect, bindings, builder } = c;
+    const { bindings, builder } = c;
 
     const expected = await bindings.db.data
       .collection<StandardDocumentBase>(standardCollection.id.toString())
@@ -187,7 +187,7 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("can delete data by filter", async ({ c }) => {
-    const { expect, builder } = c;
+    const { builder } = c;
 
     const result = await builder.deleteData({
       collection: standardCollection.id,
@@ -200,7 +200,7 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("can flush all data from collection", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
     const result = await builder.flushData(standardCollection.id);
     expect(result.ok).toBe(true);
   });
@@ -214,7 +214,7 @@ describe("Standard Collections and Queries", () => {
   };
 
   it("can create standard collection query", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
     standardQuery.id = createUuidDto();
     standardQuery.collection = standardCollection.id;
 
@@ -237,7 +237,7 @@ describe("Standard Collections and Queries", () => {
       country: faker.location.countryCode(),
     }));
 
-    const { builder, expect } = c;
+    const { builder } = c;
 
     const result = await builder.createStandardData({
       collection: standardCollection.id,
@@ -248,7 +248,7 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("can run query on standard collection", async ({ c }) => {
-    const { expect, builder } = c;
+    const { builder } = c;
 
     const result = await builder.runQuery({
       _id: standardQuery.id,
@@ -262,14 +262,14 @@ describe("Standard Collections and Queries", () => {
   });
 
   it("can delete standard collection query", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     const result = await builder.deleteQuery(standardQuery.id.toString());
     expect(result.ok).toBe(true);
   });
 
   it("can delete standard collection", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
     const result = await builder.deleteCollection(standardCollection.id);
     expect(result.ok).toBe(true);
   });

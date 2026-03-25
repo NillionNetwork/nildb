@@ -1,4 +1,4 @@
-import { describe } from "vitest";
+import { describe, expect } from "vitest";
 
 import { PathsV1 } from "@nillion/nildb-types";
 
@@ -10,13 +10,13 @@ describe("system.test.js", () => {
   afterAll(async (_c) => {});
 
   it("responds to health checks", async ({ c }) => {
-    const { system, expect } = c;
+    const { system } = c;
     const result = await system.health();
     expect(result.ok).toBe(true);
   });
 
   it("reports app version", async ({ c }) => {
-    const { expect, bindings, system } = c;
+    const { bindings, system } = c;
 
     const result = await system.about();
     expect(result.ok).toBe(true);
@@ -25,7 +25,7 @@ describe("system.test.js", () => {
   });
 
   it("serves /openapi.json", async ({ c }) => {
-    const { expect, app } = c;
+    const { app } = c;
     const response = await app.request(PathsV1.system.openApiJson);
     const body = await response.json();
 
@@ -33,7 +33,7 @@ describe("system.test.js", () => {
   });
 
   it("should return the current log level", async ({ c }) => {
-    const { system, bindings, expect } = c;
+    const { system, bindings } = c;
 
     const result = await system.getLogLevel();
     expect(result.ok).toBe(true);
@@ -42,7 +42,7 @@ describe("system.test.js", () => {
   });
 
   it("can set the log level", async ({ c }) => {
-    const { system, bindings, expect } = c;
+    const { system, bindings } = c;
 
     const request = {
       level: "warn",
@@ -54,7 +54,7 @@ describe("system.test.js", () => {
   });
 
   it("starts with maintenance mode disabled", async ({ c }) => {
-    const { expect, system } = c;
+    const { system } = c;
     const result = await system.about();
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("Test setup failed");
@@ -62,13 +62,13 @@ describe("system.test.js", () => {
   });
 
   it("can start maintenance mode", async ({ c }) => {
-    const { system, expect } = c;
+    const { system } = c;
     const result = await system.startMaintenance();
     expect(result.ok).toBe(true);
   });
 
   it("reports maintenance mode is active", async ({ c }) => {
-    const { expect, system } = c;
+    const { system } = c;
     const result = await system.about();
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("Test setup failed");
@@ -76,19 +76,19 @@ describe("system.test.js", () => {
   });
 
   it("reports system unavailable to requests", async ({ c }) => {
-    const { expect, builder } = c;
+    const { builder } = c;
     const result = await builder.getProfile();
     expect(result.ok).toBe(false);
   });
 
   it("can stop maintenance mode", async ({ c }) => {
-    const { system, expect } = c;
+    const { system } = c;
     const result = await system.stopMaintenance();
     expect(result.ok).toBe(true);
   });
 
   it("reports maintenance mode is inactive after stop", async ({ c }) => {
-    const { expect, system } = c;
+    const { system } = c;
     const result = await system.about();
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("Test setup failed");

@@ -1,4 +1,4 @@
-import { describe } from "vitest";
+import { describe, expect } from "vitest";
 
 import { createUuidDto } from "@nillion/nildb-types";
 
@@ -10,7 +10,7 @@ describe("User Endpoints", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
 
   beforeAll(async (c) => {
-    const { builder, expect, userSigner, builderSigner } = c;
+    const { builder, userSigner, builderSigner } = c;
 
     simpleCollection._id = createUuidDto();
     simpleQuery._id = createUuidDto();
@@ -48,7 +48,7 @@ describe("User Endpoints", () => {
   afterAll(async (_c) => {});
 
   it("can read user profile after owning data", async ({ c }) => {
-    const { user, expect, userSigner } = c;
+    const { user, userSigner } = c;
 
     // Now the user should have a profile
     const result = await user.getProfile();
@@ -61,7 +61,7 @@ describe("User Endpoints", () => {
   });
 
   it("can list user data references with default pagination", async ({ c }) => {
-    const { user, expect } = c;
+    const { user } = c;
 
     const result = await user.listDataReferences();
 
@@ -74,7 +74,7 @@ describe("User Endpoints", () => {
   });
 
   it("can list user data references with explicit pagination", async ({ c }) => {
-    const { user, expect } = c;
+    const { user } = c;
 
     const result = await user.listDataReferences({
       limit: 2,

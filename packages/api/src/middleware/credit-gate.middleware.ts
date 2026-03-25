@@ -45,7 +45,8 @@ export function requireCredits(operation: OperationType): MiddlewareHandler<AppE
 
     const builder: BuilderDocument = c.get("builder");
 
-    // If builder doesn't have credits enabled yet, skip gating
+    // Safety net for any pre-migration builders still in the DB without creditsUsd.
+    // Can be removed once all builders are confirmed migrated.
     if (builder.creditsUsd === undefined) {
       return next();
     }

@@ -43,7 +43,6 @@ const AdminBuilderDto = z.object({
 
 /**
  * Paginated list of builders for admin view.
- * Extends the standard pagination with an unmigrated count for the migration banner.
  */
 export const AdminListBuildersResponse = z
   .object({
@@ -53,7 +52,6 @@ export const AdminListBuildersResponse = z
       limit: z.number().int().min(1),
       offset: z.number().int().min(0),
       sort: SortQuerySchema,
-      unmigrated: z.number().int().min(0),
     }),
   })
   .meta({ ref: "AdminListBuildersResponse" });
@@ -79,30 +77,3 @@ export const AdminUpdatePricingResponse = ApiSuccessResponse(AdminUpdatePricingD
   ref: "AdminUpdatePricingResponse",
 });
 export type AdminUpdatePricingResponse = z.infer<typeof AdminUpdatePricingResponse>;
-
-/**
- * Request to migrate nilauth builders to the credit system.
- */
-export const AdminMigrateBuildersRequest = z
-  .object({
-    creditsPerBuilder: z.number().nonnegative().default(0),
-  })
-  .meta({ ref: "AdminMigrateBuildersRequest" });
-export type AdminMigrateBuildersRequest = z.infer<typeof AdminMigrateBuildersRequest>;
-
-/**
- * Response after migrating builders.
- */
-const AdminMigratedBuilderDto = z.object({
-  did: z.string(),
-  creditsGranted: z.number(),
-});
-const AdminMigrateBuildersData = z.object({
-  migrated: z.number().int().nonnegative(),
-  creditsPerBuilder: z.number(),
-  builders: z.array(AdminMigratedBuilderDto),
-});
-export const AdminMigrateBuildersResponse = ApiSuccessResponse(AdminMigrateBuildersData).meta({
-  ref: "AdminMigrateBuildersResponse",
-});
-export type AdminMigrateBuildersResponse = z.infer<typeof AdminMigrateBuildersResponse>;

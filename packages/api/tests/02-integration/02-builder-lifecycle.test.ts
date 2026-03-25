@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { StatusCodes } from "http-status-codes";
-import { describe } from "vitest";
+import { describe, expect } from "vitest";
 
 import { PathsV1 } from "@nillion/nildb-types";
 import { Builder, Did } from "@nillion/nuc";
@@ -14,13 +14,12 @@ describe("02-builder-lifecycle.test.js", () => {
   afterAll(async (_c) => {});
 
   it("routes reject requests without any authentication", async ({ c }) => {
-    const { expect } = c;
     const response = await c.app.request(PathsV1.collections.root);
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
-  it("self-signed tokens are accepted when nilauth is enabled (dual-mode auth)", async ({ c }) => {
-    const { expect, app, builderSigner, bindings } = c;
+  it("self-signed tokens are accepted", async ({ c }) => {
+    const { app, builderSigner, bindings } = c;
 
     const builderDid = await builderSigner.getDid();
     const selfSignedToken = await Builder.invocation()
@@ -42,11 +41,11 @@ describe("02-builder-lifecycle.test.js", () => {
   it("builder can access paid routes", async ({ c }) => {
     const { builder } = c;
     const result = await builder.readCollections();
-    c.expect(result.ok).toBe(true);
+    expect(result.ok).toBe(true);
   });
 
   it("rejects registration of a builder with a duplicate DID", async ({ c }) => {
-    const { expect, builder, builderSigner } = c;
+    const { builder, builderSigner } = c;
     const builderDid = await builderSigner.getDid();
     const builderName = faker.person.fullName();
 
@@ -60,7 +59,7 @@ describe("02-builder-lifecycle.test.js", () => {
   });
 
   it("builder can read its profile", async ({ c }) => {
-    const { builder, builderSigner, expect } = c;
+    const { builder, builderSigner } = c;
     const result = await builder.getProfile();
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -69,7 +68,7 @@ describe("02-builder-lifecycle.test.js", () => {
   });
 
   it("builder can update its profile", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
     const newName = faker.company.name();
     const updateResult = await builder.updateProfile({ name: newName });
     expect(updateResult.ok).toBe(true);
@@ -81,7 +80,7 @@ describe("02-builder-lifecycle.test.js", () => {
   });
 
   it("builder can be removed", async ({ c }) => {
-    const { expect, builder } = c;
+    const { builder } = c;
     const deleteResult = await builder.deleteBuilder();
     expect(deleteResult.ok).toBe(true);
 

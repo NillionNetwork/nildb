@@ -1,5 +1,5 @@
 import * as pino from "pino";
-import { DockerComposeEnvironment, type StartedDockerComposeEnvironment, Wait } from "testcontainers";
+import { DockerComposeEnvironment, type StartedDockerComposeEnvironment } from "testcontainers";
 import type { TestProject } from "vitest/node";
 
 let environment: StartedDockerComposeEnvironment | undefined;
@@ -19,11 +19,7 @@ export async function setup(_project: TestProject): Promise<void> {
   log.info("🚀 Starting containers...");
 
   try {
-    environment = await new DockerComposeEnvironment("./packages/api/tests/docker", "docker-compose.yml")
-      .withWaitStrategy("postgres-1", Wait.forHealthCheck())
-      .withWaitStrategy("nil-anvil-1", Wait.forHealthCheck())
-      .withWaitStrategy("nilauth-1", Wait.forLogMessage("Starting main server"))
-      .up();
+    environment = await new DockerComposeEnvironment("./packages/api/tests/docker", "docker-compose.yml").up();
 
     log.info("✅ Containers started successfully.");
   } catch (error) {

@@ -1,4 +1,4 @@
-import * as CollectionsService from "@nildb/collections/collections.services";
+import * as CollectionsRepository from "@nildb/collections/collections.repository";
 import { enforceDataOwnership } from "@nildb/common/acl";
 import {
   type CollectionNotFoundError,
@@ -224,7 +224,7 @@ export function revokeAccess(
   return pipe(
     E.Do,
     E.bind("user", () => find(ctx, owner)),
-    E.bind("collectionDoc", () => CollectionsService.find(ctx, { _id: collection })),
+    E.bind("collectionDoc", () => CollectionsRepository.findOne(ctx, { _id: collection })),
     E.tap(({ user }) => enforceDataOwnership(user, document, collection)),
     E.filterOrFail(
       ({ collectionDoc }) => collectionDoc.owner !== grantee,

@@ -1,4 +1,4 @@
-import * as BuildersService from "@nildb/builders/builders.services";
+import * as BuildersRepository from "@nildb/builders/builders.repository";
 import type {
   CollectionDocument,
   CollectionMetadata,
@@ -81,25 +81,10 @@ export function addCollection(
     validateSchema(command.schema),
     E.flatMap(() => CollectionsRepository.insert(ctx, collection)),
     E.map(() => ctx.cache.builders.taint(collection.owner)),
-    E.flatMap(() =>
-      BuildersService.addCollection(ctx, {
-        did: collection.owner,
-        collection: command._id,
-      }),
-    ),
+    E.flatMap(() => BuildersRepository.addCollection(ctx, collection.owner, command._id)),
     E.flatMap(() => DataService.create(ctx, collection._id)),
     E.as(void 0),
   );
-}
-
-/**
- * Find a collection
- */
-export function find(
-  ctx: AppBindings,
-  filter: Record<string, unknown>,
-): E.Effect<CollectionDocument, DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError> {
-  return CollectionsRepository.findOne(ctx, filter);
 }
 
 /**
@@ -119,10 +104,7 @@ export function deleteCollection(
     E.tap((collection) => ctx.cache.builders.taint(collection.owner)),
     E.flatMap((collection) =>
       E.all([
-        BuildersService.removeCollection(ctx, {
-          did: collection.owner,
-          collection: command._id,
-        }),
+        BuildersRepository.removeCollection(ctx, collection.owner, command._id),
         DataService.drop(ctx, collection._id),
       ]),
     ),

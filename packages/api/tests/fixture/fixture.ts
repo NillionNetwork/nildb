@@ -17,15 +17,12 @@ import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
 import { getAddress } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import * as vitest from "vitest";
 
-import { NilauthClient } from "@nillion/nilauth-client";
 import { AdminClient, BuilderClient, UserClient } from "@nillion/nildb-client";
 import { createUuidDto, NucCmd, type UuidDto } from "@nillion/nildb-types";
 import { Builder, Did, type Did as NucDid, Signer } from "@nillion/nuc";
 
 import { createTestLogger } from "./logger";
-import { activateSubscriptionWithPayment } from "./payment";
 
 export type FixtureContext = {
   id: string;
@@ -42,9 +39,17 @@ export type FixtureContext = {
   system: AdminClient;
   builder: BuilderClient;
   builderSigner: Signer;
+  builderDid: string;
+  /** Create a self-signed NUC invocation token for the builder */
+  createToken: (command?: string) => Promise<string>;
+  admin: {
+    signer: Signer;
+    did: string;
+    /** Create a self-signed NUC invocation token for the admin */
+    createToken: (command?: string) => Promise<string>;
+  };
   user: UserClient;
   userSigner: Signer;
-  expect: vitest.ExpectStatic;
 };
 
 export type CollectionFixture = {
@@ -63,15 +68,44 @@ export type QueryFixture = {
   pipeline: JsonObject[];
 };
 
+/**
+ * Insert a builder directly into the database with creditsUsd set.
+ * Returns the signer, DID, and the inserted document.
+ */
+export async function insertTestBuilder(
+  bindings: AppBindings,
+  name?: string,
+): Promise<{ signer: Signer; did: string }> {
+  const signer = Signer.fromPrivateKey(bytesToHex(secp256k1.utils.randomSecretKey()));
+  const did = Did.serialize(await signer.getDid());
+
+  const now = new Date();
+  const doc: BuilderDocument = {
+    _id: new ObjectId(),
+    did,
+    _created: now,
+    _updated: now,
+    name: name ?? faker.person.fullName(),
+    collections: [],
+    queries: [],
+    creditsUsd: 0,
+    storageBytes: 0,
+  };
+
+  await bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders).insertOne(doc);
+  return { signer, did };
+}
+
 export async function buildFixture(
   opts: {
     collection?: CollectionFixture;
     query?: QueryFixture;
     keepDbs?: boolean;
+    extraFeatures?: string[];
   } = {},
 ): Promise<FixtureContext> {
   dotenv.config({
-    path: ["./packages/api/env.test", "./packages/api/env.test.nilauthclient"],
+    path: ["./packages/api/env.test"],
   });
   const id = new Date().toISOString().replaceAll(":", "").replaceAll(".", "_");
   const log = createTestLogger(id);
@@ -79,10 +113,15 @@ export async function buildFixture(
   // Use unique db names for each test
   process.env.APP_DB_NAME_BASE = `${process.env.APP_DB_NAME_BASE}_${id}`;
 
-  const currentFeatures = process.env.APP_ENABLED_FEATURES || "";
-  const featuresArray = currentFeatures.split(",").filter(Boolean);
+  const features = ["openapi", "migrations", "credits", ...(opts.extraFeatures ?? [])];
+  process.env.APP_ENABLED_FEATURES = features.join(",");
 
-  process.env.APP_ENABLED_FEATURES = featuresArray.join(",");
+  // Generate admin Ethereum account and set env var before loadBindings()
+  // so that bindings.admin gets populated with the did:ethr: identity
+  const adminEthPrivateKey = generatePrivateKey();
+  const adminEthAccount = privateKeyToAccount(adminEthPrivateKey);
+  process.env.APP_ADMIN_ADDRESS = getAddress(adminEthAccount.address);
+
   log.info(`Enabled features: ${process.env.APP_ENABLED_FEATURES}`);
 
   const bindings = await loadBindings();
@@ -111,45 +150,47 @@ export async function buildFixture(
     endpoint: bindings.config.nodePublicEndpoint,
   };
 
-  const nilauthBaseUrl = bindings.config.nilauthInstances[0].baseUrl;
-  const chainId = bindings.config.nilauthChainId;
-
-  // Create system client
-  const adminPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
-  const adminSigner = Signer.fromPrivateKey(adminPrivateKey);
-  const adminDid = await adminSigner.getDid();
+  // Create system client (admin delegation from node)
+  const systemPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
+  const systemSigner = Signer.fromPrivateKey(systemPrivateKey);
+  const systemDid = await systemSigner.getDid();
   const nodeDelegation = await Builder.delegation()
-    .subject(adminDid)
+    .subject(systemDid)
     .command(NucCmd.nil.db.root)
-    .audience(adminDid)
+    .audience(systemDid)
     .expiresIn(1000 * 60 * 5)
     .sign(node.signer);
   const system = new AdminClient({
     baseUrl: bindings.config.nodePublicEndpoint,
-    signer: adminSigner,
+    signer: systemSigner,
     nodePublicKey: node.publicKey,
     nodeDelegation,
     httpClient: app.request,
   });
 
-  // Create builder client
-  const builderSigner = Signer.fromPrivateKey(process.env.APP_TEST_BUILDER_PRIVATE_KEY!);
-
-  const nilauth = await NilauthClient.create({
-    baseUrl: nilauthBaseUrl,
-    chainId,
-  });
+  // Create builder by inserting directly into DB with creditsUsd
+  const { signer: builderSigner, did: builderDid } = await insertTestBuilder(bindings);
+  log.info({ did: builderDid }, "Builder inserted");
 
   const builder = new BuilderClient({
     baseUrl: bindings.config.nodePublicEndpoint,
     signer: builderSigner,
     nodePublicKey: node.publicKey,
-    nilauth,
     httpClient: app.request,
   });
 
+  const createToken = async (command = "/nil/db"): Promise<string> => {
+    const did = await builderSigner.getDid();
+    return Builder.invocation()
+      .command(command)
+      .audience(node.did)
+      .subject(did)
+      .expiresIn(1000 * 60)
+      .signAndSerialize(builderSigner);
+  };
+
   // Create user client
-  const userSigner = Signer.fromPrivateKey(process.env.APP_TEST_USER_PRIVATE_KEY!);
+  const userSigner = Signer.fromPrivateKey(bytesToHex(secp256k1.utils.randomSecretKey()));
   const user = new UserClient({
     baseUrl: bindings.config.nodePublicEndpoint,
     signer: userSigner,
@@ -157,8 +198,30 @@ export async function buildFixture(
     httpClient: app.request,
   });
 
-  // this global expect gets replaced by the test effect
-  const expect = vitest.expect;
+  // Create admin signer using native did:ethr pattern (same as nuc-ts's createNativeEthrSigner)
+  const adminDidString = `did:ethr:${getAddress(adminEthAccount.address)}`;
+  const adminDidParsed = Did.parse(adminDidString);
+  const adminEthrSigner: Signer = {
+    header: { alg: "ES256K" as const, typ: "nuc" as const },
+    getDid: async () => adminDidParsed,
+    sign: async (data: Uint8Array): Promise<Uint8Array> => {
+      const signatureHex = await adminEthAccount.signMessage({
+        message: { raw: data },
+      });
+      const cleanHex = signatureHex.startsWith("0x") ? signatureHex.slice(2) : signatureHex;
+      return hexToBytes(cleanHex);
+    },
+  };
+
+  const createAdminToken = async (command = "/nil/db/admin/create"): Promise<string> => {
+    return Builder.invocation()
+      .command(command)
+      .audience(node.did)
+      .subject(adminDidParsed)
+      .expiresIn(1000 * 60)
+      .signAndSerialize(adminEthrSigner);
+  };
+
   const c: FixtureContext = {
     id,
     log,
@@ -167,29 +230,19 @@ export async function buildFixture(
       ...bindings,
       node,
     },
-    expect,
     system,
     builder,
     builderSigner,
+    builderDid,
+    createToken,
+    admin: {
+      signer: adminEthrSigner,
+      did: adminDidString,
+      createToken: createAdminToken,
+    },
     user,
     userSigner,
   };
-
-  // Register the builder
-  // Activate subscription via real payment on Anvil
-  const builderDid = await builderSigner.getDid();
-  const anvilRpcUrl = process.env.APP_ANVIL_RPC_URL || "http://127.0.0.1:30545";
-  await activateSubscriptionWithPayment(nilauth, builderDid, anvilRpcUrl);
-  log.info({ did: Did.serialize(builderDid) }, "Builder subscription active");
-
-  const registerResult = await builder.register({
-    did: Did.serialize(builderDid),
-    name: faker.person.fullName(),
-  });
-  if (!registerResult.ok) {
-    throw new Error(`Failed to register builder: ${registerResult.error}`);
-  }
-  log.info({ did: builderDid }, "Builder registered");
 
   if (opts.collection) {
     const { collection, query } = opts;
@@ -228,178 +281,4 @@ export async function buildFixture(
     log.info("Test suite ready");
   }
   return c;
-}
-
-export type CreditFixtureContext = {
-  id: string;
-  log: Logger;
-  app: App;
-  bindings: AppBindings & {
-    node: {
-      signer: Signer;
-      did: NucDid;
-      publicKey: string;
-      endpoint: string;
-    };
-  };
-  system: AdminClient;
-  creditBuilder: {
-    signer: Signer;
-    did: string;
-    /** Create a self-signed NUC invocation token for the credit builder */
-    createToken: (command?: string) => Promise<string>;
-  };
-  admin: {
-    signer: Signer;
-    did: string;
-    /** Create a self-signed NUC invocation token for the admin */
-    createToken: (command?: string) => Promise<string>;
-  };
-  expect: vitest.ExpectStatic;
-};
-
-/**
- * Build a fixture for credit system integration tests.
- * Enables credits feature flag and registers a builder directly in the DB
- * with creditsUsd set (bypassing the did:key restriction).
- */
-export async function buildCreditFixture(opts: { extraFeatures?: string[] } = {}): Promise<CreditFixtureContext> {
-  dotenv.config({
-    path: ["./packages/api/env.test", "./packages/api/env.test.nilauthclient"],
-  });
-  const id = new Date().toISOString().replaceAll(":", "").replaceAll(".", "_");
-  const log = createTestLogger(id);
-
-  // Use unique db names for each test
-  process.env.APP_DB_NAME_BASE = `${process.env.APP_DB_NAME_BASE}_${id}`;
-  const features = ["openapi", "migrations", "credits", ...(opts.extraFeatures ?? [])];
-  process.env.APP_ENABLED_FEATURES = features.join(",");
-
-  // Generate admin Ethereum account and set env var before loadBindings()
-  // so that bindings.admin gets populated with the did:ethr: identity
-  const adminEthPrivateKey = generatePrivateKey();
-  const adminEthAccount = privateKeyToAccount(adminEthPrivateKey);
-  process.env.APP_ADMIN_ADDRESS = getAddress(adminEthAccount.address);
-
-  log.info(`Enabled features: ${process.env.APP_ENABLED_FEATURES}`);
-
-  const bindings = await loadBindings();
-
-  if (hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.MIGRATIONS)) {
-    await mongoMigrateUp(bindings.config.dbUri, bindings.config.dbNamePrimary);
-    bindings.migrationsComplete = true;
-    log.info("Ran db migrations");
-  } else {
-    bindings.migrationsComplete = true;
-  }
-
-  log.info("Bootstrapping credit test fixture");
-
-  const { app } = await buildApp(bindings);
-
-  const nodePrivateKeyBytes = hexToBytes(bindings.config.nodeSecretKey);
-  const nodePublicKey = bytesToHex(secp256k1.getPublicKey(nodePrivateKeyBytes));
-  const nodeSigner = Signer.fromPrivateKey(nodePrivateKeyBytes);
-  const nodeDid = await nodeSigner.getDid();
-
-  const node = {
-    signer: nodeSigner,
-    did: nodeDid,
-    publicKey: nodePublicKey,
-    endpoint: bindings.config.nodePublicEndpoint,
-  };
-
-  // Create system client (admin delegation from node)
-  const systemPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
-  const systemSigner = Signer.fromPrivateKey(systemPrivateKey);
-  const systemDid = await systemSigner.getDid();
-  const nodeDelegation = await Builder.delegation()
-    .subject(systemDid)
-    .command(NucCmd.nil.db.root)
-    .audience(systemDid)
-    .expiresIn(1000 * 60 * 5)
-    .sign(node.signer);
-  const system = new AdminClient({
-    baseUrl: bindings.config.nodePublicEndpoint,
-    signer: systemSigner,
-    nodePublicKey: node.publicKey,
-    nodeDelegation,
-    httpClient: app.request,
-  });
-
-  // Create credit builder by inserting directly into DB
-  // (bypasses the did:key check that exists when credits are enabled)
-  const creditBuilderPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
-  const creditBuilderSigner = Signer.fromPrivateKey(creditBuilderPrivateKey);
-  const creditBuilderDid = Did.serialize(await creditBuilderSigner.getDid());
-
-  const now = new Date();
-  const builderDoc: BuilderDocument = {
-    _id: new ObjectId(),
-    did: creditBuilderDid,
-    _created: now,
-    _updated: now,
-    name: faker.person.fullName(),
-    collections: [],
-    queries: [],
-    creditsUsd: 0,
-    storageBytes: 0,
-  };
-
-  await bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders).insertOne(builderDoc);
-  log.info({ did: creditBuilderDid }, "Credit builder inserted");
-
-  const createToken = async (command = "/nil/db"): Promise<string> => {
-    const builderDid = await creditBuilderSigner.getDid();
-    return Builder.invocation()
-      .command(command)
-      .audience(node.did)
-      .subject(builderDid)
-      .expiresIn(1000 * 60)
-      .signAndSerialize(creditBuilderSigner);
-  };
-
-  // Create admin signer using native did:ethr pattern (same as nuc-ts's createNativeEthrSigner)
-  const adminDidString = `did:ethr:${getAddress(adminEthAccount.address)}`;
-  const adminDidParsed = Did.parse(adminDidString);
-  const adminEthrSigner: Signer = {
-    header: { alg: "ES256K" as const, typ: "nuc" as const },
-    getDid: async () => adminDidParsed,
-    sign: async (data: Uint8Array): Promise<Uint8Array> => {
-      const signatureHex = await adminEthAccount.signMessage({
-        message: { raw: data },
-      });
-      const cleanHex = signatureHex.startsWith("0x") ? signatureHex.slice(2) : signatureHex;
-      return hexToBytes(cleanHex);
-    },
-  };
-
-  const createAdminToken = async (command = "/nil/db/admin/create"): Promise<string> => {
-    return Builder.invocation()
-      .command(command)
-      .audience(node.did)
-      .subject(adminDidParsed)
-      .expiresIn(1000 * 60)
-      .signAndSerialize(adminEthrSigner);
-  };
-
-  const expect = vitest.expect;
-  return {
-    id,
-    log,
-    app,
-    bindings: { ...bindings, node },
-    system,
-    creditBuilder: {
-      signer: creditBuilderSigner,
-      did: creditBuilderDid,
-      createToken,
-    },
-    admin: {
-      signer: adminEthrSigner,
-      did: adminDidString,
-      createToken: createAdminToken,
-    },
-    expect,
-  };
 }

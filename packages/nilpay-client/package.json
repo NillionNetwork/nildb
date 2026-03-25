@@ -21,12 +21,12 @@
   },
   "dependencies": {
     "@nillion/nuc": "^2.0.1",
-    "viem": "^2.47.2"
+    "viem": "^2.47.6"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260312.1",
-    "tsdown": "0.21.2",
-    "typescript": "^5.9.3"
+    "@typescript/native-preview": "7.0.0-dev.20260325.1",
+    "tsdown": "0.21.4",
+    "typescript": "^6.0.2"
   },
   "tsdown": {
     "clean": true,

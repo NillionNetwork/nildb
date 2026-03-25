@@ -1,4 +1,4 @@
-import * as CollectionsService from "@nildb/collections/collections.services";
+import * as CollectionsRepository from "@nildb/collections/collections.repository";
 import { buildAccessControlledFilter, enforceBuilderOwnership } from "@nildb/common/acl";
 import { applyCoercions } from "@nildb/common/coercion";
 import type {
@@ -48,7 +48,7 @@ export function createOwnedRecords(
   return pipe(
     E.Do,
     E.bind("document", () =>
-      CollectionsService.find(ctx, {
+      CollectionsRepository.findOne(ctx, {
         _id: command.collection,
         type: "owned",
       }),
@@ -90,7 +90,7 @@ export function createStandardRecords(
   return pipe(
     E.Do,
     E.bind("document", () =>
-      CollectionsService.find(ctx, {
+      CollectionsRepository.findOne(ctx, {
         _id: command.collection,
         type: "standard",
       }),

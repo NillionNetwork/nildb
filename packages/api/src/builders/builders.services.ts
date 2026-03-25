@@ -7,21 +7,13 @@ import {
   DuplicateEntryError,
   InvalidDidError,
 } from "@nildb/common/errors";
-import { type AppBindings, FeatureFlag, hasFeatureFlag } from "@nildb/env";
+import type { AppBindings } from "@nildb/env";
 import * as QueriesService from "@nildb/queries/queries.services";
 import { Effect as E } from "effect";
 import { ObjectId } from "mongodb";
 
 import * as BuildersRepository from "./builders.repository";
-import type {
-  AddBuilderCollectionCommand,
-  AddBuilderQueryCommand,
-  BuilderDocument,
-  CreateBuilderCommand,
-  RemoveBuilderCollectionCommand,
-  RemoveBuilderQueryCommand,
-  UpdateProfileCommand,
-} from "./builders.types";
+import type { BuilderDocument, CreateBuilderCommand, UpdateProfileCommand } from "./builders.types";
 
 /**
  * Find builder by DID.
@@ -57,7 +49,6 @@ export function createBuilder(
   }
 
   const now = new Date();
-  const creditsEnabled = hasFeatureFlag(ctx.config.enabledFeatures, FeatureFlag.CREDITS);
   const document: BuilderDocument = {
     _id: new ObjectId(),
     did: command.did,
@@ -66,7 +57,7 @@ export function createBuilder(
     name: command.name,
     collections: [],
     queries: [],
-    ...(creditsEnabled ? { creditsUsd: 0 } : {}),
+    creditsUsd: 0,
   };
 
   return BuildersRepository.insert(ctx, document);
@@ -94,44 +85,4 @@ export function updateProfile(
   command: UpdateProfileCommand,
 ): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   return BuildersRepository.update(ctx, command.builder, command.updates);
-}
-
-/**
- * Add collection to builder.
- */
-export function addCollection(
-  ctx: AppBindings,
-  command: AddBuilderCollectionCommand,
-): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
-  return BuildersRepository.addCollection(ctx, command.did, command.collection);
-}
-
-/**
- * Remove collection from builder.
- */
-export function removeCollection(
-  ctx: AppBindings,
-  command: RemoveBuilderCollectionCommand,
-): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
-  return BuildersRepository.removeCollection(ctx, command.did, command.collection);
-}
-
-/**
- * Add query to builder.
- */
-export function addQuery(
-  ctx: AppBindings,
-  command: AddBuilderQueryCommand,
-): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
-  return BuildersRepository.addQuery(ctx, command.did, command.query);
-}
-
-/**
- * Remove query from builder.
- */
-export function removeQuery(
-  ctx: AppBindings,
-  command: RemoveBuilderQueryCommand,
-): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
-  return BuildersRepository.removeQuery(ctx, command.did, command.query);
 }

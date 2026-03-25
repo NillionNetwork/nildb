@@ -1,5 +1,5 @@
-import * as BuildersService from "@nildb/builders/builders.services";
-import * as CollectionsService from "@nildb/collections/collections.services";
+import * as BuildersRepository from "@nildb/builders/builders.repository";
+import * as CollectionsRepository from "@nildb/collections/collections.repository";
 import { enforceBuilderOwnership } from "@nildb/common/acl";
 import { applyCoercions } from "@nildb/common/coercion";
 import {
@@ -65,15 +65,10 @@ export function addQuery(
 
   return pipe(
     validateData(pipelineSchema, document.pipeline),
-    E.flatMap(() => CollectionsService.find(ctx, { _id: document.collection })),
+    E.flatMap(() => CollectionsRepository.findOne(ctx, { _id: document.collection })),
     E.flatMap((collection) => enforceBuilderOwnership(document.owner, collection.owner, "collection", collection._id)),
     E.flatMap(() => QueriesRepository.insert(ctx, document)),
-    E.flatMap(() =>
-      BuildersService.addQuery(ctx, {
-        did: document.owner,
-        query: document._id,
-      }),
-    ),
+    E.flatMap(() => BuildersRepository.addQuery(ctx, document.owner, document._id)),
     E.tap(() => ctx.cache.builders.taint(document.owner)),
     E.as(void 0),
   );
@@ -269,12 +264,7 @@ export function removeQuery(
       pipe(
         QueriesRepository.findOneAndDelete(ctx, { _id: document._id }),
         E.tap(() => ctx.cache.builders.taint(document.owner)),
-        E.flatMap(() =>
-          BuildersService.removeQuery(ctx, {
-            did: document.owner,
-            query: command._id,
-          }),
-        ),
+        E.flatMap(() => BuildersRepository.removeQuery(ctx, document.owner, command._id)),
       ),
     ),
     E.as(void 0),
