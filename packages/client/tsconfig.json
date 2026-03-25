@@ -2,6 +2,7 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "lib": ["esnext", "es2024", "DOM"],
     "paths": {
       "@nillion/nildb-client/*": ["./src/*"],
       "@nillion/nildb-types": ["../types/src/lib.ts"],
