@@ -1,4 +1,4 @@
-import { describe } from "vitest";
+import { describe, expect } from "vitest";
 
 import { createUuidDto } from "@nillion/nildb-types";
 
@@ -9,7 +9,7 @@ describe("Collection Index Management", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
 
   beforeAll(async (c) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     simpleCollection._id = createUuidDto();
     const result = await builder.createCollection({
@@ -24,7 +24,7 @@ describe("Collection Index Management", () => {
   afterAll(async (_c) => {});
 
   it("can create an index", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     // Create an index on the "name" field
     const createResult = await builder.createCollectionIndex(simpleCollection._id, {
@@ -46,7 +46,7 @@ describe("Collection Index Management", () => {
   });
 
   it("can drop an index from a collection", async ({ c }) => {
-    const { builder, expect } = c;
+    const { builder } = c;
 
     // Drop the index
     const indexName = "name_index";

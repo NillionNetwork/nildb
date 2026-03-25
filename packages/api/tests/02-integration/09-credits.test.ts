@@ -5,7 +5,7 @@ import { runBillingCycle } from "@nildb/workers/billing.worker";
 import { runPurgeCycle } from "@nildb/workers/purge.worker";
 import { StatusCodes } from "http-status-codes";
 import { ObjectId, UUID } from "mongodb";
-import { describe } from "vitest";
+import { describe, expect } from "vitest";
 
 import type {
   AdminCreditTopUpResponse,
@@ -23,7 +23,7 @@ describe("09-credits.test.ts", () => {
   afterAll(async (_c) => {});
 
   it("GET /v1/credits/pricing returns pricing info", async ({ c }) => {
-    const { expect, app } = c;
+    const { app } = c;
 
     const response = await app.request(PathsV1.credits.pricing);
     expect(response.status).toBe(StatusCodes.OK);
@@ -42,7 +42,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("GET /v1/credits returns balance for credit builder", async ({ c }) => {
-    const { expect, app, createToken } = c;
+    const { app, createToken } = c;
     const token = await createToken("/nil/db/credits/read");
 
     const response = await app.request(PathsV1.credits.root, {
@@ -60,7 +60,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("credit builder with zero credits and low storage is free_tier", async ({ c }) => {
-    const { expect, app, createToken } = c;
+    const { app, createToken } = c;
     const token = await createToken("/nil/db/credits/read");
 
     const response = await app.request(PathsV1.credits.root, {
@@ -73,7 +73,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("credit builder can read collections (free tier access)", async ({ c }) => {
-    const { expect, app, createToken } = c;
+    const { app, createToken } = c;
     const token = await createToken("/nil/db/collections/read");
 
     const response = await app.request(PathsV1.collections.root, {
@@ -85,7 +85,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("credit builder with read_only status cannot write", async ({ c }) => {
-    const { expect, app, bindings, builderDid, createToken } = c;
+    const { app, bindings, builderDid, createToken } = c;
 
     // Set builder to have storage over free tier with depleted credits (100+ hours ago → read_only)
     await bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders).updateOne(
@@ -131,7 +131,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("credit builder with suspended status cannot read or write", async ({ c }) => {
-    const { expect, app, bindings, builderDid, createToken } = c;
+    const { app, bindings, builderDid, createToken } = c;
 
     // Set builder to suspended (10+ days without credits)
     await bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders).updateOne(
@@ -157,7 +157,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("adding credits restores access for a degraded builder", async ({ c }) => {
-    const { expect, app, bindings, builderDid, createToken } = c;
+    const { app, bindings, builderDid, createToken } = c;
 
     // Give the builder credits and restore active status
     await bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders).updateOne(
@@ -184,7 +184,7 @@ describe("09-credits.test.ts", () => {
   // --- Billing worker tests ---
 
   it("billing cycle deducts credits for storage over free tier", async ({ c }) => {
-    const { expect, bindings, builderDid } = c;
+    const { bindings, builderDid } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
     // Create a collection in the data DB with some documents so $collStats returns storage
@@ -238,7 +238,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("billing cycle does not deduct for free tier storage", async ({ c }) => {
-    const { expect, bindings, builderDid } = c;
+    const { bindings, builderDid } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
     // Set builder with credits, no collections (0 storage), last billed 2 hours ago
@@ -269,7 +269,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("billing cycle sets creditsDepleted when balance hits zero", async ({ c }) => {
-    const { expect, bindings, builderDid } = c;
+    const { bindings, builderDid } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
     // Create a collection with data
@@ -320,7 +320,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("billing cycle transitions status from warning to read_only", async ({ c }) => {
-    const { expect, bindings, builderDid } = c;
+    const { bindings, builderDid } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
     // Create a collection with data
@@ -369,7 +369,7 @@ describe("09-credits.test.ts", () => {
   // --- GET /v1/credits estimated hours tests ---
 
   it("GET /v1/credits returns estimatedHoursRemaining when builder has storage and credits", async ({ c }) => {
-    const { expect, app, bindings, builderDid, createToken } = c;
+    const { app, bindings, builderDid, createToken } = c;
 
     // Set builder with credits and storage above free tier
     const storageBytes = 200 * 1024 * 1024; // 200MB
@@ -405,7 +405,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("GET /v1/credits returns null estimatedHoursRemaining in free tier", async ({ c }) => {
-    const { expect, app, bindings, builderDid, createToken } = c;
+    const { app, bindings, builderDid, createToken } = c;
 
     // Set builder with no storage (free tier)
     await bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders).updateOne(
@@ -434,7 +434,7 @@ describe("09-credits.test.ts", () => {
   // --- Purge worker tests ---
 
   it("purge cycle deletes builder data after grace period", async ({ c }) => {
-    const { expect, bindings } = c;
+    const { bindings } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
     // Create a separate builder for purge testing (don't destroy the main credit builder)
@@ -487,7 +487,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("purge cycle ignores builders within grace period", async ({ c }) => {
-    const { expect, bindings } = c;
+    const { bindings } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
     // Create a builder with pending_purge but within grace period (80 days, grace = 90 days)
@@ -522,7 +522,7 @@ describe("09-credits.test.ts", () => {
   // --- Admin credit topup tests ---
 
   it("admin topup increases builder balance", async ({ c }) => {
-    const { expect, app, bindings, builderDid, createToken, admin } = c;
+    const { app, bindings, builderDid, createToken, admin } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
     // Set builder with storage above free tier so status reflects credits (not free_tier)
@@ -571,7 +571,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("admin topup restores a suspended builder", async ({ c }) => {
-    const { expect, app, bindings, builderDid, createToken, admin } = c;
+    const { app, bindings, builderDid, createToken, admin } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
     // Set builder to suspended state with storage above free tier
@@ -626,7 +626,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("admin topup initialises credits for builder without creditsUsd", async ({ c }) => {
-    const { expect, app, bindings, admin } = c;
+    const { app, bindings, admin } = c;
     const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
 
     // Insert a builder without creditsUsd field (e.g. a pre-migration builder)
@@ -667,7 +667,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("non-admin token is rejected for topup", async ({ c }) => {
-    const { expect, app, builderDid, createToken } = c;
+    const { app, builderDid, createToken } = c;
 
     // Use the builder's signer to create a token with admin command
     const token = await createToken("/nil/db/admin/create");
@@ -687,7 +687,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("missing auth token is rejected for topup", async ({ c }) => {
-    const { expect, app, builderDid } = c;
+    const { app, builderDid } = c;
 
     const response = await app.request(PathsV1.admin.creditTopUp, {
       method: "POST",
@@ -706,7 +706,7 @@ describe("09-credits.test.ts", () => {
   // --- Admin pricing tests ---
 
   it("PUT /v1/admin/pricing updates storage cost", async ({ c }) => {
-    const { expect, app, bindings, admin } = c;
+    const { app, bindings, admin } = c;
 
     const originalCost = bindings.config.storageCostPerGbHour;
     const newCost = 0.0005;
@@ -744,7 +744,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("PUT /v1/admin/pricing rejects non-admin tokens", async ({ c }) => {
-    const { expect, app, createToken } = c;
+    const { app, createToken } = c;
 
     const token = await createToken("/nil/db/admin/create");
     const response = await app.request(PathsV1.admin.pricing, {
@@ -759,7 +759,7 @@ describe("09-credits.test.ts", () => {
   });
 
   it("PUT /v1/admin/pricing rejects invalid values", async ({ c }) => {
-    const { expect, app, admin } = c;
+    const { app, admin } = c;
 
     const token = await admin.createToken("/nil/db/admin/create");
 

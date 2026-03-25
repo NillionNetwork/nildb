@@ -20,13 +20,9 @@ export function createTestFixtureExtension(
   let fixture: FixtureContext | null = null;
 
   const it = vitest.test.extend<{ c: FixtureContext }>({
-    c: async ({ expect }, use) => {
-      const ctx: FixtureContext = {
-        ...fixture!,
-        expect,
-      };
-
-      await use(ctx);
+    // oxlint-disable-next-line no-empty-pattern
+    c: async ({}, use) => {
+      await use(fixture!);
     },
   });
 

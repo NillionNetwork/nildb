@@ -17,7 +17,6 @@ import type { Logger } from "pino";
 import type { JsonObject } from "type-fest";
 import { getAddress } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import * as vitest from "vitest";
 
 import { AdminClient, BuilderClient, UserClient } from "@nillion/nildb-client";
 import { createUuidDto, NucCmd, type UuidDto } from "@nillion/nildb-types";
@@ -51,7 +50,6 @@ export type FixtureContext = {
   };
   user: UserClient;
   userSigner: Signer;
-  expect: vitest.ExpectStatic;
 };
 
 export type CollectionFixture = {
@@ -224,8 +222,6 @@ export async function buildFixture(
       .signAndSerialize(adminEthrSigner);
   };
 
-  // this global expect gets replaced by the test effect
-  const expect = vitest.expect;
   const c: FixtureContext = {
     id,
     log,
@@ -234,7 +230,6 @@ export async function buildFixture(
       ...bindings,
       node,
     },
-    expect,
     system,
     builder,
     builderSigner,
