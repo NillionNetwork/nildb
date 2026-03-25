@@ -5,13 +5,13 @@ import { UUID } from "mongodb";
 import { describe, expect, it, vi } from "vitest";
 
 // Create mock function in hoisted scope so it's available during vi.mock() execution
-const { mockFind } = vi.hoisted(() => ({
-  mockFind: vi.fn(),
+const { mockFindOne } = vi.hoisted(() => ({
+  mockFindOne: vi.fn(),
 }));
 
-// Mock the entire collections service module using @nildb path alias
-vi.mock("@nildb/collections/collections.services", () => ({
-  find: mockFind,
+// Mock the collections repository module used by acl.ts
+vi.mock("@nildb/collections/collections.repository", () => ({
+  findOne: mockFindOne,
 }));
 
 describe("buildAccessControlledFilter", () => {
@@ -32,7 +32,7 @@ describe("buildAccessControlledFilter", () => {
     };
 
     it("should return the original filter when the requester is the owner", () => {
-      mockFind.mockReturnValue(E.succeed(mockStandardCollection));
+      mockFindOne.mockReturnValue(E.succeed(mockStandardCollection));
 
       const originalFilter = { a: 1 };
       const result = E.runSync(
@@ -43,7 +43,7 @@ describe("buildAccessControlledFilter", () => {
     });
 
     it("should fail with ResourceAccessDeniedError if the requester is not the owner", () => {
-      mockFind.mockReturnValue(E.succeed(mockStandardCollection));
+      mockFindOne.mockReturnValue(E.succeed(mockStandardCollection));
 
       const exit = E.runSyncExit(buildAccessControlledFilter({} as any, otherBuilderDid, collectionId, "read", {}));
 
@@ -67,7 +67,7 @@ describe("buildAccessControlledFilter", () => {
     };
 
     it("should return only the ACL filter if the original filter is empty", () => {
-      mockFind.mockReturnValue(E.succeed(mockOwnedCollection));
+      mockFindOne.mockReturnValue(E.succeed(mockOwnedCollection));
 
       const result = E.runSync(buildAccessControlledFilter({} as any, requestingBuilderDid, collectionId, "read", {}));
 
@@ -82,7 +82,7 @@ describe("buildAccessControlledFilter", () => {
     });
 
     it("should combine the original filter and ACL filter with $and", () => {
-      mockFind.mockReturnValue(E.succeed(mockOwnedCollection));
+      mockFindOne.mockReturnValue(E.succeed(mockOwnedCollection));
 
       const originalFilter = { "data.field": "value" };
       const result = E.runSync(
@@ -105,7 +105,7 @@ describe("buildAccessControlledFilter", () => {
     });
 
     it("should combine the original filter and ACL filter for 'execute'", () => {
-      mockFind.mockReturnValue(E.succeed(mockOwnedCollection));
+      mockFindOne.mockReturnValue(E.succeed(mockOwnedCollection));
 
       const originalFilter = { "data.field": "value" };
       const result = E.runSync(

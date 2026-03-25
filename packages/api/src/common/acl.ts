@@ -1,4 +1,4 @@
-import * as CollectionsService from "@nildb/collections/collections.services";
+import * as CollectionsRepository from "@nildb/collections/collections.repository";
 import {
   type CollectionNotFoundError,
   type DatabaseError,
@@ -70,7 +70,7 @@ export function buildAccessControlledFilter(
   ResourceAccessDeniedError | DocumentNotFoundError | CollectionNotFoundError | DatabaseError | DataValidationError
 > {
   return pipe(
-    CollectionsService.find(ctx, { _id: collectionId }),
+    CollectionsRepository.findOne(ctx, { _id: collectionId }),
     E.flatMap((collection) => {
       // For standard collections, only the owner can access
       if (collection.type === "standard") {
