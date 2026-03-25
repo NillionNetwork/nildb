@@ -16,7 +16,7 @@ describe("rate-limiting.test.js", () => {
     const maxRequests = Number(process.env.APP_RATE_LIMIT_MAX_REQUESTS);
 
     // Make requests up to the limit, which should all succeed
-    for (let i = 0; i < maxRequests - 1; i++) {
+    for (let i = 0; i < maxRequests; i++) {
       const result = await system.health();
       expect(result.ok).toBe(true);
     }

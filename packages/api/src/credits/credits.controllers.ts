@@ -18,8 +18,6 @@ import {
   AdminCreditTopUpRequest,
   type AdminCreditTopUpResponse,
   type AdminListBuildersResponse,
-  AdminMigrateBuildersRequest,
-  AdminMigrateBuildersResponse,
   AdminUpdatePricingRequest,
   type AdminUpdatePricingResponse,
   type BuilderStatusDto,
@@ -374,7 +372,7 @@ export function adminListBuilders(options: ControllerOptions): void {
       return pipe(
         BuildersRepository.findAll(c.env, search, limit, offset),
         E.map(
-          ({ data, total, unmigrated }): AdminListBuildersResponse => ({
+          ({ data, total }): AdminListBuildersResponse => ({
             data: data.map((b) => ({
               did: b.did,
               name: b.name,
@@ -384,63 +382,10 @@ export function adminListBuilders(options: ControllerOptions): void {
                 : b.status) as BuilderStatusDto,
               storageBytes: b.storageBytes ?? 0,
             })),
-            pagination: { total, limit, offset, unmigrated },
+            pagination: { total, limit, offset },
           }),
         ),
         E.map((response) => c.json<AdminListBuildersResponse>(response)),
-        handleTaggedErrors(c),
-        E.runPromise,
-      );
-    },
-  );
-}
-
-/**
- * Handle POST /v1/admin/builders/migrate-to-credits
- * Migrate nilauth builders to the credit system.
- */
-export function adminMigrateBuilders(options: ControllerOptions): void {
-  const { app, bindings } = options;
-  const path = PathsV1.admin.migrateBuilders;
-
-  if (!hasFeatureFlag(bindings.config.enabledFeatures, FeatureFlag.CREDITS) || !bindings.admin) {
-    return;
-  }
-
-  app.post(
-    path,
-    describeRoute({
-      tags: ["Admin"],
-      security: [{ bearerAuth: [] }],
-      summary: "Migrate nilauth builders to credit system",
-      responses: {
-        200: {
-          description: "OK",
-          content: {
-            "application/json": {
-              schema: resolver(AdminMigrateBuildersResponse),
-            },
-          },
-        },
-        ...OpenApiSpecCommonErrorResponses,
-      },
-    }),
-    zValidator("json", AdminMigrateBuildersRequest),
-    loadNucToken(bindings),
-    loadSubjectAndVerifyAsCreditAdmin(bindings),
-    requireNucNamespace(NucCmd.nil.db.admin.create),
-    async (c) => {
-      const { creditsPerBuilder } = c.req.valid("json");
-      const adminDid = c.get("subjectDid");
-
-      return pipe(
-        CreditsService.migrateBuildersToCreditSystem(c.env, adminDid, creditsPerBuilder),
-        E.map(
-          (result): AdminMigrateBuildersResponse => ({
-            data: result,
-          }),
-        ),
-        E.map((response) => c.json<AdminMigrateBuildersResponse>(response)),
         handleTaggedErrors(c),
         E.runPromise,
       );

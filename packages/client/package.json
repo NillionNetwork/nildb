@@ -19,7 +19,6 @@
     "stub": "tsdown --stub"
   },
   "dependencies": {
-    "@nillion/nilauth-client": "2.0.0",
     "@nillion/nildb-types": "workspace:*",
     "@nillion/nuc": "^2.0.1"
   },

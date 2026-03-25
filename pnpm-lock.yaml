@@ -157,9 +157,6 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.6
         version: 0.7.6(hono@4.12.7)(zod@4.3.6)
-      '@nillion/nilauth-client':
-        specifier: 2.0.0
-        version: 2.0.0(@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)
       '@nillion/nildb-client':
         specifier: workspace:*
         version: link:../client
@@ -256,9 +253,6 @@ importers:
 
   packages/client:
     dependencies:
-      '@nillion/nilauth-client':
-        specifier: 2.0.0
-        version: 2.0.0(@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)
       '@nillion/nildb-types':
         specifier: workspace:*
         version: link:../types
@@ -716,13 +710,6 @@ packages:
 
   '@napi-rs/wasm-runtime@1.1.1':
     resolution: {integrity: sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==}
-
-  '@nillion/nilauth-client@2.0.0':
-    resolution: {integrity: sha512-0E/aCB4vfIHHjS94kOUdjaRlgk/c6OUpAjtAs27WjqsOWlDk1/2ZTlOmUfDMpae8JlAzTsINci7K1QZ3DEBRiw==}
-    engines: {node: '>=24'}
-    peerDependencies:
-      '@nillion/nuc': ^2.0.0
-      pino: ^10.1.0
 
   '@nillion/nuc@2.0.1':
     resolution: {integrity: sha512-iP+GbnIh0v/GKmyk9yEZWiB7GvyBOd1EqcmJtCtRlOJvGf6yARw3I5hMbNLMW74zYWJwLUS/EYK8Igb15lxSOg==}
@@ -2231,10 +2218,6 @@ packages:
     resolution: {integrity: sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==}
     engines: {node: '>=6'}
 
-  canonicalize@2.1.0:
-    resolution: {integrity: sha512-F705O3xrsUtgt98j7leetNhTWPe+5S72rlL5O4jA1pKqBVQ/dT1O1D6PFxmSXvc0SUOinWS57DKx0I3CHrXJHQ==}
-    hasBin: true
-
   chai@6.2.2:
     resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
     engines: {node: '>=18'}
@@ -2704,10 +2687,6 @@ packages:
 
   json-schema-traverse@1.0.0:
     resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
-
-  ky@1.14.3:
-    resolution: {integrity: sha512-9zy9lkjac+TR1c2tG+mkNSVlyOpInnWdSMiue4F+kq8TwJSgv6o8jhLRg8Ho6SnZ9wOYUq/yozts9qQCfk7bIw==}
-    engines: {node: '>=18'}
 
   lazystream@1.0.1:
     resolution: {integrity: sha512-b94GiNHQNy6JNTrt5w6zNyffMrNkXZb3KTkCZJb2V1xaEGCk093vkZ2jk3tpaeP33/OiXC+WvK9AxUebnf5nbw==}
@@ -3894,15 +3873,6 @@ snapshots:
       '@emnapi/runtime': 1.9.0
       '@tybys/wasm-util': 0.10.1
     optional: true
-
-  '@nillion/nilauth-client@2.0.0(@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)':
-    dependencies:
-      '@nillion/nuc': 2.0.1(pino@10.3.1)(typescript@5.9.3)
-      '@noble/hashes': 2.0.1
-      canonicalize: 2.1.0
-      ky: 1.14.3
-      pino: 10.3.1
-      zod: 4.3.6
 
   '@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3)':
     dependencies:
@@ -5341,8 +5311,6 @@ snapshots:
 
   callsites@3.1.0: {}
 
-  canonicalize@2.1.0: {}
-
   chai@6.2.2: {}
 
   chownr@1.1.4: {}
@@ -5790,8 +5758,6 @@ snapshots:
   json-parse-even-better-errors@2.3.1: {}
 
   json-schema-traverse@1.0.0: {}
-
-  ky@1.14.3: {}
 
   lazystream@1.0.1:
     dependencies:

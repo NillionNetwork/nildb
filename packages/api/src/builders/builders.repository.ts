@@ -45,7 +45,7 @@ export function findAll(
   search: string | undefined,
   limit: number,
   offset: number,
-): E.Effect<{ data: BuilderDocument[]; total: number; unmigrated: number }, CollectionNotFoundError | DatabaseError> {
+): E.Effect<{ data: BuilderDocument[]; total: number }, CollectionNotFoundError | DatabaseError> {
   const filter: Record<string, unknown> = {};
   if (search) {
     const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -64,13 +64,9 @@ export function findAll(
           try: () => collection.countDocuments(filter),
           catch: (cause) => new DatabaseError({ cause, message: "findAll:count" }),
         }),
-        E.tryPromise({
-          try: () => collection.countDocuments({ creditsUsd: { $exists: false } }),
-          catch: (cause) => new DatabaseError({ cause, message: "findAll:unmigrated" }),
-        }),
       ]),
     ),
-    E.map(([data, total, unmigrated]) => ({ data, total, unmigrated })),
+    E.map(([data, total]) => ({ data, total })),
   );
 }
 
@@ -576,49 +572,5 @@ export function findBuildersPendingPurge(
       try: (collection) => collection.find(filter).limit(limit).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findBuildersPendingPurge" }),
     }),
-  );
-}
-
-/**
- * Find builders that have not been migrated to the credit system.
- */
-export function findUnmigrated(ctx: AppBindings): E.Effect<BuilderDocument[], CollectionNotFoundError | DatabaseError> {
-  return pipe(
-    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
-    E.tryMapPromise({
-      try: (collection) => collection.find({ creditsUsd: { $exists: false } }).toArray(),
-      catch: (cause) => new DatabaseError({ cause, message: "findUnmigrated" }),
-    }),
-  );
-}
-
-/**
- * Migrate specific builders to the credit system by setting credit fields.
- */
-export function migrateToCredits(
-  ctx: AppBindings,
-  dids: string[],
-  creditsUsd: number,
-  now: Date,
-): E.Effect<void, CollectionNotFoundError | DatabaseError> {
-  return pipe(
-    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
-    E.tryMapPromise({
-      try: (collection) =>
-        collection.updateMany(
-          { did: { $in: dids } },
-          {
-            $set: {
-              creditsUsd,
-              status: "active" as BuilderStatus,
-              lastCreditTopUp: now,
-              creditsDepleted: null,
-              _updated: now,
-            },
-          },
-        ),
-      catch: (cause) => new DatabaseError({ cause, message: "migrateToCredits" }),
-    }),
-    E.as(void 0),
   );
 }

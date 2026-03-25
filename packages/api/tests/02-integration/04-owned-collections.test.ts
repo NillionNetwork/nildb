@@ -10,8 +10,7 @@ import type { DeleteResult } from "mongodb";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
 
-import { NilauthClient } from "@nillion/nilauth-client";
-import { BuilderClient } from "@nillion/nildb-client";
+import type { BuilderClient } from "@nillion/nildb-client";
 import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
 import { Signer } from "@nillion/nuc";
 
@@ -21,9 +20,8 @@ import collectionJson from "../data/wallet.collection.json";
 import queryJson from "../data/wallet.query.json";
 import { assertDefined, assertDocumentCount, expectBuilder } from "../fixture/assertions";
 import type { CollectionFixture, QueryFixture } from "../fixture/fixture";
-import { createUserTestClient } from "../fixture/helpers";
+import { createRegisteredBuilder, createUserTestClient } from "../fixture/helpers";
 import { createTestFixtureExtension } from "../fixture/it";
-import { activateSubscriptionWithPayment } from "../fixture/payment";
 
 describe("Owned Collections", () => {
   const collection = collectionJson as unknown as CollectionFixture;
@@ -37,39 +35,10 @@ describe("Owned Collections", () => {
   let unauthorizedBuilderSigner: Signer;
 
   beforeAll(async (c) => {
-    const { bindings, app } = c;
-
-    // Create an unauthorized builder with a random private key
-    const privateKey = bytesToHex(secp256k1.utils.randomSecretKey());
-    unauthorizedBuilderSigner = Signer.fromPrivateKey(privateKey);
-    const builderDid = await unauthorizedBuilderSigner.getDid();
-
-    // Create nilauth client and activate subscription for testing
-    const nilauth = await NilauthClient.create({
-      baseUrl: bindings.config.nilauthInstances[0].baseUrl,
-      chainId: bindings.config.nilauthChainId,
-    });
-
-    // Activate subscription via real payment on Anvil
-    const anvilRpcUrl = process.env.APP_ANVIL_RPC_URL || "http://127.0.0.1:30545";
-    await activateSubscriptionWithPayment(nilauth, builderDid, anvilRpcUrl);
-
-    unauthorizedBuilder = new BuilderClient({
-      baseUrl: bindings.config.nodePublicEndpoint,
-      signer: unauthorizedBuilderSigner,
-      nodePublicKey: bindings.node.publicKey,
-      nilauth,
-      httpClient: app.request,
-    });
-
-    const registerResult = await unauthorizedBuilder.register({
-      did: builderDid.didString,
-      name: "unauthorizedBuilder",
-    });
-
-    if (!registerResult.ok) {
-      throw new Error(`Failed to register builder: ${registerResult.error}`);
-    }
+    // Create an unauthorized builder via direct DB insert
+    const result = await createRegisteredBuilder(c, "unauthorizedBuilder");
+    unauthorizedBuilder = result.client;
+    unauthorizedBuilderSigner = result.signer;
   });
   afterAll(async (_c) => {});
 

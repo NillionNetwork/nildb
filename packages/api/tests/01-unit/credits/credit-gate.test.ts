@@ -82,7 +82,7 @@ describe("requireCredits middleware", () => {
   describe("when CREDITS is on but builder has no creditsUsd field", () => {
     const features = ["openapi", "migrations", "credits"];
 
-    it("passes through (gating skipped for nilauth builders)", async () => {
+    it("passes through (gating skipped for builders without creditsUsd)", async () => {
       const builder = makeBuilder(); // no creditsUsd field
       const { passedThrough } = await runMiddleware("write", builder, features);
       expect(passedThrough).toBe(true);

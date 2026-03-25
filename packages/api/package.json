@@ -46,7 +46,6 @@
     "@hono/prometheus": "^1.0.2",
     "@hono/standard-validator": "^0.2.2",
     "@hono/zod-validator": "^0.7.6",
-    "@nillion/nilauth-client": "2.0.0",
     "@nillion/nildb-client": "workspace:*",
     "@nillion/nuc": "^2.0.1",
     "@noble/curves": "^2.0.1",

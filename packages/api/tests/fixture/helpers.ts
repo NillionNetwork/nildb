@@ -1,78 +1,27 @@
-import { faker } from "@faker-js/faker";
 import type { App } from "@nildb/app";
-// oxlint-disable-next-line import/extensions
-import { secp256k1 } from "@noble/curves/secp256k1.js";
-// oxlint-disable-next-line import/extensions
-import { bytesToHex } from "@noble/hashes/utils.js";
 
-import { NilauthClient } from "@nillion/nilauth-client";
 import { BuilderClient, UserClient } from "@nillion/nildb-client";
-import { Did, Signer } from "@nillion/nuc";
+import { Signer } from "@nillion/nuc";
 
 import type { FixtureContext } from "./fixture";
-import { activateSubscriptionWithPayment } from "./payment";
+import { insertTestBuilder } from "./fixture";
 
-export async function createRegisteredBuilder(c: FixtureContext, name?: string): Promise<BuilderClient> {
+export async function createRegisteredBuilder(
+  c: FixtureContext,
+  name?: string,
+): Promise<{ client: BuilderClient; signer: Signer }> {
   const { app, bindings } = c;
 
-  const builderPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
-  const builderSigner = Signer.fromPrivateKey(builderPrivateKey);
+  const { signer, did: _did } = await insertTestBuilder(bindings, name);
 
-  const nilauth = await NilauthClient.create({
-    baseUrl: bindings.config.nilauthInstances[0].baseUrl,
-    chainId: bindings.config.nilauthChainId,
-  });
-
-  const builder = new BuilderClient({
+  const client = new BuilderClient({
     baseUrl: bindings.config.nodePublicEndpoint,
-    signer: builderSigner,
+    signer,
     nodePublicKey: bindings.node.publicKey,
-    nilauth,
     httpClient: app.request,
   });
 
-  // Activate subscription via real payment on Anvil
-  const builderDid = await builderSigner.getDid();
-  const anvilRpcUrl = process.env.APP_ANVIL_RPC_URL || "http://127.0.0.1:30545";
-  await activateSubscriptionWithPayment(nilauth, builderDid, anvilRpcUrl);
-
-  const registerResult = await builder.register({
-    did: Did.serialize(builderDid),
-    name: name ?? faker.person.fullName(),
-  });
-
-  if (!registerResult.ok) {
-    throw new Error(`Failed to register builder: ${registerResult.error}`);
-  }
-
-  return builder;
-}
-
-export async function createBuilderTestClient(options: {
-  app: App;
-  privateKey: string;
-  chainId: number;
-  nilauthBaseUrl: string;
-  nodePublicKey: string;
-}): Promise<BuilderClient> {
-  const { app, privateKey, chainId, nilauthBaseUrl, nodePublicKey } = options;
-
-  const builderSigner = Signer.fromPrivateKey(privateKey);
-
-  const nilauth = await NilauthClient.create({
-    baseUrl: nilauthBaseUrl,
-    chainId,
-  });
-
-  const builder = new BuilderClient({
-    baseUrl: "http://localhost:3000",
-    signer: builderSigner,
-    nodePublicKey,
-    nilauth,
-    httpClient: app.request,
-  });
-
-  return builder;
+  return { client, signer };
 }
 
 export async function createUserTestClient(options: {

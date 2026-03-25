@@ -1,4 +1,3 @@
-import type { NilauthClient } from "@nillion/nilauth-client";
 import {
   type CreateCollectionIndexRequest,
   type CreateCollectionRequest,
@@ -28,7 +27,7 @@ import {
   type UpdateProfileRequest,
   type UuidDto,
 } from "@nillion/nildb-types";
-import { Builder, Did, type Envelope, type Signer } from "@nillion/nuc";
+import { Builder, Did, type Signer } from "@nillion/nuc";
 
 import type { HttpClient } from "../types";
 
@@ -36,28 +35,25 @@ type BuilderClientOptions = {
   baseUrl: string;
   signer: Signer;
   nodePublicKey: string;
-  nilauth: NilauthClient;
   httpClient?: HttpClient;
 };
 
 export class BuilderClient {
   private httpClient: HttpClient;
-  private nilauth: NilauthClient;
 
   constructor(private options: BuilderClientOptions) {
     this.httpClient = options.httpClient ?? fetch.bind(globalThis);
-    this.nilauth = options.nilauth;
   }
 
   private async createToken(): Promise<string> {
-    const response = await this.nilauth.requestToken(this.options.signer, "nildb");
-    const { token: rootToken } = response;
-
     const nodeDid = Did.fromPublicKey(this.options.nodePublicKey);
+    const signerDid = await this.options.signer.getDid();
 
-    return await Builder.invocationFrom(rootToken)
+    return Builder.invocation()
+      .command("/nil/db")
       .audience(nodeDid)
-      .expiresIn(60 * 1000)
+      .subject(signerDid)
+      .expiresIn(60_000)
       .signAndSerialize(this.options.signer);
   }
 
@@ -98,18 +94,6 @@ export class BuilderClient {
       }
 
       return { ok: true, data: response };
-    } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }
-
-  async getRootToken(): Promise<Result<Envelope>> {
-    try {
-      const response = await this.nilauth.requestToken(this.options.signer, "nildb");
-      return { ok: true, data: response.token };
     } catch (error) {
       return {
         ok: false,

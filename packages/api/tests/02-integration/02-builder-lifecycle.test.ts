@@ -19,7 +19,7 @@ describe("02-builder-lifecycle.test.js", () => {
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
-  it("self-signed tokens are accepted when nilauth is enabled (dual-mode auth)", async ({ c }) => {
+  it("self-signed tokens are accepted", async ({ c }) => {
     const { expect, app, builderSigner, bindings } = c;
 
     const builderDid = await builderSigner.getDid();

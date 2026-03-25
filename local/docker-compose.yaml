@@ -9,11 +9,9 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb_1
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=migrations,credits,nilauth
+      - APP_ENABLED_FEATURES=migrations,credits
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
-      - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
-      - APP_NILAUTH_CHAIN_ID=31337
       - APP_NODE_PUBLIC_ENDPOINT=http://localhost:8080
       - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
       - APP_PORT=8080
@@ -32,11 +30,9 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb_2
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=migrations,credits,nilauth
+      - APP_ENABLED_FEATURES=migrations,credits
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
-      - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
-      - APP_NILAUTH_CHAIN_ID=31337
       - APP_NODE_PUBLIC_ENDPOINT=http://localhost:8080
       - APP_NODE_SECRET_KEY=72344d71de216bc5819f7a55a7e86f8ed354ca58d25468d97e29671e0b34d77d
       - APP_PORT=8080
@@ -55,11 +51,9 @@ services:
     environment:
       - APP_DB_NAME_BASE=nildb_3
       - APP_DB_URI=mongodb://mongodb:27017
-      - APP_ENABLED_FEATURES=migrations,credits,nilauth
+      - APP_ENABLED_FEATURES=migrations,credits
       - APP_LOG_LEVEL=debug
       - APP_METRICS_PORT=9091
-      - APP_NILAUTH_INSTANCES=http://nilauth:8080/03520e70bd97a5fa6d70c614d50ee47bf445ae0b0941a1d61ddd5afa022b97ab14
-      - APP_NILAUTH_CHAIN_ID=31337
       - APP_NODE_PUBLIC_ENDPOINT=http://localhost:8080
       - APP_NODE_SECRET_KEY=a4b99d1b8e116230eb964c349009c590d6647f88c0f920d3b022713a9a6b19fb
       - APP_PORT=8080
@@ -73,18 +67,6 @@ services:
     ports:
       - "27017:27017"
 
-  postgres:
-    image: postgres:17
-    environment:
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   nil-anvil:
     image: ghcr.io/nillionnetwork/nil-anvil:main
     ports:
@@ -94,20 +76,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
-  nilauth:
-    image: ghcr.io/nillionnetwork/nilauth:main
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nil-anvil:
-        condition: service_healthy
-    volumes:
-      - ./nilauth/config.yaml:/opt/config.yaml
-    command: ["--config-file", "/opt/config.yaml"]
-    ports:
-      - "8084:8080"
-      - "9092:9091"
 
   token-price-api:
     image: caddy:2
