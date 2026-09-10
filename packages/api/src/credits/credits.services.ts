@@ -130,6 +130,11 @@ export function registerCredits(
         txHash: command.txHash,
         chainId: command.chainId,
         payerDid: command.payerDid,
+        builderDid,
+        // Flipped once the balance update lands, so a crash in between leaves
+        // a payment that a retry can finish rather than one that is marked
+        // processed forever with no credits granted.
+        creditsApplied: false,
         amountUnils: amountUnils.toString(),
         amountUsd,
         digest: expectedDigest,
@@ -140,8 +145,32 @@ export function registerCredits(
       return pipe(
         // Insert payment (will fail if already processed)
         CreditsRepository.insertPayment(ctx, paymentDoc),
+        E.as({ paymentId: paymentDoc._id, creditUsd: amountUsd }),
+        E.catchTag("PaymentAlreadyProcessedError", (alreadyProcessed) =>
+          pipe(
+            CreditsRepository.findPaymentByTxHashAndChain(ctx, command.txHash, command.chainId),
+            E.flatMap((existing) => {
+              // Resume a previous attempt that inserted the payment but never
+              // applied the credits. Anything else is a genuine replay.
+              if (existing && existing.creditsApplied === false && existing.builderDid === builderDid) {
+                ctx.log.warn(
+                  { txHash: command.txHash, chainId: command.chainId },
+                  "Completing a payment whose credits were never applied",
+                );
+                // Credit the amount recorded at the time, not today's rate.
+                return E.succeed({ paymentId: existing._id, creditUsd: existing.amountUsd });
+              }
+              return E.fail(alreadyProcessed);
+            }),
+          ),
+        ),
         // Add credits and activate builder in a single update
-        E.flatMap(() => BuildersRepository.applyCreditsAndActivate(ctx, builderDid, amountUsd)),
+        E.flatMap(({ paymentId, creditUsd }) =>
+          pipe(
+            BuildersRepository.applyCreditsAndActivate(ctx, builderDid, creditUsd),
+            E.flatMap(() => CreditsRepository.markCreditsApplied(ctx, paymentId)),
+          ),
+        ),
         // Return updated balance and status
         E.flatMap(() => BuildersRepository.findOne(ctx, builderDid)),
         E.map((builder) => ({
