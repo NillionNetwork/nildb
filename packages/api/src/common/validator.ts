@@ -1,4 +1,5 @@
 import { DataValidationError } from "@nildb/common/errors";
+import { findUnsafePattern } from "@nildb/common/regex";
 import Ajv from "ajv";
 import * as addFormats from "ajv-formats";
 import type { DataValidationCxt } from "ajv/dist/types";
@@ -10,6 +11,8 @@ import { Uuid } from "@nillion/nildb-types";
 export function validateSchema(schema: Record<string, unknown>): E.Effect<void, DataValidationError> {
   return E.try({
     try: () => {
+      assertPatternsAreSafe(schema);
+
       const ajv = new Ajv();
       registerFormats(ajv);
       registerCoercions(ajv);
@@ -32,6 +35,10 @@ export function validateSchema(schema: Record<string, unknown>): E.Effect<void, 
 export function validateData<T>(schema: Record<string, unknown>, data: unknown): E.Effect<T, DataValidationError> {
   return E.try({
     try: () => {
+      // Re-checked on every validation, not just at collection creation, so
+      // schemas stored before this screen existed cannot stall the process.
+      assertPatternsAreSafe(schema);
+
       const ajv = new Ajv();
       registerFormats(ajv);
       registerCoercions(ajv);
@@ -58,6 +65,23 @@ export function validateData<T>(schema: Record<string, unknown>, data: unknown):
       return new DataValidationError({ issues, cause });
     },
   });
+}
+
+/**
+ * Reject a schema whose regular expressions could backtrack catastrophically.
+ *
+ * Ajv compiles `pattern` to a native RegExp, and the schema is written by the
+ * builder, so an unscreened pattern is a denial of service against the whole
+ * node rather than just the offending request.
+ */
+function assertPatternsAreSafe(schema: Record<string, unknown>): void {
+  const unsafe = findUnsafePattern(schema);
+  if (unsafe) {
+    throw new DataValidationError({
+      issues: [`Unsafe regular expression in schema: ${unsafe.reason}`],
+      cause: { pattern: unsafe.pattern },
+    });
+  }
 }
 
 function registerFormats(ajv: Ajv): void {
