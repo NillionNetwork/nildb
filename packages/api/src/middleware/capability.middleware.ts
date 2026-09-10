@@ -180,6 +180,15 @@ export function loadSubjectAndVerifyAsAdmin<
       const envelope = c.get("envelope");
       await Validator.validate(envelope, {
         rootIssuers: [nildbNodeDid.didString],
+        // Without tokenRequirements the validator checks neither the audience
+        // nor the token type, so a delegation, or an invocation addressed to a
+        // different node, would be accepted here.
+        params: {
+          tokenRequirements: {
+            type: "invocation",
+            audience: nildbNodeDid.didString,
+          },
+        },
       });
       return next();
     } catch (cause) {
@@ -368,6 +377,15 @@ export function loadSubjectAndVerifyAsUser<
       }
       await Validator.validate(envelope, {
         rootIssuers: [subject],
+        // Without tokenRequirements the validator checks neither the audience
+        // nor the token type, so a user token minted for a different nilDB
+        // node would be replayable here.
+        params: {
+          tokenRequirements: {
+            type: "invocation",
+            audience: bindings.node.did.didString,
+          },
+        },
       });
       c.set("user", user);
       return next();
