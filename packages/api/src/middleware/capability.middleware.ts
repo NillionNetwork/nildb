@@ -32,8 +32,16 @@ export function validateEip712ChainId(envelope: Envelope, supportedChainIds: num
     const header = JSON.parse(Buffer.from(token.rawHeader, "base64url").toString());
     if (header.typ !== "nuc+eip712") continue;
 
+    // The whole EIP-712 domain, chain id included, comes from the token header,
+    // and viem omits chainId from the domain separator when it is absent
+    // rather than defaulting it. A token that simply declares no chain id
+    // therefore still verifies, so treating "absent" as "nothing to check"
+    // let an attacker opt out of chain scoping entirely.
     const tokenChainId = header.meta?.domain?.chainId;
-    if (tokenChainId !== undefined && !supportedChainIds.includes(tokenChainId)) {
+    if (typeof tokenChainId !== "number") {
+      throw new Error("EIP-712 token does not declare a numeric chain id in its domain");
+    }
+    if (!supportedChainIds.includes(tokenChainId)) {
       throw new Error(
         `EIP-712 token signed on chain ${tokenChainId}, expected one of [${supportedChainIds.join(", ")}]`,
       );
