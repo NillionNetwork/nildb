@@ -8,6 +8,15 @@ import { getChainConfig, type ChainConfig, type PaymentPayload, validatePayment 
 import type { RegisterCreditsCommand } from "./credits.types";
 
 /**
+ * A payment the chain answered about, and the answer was "no".
+ *
+ * Distinguished from a transport failure so that only these reasons are safe
+ * to hand back to the caller. viem embeds the full request URL in its
+ * transport errors, and the RPC URL usually carries the provider api key.
+ */
+class PaymentRejected extends Error {}
+
+/**
  * Get chain configuration from environment.
  */
 export function getChainConfigFromEnv(ctx: AppBindings, chainId: number): ChainConfig | null {
@@ -33,7 +42,7 @@ export function validatePaymentOnChain(
       // Get chain config
       const chainConfig = getChainConfigFromEnv(ctx, command.chainId);
       if (!chainConfig) {
-        throw new Error(`Chain ${command.chainId} is not configured`);
+        throw new PaymentRejected(`Chain ${command.chainId} is not configured`);
       }
 
       // Build payload for validation
@@ -50,7 +59,7 @@ export function validatePaymentOnChain(
       const result = await validatePayment(chainConfig, txHash, payload);
 
       if (!result.valid) {
-        throw new Error(result.reason);
+        throw new PaymentRejected(result.reason);
       }
 
       log.info(
@@ -68,9 +77,18 @@ export function validatePaymentOnChain(
       };
     },
     catch: (error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      log.error("Payment validation failed: %s", message);
-      return new PaymentValidationError({ message });
+      if (error instanceof PaymentRejected) {
+        return new PaymentValidationError({ message: error.message });
+      }
+
+      // Anything else came from the transport. viem puts "URL: <rpcUrl>" in
+      // those messages, so the detail stays in the log and the caller gets a
+      // generic reason.
+      const detail = error instanceof Error ? error.message : String(error);
+      log.error({ detail, chainId: command.chainId }, "Payment validation failed talking to the chain");
+      return new PaymentValidationError({
+        message: "Unable to verify the payment on chain, please retry",
+      });
     },
   });
 }

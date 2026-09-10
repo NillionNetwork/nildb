@@ -114,6 +114,12 @@ export function initializeMetricsOnly(config: EnvVars): MetricsOnlyProviders {
         "@opentelemetry/instrumentation-http": {
           enabled: false,
         },
+        // Disable undici instrumentation: it records url.full/url.query for
+        // outbound fetches, and the ethereum rpc urls in
+        // APP_ETHEREUM_RPC_URLS usually embed the provider api key.
+        "@opentelemetry/instrumentation-undici": {
+          enabled: false,
+        },
       }),
       // Add Node.js runtime metrics (heap, GC, event loop lag, etc.)
       new RuntimeNodeInstrumentation(),
@@ -191,6 +197,12 @@ export function initializeOtel(config: EnvVars): OtelProviders | null {
         },
         // Disable HTTP instrumentation - we use custom middleware for route-aware metrics
         "@opentelemetry/instrumentation-http": {
+          enabled: false,
+        },
+        // Disable undici instrumentation: it records url.full/url.query for
+        // outbound fetches, and the ethereum rpc urls in
+        // APP_ETHEREUM_RPC_URLS usually embed the provider api key.
+        "@opentelemetry/instrumentation-undici": {
           enabled: false,
         },
       }),
