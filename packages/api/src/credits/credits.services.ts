@@ -53,7 +53,7 @@ export function registerCredits(
 
   // Verify chain is supported
   const ethereumChains = parseEthereumChains(config.ethereumRpcUrls);
-  if (ethereumChains.size > 0 && !ethereumChains.has(command.chainId)) {
+  if (!ethereumChains.has(command.chainId)) {
     return E.fail(
       new PaymentValidationError({
         message: `Chain ${command.chainId} is not supported. Supported chains: ${[...ethereumChains.keys()].join(", ")}`,
@@ -71,27 +71,33 @@ export function registerCredits(
     chainId: command.chainId,
   });
 
-  // Check if on-chain validation is configured
+  // On-chain validation is mandatory: it is the only thing that proves the
+  // claimed burn actually happened. If the chain has no usable configuration
+  // (no RPC URL, or a chain absent from KnownChains) we must fail closed
+  // rather than credit the amount the client asserted.
   const chainConfig = getChainConfigFromEnv(ctx, command.chainId);
-  const shouldValidateOnChain = chainConfig !== null;
+  if (chainConfig === null) {
+    return E.fail(
+      new PaymentValidationError({
+        message: `Chain ${command.chainId} is not configured for on-chain payment validation`,
+      }),
+    );
+  }
 
-  // Validate on-chain if configured
-  const validationEffect = shouldValidateOnChain
-    ? pipe(
-        validatePaymentOnChain(ctx, command.txHash as `0x${string}`, command),
-        E.flatMap((result) => {
-          // Verify the payer DID matches the on-chain payer
-          if (!verifyDidMatchesPayer(command.payerDid, result.payer)) {
-            return E.fail(
-              new PaymentValidationError({
-                message: `Payer DID ${command.payerDid} does not match on-chain payer ${result.payer}`,
-              }),
-            );
-          }
-          return E.succeed(result.amountUnils);
-        }),
-      )
-    : E.succeed(command.amountUnils);
+  const validationEffect = pipe(
+    validatePaymentOnChain(ctx, command.txHash as `0x${string}`, command),
+    E.flatMap((result) => {
+      // Verify the payer DID matches the on-chain payer
+      if (!verifyDidMatchesPayer(command.payerDid, result.payer)) {
+        return E.fail(
+          new PaymentValidationError({
+            message: `Payer DID ${command.payerDid} does not match on-chain payer ${result.payer}`,
+          }),
+        );
+      }
+      return E.succeed(result.amountUnils);
+    }),
+  );
 
   return pipe(
     validationEffect,
