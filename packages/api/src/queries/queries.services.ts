@@ -9,9 +9,10 @@ import {
   DocumentNotFoundError,
   type ResourceAccessDeniedError,
   TimeoutError,
-  type VariableInjectionError,
+  VariableInjectionError,
 } from "@nildb/common/errors";
 import { CollectionName } from "@nildb/common/mongo";
+import { isUnsafePath } from "@nildb/common/paths";
 import { validateData } from "@nildb/common/validator";
 import * as DataService from "@nildb/data/data.services";
 import type { AppBindings } from "@nildb/env";
@@ -395,8 +396,28 @@ export function injectVariablesIntoAggregation(
       const variableInfo = queryVariables[key];
       const value = variables[key];
 
+      if (!variableInfo) {
+        return E.fail(
+          new VariableInjectionError({
+            message: `No path is defined for variable '${key}'`,
+          }),
+        );
+      }
+
       // The path from the query definition uses `$.pipeline` which we need to remove
       const path = variableInfo.path.replace("$.pipeline", "");
+
+      // The path is builder-supplied. Without this screen a path such as
+      // `$.pipeline.constructor.prototype.x` walks out of the pipeline and
+      // writes to Object.prototype, corrupting the process for every tenant.
+      if (isUnsafePath(path)) {
+        return E.fail(
+          new VariableInjectionError({
+            message: `Variable '${key}' has a path that is not permitted: ${variableInfo.path}`,
+          }),
+        );
+      }
+
       set(pipeline, path, value);
     }
   }

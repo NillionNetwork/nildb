@@ -1,4 +1,5 @@
 import { DataValidationError } from "@nildb/common/errors";
+import { isUnsafePath } from "@nildb/common/paths";
 import { Effect as E } from "effect";
 import { cloneDeep, get, set } from "es-toolkit/compat";
 import { UUID } from "mongodb";
@@ -93,6 +94,18 @@ export function applyCoercions(coercibleMap: CoercibleMap): E.Effect<Record<stri
   const result = cloneDeep(values);
 
   for (const [path, type] of Object.entries($coerce)) {
+    // `$coerce` keys come straight from the request body. A path such as
+    // `constructor.prototype.toString` would otherwise walk out of `result`
+    // and overwrite a method on Object.prototype, breaking the whole process.
+    if (isUnsafePath(path)) {
+      return E.fail(
+        new DataValidationError({
+          issues: [`Coercion path '${path}' is not permitted`],
+          cause: { path, type },
+        }),
+      );
+    }
+
     const originalValue = get(result, path);
 
     // Path does not exist in the object, so skip it.
