@@ -57,6 +57,28 @@ export async function runPurgeCycle(bindings: AppBindings): Promise<void> {
 async function purgeBuilder(bindings: AppBindings, builderId: string): Promise<void> {
   const { log } = bindings;
 
+  // Re-read immediately before deleting. The batch was selected earlier in the
+  // cycle and a builder may have topped up in between; this is an irreversible
+  // operation, so it is worth the extra read.
+  const builder = await pipe(
+    BuildersRepository.findOne(bindings, builderId),
+    E.catchAll(() => E.succeed(null)),
+    E.runPromise,
+  );
+
+  if (!builder) {
+    log.info("Builder %s no longer exists, skipping purge", builderId);
+    return;
+  }
+
+  if (builder.status !== "pending_purge" || (builder.creditsUsd ?? 0) > 0) {
+    log.info(
+      { builderId, status: builder.status, creditsUsd: builder.creditsUsd },
+      "Builder is no longer eligible for purge, skipping",
+    );
+    return;
+  }
+
   log.warn("Purging builder %s", builderId);
 
   // Delete all collections (and their data)

@@ -613,6 +613,9 @@ export function migrateToCredits(
               status: "active" as BuilderStatus,
               lastCreditTopUp: now,
               creditsDepleted: null,
+              // Without this the first billing cycle falls back to `_created`
+              // and charges for the builder's entire history in one go.
+              lastBillingCycle: now,
               _updated: now,
             },
           },
