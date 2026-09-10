@@ -15,6 +15,7 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 export function rateLimitMiddleware(options: ControllerOptions): void {
   const { app, bindings } = options;
   const { config, log } = bindings;
+  const trustedProxyCount = config.trustedProxyCount;
 
   if (!config.rateLimitEnabled) {
     log.info("Rate limiting is disabled.");
@@ -25,29 +26,48 @@ export function rateLimitMiddleware(options: ControllerOptions): void {
     {
       window: `${config.rateLimitWindowSeconds}s`,
       limit: config.rateLimitMaxRequests,
+      trustedProxyCount,
     },
     "Request rate limiting enabled",
   );
 
-  const keyGenerator = (c: Context): string => {
-    // 1. Prioritize x-forwarded-for for reverse proxy scenarios
-    const forwarded = c.req.header("x-forwarded-for");
-    if (forwarded) {
-      return forwarded.split(",")[0].trim();
-    }
-
-    // 2. Fallback to socket address for direct connections
-    //    `getConnInfo` throws in test environments where no socket exists.
+  const socketAddress = (c: Context): string | null => {
+    // `getConnInfo` throws in test environments where no socket exists.
     try {
-      const info = getConnInfo(c);
-      if (info?.remote?.address) {
-        return info.remote.address;
-      }
+      return getConnInfo(c)?.remote?.address ?? null;
     } catch {
-      // Safely ignore errors in test environment
+      return null;
+    }
+  };
+
+  const keyGenerator = (c: Context): string => {
+    // x-forwarded-for is set by the client unless a proxy overwrites it, so
+    // taking the first entry let anyone rotate their rate-limit key at will
+    // and never be limited. Only entries appended by a trusted proxy can be
+    // believed: with N proxies in front, the Nth entry from the right is the
+    // address the outermost trusted proxy saw.
+    if (trustedProxyCount > 0) {
+      const forwarded = c.req.header("x-forwarded-for");
+      if (forwarded) {
+        const entries = forwarded
+          .split(",")
+          .map((entry) => entry.trim())
+          .filter(Boolean);
+        const index = entries.length - trustedProxyCount;
+        if (index >= 0 && index < entries.length) {
+          return entries[index];
+        }
+        // Fewer entries than expected: the request did not traverse the
+        // proxies we trust, so fall through to the socket address.
+      }
     }
 
-    // 3. Fallback for test environment where no network connection exists
+    const address = socketAddress(c);
+    if (address) {
+      return address;
+    }
+
+    // Fallback for test environment where no network connection exists
     return "test-client";
   };
 

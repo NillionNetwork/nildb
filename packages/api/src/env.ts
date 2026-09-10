@@ -87,6 +87,9 @@ export const EnvVarsSchema = z.object({
   }, z.boolean().optional().default(true)),
   rateLimitWindowSeconds: z.coerce.number().int().positive().optional().default(60),
   rateLimitMaxRequests: z.coerce.number().int().positive().optional().default(1000),
+  // Number of trusted reverse proxies in front of this node. Zero means
+  // x-forwarded-for is attacker-controlled and must be ignored.
+  trustedProxyCount: z.coerce.number().int().nonnegative().optional().default(0),
   webPort: z.coerce.number().int().positive(),
   // Credit system configuration (optional, only needed when CREDITS feature is enabled)
   ethereumRpcUrls: z.string().optional(),
@@ -149,6 +152,7 @@ declare global {
       APP_RATE_LIMIT_ENABLED?: string;
       APP_RATE_LIMIT_WINDOW_SECONDS?: string;
       APP_RATE_LIMIT_MAX_REQUESTS?: string;
+      APP_TRUSTED_PROXY_COUNT?: string;
       OTEL_ENDPOINT?: string;
       OTEL_SERVICE_NAME?: string;
       OTEL_TEAM_NAME?: string;
@@ -247,6 +251,7 @@ export function parseConfigFromEnv(overrides: Partial<EnvVars>): EnvVars {
     rateLimitEnabled: process.env.APP_RATE_LIMIT_ENABLED,
     rateLimitWindowSeconds: process.env.APP_RATE_LIMIT_WINDOW_SECONDS,
     rateLimitMaxRequests: process.env.APP_RATE_LIMIT_MAX_REQUESTS,
+    trustedProxyCount: process.env.APP_TRUSTED_PROXY_COUNT,
     webPort: process.env.APP_PORT,
     // Credit system
     ethereumRpcUrls: process.env.APP_ETHEREUM_RPC_URLS,
