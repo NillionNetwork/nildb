@@ -107,12 +107,21 @@ export const ReadPaymentsResponse = PaginatedResponse(PaymentHistoryItemDto).met
 export type ReadPaymentsResponse = z.infer<typeof ReadPaymentsResponse>;
 
 /**
+ * A keccak256 token hash, as produced by the revocation helpers.
+ */
+export const TokenHash = z.string().regex(/^0x[0-9a-f]{64}$/);
+export type TokenHash = z.infer<typeof TokenHash>;
+
+/**
  * Request to revoke a token.
+ *
+ * The serialised token is required rather than a bare hash: the node has to
+ * verify the signature and check that the caller is its issuer or audience
+ * before recording a revocation, and it derives the hash itself.
  */
 export const RevokeTokenRequest = z
   .object({
-    tokenHash: z.string(),
-    expiresAt: z.iso.datetime().optional(),
+    token: z.string().min(1).max(8192),
   })
   .meta({ ref: "RevokeTokenRequest" });
 export type RevokeTokenRequest = z.infer<typeof RevokeTokenRequest>;
@@ -128,7 +137,7 @@ export type RevokeTokenResponse = z.infer<typeof RevokeTokenResponse>;
  */
 export const LookupRevocationsRequest = z
   .object({
-    tokenHashes: z.array(z.string()),
+    tokenHashes: z.array(TokenHash).min(1).max(64),
   })
   .meta({ ref: "LookupRevocationsRequest" });
 export type LookupRevocationsRequest = z.infer<typeof LookupRevocationsRequest>;
