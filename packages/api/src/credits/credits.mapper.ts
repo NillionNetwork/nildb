@@ -22,6 +22,7 @@ export const CreditsDataMapper = {
       chainId: dto.chainId,
       nodePublicKey: dto.payload.nodePublicKey,
       payerDid: dto.payload.payerDid,
+      builderDid: dto.payload.builderDid,
       amountUnils: BigInt(dto.payload.amountUnils),
       nonce: dto.payload.nonce,
       timestamp: dto.payload.timestamp,

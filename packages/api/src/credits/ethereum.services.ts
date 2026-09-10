@@ -49,6 +49,7 @@ export function validatePaymentOnChain(
       const payload: PaymentPayload = {
         nodePublicKey: command.nodePublicKey,
         payerDid: command.payerDid,
+        builderDid: command.builderDid,
         amountUnils: command.amountUnils,
         nonce: command.nonce,
         timestamp: command.timestamp,

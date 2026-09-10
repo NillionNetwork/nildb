@@ -16,6 +16,9 @@ export type ChainConfig = {
 export type PaymentPayload = {
   nodePublicKey: string;
   payerDid: string;
+  /** The builder account the burn credits. Bound into the digest so the
+   *  commitment cannot be redeemed by a different account. */
+  builderDid: string;
   amountUnils: bigint;
   nonce: string;
   timestamp: number;

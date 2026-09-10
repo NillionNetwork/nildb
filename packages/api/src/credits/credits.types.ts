@@ -44,6 +44,7 @@ export type RegisterCreditsCommand = {
   chainId: number;
   nodePublicKey: string;
   payerDid: string;
+  builderDid: string;
   amountUnils: bigint;
   nonce: string;
   timestamp: number;

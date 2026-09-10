@@ -61,10 +61,22 @@ export function registerCredits(
     );
   }
 
+  // The digest commits to the builder, so a payload prepared for one account
+  // cannot be redeemed by another. Reject early rather than compute a digest
+  // that could never match.
+  if (command.builderDid !== builderDid) {
+    return E.fail(
+      new PaymentValidationError({
+        message: "Payment payload names a different builder than the authenticated one",
+      }),
+    );
+  }
+
   // Compute expected digest
   const expectedDigest = computeDigest({
     nodePublicKey: command.nodePublicKey,
     payerDid: command.payerDid,
+    builderDid: command.builderDid,
     amountUnils: command.amountUnils,
     nonce: command.nonce,
     timestamp: command.timestamp,

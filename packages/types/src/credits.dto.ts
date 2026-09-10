@@ -16,6 +16,9 @@ export const PaymentPayloadDto = z
   .object({
     nodePublicKey: z.string(),
     payerDid: z.string(),
+    // The builder the burn credits. Part of the on-chain digest, so it is
+    // not something the submitter can choose after the fact.
+    builderDid: z.string(),
     amountUnils: z.string(), // bigint as string
     nonce: z.string(),
     timestamp: z.number().int().positive(),
