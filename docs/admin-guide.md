@@ -239,6 +239,23 @@ For local development, the `local/docker-compose.yaml` stack includes a pre-conf
 
 For user-facing operations, there is an OpenAPI documentation interface hosted at `${APP_NODE_PUBLIC_ENDPOINT}/api/v1/openapi/docs/`.
 
+## MongoDB Hardening
+
+Disable server-side JavaScript on the database. nilDB accepts free-form filter
+and update documents from builders, and although the API rejects `$where`,
+`$function` and `$accumulator`, disabling scripting removes the class of
+problem at the source:
+
+```yaml
+# mongod.conf
+security:
+  javascriptEnabled: false
+```
+
+For a container deployment, pass `--noscripting` to `mongod`. On MongoDB Atlas,
+server-side JavaScript is disabled by default on shared tiers and can be turned
+off per cluster under Additional Settings.
+
 ## Storage Retention
 
 Configure MongoDB with the following backup/snapshot policy. This policy applies to both MongoDB Atlas and self-hosted MongoDB. Details specific to each are mentioned further below.
