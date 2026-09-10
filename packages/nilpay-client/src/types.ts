@@ -29,6 +29,8 @@ export type BurnEvent = {
   payer: `0x${string}`;
   amount: bigint;
   digest: `0x${string}`;
+  /** Contract-supplied burn time, in unix seconds. */
+  timestamp: bigint;
   blockNumber: bigint;
   transactionHash: `0x${string}`;
 };
@@ -37,7 +39,7 @@ export type BurnEvent = {
  * Result of validating a payment.
  */
 export type PaymentValidationResult =
-  | { valid: true; amountUnils: bigint; payer: `0x${string}` }
+  | { valid: true; amountUnils: bigint; payer: `0x${string}`; burnTimestamp: bigint }
   | { valid: false; reason: string };
 
 /**

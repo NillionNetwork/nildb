@@ -95,6 +95,18 @@ export function registerCredits(
           }),
         );
       }
+      // The NIL/USD rate is read at registration time. Without an age bound a
+      // payer could burn while NIL is cheap and register after a spike, which
+      // is a free option on the exchange rate.
+      const burnAgeSeconds = Math.floor(Date.now() / 1000) - Number(result.burnTimestamp);
+      if (burnAgeSeconds > config.paymentMaxAgeSeconds) {
+        return E.fail(
+          new PaymentValidationError({
+            message: `Payment is too old to register: burned ${burnAgeSeconds}s ago, limit is ${config.paymentMaxAgeSeconds}s`,
+          }),
+        );
+      }
+
       return E.succeed(result.amountUnils);
     }),
   );

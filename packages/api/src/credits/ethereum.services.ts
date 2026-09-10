@@ -25,7 +25,7 @@ export function validatePaymentOnChain(
   ctx: AppBindings,
   txHash: `0x${string}`,
   command: RegisterCreditsCommand,
-): E.Effect<{ amountUnils: bigint; payer: `0x${string}` }, PaymentValidationError> {
+): E.Effect<{ amountUnils: bigint; payer: `0x${string}`; burnTimestamp: bigint }, PaymentValidationError> {
   const { log } = ctx;
 
   return E.tryPromise({
@@ -64,6 +64,7 @@ export function validatePaymentOnChain(
       return {
         amountUnils: result.amountUnils,
         payer: result.payer,
+        burnTimestamp: result.burnTimestamp,
       };
     },
     catch: (error) => {
