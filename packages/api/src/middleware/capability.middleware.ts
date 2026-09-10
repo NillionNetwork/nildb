@@ -49,6 +49,23 @@ export function validateEip712ChainId(envelope: Envelope, supportedChainIds: num
   }
 }
 
+/**
+ * Reduce a NUC payload to the fields worth recording.
+ *
+ * The full payload carries builder-supplied `args` and `meta`, which end up in
+ * stdout and, via the log bridge, in exported telemetry. Only the identifying
+ * claims are useful for tracing a revoked token.
+ */
+function summariseToken(payload: Nuc["payload"]): Record<string, unknown> {
+  return {
+    iss: payload.iss.didString,
+    aud: payload.aud.didString,
+    sub: payload.sub.didString,
+    cmd: payload.cmd,
+    exp: payload.exp,
+  };
+}
+
 function buildNilauthInstancesWithDids(instances: NilauthInstance[]): NilauthInstanceWithDid[] {
   return instances.map((instance) => ({
     ...instance,
@@ -320,13 +337,13 @@ export function loadSubjectAndVerifyAsBuilder<
 
         if (revoked.length !== 0) {
           const hashes = revoked.map((r) => r.tokenHash).join(",");
-          log.warn("Token revoked: revoked_hashes=(%s) auth_token=%O", hashes, token);
+          log.warn({ revokedHashes: hashes, token: summariseToken(token) }, "Token revoked");
           return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
         }
       } else {
         const revokedHashes = await checkLocalRevocations(bindings, envelope);
         if (revokedHashes.length > 0) {
-          log.warn("Token revoked (local): revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);
+          log.warn({ revokedHashes: revokedHashes.join(","), token: summariseToken(token) }, "Token revoked (local)");
           return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
         }
       }
