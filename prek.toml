@@ -14,6 +14,15 @@ types_or = ["ts", "json"]
 stages = ["pre-commit"]
 
 [[repos.hooks]]
+id = "gitleaks"
+name = "Scan staged changes for secrets"
+entry = "gitleaks protect --staged --redact --verbose"
+language = "system"
+always_run = true
+pass_filenames = false
+stages = ["pre-commit"]
+
+[[repos.hooks]]
 id = "hadolint"
 name = "Lint Dockerfile"
 entry = "hadolint"

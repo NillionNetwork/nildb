@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # Application and tooling dependencies. Grouped so a security bump arrives
+  # as one reviewable pull request rather than a dozen.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      opentelemetry:
+        patterns:
+          - "@opentelemetry/*"
+      dev-tooling:
+        dependency-type: development
+        patterns:
+          - "*"
+
+  # Actions are pinned to commit SHAs, so this is the mechanism that moves
+  # them forward; without it the pins silently rot.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /packages/api
+    schedule:
+      interval: weekly
