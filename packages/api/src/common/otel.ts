@@ -184,7 +184,7 @@ export function initializeOtel(config: EnvVars): OtelProviders | null {
   });
   const loggerProvider = new LoggerProvider({
     resource,
-    processors: [new BatchLogRecordProcessor(logExporter)],
+    processors: [new BatchLogRecordProcessor({ exporter: logExporter })],
   });
 
   // Register automatic instrumentations for MongoDB, etc.
