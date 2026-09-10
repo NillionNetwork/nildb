@@ -18,7 +18,10 @@
       {
         "properties": {
           "$lookup": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "pipeline": { "$ref": "#" }
+            }
           }
         },
         "required": ["$lookup"],
@@ -108,7 +111,8 @@
       {
         "properties": {
           "$facet": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": { "$ref": "#" }
           }
         },
         "required": ["$facet"],

@@ -24,6 +24,7 @@ import { z } from "zod";
 import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 
 import pipelineSchema from "./mongodb_pipeline.json";
+import { validatePipelineStructure } from "./pipeline.guard";
 import * as RunQueryJobsRepository from "./queries.jobs.repository";
 import * as QueriesRepository from "./queries.repository";
 import type {
@@ -66,6 +67,9 @@ export function addQuery(
 
   return pipe(
     validateData(pipelineSchema, document.pipeline),
+    // The json schema only validates the top level of the pipeline; nested
+    // $lookup/$facet sub-pipelines are checked here.
+    E.flatMap(() => validatePipelineStructure(document.pipeline)),
     E.flatMap(() => CollectionsService.find(ctx, { _id: document.collection })),
     E.flatMap((collection) => enforceBuilderOwnership(document.owner, collection.owner, "collection", collection._id)),
     E.flatMap(() => QueriesRepository.insert(ctx, document)),
