@@ -32,6 +32,7 @@ export type QueryDocument = DocumentBase<UUID> & {
  */
 export type RunQueryJobDocument = DocumentBase<UUID> & {
   query: UUID;
+  owner: string;
   status: QueryJobStatus;
   started: Date;
   completed: Date;
@@ -77,6 +78,7 @@ export type DeleteQueryCommand = {
  */
 export type GetQueryRunByIdCommand = {
   _id: UUID;
+  requesterId: string;
 };
 
 /**

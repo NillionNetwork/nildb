@@ -78,9 +78,10 @@ export const QueriesDataMapper = {
   /**
    * Converts params to get query run results by id command.
    */
-  toGetQueryRunResultByIdCommand(params: ByIdRequestParams): GetQueryRunByIdCommand {
+  toGetQueryRunResultByIdCommand(params: ByIdRequestParams, requesterId: string): GetQueryRunByIdCommand {
     return {
       _id: new UUID(params.id),
+      requesterId,
     };
   },
 

@@ -159,7 +159,7 @@ export function runQueryInBackground(
     E.tap((query) => enforceBuilderOwnership(command.requesterId, query.owner, "query", command._id)),
     E.flatMap((query) =>
       pipe(
-        E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(query._id)),
+        E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(query._id, query.owner)),
         E.flatMap((document) => RunQueryJobsRepository.insert(ctx, document)),
         E.tap((run) =>
           RunQueryJobsRepository.updateOne(ctx, run.insertedId, {
@@ -195,7 +195,7 @@ export function getRunQueryJob(
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(
-    RunQueryJobsRepository.findRunByIdWithPaginatedResults(ctx, command._id, pagination),
+    RunQueryJobsRepository.findRunByIdWithPaginatedResults(ctx, command._id, command.requesterId, pagination),
     E.flatMap((result) =>
       result
         ? E.succeed({ document: result, total: result.total })
