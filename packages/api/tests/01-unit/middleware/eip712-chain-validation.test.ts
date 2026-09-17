@@ -26,8 +26,13 @@ function makeEnvelope(headers: Record<string, unknown>[]): Envelope {
 }
 
 describe("validateEip712ChainId", () => {
-  it("should pass when supportedChainIds is empty (not configured)", () => {
+  it("should reject EIP-712 authentication when no chain is configured", () => {
     const envelope = makeEnvelope([{ typ: "nuc+eip712", alg: "ES256K", meta: { domain: { chainId: 31337 } } }]);
+    expect(() => validateEip712ChainId(envelope, [])).toThrow("no NUC chain id is configured");
+  });
+
+  it("should allow native authentication when no chain is configured", () => {
+    const envelope = makeEnvelope([{ typ: "nuc", alg: "ES256K" }]);
     expect(() => validateEip712ChainId(envelope, [])).not.toThrow();
   });
 

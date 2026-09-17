@@ -1,14 +1,7 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import * as CreditsRepository from "@nildb/credits/credits.repository";
-import {
-  FeatureFlag,
-  hasFeatureFlag,
-  parseEthereumChains,
-  type AppBindings,
-  type AppEnv,
-  type NilauthInstance,
-} from "@nildb/env";
+import { FeatureFlag, hasFeatureFlag, type AppBindings, type AppEnv, type NilauthInstance } from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
@@ -23,15 +16,18 @@ type NilauthInstanceWithDid = NilauthInstance & { did: DidType };
 
 /**
  * Validate that any EIP-712 signed tokens in the envelope were signed on a supported chain.
- * Skips validation if supportedChainIds is empty (not configured).
+ * Native NUC signatures are chain-independent. EIP-712 signatures must match
+ * an explicitly configured chain and fail closed when none is configured.
  */
 export function validateEip712ChainId(envelope: Envelope, supportedChainIds: number[]): void {
-  if (supportedChainIds.length === 0) return;
-
   const tokens: Nuc[] = [envelope.nuc, ...envelope.proofs];
   for (const token of tokens) {
     const header = JSON.parse(Buffer.from(token.rawHeader, "base64url").toString());
     if (header.typ !== "nuc+eip712") continue;
+
+    if (supportedChainIds.length === 0) {
+      throw new Error("EIP-712 authentication is disabled because no NUC chain id is configured");
+    }
 
     // The whole EIP-712 domain, chain id included, comes from the token header,
     // and viem omits chainId from the domain separator when it is absent
@@ -48,6 +44,10 @@ export function validateEip712ChainId(envelope: Envelope, supportedChainIds: num
       );
     }
   }
+}
+
+function configuredNucChainIds(bindings: AppBindings): number[] {
+  return bindings.config.nilauthChainId > 0 ? [bindings.config.nilauthChainId] : [];
 }
 
 /**
@@ -145,6 +145,7 @@ export function verifySelfSignedNuc<P extends string = string, I extends Input =
           },
         },
       });
+      validateEip712ChainId(envelope, configuredNucChainIds(bindings));
 
       c.set("subjectDid", canonicalSubject);
       return next();
@@ -183,6 +184,7 @@ export function loadSubjectAndVerifyAsCreditAdmin<
           },
         },
       });
+      validateEip712ChainId(envelope, configuredNucChainIds(bindings));
 
       c.set("subjectDid", bindings.admin.did.didString);
       return next();
@@ -220,6 +222,7 @@ export function loadSubjectAndVerifyAsAdmin<
           },
         },
       });
+      validateEip712ChainId(envelope, configuredNucChainIds(bindings));
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
@@ -238,7 +241,7 @@ export function loadSubjectAndVerifyAsBuilder<
   E extends AppEnv = AppEnv,
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
-  const supportedChainIds = [...parseEthereumChains(config.ethereumRpcUrls).keys()];
+  const supportedChainIds = configuredNucChainIds(bindings);
 
   // Only build nilauth instances when the feature is enabled
   const nilauthInstances = hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)
@@ -413,6 +416,7 @@ export function loadSubjectAndVerifyAsUser<
           },
         },
       });
+      validateEip712ChainId(envelope, configuredNucChainIds(bindings));
       c.set("user", user);
       return next();
     } catch (cause) {
