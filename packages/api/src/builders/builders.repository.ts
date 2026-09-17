@@ -7,7 +7,14 @@ import {
 import { CollectionName, checkCollectionExists, MongoErrorCode } from "@nildb/common/mongo";
 import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
-import { MongoServerError, type StrictFilter, type StrictUpdateFilter, type UpdateResult, type UUID } from "mongodb";
+import {
+  MongoServerError,
+  type ObjectId,
+  type StrictFilter,
+  type StrictUpdateFilter,
+  type UpdateResult,
+  type UUID,
+} from "mongodb";
 
 import type { BuilderDocument, BuilderStatus } from "./builders.types";
 
@@ -408,6 +415,56 @@ export function applyCreditsAndActivate(
             }),
           ),
     ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/**
+ * Add a payment to a builder's balance exactly once.
+ *
+ * The payment id is recorded in the same atomic document update as the balance
+ * increment. A concurrent request, or a retry after the payment row was
+ * inserted, therefore cannot increment the balance a second time.
+ */
+export function applyPaymentCreditsAndActivate(
+  ctx: AppBindings,
+  builder: string,
+  paymentId: ObjectId,
+  amountUsd: number,
+): E.Effect<boolean, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
+  const filter = {
+    did: builder,
+    creditedPaymentIds: { $ne: paymentId },
+  } as StrictFilter<BuilderDocument>;
+  const now = new Date();
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, {
+          $inc: { creditsUsd: amountUsd },
+          $addToSet: { creditedPaymentIds: paymentId },
+          $set: {
+            status: "active",
+            _updated: now,
+            lastCreditTopUp: now,
+            creditsDepleted: null,
+          },
+        }),
+      catch: (cause) => new DatabaseError({ cause, message: "applyPaymentCreditsAndActivate" }),
+    }),
+    E.flatMap((result) => {
+      if (result.matchedCount === 1) return E.succeed(true);
+      return pipe(
+        findOne(ctx, builder),
+        E.flatMap((document) =>
+          document.creditedPaymentIds?.some((id) => id.equals(paymentId))
+            ? E.succeed(false)
+            : E.fail(new DocumentNotFoundError({ collection: CollectionName.Builders, filter })),
+        ),
+      );
+    }),
     E.tap(() => ctx.cache.builders.delete(builder)),
   );
 }

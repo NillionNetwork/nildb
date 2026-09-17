@@ -179,7 +179,7 @@ export function registerCredits(
         // Add credits and activate builder in a single update
         E.flatMap(({ paymentId, creditUsd }) =>
           pipe(
-            BuildersRepository.applyCreditsAndActivate(ctx, builderDid, creditUsd),
+            BuildersRepository.applyPaymentCreditsAndActivate(ctx, builderDid, paymentId, creditUsd),
             E.flatMap(() => CreditsRepository.markCreditsApplied(ctx, paymentId)),
           ),
         ),

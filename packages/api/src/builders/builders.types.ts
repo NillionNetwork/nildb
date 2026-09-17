@@ -29,6 +29,8 @@ export type BuilderDocument = {
   lastBillingCycle?: Date;
   lastCreditTopUp?: Date | null;
   creditsDepleted?: Date | null;
+  /** Payment ids already reflected in creditsUsd, used to make top-ups idempotent. */
+  creditedPaymentIds?: ObjectId[];
 };
 
 /**
