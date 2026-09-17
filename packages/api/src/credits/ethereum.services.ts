@@ -7,6 +7,11 @@ import { getChainConfig, type ChainConfig, type PaymentPayload, validatePayment 
 
 import type { RegisterCreditsCommand } from "./credits.types";
 
+export function toSafeRpcErrorName(error: unknown): string {
+  if (!(error instanceof Error)) return "UnknownError";
+  return /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(error.name) ? error.name : "Error";
+}
+
 /**
  * A payment the chain answered about, and the answer was "no".
  *
@@ -82,11 +87,13 @@ export function validatePaymentOnChain(
         return new PaymentValidationError({ message: error.message });
       }
 
-      // Anything else came from the transport. viem puts "URL: <rpcUrl>" in
-      // those messages, so the detail stays in the log and the caller gets a
-      // generic reason.
-      const detail = error instanceof Error ? error.message : String(error);
-      log.error({ detail, chainId: command.chainId }, "Payment validation failed talking to the chain");
+      // viem transport messages include the complete RPC URL, which commonly
+      // contains provider credentials. Keep both logs and telemetry to a safe
+      // error class rather than forwarding the message or cause.
+      log.error(
+        { errorType: toSafeRpcErrorName(error), chainId: command.chainId },
+        "Payment validation failed talking to the chain",
+      );
       return new PaymentValidationError({
         message: "Unable to verify the payment on chain, please retry",
       });
