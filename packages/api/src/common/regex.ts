@@ -20,6 +20,8 @@ const MAX_PATTERN_LENGTH = 300;
 type GroupFrame = {
   /** Whether this group contains a quantifier at any depth. */
   hasQuantifier: boolean;
+  /** Whether this group contains an alternation. */
+  hasAlternation: boolean;
 };
 
 function isQuantifierAt(pattern: string, index: number): boolean {
@@ -43,12 +45,10 @@ function isQuantifierAt(pattern: string, index: number): boolean {
  * itself contains a quantifier. This is the classic catastrophic-backtracking
  * shape: `(a+)+`, `(a*)*`, `(\d+)+`.
  *
- * Known limitation: alternation blow-up such as `(a|a)*` has star height one
- * and is not caught here. A non-backtracking engine is the only complete
- * answer.
+ * Quantified alternation is checked separately because it has star height one.
  */
 export function hasNestedQuantifier(pattern: string): boolean {
-  const stack: GroupFrame[] = [{ hasQuantifier: false }];
+  const stack: GroupFrame[] = [{ hasQuantifier: false, hasAlternation: false }];
   let inCharacterClass = false;
 
   for (let i = 0; i < pattern.length; i++) {
@@ -73,7 +73,12 @@ export function hasNestedQuantifier(pattern: string): boolean {
     }
 
     if (char === "(") {
-      stack.push({ hasQuantifier: false });
+      stack.push({ hasQuantifier: false, hasAlternation: false });
+      continue;
+    }
+
+    if (char === "|") {
+      stack[stack.length - 1].hasAlternation = true;
       continue;
     }
 
@@ -83,7 +88,7 @@ export function hasNestedQuantifier(pattern: string): boolean {
         // Unbalanced pattern; let the engine reject it.
         return false;
       }
-      const parent = stack[stack.length - 1] ?? { hasQuantifier: false };
+      const parent = stack[stack.length - 1] ?? { hasQuantifier: false, hasAlternation: false };
       const quantified = isQuantifierAt(pattern, i + 1);
 
       if (quantified && frame.hasQuantifier) {
@@ -91,6 +96,7 @@ export function hasNestedQuantifier(pattern: string): boolean {
       }
 
       parent.hasQuantifier = parent.hasQuantifier || frame.hasQuantifier || quantified;
+      parent.hasAlternation = parent.hasAlternation || frame.hasAlternation;
       continue;
     }
 
@@ -99,6 +105,45 @@ export function hasNestedQuantifier(pattern: string): boolean {
     }
   }
 
+  return false;
+}
+
+/** Detect quantified alternation such as `(a|aa)+`. */
+export function hasQuantifiedAlternation(pattern: string): boolean {
+  const stack: GroupFrame[] = [{ hasQuantifier: false, hasAlternation: false }];
+  let inCharacterClass = false;
+
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i];
+    if (char === "\\") {
+      i++;
+      continue;
+    }
+    if (inCharacterClass) {
+      if (char === "]") inCharacterClass = false;
+      continue;
+    }
+    if (char === "[") {
+      inCharacterClass = true;
+      continue;
+    }
+    if (char === "(") {
+      stack.push({ hasQuantifier: false, hasAlternation: false });
+      continue;
+    }
+    if (char === "|") {
+      stack[stack.length - 1].hasAlternation = true;
+      continue;
+    }
+    if (char === ")") {
+      const frame = stack.pop();
+      if (!frame) return false;
+      const quantified = isQuantifierAt(pattern, i + 1);
+      if (quantified && frame.hasAlternation) return true;
+      const parent = stack[stack.length - 1];
+      if (parent) parent.hasAlternation = parent.hasAlternation || frame.hasAlternation;
+    }
+  }
   return false;
 }
 
@@ -111,6 +156,9 @@ export function screenPattern(pattern: string): string | null {
   }
   if (hasNestedQuantifier(pattern)) {
     return "pattern contains nested quantifiers and could backtrack catastrophically";
+  }
+  if (hasQuantifiedAlternation(pattern)) {
+    return "pattern contains quantified alternation and could backtrack catastrophically";
   }
   return null;
 }

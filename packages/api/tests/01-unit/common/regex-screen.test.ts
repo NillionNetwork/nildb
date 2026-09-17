@@ -1,4 +1,4 @@
-import { findUnsafePattern, hasNestedQuantifier, screenPattern } from "@nildb/common/regex";
+import { findUnsafePattern, hasNestedQuantifier, hasQuantifiedAlternation, screenPattern } from "@nildb/common/regex";
 import { validateData, validateSchema } from "@nildb/common/validator";
 import { Effect as E, Exit } from "effect";
 import { describe, expect, it } from "vitest";
@@ -27,6 +27,15 @@ describe("screenPattern", () => {
 
   it("accepts an ordinary pattern", () => {
     expect(screenPattern("^[a-z]+$")).toBeNull();
+  });
+
+  it("rejects ambiguous quantified alternation", () => {
+    expect(hasQuantifiedAlternation("^(a|aa)+$")).toBe(true);
+    expect(screenPattern("^(a|aa)+$")).toContain("quantified alternation");
+  });
+
+  it("allows unquantified alternation", () => {
+    expect(hasQuantifiedAlternation("^(cat|dog)$")).toBe(false);
   });
 });
 
