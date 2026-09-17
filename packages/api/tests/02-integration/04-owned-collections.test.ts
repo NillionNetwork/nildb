@@ -6,6 +6,7 @@ import type { OwnedDocumentBase } from "@nildb/data/data.types";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 // oxlint-disable-next-line import/extensions
 import { bytesToHex } from "@noble/hashes/utils.js";
+import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { UUID } from "mongodb";
 import { describe } from "vitest";
@@ -418,6 +419,44 @@ describe("Owned Collections", () => {
       expect(result.ok).toBe(true);
     });
 
+    it("rejects updates to nilDB-managed document fields", async ({ c }) => {
+      const { bindings, expect, user } = c;
+      const document = await bindings.db.data
+        .collection<OwnedDocumentBase>(collection.id.toString())
+        .findOne({ age: 41 });
+      assertDefined(c, document, "Owned document for managed-field test not found");
+
+      const updates = [{ $set: { _owner: "did:key:attacker" } }, { $rename: { age: "_acl" } }];
+
+      for (const update of updates) {
+        const result = await user.updateData({
+          collection: collection.id.toString(),
+          document: document._id.toString(),
+          update,
+        });
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.status).toBe(StatusCodes.BAD_REQUEST);
+      }
+
+      const unchanged = await bindings.db.data
+        .collection<OwnedDocumentBase>(collection.id.toString())
+        .findOne({ _id: document._id });
+      assertDefined(c, unchanged);
+      expect(unchanged._owner).toBe(document._owner);
+      expect(unchanged._acl).toEqual(document._acl);
+      expect(unchanged.age).toBe(41);
+    });
+
+    it("rejects server-side JavaScript operators at the API boundary", async ({ c }) => {
+      const result = await c.builder.findData({
+        collection: simpleCollection.id,
+        filter: { nested: { $where: "while (true) {}" } },
+      });
+
+      c.expect(result.ok).toBe(false);
+      if (!result.ok) c.expect(result.status).toBe(StatusCodes.BAD_REQUEST);
+    });
+
     it("can list owned data references", async ({ c }) => {
       const { expect, user } = c;
       const result = await user.listDataReferences();
@@ -477,7 +516,7 @@ describe("Owned Collections", () => {
       expect((result.data.data as DeleteResult).deletedCount).toEqual(1);
     });
 
-    it("user cannot access data they are not the owner of", async ({ c }) => {
+    it("user cannot read or update data they do not own", async ({ c }) => {
       const { expect, bindings, builder, app, builderSigner } = c;
 
       const otherUserPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
@@ -523,6 +562,27 @@ describe("Owned Collections", () => {
       if (!readResult.ok) {
         expect(readResult.status).toBeDefined();
       }
+
+      const original = await bindings.db.data
+        .collection<OwnedDocumentBase>(collection.id.toString())
+        .findOne({ _id: new UUID(documentId) });
+      assertDefined(c, original);
+
+      const updateResult = await otherUser.updateData({
+        collection: collection.id.toString(),
+        document: documentId,
+        update: { $set: { age: 999 } },
+      });
+      expect(updateResult.ok).toBe(true);
+      if (!updateResult.ok) throw new Error("Owner-scoped update request failed");
+      expect(updateResult.data.data.matched).toBe(0);
+      expect(updateResult.data.data.modified).toBe(0);
+
+      const unchanged = await bindings.db.data
+        .collection<OwnedDocumentBase>(collection.id.toString())
+        .findOne({ _id: new UUID(documentId) });
+      assertDefined(c, unchanged);
+      expect(unchanged.age).toBe(original.age);
     });
 
     it("removes users if all their data have been deleted", async ({ c }) => {
