@@ -190,8 +190,9 @@ export function updateData(options: ControllerOptions): void {
     loadSubjectAndVerifyAsUser(bindings),
     requireNucNamespace(NucCmd.nil.db.users.update),
     async (c) => {
+      const user = c.get("user");
       const payload = c.req.valid("json");
-      const command = UserDataMapper.toUpdateDataCommand(payload);
+      const command = UserDataMapper.toUpdateDataCommand(user, payload);
 
       return pipe(
         DataService.updateRecordsAsOwner(c.env, command),
