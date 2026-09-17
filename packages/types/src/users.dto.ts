@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { MongoExpression } from "./mongo.dto";
+import { MongoUpdateExpression } from "./mongo.dto";
 import { PaginatedResponse, PaginationQuerySchema } from "./pagination.dto";
 import { ApiSuccessResponse } from "./responses.dto";
 
@@ -131,7 +131,7 @@ export const UpdateUserDataRequest = z
   .object({
     document: z.uuid(),
     collection: z.uuid(),
-    update: MongoExpression,
+    update: MongoUpdateExpression,
   })
   .meta({ ref: "UpdateUserDataRequest" });
 export type UpdateUserDataRequest = z.infer<typeof UpdateUserDataRequest>;

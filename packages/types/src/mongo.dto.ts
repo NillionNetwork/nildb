@@ -64,3 +64,41 @@ export const MongoExpression = z.record(z.string(), z.unknown()).superRefine((va
   }
 });
 export type MongoExpression = z.infer<typeof MongoExpression>;
+
+const PROTECTED_DOCUMENT_FIELDS: ReadonlySet<string> = new Set(["_id", "_owner", "_acl", "_created", "_updated"]);
+
+function protectedField(path: string): string | null {
+  const root = path.split(".", 1)[0];
+  return PROTECTED_DOCUMENT_FIELDS.has(root) ? root : null;
+}
+
+/** Mongo update document that cannot alter nilDB-managed metadata. */
+export const MongoUpdateExpression = MongoExpression.superRefine((update, ctx) => {
+  for (const [operatorOrPath, operand] of Object.entries(update)) {
+    if (!operatorOrPath.startsWith("$")) {
+      const field = protectedField(operatorOrPath);
+      if (field) {
+        ctx.addIssue({ code: "custom", message: `Field '${field}' is managed by nilDB and cannot be updated` });
+      }
+      continue;
+    }
+
+    if (typeof operand !== "object" || operand === null || Array.isArray(operand)) continue;
+    for (const [path, value] of Object.entries(operand)) {
+      const field = protectedField(path);
+      if (field) {
+        ctx.addIssue({ code: "custom", message: `Field '${field}' is managed by nilDB and cannot be updated` });
+      }
+      if (operatorOrPath === "$rename" && typeof value === "string") {
+        const destination = protectedField(value);
+        if (destination) {
+          ctx.addIssue({
+            code: "custom",
+            message: `Field '${destination}' is managed by nilDB and cannot be a rename target`,
+          });
+        }
+      }
+    }
+  }
+});
+export type MongoUpdateExpression = z.infer<typeof MongoUpdateExpression>;
