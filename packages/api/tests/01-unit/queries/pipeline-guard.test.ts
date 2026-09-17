@@ -155,6 +155,12 @@ describe("validatePipelineStructure", () => {
     expect(Exit.isFailure(E.runSyncExit(validatePipelineStructure([{ $out: "system.users" }])))).toBe(true);
   });
 
+  it.each(["$function", "$accumulator"])("rejects server-side javascript in expressions via %s", (operator) => {
+    const pipeline = [{ $project: { value: { [operator]: { body: "function(){}", args: [], lang: "js" } } } }];
+
+    expect(Exit.isFailure(E.runSyncExit(validatePipelineStructure(pipeline)))).toBe(true);
+  });
+
   it("rejects nesting beyond the depth limit", () => {
     let nested: Record<string, unknown>[] = [{ $match: {} }];
     for (let i = 0; i < 7; i++) {

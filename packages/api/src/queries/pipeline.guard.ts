@@ -11,6 +11,8 @@ import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
 import { UUID } from "mongodb";
 
+import { findUnsafeMongoExpression } from "@nillion/nildb-types";
+
 /**
  * Aggregation stages a builder may use.
  *
@@ -102,6 +104,11 @@ function assertKnownCollectionName(stage: string, name: string): void {
  * every collection the pipeline reads from or writes to.
  */
 function collectReferences(stages: unknown, refs: CollectionReferences, depth: number): void {
+  if (depth === 0) {
+    const issue = findUnsafeMongoExpression(stages);
+    if (issue) fail(issue);
+  }
+
   if (depth > MAX_PIPELINE_DEPTH) {
     fail(`Pipeline nesting exceeds the maximum depth of ${MAX_PIPELINE_DEPTH}`);
   }

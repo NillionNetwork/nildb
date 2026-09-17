@@ -35,6 +35,13 @@ describe("MongoExpression", () => {
 
     expect(MongoExpression.safeParse(filter).success).toBe(false);
   });
+
+  it("fails closed when nesting exceeds the scan limit", () => {
+    let filter: Record<string, unknown> = { $where: "sleep(10000)" };
+    for (let i = 0; i < 33; i++) filter = { $and: [filter] };
+
+    expect(MongoExpression.safeParse(filter).success).toBe(false);
+  });
 });
 
 describe("data requests", () => {
@@ -71,7 +78,9 @@ describe("MongoUpdateExpression", () => {
   });
 
   it("protects both builder and user update requests", () => {
-    expect(UpdateDataRequest.safeParse({ collection, filter: { name: "alice" }, update: { $set: { _acl: [] } } }).success).toBe(false);
+    expect(
+      UpdateDataRequest.safeParse({ collection, filter: { name: "alice" }, update: { $set: { _acl: [] } } }).success,
+    ).toBe(false);
     expect(
       UpdateUserDataRequest.safeParse({
         collection,

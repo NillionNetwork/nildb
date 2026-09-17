@@ -18,14 +18,14 @@ const SERVER_SIDE_JS_OPERATORS: ReadonlySet<string> = new Set(["$where", "$funct
 /** Bounds the walk over deliberately deeply nested input. */
 const MAX_SCAN_DEPTH = 32;
 
-function findServerSideJsOperator(value: unknown, depth = 0): string | null {
+export function findUnsafeMongoExpression(value: unknown, depth = 0): string | null {
   if (depth > MAX_SCAN_DEPTH) {
-    return null;
+    return `Mongo expression nesting exceeds the maximum depth of ${MAX_SCAN_DEPTH}`;
   }
 
   if (Array.isArray(value)) {
     for (const item of value) {
-      const found = findServerSideJsOperator(item, depth + 1);
+      const found = findUnsafeMongoExpression(item, depth + 1);
       if (found) {
         return found;
       }
@@ -39,9 +39,9 @@ function findServerSideJsOperator(value: unknown, depth = 0): string | null {
 
   for (const [key, nested] of Object.entries(value)) {
     if (SERVER_SIDE_JS_OPERATORS.has(key)) {
-      return key;
+      return `Operator '${key}' is not permitted`;
     }
-    const found = findServerSideJsOperator(nested, depth + 1);
+    const found = findUnsafeMongoExpression(nested, depth + 1);
     if (found) {
       return found;
     }
@@ -55,11 +55,11 @@ function findServerSideJsOperator(value: unknown, depth = 0): string | null {
  * server-side JavaScript.
  */
 export const MongoExpression = z.record(z.string(), z.unknown()).superRefine((value, ctx) => {
-  const operator = findServerSideJsOperator(value);
-  if (operator) {
+  const issue = findUnsafeMongoExpression(value);
+  if (issue) {
     ctx.addIssue({
       code: "custom",
-      message: `Operator '${operator}' is not permitted`,
+      message: issue,
     });
   }
 });
