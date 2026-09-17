@@ -12,7 +12,7 @@ import { describe } from "vitest";
 import { NilauthClient } from "@nillion/nilauth-client";
 import { BuilderClient } from "@nillion/nildb-client";
 import { createUuidDto, PathsV1 } from "@nillion/nildb-types";
-import { Did, Signer } from "@nillion/nuc";
+import { Builder, Did, Signer, type Signer as NucSigner } from "@nillion/nuc";
 
 import type { CreditFixtureContext } from "../fixture/fixture";
 import { createCreditTestFixtureExtension } from "../fixture/it";
@@ -22,6 +22,7 @@ describe("10-dual-mode.test.ts", () => {
   const { it, beforeAll, afterAll } = createCreditTestFixtureExtension({ extraFeatures: ["nilauth"] });
 
   let nilauthBuilder: BuilderClient;
+  let legacyBuilderSigner: NucSigner;
 
   beforeAll(async (c: CreditFixtureContext) => {
     // Register a nilauth builder alongside the credit builder.
@@ -30,6 +31,7 @@ describe("10-dual-mode.test.ts", () => {
 
     const builderPrivateKey = bytesToHex(secp256k1.utils.randomSecretKey());
     const builderSigner = Signer.fromPrivateKey(builderPrivateKey);
+    legacyBuilderSigner = builderSigner;
     const builderDid = await builderSigner.getDid();
 
     const nilauth = await NilauthClient.create({
@@ -75,6 +77,21 @@ describe("10-dual-mode.test.ts", () => {
     // Nilauth builder should have full access (no credit gating since creditsUsd is undefined)
     const result = await nilauthBuilder.readCollections();
     expect(result.ok).toBe(true);
+  });
+
+  it("does not let a legacy builder fall back to self-signed authentication", async ({ c }) => {
+    const subject = await legacyBuilderSigner.getDid();
+    const token = await Builder.invocation()
+      .command("/nil/db/collections/read")
+      .audience(c.bindings.node.did)
+      .subject(subject)
+      .expiresIn(60_000)
+      .signAndSerialize(legacyBuilderSigner);
+    const response = await c.app.request(PathsV1.collections.root, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    c.expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
   it("credit builder works independently", async ({ c }) => {

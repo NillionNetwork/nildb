@@ -1,4 +1,5 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
+import type { BuilderDocument } from "@nildb/builders/builders.types";
 import * as CreditsRepository from "@nildb/credits/credits.repository";
 import {
   FeatureFlag,
@@ -77,6 +78,10 @@ function extractRootIssuerDid(envelope: Envelope): Did {
   const proofs = envelope.proofs;
   const rootToken = proofs.length > 0 ? proofs[proofs.length - 1] : envelope.nuc;
   return rootToken.payload.iss;
+}
+
+export function getBuilderAuthMode(builder: Pick<BuilderDocument, "creditsUsd">): "nilauth" | "self-signed" {
+  return builder.creditsUsd === undefined ? "nilauth" : "self-signed";
 }
 
 /**
@@ -293,24 +298,20 @@ export function loadSubjectAndVerifyAsBuilder<
         context,
       };
 
-      // Auth mode: when NILAUTH flag is on, try nilauth first, fall back to self-signed.
-      // This allows migrated builders (creditsUsd set) to keep using nilauth tokens
-      // during the transition period, while new credit-only builders use self-signed.
-      let usedNilauth = false;
+      // The persisted builder mode is the trust decision. Falling back from a
+      // failed Nilauth validation to self-signed authentication would let a
+      // legacy builder bypass a revoked subscription or proof chain.
+      const usedNilauth = getBuilderAuthMode(builder) === "nilauth";
 
-      if (hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
-        try {
-          await Validator.validate(envelope, {
-            ...validationParams,
-            rootIssuers: nilauthRootIssuers,
-          });
-          usedNilauth = true;
-        } catch {
-          // Nilauth validation failed — fall back to self-signed below
+      if (usedNilauth) {
+        if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
+          throw new Error("Nilauth authentication is disabled for this legacy builder");
         }
-      }
-
-      if (!usedNilauth) {
+        await Validator.validate(envelope, {
+          ...validationParams,
+          rootIssuers: nilauthRootIssuers,
+        });
+      } else {
         await Validator.validate(envelope, {
           ...validationParams,
           rootIssuers: [canonicalSubject],
