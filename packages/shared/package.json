@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@nillion/nuc": "^2.0.1",
-    "temporal-polyfill": "^0.3.2"
+    "temporal-polyfill": "^1.0.5"
   },
   "devDependencies": {
     "@types/pino": "^7.0.5",
