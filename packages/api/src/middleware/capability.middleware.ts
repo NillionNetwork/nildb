@@ -305,11 +305,20 @@ export function loadSubjectAndVerifyAsBuilder<
       // failed Nilauth validation to self-signed authentication would let a
       // legacy builder bypass a revoked subscription or proof chain.
       const usedNilauth = getBuilderAuthMode(builder) === "nilauth";
+      let matchingNilauth: NilauthInstanceWithDid | undefined;
 
       if (usedNilauth) {
         if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
           throw new Error("Nilauth authentication is disabled for this legacy builder");
         }
+
+        const rootIssuerDid = extractRootIssuerDid(envelope);
+        matchingNilauth = nilauthInstances.find((instance) => Did.areEqual(instance.did, rootIssuerDid));
+        if (!matchingNilauth) {
+          log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid.didString);
+          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+        }
+
         await Validator.validate(envelope, {
           ...validationParams,
           rootIssuers: nilauthRootIssuers,
@@ -324,15 +333,7 @@ export function loadSubjectAndVerifyAsBuilder<
       validateEip712ChainId(envelope, supportedChainIds);
 
       // Check revocations based on which auth mode succeeded
-      if (usedNilauth) {
-        const rootIssuerDid = extractRootIssuerDid(envelope);
-        const matchingNilauth = nilauthInstances.find((n) => Did.areEqual(n.did, rootIssuerDid));
-
-        if (!matchingNilauth) {
-          log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid.didString);
-          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
-        }
-
+      if (matchingNilauth) {
         const nilauthClient = await NilauthClient.create({
           baseUrl: matchingNilauth.baseUrl,
           chainId: config.nilauthChainId,
