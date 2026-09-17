@@ -308,6 +308,8 @@ export function computeStatus(
   builder: BuilderDocument,
   config: { freeTierBytes: number; gracePeriodDays: number },
 ): BuilderStatus {
+  if (builder.status === "purging") return "purging";
+
   const storageBytes = builder.storageBytes ?? 0;
   const creditsUsd = builder.creditsUsd ?? 0;
   const creditsDepleted = builder.creditsDepleted;

@@ -348,7 +348,7 @@ export function addCreditsUsd(
   builder: string,
   amountUsd: number,
 ): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
-  const filter: StrictFilter<BuilderDocument> = { did: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder, status: { $ne: "purging" } };
 
   return pipe(
     checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
@@ -387,7 +387,7 @@ export function applyCreditsAndActivate(
   builder: string,
   amountUsd: number,
 ): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
-  const filter: StrictFilter<BuilderDocument> = { did: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder, status: { $ne: "purging" } };
   const now = new Date();
 
   return pipe(
@@ -434,6 +434,7 @@ export function applyPaymentCreditsAndActivate(
 ): E.Effect<boolean, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
   const filter = {
     did: builder,
+    status: { $ne: "purging" },
     creditedPaymentIds: { $ne: paymentId },
   } as StrictFilter<BuilderDocument>;
   const now = new Date();
@@ -620,11 +621,14 @@ export function findAllCreditBuilders(
 export function findBuildersPendingPurge(
   ctx: AppBindings,
   creditsDepletesBefore: Date,
+  staleClaimBefore: Date,
   limit: number,
 ): E.Effect<BuilderDocument[], CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<BuilderDocument> = {
-    status: "pending_purge",
-    creditsDepleted: { $lt: creditsDepletesBefore },
+    $or: [
+      { status: "pending_purge", creditsDepleted: { $lt: creditsDepletesBefore } },
+      { status: "purging", purgeClaimedAt: { $lt: staleClaimBefore } },
+    ],
   };
 
   return pipe(
@@ -633,6 +637,76 @@ export function findBuildersPendingPurge(
       try: (collection) => collection.find(filter).limit(limit).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findBuildersPendingPurge" }),
     }),
+  );
+}
+
+/** Atomically reserve a builder for purge, excluding concurrent top-ups. */
+export function claimBuilderForPurge(
+  ctx: AppBindings,
+  builder: string,
+  claimId: string,
+  staleClaimBefore: Date,
+): E.Effect<boolean, CollectionNotFoundError | DatabaseError> {
+  const filter = {
+    did: builder,
+    creditsUsd: { $lte: 0 },
+    $or: [{ status: "pending_purge" }, { status: "purging", purgeClaimedAt: { $lt: staleClaimBefore } }],
+  } as StrictFilter<BuilderDocument>;
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, {
+          $set: { status: "purging", purgeClaimId: claimId, purgeClaimedAt: new Date(), _updated: new Date() },
+        }),
+      catch: (cause) => new DatabaseError({ cause, message: "claimBuilderForPurge" }),
+    }),
+    E.map((result) => result.matchedCount === 1),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/** Expire a failed purge lease so deletion can resume without allowing a top-up into a partially deleted account. */
+export function releasePurgeClaim(
+  ctx: AppBindings,
+  builder: string,
+  claimId: string,
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(
+          { did: builder, status: "purging", purgeClaimId: claimId },
+          { $set: { purgeClaimedAt: new Date(0), _updated: new Date() }, $unset: { purgeClaimId: "" } },
+        ),
+      catch: (cause) => new DatabaseError({ cause, message: "releasePurgeClaim" }),
+    }),
+    E.as(void 0),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/** Delete only the builder still owned by this purge worker. */
+export function deleteClaimedBuilder(
+  ctx: AppBindings,
+  builder: string,
+  claimId: string,
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
+  const filter = { did: builder, status: "purging", purgeClaimId: claimId } as StrictFilter<BuilderDocument>;
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) => collection.deleteOne(filter),
+      catch: (cause) => new DatabaseError({ cause, message: "deleteClaimedBuilder" }),
+    }),
+    E.flatMap((result) =>
+      result.deletedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(new DocumentNotFoundError({ collection: CollectionName.Builders, filter })),
+    ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
   );
 }
 

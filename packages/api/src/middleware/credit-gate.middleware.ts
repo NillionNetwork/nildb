@@ -19,6 +19,7 @@ const STATUS_PERMISSIONS: Record<BuilderStatus, OperationType[]> = {
   read_only: ["read"],
   suspended: [],
   pending_purge: [],
+  purging: [],
 };
 
 /**
@@ -58,7 +59,7 @@ export function requireCredits(operation: OperationType): MiddlewareHandler<AppE
       log.debug("Operation %s denied for builder %s with status %s", operation, builder.did, status);
 
       // Return appropriate status code based on builder status
-      if (status === "suspended" || status === "pending_purge") {
+      if (status === "suspended" || status === "pending_purge" || status === "purging") {
         return c.json(
           {
             ts: new Date().toISOString(),

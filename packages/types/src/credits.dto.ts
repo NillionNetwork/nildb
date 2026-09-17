@@ -6,7 +6,15 @@ import { ApiSuccessResponse } from "./responses.dto";
 /**
  * Builder status for credit-based access control.
  */
-export const BuilderStatusDto = z.enum(["free_tier", "active", "warning", "read_only", "suspended", "pending_purge"]);
+export const BuilderStatusDto = z.enum([
+  "free_tier",
+  "active",
+  "warning",
+  "read_only",
+  "suspended",
+  "pending_purge",
+  "purging",
+]);
 export type BuilderStatusDto = z.infer<typeof BuilderStatusDto>;
 
 /**
