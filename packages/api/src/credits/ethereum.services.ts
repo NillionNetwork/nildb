@@ -7,6 +7,20 @@ import { getChainConfig, type ChainConfig, type PaymentPayload, validatePayment 
 
 import type { RegisterCreditsCommand } from "./credits.types";
 
+export function toSafeRpcErrorName(error: unknown): string {
+  if (!(error instanceof Error)) return "UnknownError";
+  return /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(error.name) ? error.name : "Error";
+}
+
+/**
+ * A payment the chain answered about, and the answer was "no".
+ *
+ * Distinguished from a transport failure so that only these reasons are safe
+ * to hand back to the caller. viem embeds the full request URL in its
+ * transport errors, and the RPC URL usually carries the provider api key.
+ */
+class PaymentRejected extends Error {}
+
 /**
  * Get chain configuration from environment.
  */
@@ -25,7 +39,7 @@ export function validatePaymentOnChain(
   ctx: AppBindings,
   txHash: `0x${string}`,
   command: RegisterCreditsCommand,
-): E.Effect<{ amountUnils: bigint; payer: `0x${string}` }, PaymentValidationError> {
+): E.Effect<{ amountUnils: bigint; payer: `0x${string}`; burnTimestamp: bigint }, PaymentValidationError> {
   const { log } = ctx;
 
   return E.tryPromise({
@@ -33,13 +47,14 @@ export function validatePaymentOnChain(
       // Get chain config
       const chainConfig = getChainConfigFromEnv(ctx, command.chainId);
       if (!chainConfig) {
-        throw new Error(`Chain ${command.chainId} is not configured`);
+        throw new PaymentRejected(`Chain ${command.chainId} is not configured`);
       }
 
       // Build payload for validation
       const payload: PaymentPayload = {
         nodePublicKey: command.nodePublicKey,
         payerDid: command.payerDid,
+        builderDid: command.builderDid,
         amountUnils: command.amountUnils,
         nonce: command.nonce,
         timestamp: command.timestamp,
@@ -50,7 +65,7 @@ export function validatePaymentOnChain(
       const result = await validatePayment(chainConfig, txHash, payload);
 
       if (!result.valid) {
-        throw new Error(result.reason);
+        throw new PaymentRejected(result.reason);
       }
 
       log.info(
@@ -64,12 +79,24 @@ export function validatePaymentOnChain(
       return {
         amountUnils: result.amountUnils,
         payer: result.payer,
+        burnTimestamp: result.burnTimestamp,
       };
     },
     catch: (error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      log.error("Payment validation failed: %s", message);
-      return new PaymentValidationError({ message });
+      if (error instanceof PaymentRejected) {
+        return new PaymentValidationError({ message: error.message });
+      }
+
+      // viem transport messages include the complete RPC URL, which commonly
+      // contains provider credentials. Keep both logs and telemetry to a safe
+      // error class rather than forwarding the message or cause.
+      log.error(
+        { errorType: toSafeRpcErrorName(error), chainId: command.chainId },
+        "Payment validation failed talking to the chain",
+      );
+      return new PaymentValidationError({
+        message: "Unable to verify the payment on chain, please retry",
+      });
     },
   });
 }

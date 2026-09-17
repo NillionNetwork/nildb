@@ -1,9 +1,12 @@
 [tools]
 node = "24"
 pnpm = "10"
-prek = "latest"
-hadolint = "latest"
-actionlint = "latest"
+# Pinned: mise-action installs these in the image build job, so "latest"
+# meant the release pipeline ran whatever upstream published that day.
+prek = "0.5.2"
+hadolint = "2.15.1"
+actionlint = "1.7.12"
+gitleaks = "8.30.1"
 
 [tasks.install]
 description = "Install dependencies"
@@ -50,6 +53,10 @@ run = "pnpm exec tsgo -b"
 [tasks.hadolint]
 description = "Lint Dockerfiles"
 run = "hadolint --ignore DL3059 packages/api/Dockerfile"
+
+[tasks.gitleaks]
+description = "Scan the repository and its history for secrets"
+run = "gitleaks detect --redact --verbose"
 
 [tasks.actionlint]
 description = "Lint GitHub Actions workflows"

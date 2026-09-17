@@ -11,7 +11,7 @@ import type { RunQueryJobDocument } from "./queries.types";
 /**
  * Create query job document.
  */
-export function toRunQueryJobDocument(queryId: UUID): RunQueryJobDocument {
+export function toRunQueryJobDocument(queryId: UUID, owner: string): RunQueryJobDocument {
   const now = new Date();
 
   return {
@@ -20,6 +20,7 @@ export function toRunQueryJobDocument(queryId: UUID): RunQueryJobDocument {
     _updated: now,
     status: "pending",
     query: queryId,
+    owner,
     started: new Date(0),
     completed: new Date(0),
     result: {},
@@ -75,16 +76,18 @@ export function findOne(
 export function findRunByIdWithPaginatedResults(
   ctx: AppBindings,
   _id: UUID,
+  owner: string,
   pagination: PaginationQuery,
 ): E.Effect<(RunQueryJobDocument & { total: number }) | null, CollectionNotFoundError | DatabaseError> {
   const pipeline = [
-    { $match: { _id } },
+    { $match: { _id, owner } },
     {
       $project: {
         _id: 1,
         _created: 1,
         _updated: 1,
         query: 1,
+        owner: 1,
         status: 1,
         started: 1,
         completed: 1,

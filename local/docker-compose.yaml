@@ -69,7 +69,7 @@ services:
       - APP_ADMIN_ADDRESS=0xdFb76ED3789fB9e4d676be4c0608395a47337Cd9
 
   mongodb:
-    image: mongo:latest
+    image: mongo:8.2
     ports:
       - "27017:27017"
 

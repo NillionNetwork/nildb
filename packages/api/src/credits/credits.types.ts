@@ -10,6 +10,14 @@ export type PaymentDocument = {
   txHash: string;
   chainId: number;
   payerDid: string;
+  /** The builder whose balance this payment credited. Absent on legacy rows. */
+  builderDid?: string;
+  /**
+   * False between inserting the payment and the balance update landing.
+   * Lets a retry finish a payment that would otherwise be marked processed
+   * forever without the builder ever receiving the credits.
+   */
+  creditsApplied?: boolean;
   amountUnils: string; // bigint as string for MongoDB
   amountUsd: number;
   digest: string;
@@ -36,6 +44,7 @@ export type RegisterCreditsCommand = {
   chainId: number;
   nodePublicKey: string;
   payerDid: string;
+  builderDid: string;
   amountUnils: bigint;
   nonce: string;
   timestamp: number;

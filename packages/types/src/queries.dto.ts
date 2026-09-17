@@ -7,12 +7,26 @@ import { ApiSuccessResponse } from "./responses.dto";
  * MongoDB aggregation pipeline variable validation.
  */
 const PATH_EXPRESSION = /^\$(\.[$a-zA-Z][a-zA-Z0-9-_]+(\[\d+])*)+$/;
-const VariablePath = z.string().regex(PATH_EXPRESSION).meta({
-  type: "string",
-  pattern: "^\\$(\\.[$a-zA-Z][a-zA-Z0-9-_]+(\\[\\d+])*)+$",
-  description: "A Jq-like path for variable substitution",
-  example: "$.field.subfield[0]",
-});
+
+/**
+ * Segments that would let a variable write escape the pipeline and reach a
+ * shared prototype. Rejected here as well as at injection time.
+ */
+const FORBIDDEN_PATH_SEGMENTS = ["__proto__", "constructor", "prototype"];
+
+const VariablePath = z
+  .string()
+  .regex(PATH_EXPRESSION)
+  .refine(
+    (path) => !path.split(/[.[\]]/).some((segment) => FORBIDDEN_PATH_SEGMENTS.includes(segment)),
+    "Variable path may not traverse '__proto__', 'constructor' or 'prototype'",
+  )
+  .meta({
+    type: "string",
+    pattern: "^\\$(\\.[$a-zA-Z][a-zA-Z0-9-_]+(\\[\\d+])*)+$",
+    description: "A Jq-like path for variable substitution",
+    example: "$.field.subfield[0]",
+  });
 
 /**
  * Query variable configuration validator.

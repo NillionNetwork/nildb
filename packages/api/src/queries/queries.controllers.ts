@@ -276,10 +276,10 @@ export function getQueryRunResultById(options: ControllerOptions): void {
     requireNucNamespace(NucCmd.nil.db.queries.read),
     requireCredits("read"),
     async (c) => {
-      const _builder = c.get("builder") as BuilderDocument;
+      const builder = c.get("builder") as BuilderDocument;
       const params = c.req.valid("param");
       const pagination = c.req.valid("query");
-      const command = QueriesDataMapper.toGetQueryRunResultByIdCommand(params);
+      const command = QueriesDataMapper.toGetQueryRunResultByIdCommand(params, builder.did);
 
       return pipe(
         QueriesService.getRunQueryJob(c.env, command, pagination),

@@ -10,6 +10,7 @@ import { Effect as E, pipe } from "effect";
 
 const PURGE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const BUILDERS_PER_BATCH = 10; // Limit batch size for safety
+const PURGE_LEASE_MS = 60 * 60 * 1000;
 
 /**
  * Run a single purge cycle.
@@ -28,9 +29,10 @@ export async function runPurgeCycle(bindings: AppBindings): Promise<void> {
   try {
     const gracePeriodMs = config.gracePeriodDays * 24 * 60 * 60 * 1000;
     const cutoffDate = new Date(Date.now() - gracePeriodMs);
+    const staleClaimBefore = new Date(Date.now() - PURGE_LEASE_MS);
 
     const builders = await pipe(
-      BuildersRepository.findBuildersPendingPurge(bindings, cutoffDate, BUILDERS_PER_BATCH),
+      BuildersRepository.findBuildersPendingPurge(bindings, cutoffDate, staleClaimBefore, BUILDERS_PER_BATCH),
       E.runPromise,
     );
 
@@ -56,40 +58,34 @@ export async function runPurgeCycle(bindings: AppBindings): Promise<void> {
  */
 async function purgeBuilder(bindings: AppBindings, builderId: string): Promise<void> {
   const { log } = bindings;
+  const claimId = crypto.randomUUID();
+  const staleClaimBefore = new Date(Date.now() - PURGE_LEASE_MS);
+  const claimed = await E.runPromise(
+    BuildersRepository.claimBuilderForPurge(bindings, builderId, claimId, staleClaimBefore),
+  );
+  if (!claimed) {
+    log.info("Builder %s is no longer eligible for purge, skipping", builderId);
+    return;
+  }
 
   log.warn("Purging builder %s", builderId);
 
-  // Delete all collections (and their data)
-  await pipe(
-    CollectionsService.deleteBuilderCollections(bindings, builderId),
-    E.catchAll((e) => {
-      log.error("Failed to delete collections for builder %s: %O", builderId, e);
-      return E.succeed(void 0);
-    }),
-    E.runPromise,
-  );
-
-  // Delete all queries
-  await pipe(
-    QueriesService.deleteBuilderQueries(bindings, builderId),
-    E.catchAll((e) => {
-      log.error("Failed to delete queries for builder %s: %O", builderId, e);
-      return E.succeed(void 0);
-    }),
-    E.runPromise,
-  );
-
-  // Delete the builder document
-  await pipe(
-    BuildersRepository.deleteOneById(bindings, builderId),
-    E.catchAll((e) => {
-      log.error("Failed to delete builder document %s: %O", builderId, e);
-      return E.succeed(void 0);
-    }),
-    E.runPromise,
-  );
-
-  log.warn("Builder %s purged successfully", builderId);
+  try {
+    await E.runPromise(CollectionsService.deleteBuilderCollections(bindings, builderId));
+    await E.runPromise(QueriesService.deleteBuilderQueries(bindings, builderId));
+    await E.runPromise(BuildersRepository.deleteClaimedBuilder(bindings, builderId, claimId));
+    log.warn("Builder %s purged successfully", builderId);
+  } catch (error) {
+    await pipe(
+      BuildersRepository.releasePurgeClaim(bindings, builderId, claimId),
+      E.catchAll((releaseError) => {
+        log.error({ releaseError, builderId }, "Failed to release purge claim");
+        return E.succeed(void 0);
+      }),
+      E.runPromise,
+    );
+    throw error;
+  }
 }
 
 /**

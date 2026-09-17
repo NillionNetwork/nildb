@@ -64,11 +64,20 @@ The `APP_ENABLED_FEATURES` variable accepts a comma-separated list of feature fl
 
 The following variables control the IP-based rate limiting feature.
 
-| Variable                      | Description                                 | Default |
-| ----------------------------- | ------------------------------------------- | ------- |
-| APP_RATE_LIMIT_ENABLED        | Enables the rate-limiting feature.          | `true`  |
-| APP_RATE_LIMIT_WINDOW_SECONDS | The duration of the time window in seconds. | `60`    |
-| APP_RATE_LIMIT_MAX_REQUESTS   | Max requests per IP within the time window. | `60`    |
+| Variable                      | Description                                     | Default |
+| ----------------------------- | ----------------------------------------------- | ------- |
+| APP_RATE_LIMIT_ENABLED        | Enables the rate-limiting feature.              | `true`  |
+| APP_RATE_LIMIT_WINDOW_SECONDS | The duration of the time window in seconds.     | `60`    |
+| APP_RATE_LIMIT_MAX_REQUESTS   | Max requests per IP within the time window.     | `60`    |
+| APP_TRUSTED_PROXY_COUNT       | Number of reverse proxies in front of the node. | `0`     |
+
+`x-forwarded-for` is only honoured when `APP_TRUSTED_PROXY_COUNT` is greater
+than zero. Any client can set that header, so with the default of `0` the node
+rate-limits on the socket address instead. Set it to the number of proxies
+that actually append to the header (for example `1` behind a single load
+balancer); the node then reads the entry that the outermost trusted proxy
+added. Setting it higher than the real number of proxies lets clients spoof
+their address again.
 
 ### OpenTelemetry
 
@@ -168,7 +177,7 @@ services:
       - APP_NILAUTH_INSTANCES=http://127.0.0.1:30921/037a87f9b010687e23eccb2fc70a474cbb612418cb513a62289eaed6cf1f11ac6b
       - APP_NILAUTH_CHAIN_ID=1
       - APP_NODE_PUBLIC_ENDPOINT=https://nildb-xxxx.domain.com
-      - APP_NODE_SECRET_KEY=6cab2d10ac21886404eca7cbd40f1777071a243177eae464042885b391412b4e
+      - APP_NODE_SECRET_KEY=<hex encoded secp256k1 private key, generate your own>
       - APP_PORT=8080
 
   node-xxxx-db:
@@ -238,6 +247,23 @@ nilDB uses NUC (Nillion UCANs) tokens for authentication instead of traditional 
 For local development, the `local/docker-compose.yaml` stack includes a pre-configured nilauth service with test credentials.
 
 For user-facing operations, there is an OpenAPI documentation interface hosted at `${APP_NODE_PUBLIC_ENDPOINT}/api/v1/openapi/docs/`.
+
+## MongoDB Hardening
+
+Disable server-side JavaScript on the database. nilDB accepts free-form filter
+and update documents from builders, and although the API rejects `$where`,
+`$function` and `$accumulator`, disabling scripting removes the class of
+problem at the source:
+
+```yaml
+# mongod.conf
+security:
+  javascriptEnabled: false
+```
+
+For a container deployment, pass `--noscripting` to `mongod`. On MongoDB Atlas,
+server-side JavaScript is disabled by default on shared tiers and can be turned
+off per cluster under Additional Settings.
 
 ## Storage Retention
 

@@ -9,7 +9,8 @@ export type BuilderStatus =
   | "warning" // Credits low, still full access
   | "read_only" // No credits, read-only access
   | "suspended" // Long-term no credits, profile only
-  | "pending_purge"; // Scheduled for data deletion
+  | "pending_purge" // Scheduled for data deletion
+  | "purging"; // Purge lease acquired; top-ups are temporarily blocked
 
 /**
  * Builder document.
@@ -29,6 +30,10 @@ export type BuilderDocument = {
   lastBillingCycle?: Date;
   lastCreditTopUp?: Date | null;
   creditsDepleted?: Date | null;
+  /** Payment ids already reflected in creditsUsd, used to make top-ups idempotent. */
+  creditedPaymentIds?: ObjectId[];
+  purgeClaimId?: string;
+  purgeClaimedAt?: Date;
 };
 
 /**

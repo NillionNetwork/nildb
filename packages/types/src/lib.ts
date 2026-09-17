@@ -4,6 +4,7 @@ export * from "./collections.dto";
 export * from "./credits.dto";
 export * from "./data.dto";
 export * from "./logger";
+export * from "./mongo.dto";
 export * from "./nuc-cmd-tree";
 export * from "./pagination.dto";
 export * from "./paths";

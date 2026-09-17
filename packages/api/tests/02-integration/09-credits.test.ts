@@ -1,8 +1,14 @@
+import * as BuildersRepository from "@nildb/builders/builders.repository";
 import type { BuilderDocument } from "@nildb/builders/builders.types";
 import type { CollectionDocument } from "@nildb/collections/collections.types";
 import { CollectionName } from "@nildb/common/mongo";
 import { runBillingCycle } from "@nildb/workers/billing.worker";
 import { runPurgeCycle } from "@nildb/workers/purge.worker";
+// oxlint-disable-next-line import/extensions
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+// oxlint-disable-next-line import/extensions
+import { bytesToHex } from "@noble/hashes/utils.js";
+import { Effect as E } from "effect";
 import { StatusCodes } from "http-status-codes";
 import { ObjectId, UUID } from "mongodb";
 import { describe } from "vitest";
@@ -13,7 +19,8 @@ import type {
   ReadCreditsResponse,
   ReadPricingResponse,
 } from "@nillion/nildb-types";
-import { createUuidDto, PathsV1 } from "@nillion/nildb-types";
+import { createUuidDto, NucCmd, PathsV1 } from "@nillion/nildb-types";
+import { Builder, Codec, Signer } from "@nillion/nuc";
 
 import { createCreditTestFixtureExtension } from "../fixture/it";
 
@@ -517,6 +524,128 @@ describe("09-credits.test.ts", () => {
 
     // Clean up
     await builders.deleteOne({ did: purgeBuilderDid });
+  });
+
+  it("applies a payment to a builder balance exactly once under concurrency", async ({ c }) => {
+    const { bindings, expect } = c;
+    const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
+    const builderDid = `did:key:z6Mk${crypto.randomUUID().replace(/-/g, "")}`;
+    const paymentId = new ObjectId();
+    const now = new Date();
+
+    await builders.insertOne({
+      _id: new ObjectId(),
+      did: builderDid,
+      _created: now,
+      _updated: now,
+      name: "concurrent-payment-builder",
+      collections: [],
+      queries: [],
+      creditsUsd: 0,
+      storageBytes: 0,
+      status: "warning",
+    });
+
+    const outcomes = await Promise.all([
+      E.runPromise(BuildersRepository.applyPaymentCreditsAndActivate(bindings, builderDid, paymentId, 5)),
+      E.runPromise(BuildersRepository.applyPaymentCreditsAndActivate(bindings, builderDid, paymentId, 5)),
+    ]);
+    expect(outcomes).toContain(true);
+    expect(outcomes).toContain(false);
+
+    const builder = await builders.findOne({ did: builderDid });
+    expect(builder?.creditsUsd).toBe(5);
+    expect(builder?.creditedPaymentIds).toHaveLength(1);
+    expect(builder?.creditedPaymentIds?.[0]?.equals(paymentId)).toBe(true);
+
+    await builders.deleteOne({ did: builderDid });
+  });
+
+  it("makes a purge claim and a concurrent top-up mutually exclusive", async ({ c }) => {
+    const { bindings, expect } = c;
+    const builders = bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders);
+    const builderDid = `did:key:z6Mk${crypto.randomUUID().replace(/-/g, "")}`;
+    const now = new Date();
+
+    await builders.insertOne({
+      _id: new ObjectId(),
+      did: builderDid,
+      _created: now,
+      _updated: now,
+      name: "purge-topup-race-builder",
+      collections: [],
+      queries: [],
+      creditsUsd: 0,
+      storageBytes: 0,
+      status: "pending_purge",
+      creditsDepleted: new Date(0),
+    });
+
+    const [claimResult, topUpResult] = await Promise.allSettled([
+      E.runPromise(
+        BuildersRepository.claimBuilderForPurge(
+          bindings,
+          builderDid,
+          crypto.randomUUID(),
+          new Date(Date.now() - 60 * 60 * 1000),
+        ),
+      ),
+      E.runPromise(BuildersRepository.applyCreditsAndActivate(bindings, builderDid, 5)),
+    ]);
+
+    expect(claimResult.status).toBe("fulfilled");
+    if (claimResult.status !== "fulfilled") throw claimResult.reason;
+
+    const builder = await builders.findOne({ did: builderDid });
+    expect(builder).not.toBeNull();
+    if (!builder) throw new Error("Race-test builder disappeared");
+
+    if (claimResult.value) {
+      expect(topUpResult.status).toBe("rejected");
+      expect(builder.status).toBe("purging");
+      expect(builder.creditsUsd).toBe(0);
+    } else {
+      expect(topUpResult.status).toBe("fulfilled");
+      expect(builder.status).toBe("active");
+      expect(builder.creditsUsd).toBe(5);
+    }
+
+    await builders.deleteOne({ did: builderDid });
+  });
+
+  it("rejects revocation by a delegate unrelated to the target token", async ({ c }) => {
+    const { app, bindings, creditBuilder, expect } = c;
+    const rootDid = await creditBuilder.signer.getDid();
+    const delegateSigner = Signer.fromPrivateKey(bytesToHex(secp256k1.utils.randomSecretKey()));
+    const delegateDid = await delegateSigner.getDid();
+
+    const delegation = await Builder.delegation()
+      .audience(delegateDid)
+      .subject(rootDid)
+      .command(NucCmd.nuc.revoke)
+      .expiresIn(120_000)
+      .sign(creditBuilder.signer);
+    const revocationInvocation = await Builder.invocationFrom(delegation)
+      .audience(bindings.node.did)
+      .expiresIn(60_000)
+      .sign(delegateSigner);
+    const target = await Builder.invocation()
+      .audience(bindings.node.did)
+      .subject(rootDid)
+      .command("/nil/db/collections/read")
+      .expiresIn(60_000)
+      .sign(creditBuilder.signer);
+
+    const response = await app.request(PathsV1.revocations.revoke, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Codec.serializeBase64Url(revocationInvocation)}`,
+      },
+      body: JSON.stringify({ token: Codec.serializeBase64Url(target) }),
+    });
+
+    expect(response.status).toBe(StatusCodes.FORBIDDEN);
   });
 
   // --- Admin credit topup tests ---

@@ -20,6 +20,10 @@ function makeBuilder(overrides: Partial<BuilderDocument> = {}): BuilderDocument 
 const config = { freeTierBytes: 104857600, gracePeriodDays: 90 }; // 100MB free tier
 
 describe("computeStatus", () => {
+  it("preserves the purging state while a deletion lease is held", () => {
+    expect(computeStatus(makeBuilder({ status: "purging", creditsUsd: 10 }), config)).toBe("purging");
+  });
+
   it("returns free_tier when storage is under the free tier limit", () => {
     const builder = makeBuilder({ storageBytes: 50 * 1024 * 1024, creditsUsd: 0 });
     expect(computeStatus(builder, config)).toBe("free_tier");

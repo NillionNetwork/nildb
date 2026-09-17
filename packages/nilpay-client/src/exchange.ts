@@ -7,7 +7,31 @@ import type { ExchangeRate } from "./types";
  * CoinGecko-style API response format.
  * Example: { "nillion": { "usd": 0.25 } }
  */
-type CoinGeckoResponse = Record<string, { usd: number }>;
+type CoinGeckoResponse = Record<string, { usd: unknown }>;
+
+/**
+ * Sanity bounds for the NIL/USD rate.
+ *
+ * The rate is multiplied into every credit grant, so a zero, negative, NaN or
+ * absurd value from a compromised or glitching price source turns directly
+ * into wrong balances. These bounds are wide enough to never bind in practice
+ * and narrow enough to catch a broken feed.
+ */
+const MIN_NIL_USD_PRICE = 1e-6;
+const MAX_NIL_USD_PRICE = 1e6;
+
+/**
+ * Validate a price before it is allowed to influence a balance.
+ */
+function assertUsablePrice(price: unknown, source: string): number {
+  if (typeof price !== "number" || !Number.isFinite(price)) {
+    throw new Error(`Token price from ${source} is not a finite number`);
+  }
+  if (price < MIN_NIL_USD_PRICE || price > MAX_NIL_USD_PRICE) {
+    throw new Error(`Token price ${price} from ${source} is outside the accepted range`);
+  }
+  return price;
+}
 
 /**
  * Fetch the current NIL/USD exchange rate from an HTTP API (CoinGecko-compatible).
@@ -34,12 +58,12 @@ export async function getNilUsdPriceHttp(apiUrl: string, coinId: string, apiKey?
 
   const data = (await response.json()) as CoinGeckoResponse;
   const coinData = data[coinId];
-  if (!coinData?.usd) {
+  if (coinData?.usd === undefined) {
     throw new Error(`Token price response missing ${coinId}.usd`);
   }
 
   return {
-    nilUsdPrice: coinData.usd,
+    nilUsdPrice: assertUsablePrice(coinData.usd, `${coinId} price api`),
     timestamp: Math.floor(Date.now() / 1000),
   };
 }
@@ -74,7 +98,7 @@ export async function getNilUsdPrice(oracleAddress: `0x${string}`, rpcUrl: strin
   const nilUsdPrice = Number(answer) / divisor;
 
   return {
-    nilUsdPrice,
+    nilUsdPrice: assertUsablePrice(nilUsdPrice, "price oracle"),
     timestamp: Number(updatedAt),
   };
 }

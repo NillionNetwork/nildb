@@ -1,6 +1,15 @@
+import type { BuilderDocument } from "@nildb/builders/builders.types";
+import { CollectionName } from "@nildb/common/mongo";
+// oxlint-disable-next-line import/extensions
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+// oxlint-disable-next-line import/extensions
+import { bytesToHex } from "@noble/hashes/utils.js";
+import { StatusCodes } from "http-status-codes";
+import { ObjectId } from "mongodb";
 import { describe } from "vitest";
 
-import { createUuidDto, type UuidDto } from "@nillion/nildb-types";
+import { createUuidDto, PathsV1, type UuidDto } from "@nillion/nildb-types";
+import { Builder, Did, Signer } from "@nillion/nuc";
 
 import simpleCollection from "../data/simple.collection.json";
 import simpleQuery from "../data/simple.query.json";
@@ -9,9 +18,10 @@ import { createTestFixtureExtension } from "../fixture/it";
 
 describe("Query Lifecycle", () => {
   const { it, beforeAll, afterAll } = createTestFixtureExtension();
+  let attackerSigner: Signer;
 
   beforeAll(async (c) => {
-    const { builder, expect } = c;
+    const { bindings, builder, expect } = c;
 
     simpleCollection._id = createUuidDto();
 
@@ -54,6 +64,21 @@ describe("Query Lifecycle", () => {
     });
     expect(createDataResult.ok).toBe(true);
     if (!createDataResult.ok) throw new Error("Test setup failed");
+
+    attackerSigner = Signer.fromPrivateKey(bytesToHex(secp256k1.utils.randomSecretKey()));
+    const attackerDid = Did.serialize(await attackerSigner.getDid());
+    const now = new Date();
+    await bindings.db.primary.collection<BuilderDocument>(CollectionName.Builders).insertOne({
+      _id: new ObjectId(),
+      did: attackerDid,
+      _created: now,
+      _updated: now,
+      name: "query-result-attacker",
+      collections: [],
+      queries: [],
+      creditsUsd: 0,
+      storageBytes: 0,
+    });
   });
 
   afterAll(async (_c) => {});
@@ -98,6 +123,19 @@ describe("Query Lifecycle", () => {
     expect(result.data.pagination.offset).toBe(2);
   });
 
+  it("rejects server-side JavaScript in query pipelines", async ({ c }) => {
+    const result = await c.builder.createQuery({
+      _id: createUuidDto(),
+      name: "Unsafe JavaScript Query",
+      collection: simpleCollection._id,
+      variables: {},
+      pipeline: [{ $match: { nested: { $where: "while (true) {}" } } }],
+    });
+
+    c.expect(result.ok).toBe(false);
+    if (!result.ok) c.expect(result.status).toBe(StatusCodes.BAD_REQUEST);
+  });
+
   it("can run the query and fetch its results", async ({ c }) => {
     const { builder, expect } = c;
 
@@ -118,6 +156,32 @@ describe("Query Lifecycle", () => {
     expect(result.data.result).toBeDefined();
     expect(result.data.result).toHaveLength(1);
     expect(result.data.result?.[0]?.name).toBe(targetName);
+  });
+
+  it("does not expose query results to another builder with the run id", async ({ c }) => {
+    const { app, bindings, builder, expect } = c;
+    const runQueryResponse = await builder.runQuery({
+      _id: simpleQuery._id,
+      variables: { name: "name2" },
+    });
+    expect(runQueryResponse.ok).toBe(true);
+    if (!runQueryResponse.ok) throw new Error("Test setup failed");
+
+    const jobId = runQueryResponse.data.data as unknown as UuidDto;
+    await waitForQueryRun(c, jobId);
+
+    const attackerDid = await attackerSigner.getDid();
+    const token = await Builder.invocation()
+      .command("/nil/db/queries/read")
+      .audience(bindings.node.did)
+      .subject(attackerDid)
+      .expiresIn(60_000)
+      .signAndSerialize(attackerSigner);
+    const response = await app.request(PathsV1.queries.runById.replace(":id", jobId), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(response.status).toBe(StatusCodes.NOT_FOUND);
   });
 
   it("can run a query and paginate its results", async ({ c }) => {

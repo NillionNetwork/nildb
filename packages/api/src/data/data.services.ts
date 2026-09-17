@@ -12,6 +12,7 @@ import type {
 import { addDocumentBaseCoercions, type DocumentBase } from "@nildb/common/mongo";
 import { validateData } from "@nildb/common/validator";
 import type { AppBindings } from "@nildb/env";
+import { guardPipeline } from "@nildb/queries/pipeline.guard";
 import type { QueryDocument } from "@nildb/queries/queries.types";
 import * as UsersService from "@nildb/users/users.services";
 import type { DeleteUserDataCommand, UpdateUserDataCommand } from "@nildb/users/users.types";
@@ -309,11 +310,16 @@ export function runAggregation(
   CollectionNotFoundError | DatabaseError | DataValidationError | ResourceAccessDeniedError | DocumentNotFoundError
 > {
   return pipe(
-    buildAccessControlledFilter(ctx, requesterId, query.collection, "execute", {}),
-    E.flatMap((secureFilter) => {
-      // Prepend the ACL filter as a $match stage to the pipeline
-      const securePipeline = [{ $match: secureFilter }, ...pipeline];
-      return DataRepository.runAggregation(ctx, query, securePipeline);
-    }),
+    // The $match below only constrains the source collection. $lookup, $out and
+    // $merge name other collections, so each of those has to be authorised
+    // against the requester before the pipeline runs.
+    guardPipeline(ctx, requesterId, pipeline as Record<string, unknown>[]),
+    E.flatMap((guardedPipeline) =>
+      pipe(
+        buildAccessControlledFilter(ctx, requesterId, query.collection, "execute", {}),
+        E.map((secureFilter) => [{ $match: secureFilter }, ...guardedPipeline] as Document[]),
+      ),
+    ),
+    E.flatMap((securePipeline) => DataRepository.runAggregation(ctx, query, securePipeline)),
   );
 }

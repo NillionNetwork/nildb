@@ -53,10 +53,21 @@ export function registerCredits(
 
   // Verify chain is supported
   const ethereumChains = parseEthereumChains(config.ethereumRpcUrls);
-  if (ethereumChains.size > 0 && !ethereumChains.has(command.chainId)) {
+  if (!ethereumChains.has(command.chainId)) {
     return E.fail(
       new PaymentValidationError({
         message: `Chain ${command.chainId} is not supported. Supported chains: ${[...ethereumChains.keys()].join(", ")}`,
+      }),
+    );
+  }
+
+  // The digest commits to the builder, so a payload prepared for one account
+  // cannot be redeemed by another. Reject early rather than compute a digest
+  // that could never match.
+  if (command.builderDid !== builderDid) {
+    return E.fail(
+      new PaymentValidationError({
+        message: "Payment payload names a different builder than the authenticated one",
       }),
     );
   }
@@ -65,33 +76,52 @@ export function registerCredits(
   const expectedDigest = computeDigest({
     nodePublicKey: command.nodePublicKey,
     payerDid: command.payerDid,
+    builderDid: command.builderDid,
     amountUnils: command.amountUnils,
     nonce: command.nonce,
     timestamp: command.timestamp,
     chainId: command.chainId,
   });
 
-  // Check if on-chain validation is configured
+  // On-chain validation is mandatory: it is the only thing that proves the
+  // claimed burn actually happened. If the chain has no usable configuration
+  // (no RPC URL, or a chain absent from KnownChains) we must fail closed
+  // rather than credit the amount the client asserted.
   const chainConfig = getChainConfigFromEnv(ctx, command.chainId);
-  const shouldValidateOnChain = chainConfig !== null;
+  if (chainConfig === null) {
+    return E.fail(
+      new PaymentValidationError({
+        message: `Chain ${command.chainId} is not configured for on-chain payment validation`,
+      }),
+    );
+  }
 
-  // Validate on-chain if configured
-  const validationEffect = shouldValidateOnChain
-    ? pipe(
-        validatePaymentOnChain(ctx, command.txHash as `0x${string}`, command),
-        E.flatMap((result) => {
-          // Verify the payer DID matches the on-chain payer
-          if (!verifyDidMatchesPayer(command.payerDid, result.payer)) {
-            return E.fail(
-              new PaymentValidationError({
-                message: `Payer DID ${command.payerDid} does not match on-chain payer ${result.payer}`,
-              }),
-            );
-          }
-          return E.succeed(result.amountUnils);
-        }),
-      )
-    : E.succeed(command.amountUnils);
+  const validationEffect = pipe(
+    validatePaymentOnChain(ctx, command.txHash as `0x${string}`, command),
+    E.flatMap((result) => {
+      // Verify the payer DID matches the on-chain payer
+      if (!verifyDidMatchesPayer(command.payerDid, result.payer)) {
+        return E.fail(
+          new PaymentValidationError({
+            message: `Payer DID ${command.payerDid} does not match on-chain payer ${result.payer}`,
+          }),
+        );
+      }
+      // The NIL/USD rate is read at registration time. Without an age bound a
+      // payer could burn while NIL is cheap and register after a spike, which
+      // is a free option on the exchange rate.
+      const burnAgeSeconds = Math.floor(Date.now() / 1000) - Number(result.burnTimestamp);
+      if (burnAgeSeconds > config.paymentMaxAgeSeconds) {
+        return E.fail(
+          new PaymentValidationError({
+            message: `Payment is too old to register: burned ${burnAgeSeconds}s ago, limit is ${config.paymentMaxAgeSeconds}s`,
+          }),
+        );
+      }
+
+      return E.succeed(result.amountUnils);
+    }),
+  );
 
   return pipe(
     validationEffect,
@@ -112,6 +142,11 @@ export function registerCredits(
         txHash: command.txHash,
         chainId: command.chainId,
         payerDid: command.payerDid,
+        builderDid,
+        // Flipped once the balance update lands, so a crash in between leaves
+        // a payment that a retry can finish rather than one that is marked
+        // processed forever with no credits granted.
+        creditsApplied: false,
         amountUnils: amountUnils.toString(),
         amountUsd,
         digest: expectedDigest,
@@ -122,8 +157,32 @@ export function registerCredits(
       return pipe(
         // Insert payment (will fail if already processed)
         CreditsRepository.insertPayment(ctx, paymentDoc),
+        E.as({ paymentId: paymentDoc._id, creditUsd: amountUsd }),
+        E.catchTag("PaymentAlreadyProcessedError", (alreadyProcessed) =>
+          pipe(
+            CreditsRepository.findPaymentByTxHashAndChain(ctx, command.txHash, command.chainId),
+            E.flatMap((existing) => {
+              // Resume a previous attempt that inserted the payment but never
+              // applied the credits. Anything else is a genuine replay.
+              if (existing && existing.creditsApplied === false && existing.builderDid === builderDid) {
+                ctx.log.warn(
+                  { txHash: command.txHash, chainId: command.chainId },
+                  "Completing a payment whose credits were never applied",
+                );
+                // Credit the amount recorded at the time, not today's rate.
+                return E.succeed({ paymentId: existing._id, creditUsd: existing.amountUsd });
+              }
+              return E.fail(alreadyProcessed);
+            }),
+          ),
+        ),
         // Add credits and activate builder in a single update
-        E.flatMap(() => BuildersRepository.applyCreditsAndActivate(ctx, builderDid, amountUsd)),
+        E.flatMap(({ paymentId, creditUsd }) =>
+          pipe(
+            BuildersRepository.applyPaymentCreditsAndActivate(ctx, builderDid, paymentId, creditUsd),
+            E.flatMap(() => CreditsRepository.markCreditsApplied(ctx, paymentId)),
+          ),
+        ),
         // Return updated balance and status
         E.flatMap(() => BuildersRepository.findOne(ctx, builderDid)),
         E.map((builder) => ({
@@ -249,6 +308,8 @@ export function computeStatus(
   builder: BuilderDocument,
   config: { freeTierBytes: number; gracePeriodDays: number },
 ): BuilderStatus {
+  if (builder.status === "purging") return "purging";
+
   const storageBytes = builder.storageBytes ?? 0;
   const creditsUsd = builder.creditsUsd ?? 0;
   const creditsDepleted = builder.creditsDepleted;

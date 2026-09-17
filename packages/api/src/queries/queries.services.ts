@@ -9,9 +9,10 @@ import {
   DocumentNotFoundError,
   type ResourceAccessDeniedError,
   TimeoutError,
-  type VariableInjectionError,
+  VariableInjectionError,
 } from "@nildb/common/errors";
 import { CollectionName } from "@nildb/common/mongo";
+import { isUnsafePath } from "@nildb/common/paths";
 import { validateData } from "@nildb/common/validator";
 import * as DataService from "@nildb/data/data.services";
 import type { AppBindings } from "@nildb/env";
@@ -23,6 +24,7 @@ import { z } from "zod";
 import type { Paginated, PaginationQuery } from "@nillion/nildb-types";
 
 import pipelineSchema from "./mongodb_pipeline.json";
+import { validatePipelineStructure } from "./pipeline.guard";
 import * as RunQueryJobsRepository from "./queries.jobs.repository";
 import * as QueriesRepository from "./queries.repository";
 import type {
@@ -65,6 +67,9 @@ export function addQuery(
 
   return pipe(
     validateData(pipelineSchema, document.pipeline),
+    // The json schema only validates the top level of the pipeline; nested
+    // $lookup/$facet sub-pipelines are checked here.
+    E.flatMap(() => validatePipelineStructure(document.pipeline)),
     E.flatMap(() => CollectionsService.find(ctx, { _id: document.collection })),
     E.flatMap((collection) => enforceBuilderOwnership(document.owner, collection.owner, "collection", collection._id)),
     E.flatMap(() => QueriesRepository.insert(ctx, document)),
@@ -154,7 +159,7 @@ export function runQueryInBackground(
     E.tap((query) => enforceBuilderOwnership(command.requesterId, query.owner, "query", command._id)),
     E.flatMap((query) =>
       pipe(
-        E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(query._id)),
+        E.succeed(RunQueryJobsRepository.toRunQueryJobDocument(query._id, query.owner)),
         E.flatMap((document) => RunQueryJobsRepository.insert(ctx, document)),
         E.tap((run) =>
           RunQueryJobsRepository.updateOne(ctx, run.insertedId, {
@@ -190,7 +195,7 @@ export function getRunQueryJob(
   DocumentNotFoundError | CollectionNotFoundError | DatabaseError
 > {
   return pipe(
-    RunQueryJobsRepository.findRunByIdWithPaginatedResults(ctx, command._id, pagination),
+    RunQueryJobsRepository.findRunByIdWithPaginatedResults(ctx, command._id, command.requesterId, pagination),
     E.flatMap((result) =>
       result
         ? E.succeed({ document: result, total: result.total })
@@ -395,8 +400,28 @@ export function injectVariablesIntoAggregation(
       const variableInfo = queryVariables[key];
       const value = variables[key];
 
+      if (!variableInfo) {
+        return E.fail(
+          new VariableInjectionError({
+            message: `No path is defined for variable '${key}'`,
+          }),
+        );
+      }
+
       // The path from the query definition uses `$.pipeline` which we need to remove
       const path = variableInfo.path.replace("$.pipeline", "");
+
+      // The path is builder-supplied. Without this screen a path such as
+      // `$.pipeline.constructor.prototype.x` walks out of the pipeline and
+      // writes to Object.prototype, corrupting the process for every tenant.
+      if (isUnsafePath(path)) {
+        return E.fail(
+          new VariableInjectionError({
+            message: `Variable '${key}' has a path that is not permitted: ${variableInfo.path}`,
+          }),
+        );
+      }
+
       set(pipeline, path, value);
     }
   }

@@ -14,10 +14,15 @@ import type { PaymentDocument, RegisterCreditsCommand } from "./credits.types";
 export const CreditsDataMapper = {
   toRegisterCreditsCommand(dto: RegisterCreditsRequest): RegisterCreditsCommand {
     return {
-      txHash: dto.txHash,
+      // Ethereum resolves tx hashes case-insensitively but the {txHash, chainId}
+      // unique index compares bytes, so an un-normalised hash lets the same burn
+      // be registered once per casing variant. Canonicalise to lowercase before
+      // it reaches either validation or storage.
+      txHash: dto.txHash.toLowerCase(),
       chainId: dto.chainId,
       nodePublicKey: dto.payload.nodePublicKey,
       payerDid: dto.payload.payerDid,
+      builderDid: dto.payload.builderDid,
       amountUnils: BigInt(dto.payload.amountUnils),
       nonce: dto.payload.nonce,
       timestamp: dto.payload.timestamp,

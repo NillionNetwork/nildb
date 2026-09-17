@@ -12,6 +12,12 @@ import { calculateBillableStorage, calculateBuilderStorage, calculateStorageCost
 
 const BILLING_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
+// A cycle never bills for more than this, however long the gap was. Without a
+// cap, a builder migrated to credits or a node restarted after an outage is
+// charged for the whole elapsed period at once and is instantly depleted.
+// Under-charging after downtime is the safe direction to err in.
+const MAX_BILLABLE_HOURS_PER_CYCLE = 24;
+
 /**
  * Run a single billing cycle.
  * Fetches all credit-enabled builders, computes storage for each,
@@ -88,11 +94,27 @@ async function billBuilder(
   await pipe(BuildersRepository.updateStorageSnapshot(bindings, builderId, storageBytes, now), E.runPromise);
 
   if (billableBytes <= 0) {
+    // Back under the free tier. `creditsDepleted` drives the degradation
+    // ladder and the purge query, so leaving a stale value here meant a
+    // builder who later crossed the tier again was computed straight to
+    // pending_purge and deleted without passing through warning or read-only.
+    if (builder.creditsDepleted || (builder.status && builder.status !== "free_tier")) {
+      await pipe(BuildersRepository.updateStatus(bindings, builderId, "free_tier", null), E.runPromise);
+      log.info({ builderId, from: builder.status }, "Builder returned to free tier");
+    }
     return { storageBytes, cost: 0 };
   }
 
   const lastBilling = builder.lastBillingCycle ?? builder._created;
-  const hoursSinceLastBilling = (now.getTime() - lastBilling.getTime()) / (1000 * 60 * 60);
+  const elapsedHours = (now.getTime() - lastBilling.getTime()) / (1000 * 60 * 60);
+  const hoursSinceLastBilling = Math.min(elapsedHours, MAX_BILLABLE_HOURS_PER_CYCLE);
+
+  if (elapsedHours > MAX_BILLABLE_HOURS_PER_CYCLE) {
+    log.warn(
+      { builderId, elapsedHours, cappedTo: MAX_BILLABLE_HOURS_PER_CYCLE },
+      "Billing gap exceeded the per-cycle cap",
+    );
+  }
 
   const cost = calculateStorageCost(billableBytes, config.storageCostPerGbHour, hoursSinceLastBilling);
 

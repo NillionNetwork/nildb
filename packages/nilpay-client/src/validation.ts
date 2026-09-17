@@ -40,6 +40,7 @@ export async function getBurnEvent(
           payer: event.args.payer,
           amount: event.args.amount,
           digest: event.args.digest,
+          timestamp: event.args.timestamp,
           blockNumber: receipt.blockNumber,
           transactionHash: txHash,
         };
@@ -106,5 +107,6 @@ export async function validatePayment(
     valid: true,
     amountUnils: burnEvent.amount,
     payer: burnEvent.payer,
+    burnTimestamp: burnEvent.timestamp,
   };
 }

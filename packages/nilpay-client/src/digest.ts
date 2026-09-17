@@ -7,13 +7,18 @@ import type { PaymentPayload } from "./types";
  * This digest is committed on-chain when burning tokens.
  *
  * The digest is computed as:
- *   keccak256(abi.encode(nodePublicKey, payerDid, amountUnils, nonce, timestamp, chainId))
+ *   keccak256(abi.encode(nodePublicKey, payerDid, builderDid, amountUnils, nonce, timestamp, chainId))
+ *
+ * builderDid is part of the commitment so that only the named builder can
+ * redeem the burn. Without it, whoever submits the payload first receives the
+ * credits.
  */
 export function computeDigest(payload: PaymentPayload): `0x${string}` {
   const encoded = encodeAbiParameters(
     [
       { type: "string", name: "nodePublicKey" },
       { type: "string", name: "payerDid" },
+      { type: "string", name: "builderDid" },
       { type: "uint256", name: "amountUnils" },
       { type: "string", name: "nonce" },
       { type: "uint256", name: "timestamp" },
@@ -22,6 +27,7 @@ export function computeDigest(payload: PaymentPayload): `0x${string}` {
     [
       payload.nodePublicKey,
       payload.payerDid,
+      payload.builderDid,
       payload.amountUnils,
       payload.nonce,
       BigInt(payload.timestamp),
@@ -40,6 +46,7 @@ export function serializePayload(payload: PaymentPayload): string {
   return JSON.stringify({
     nodePublicKey: payload.nodePublicKey,
     payerDid: payload.payerDid,
+    builderDid: payload.builderDid,
     amountUnils: payload.amountUnils.toString(),
     nonce: payload.nonce,
     timestamp: payload.timestamp,
@@ -54,6 +61,7 @@ export function deserializePayload(json: string): PaymentPayload {
   const parsed = JSON.parse(json) as {
     nodePublicKey: string;
     payerDid: string;
+    builderDid: string;
     amountUnils: string;
     nonce: string;
     timestamp: number;
@@ -63,6 +71,7 @@ export function deserializePayload(json: string): PaymentPayload {
   return {
     nodePublicKey: parsed.nodePublicKey,
     payerDid: parsed.payerDid,
+    builderDid: parsed.builderDid,
     amountUnils: BigInt(parsed.amountUnils),
     nonce: parsed.nonce,
     timestamp: parsed.timestamp,

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { MongoExpression, MongoUpdateExpression } from "./mongo.dto";
 import { PaginatedResponse, PaginationBodySchema } from "./pagination.dto";
 import { ApiSuccessResponse } from "./responses.dto";
 import { AclDto } from "./users.dto";
@@ -50,8 +51,8 @@ export type CreateDataResponse = z.infer<typeof CreateDataResponse>;
 export const UpdateDataRequest = z
   .object({
     collection: z.uuid(),
-    filter: z.record(z.string(), z.unknown()),
-    update: z.record(z.string(), z.unknown()),
+    filter: MongoExpression,
+    update: MongoUpdateExpression,
   })
   .meta({ ref: "UpdateDataRequest" });
 export type UpdateDataRequest = z.infer<typeof UpdateDataRequest>;
@@ -76,7 +77,7 @@ export type UpdateDataResponse = z.infer<typeof UpdateDataResponse>;
 export const FindDataRequest = z
   .object({
     collection: z.uuid(),
-    filter: z.record(z.string(), z.unknown()),
+    filter: MongoExpression,
     ...PaginationBodySchema.shape,
   })
   .meta({ ref: "FindDataRequest" });
@@ -94,7 +95,7 @@ export type FindDataResponse = z.infer<typeof FindDataResponse>;
 export const DeleteDataRequest = z
   .object({
     collection: z.uuid(),
-    filter: z.record(z.string(), z.unknown()).refine((obj) => Object.keys(obj).length > 0, "Filter cannot be empty"),
+    filter: MongoExpression.refine((obj) => Object.keys(obj).length > 0, "Filter cannot be empty"),
   })
   .meta({ ref: "DeleteDataRequest" });
 export type DeleteDataRequest = z.infer<typeof DeleteDataRequest>;

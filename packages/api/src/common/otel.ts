@@ -1,12 +1,12 @@
 import type { EnvVars } from "@nildb/env";
 import { metrics } from "@opentelemetry/api";
-import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { HostMetrics } from "@opentelemetry/host-metrics";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
+import { MongoDBInstrumentation } from "@opentelemetry/instrumentation-mongodb";
 import { RuntimeNodeInstrumentation } from "@opentelemetry/instrumentation-runtime-node";
 import {
   type Resource,
@@ -102,22 +102,9 @@ export function initializeMetricsOnly(config: EnvVars): MetricsOnlyProviders {
   });
   metrics.setGlobalMeterProvider(meterProvider);
 
-  // Register automatic instrumentations ONLY for metrics (no traces)
-  // We only want HTTP metrics, not traces, so we disable tracing
+  // Runtime metrics are the only instrumentation needed in metrics-only mode.
   registerInstrumentations({
-    instrumentations: [
-      getNodeAutoInstrumentations({
-        "@opentelemetry/instrumentation-fs": {
-          enabled: false,
-        },
-        // Disable HTTP instrumentation - we use custom middleware for route-aware metrics
-        "@opentelemetry/instrumentation-http": {
-          enabled: false,
-        },
-      }),
-      // Add Node.js runtime metrics (heap, GC, event loop lag, etc.)
-      new RuntimeNodeInstrumentation(),
-    ],
+    instrumentations: [new RuntimeNodeInstrumentation()],
   });
 
   // Start host metrics collection (CPU, memory, network)
@@ -178,22 +165,14 @@ export function initializeOtel(config: EnvVars): OtelProviders | null {
   });
   const loggerProvider = new LoggerProvider({
     resource,
-    processors: [new BatchLogRecordProcessor(logExporter)],
+    processors: [new BatchLogRecordProcessor({ exporter: logExporter })],
   });
 
-  // Register automatic instrumentations for MongoDB, etc.
+  // Register only the database instrumentation this service uses. Pulling in
+  // the all-in-one Node bundle also installs unused gRPC/protobuf exporters.
   registerInstrumentations({
     instrumentations: [
-      getNodeAutoInstrumentations({
-        // Disable fs instrumentation to reduce noise
-        "@opentelemetry/instrumentation-fs": {
-          enabled: false,
-        },
-        // Disable HTTP instrumentation - we use custom middleware for route-aware metrics
-        "@opentelemetry/instrumentation-http": {
-          enabled: false,
-        },
-      }),
+      new MongoDBInstrumentation(),
       // Add Node.js runtime metrics (heap, GC, event loop lag, etc.)
       new RuntimeNodeInstrumentation(),
     ],

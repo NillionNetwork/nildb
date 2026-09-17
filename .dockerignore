@@ -3,8 +3,13 @@ README.md
 .idea
 .vscode
 .github
-tests
+**/tests
+**/coverage
 **/.terragrunt-cache
 **/.terraform
-.env
+# Every env file, not just the one at the root. The builder layer is exported
+# to the actions cache with mode=max, so anything here outlives the build.
+**/.env
+**/.env.*
+.git
 backups

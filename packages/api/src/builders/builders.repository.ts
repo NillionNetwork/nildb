@@ -7,7 +7,14 @@ import {
 import { CollectionName, checkCollectionExists, MongoErrorCode } from "@nildb/common/mongo";
 import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
-import { MongoServerError, type StrictFilter, type StrictUpdateFilter, type UpdateResult, type UUID } from "mongodb";
+import {
+  MongoServerError,
+  type ObjectId,
+  type StrictFilter,
+  type StrictUpdateFilter,
+  type UpdateResult,
+  type UUID,
+} from "mongodb";
 
 import type { BuilderDocument, BuilderStatus } from "./builders.types";
 
@@ -341,7 +348,7 @@ export function addCreditsUsd(
   builder: string,
   amountUsd: number,
 ): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
-  const filter: StrictFilter<BuilderDocument> = { did: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder, status: { $ne: "purging" } };
 
   return pipe(
     checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
@@ -380,7 +387,7 @@ export function applyCreditsAndActivate(
   builder: string,
   amountUsd: number,
 ): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
-  const filter: StrictFilter<BuilderDocument> = { did: builder };
+  const filter: StrictFilter<BuilderDocument> = { did: builder, status: { $ne: "purging" } };
   const now = new Date();
 
   return pipe(
@@ -408,6 +415,57 @@ export function applyCreditsAndActivate(
             }),
           ),
     ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/**
+ * Add a payment to a builder's balance exactly once.
+ *
+ * The payment id is recorded in the same atomic document update as the balance
+ * increment. A concurrent request, or a retry after the payment row was
+ * inserted, therefore cannot increment the balance a second time.
+ */
+export function applyPaymentCreditsAndActivate(
+  ctx: AppBindings,
+  builder: string,
+  paymentId: ObjectId,
+  amountUsd: number,
+): E.Effect<boolean, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
+  const filter = {
+    did: builder,
+    status: { $ne: "purging" },
+    creditedPaymentIds: { $ne: paymentId },
+  } as StrictFilter<BuilderDocument>;
+  const now = new Date();
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, {
+          $inc: { creditsUsd: amountUsd },
+          $addToSet: { creditedPaymentIds: paymentId },
+          $set: {
+            status: "active",
+            _updated: now,
+            lastCreditTopUp: now,
+            creditsDepleted: null,
+          },
+        }),
+      catch: (cause) => new DatabaseError({ cause, message: "applyPaymentCreditsAndActivate" }),
+    }),
+    E.flatMap((result) => {
+      if (result.matchedCount === 1) return E.succeed(true);
+      return pipe(
+        findOne(ctx, builder),
+        E.flatMap((document) =>
+          document.creditedPaymentIds?.some((id) => id.equals(paymentId))
+            ? E.succeed(false)
+            : E.fail(new DocumentNotFoundError({ collection: CollectionName.Builders, filter })),
+        ),
+      );
+    }),
     E.tap(() => ctx.cache.builders.delete(builder)),
   );
 }
@@ -563,11 +621,14 @@ export function findAllCreditBuilders(
 export function findBuildersPendingPurge(
   ctx: AppBindings,
   creditsDepletesBefore: Date,
+  staleClaimBefore: Date,
   limit: number,
 ): E.Effect<BuilderDocument[], CollectionNotFoundError | DatabaseError> {
   const filter: StrictFilter<BuilderDocument> = {
-    status: "pending_purge",
-    creditsDepleted: { $lt: creditsDepletesBefore },
+    $or: [
+      { status: "pending_purge", creditsDepleted: { $lt: creditsDepletesBefore } },
+      { status: "purging", purgeClaimedAt: { $lt: staleClaimBefore } },
+    ],
   };
 
   return pipe(
@@ -576,6 +637,76 @@ export function findBuildersPendingPurge(
       try: (collection) => collection.find(filter).limit(limit).toArray(),
       catch: (cause) => new DatabaseError({ cause, message: "findBuildersPendingPurge" }),
     }),
+  );
+}
+
+/** Atomically reserve a builder for purge, excluding concurrent top-ups. */
+export function claimBuilderForPurge(
+  ctx: AppBindings,
+  builder: string,
+  claimId: string,
+  staleClaimBefore: Date,
+): E.Effect<boolean, CollectionNotFoundError | DatabaseError> {
+  const filter = {
+    did: builder,
+    creditsUsd: { $lte: 0 },
+    $or: [{ status: "pending_purge" }, { status: "purging", purgeClaimedAt: { $lt: staleClaimBefore } }],
+  } as StrictFilter<BuilderDocument>;
+
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(filter, {
+          $set: { status: "purging", purgeClaimId: claimId, purgeClaimedAt: new Date(), _updated: new Date() },
+        }),
+      catch: (cause) => new DatabaseError({ cause, message: "claimBuilderForPurge" }),
+    }),
+    E.map((result) => result.matchedCount === 1),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/** Expire a failed purge lease so deletion can resume without allowing a top-up into a partially deleted account. */
+export function releasePurgeClaim(
+  ctx: AppBindings,
+  builder: string,
+  claimId: string,
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) =>
+        collection.updateOne(
+          { did: builder, status: "purging", purgeClaimId: claimId },
+          { $set: { purgeClaimedAt: new Date(0), _updated: new Date() }, $unset: { purgeClaimId: "" } },
+        ),
+      catch: (cause) => new DatabaseError({ cause, message: "releasePurgeClaim" }),
+    }),
+    E.as(void 0),
+    E.tap(() => ctx.cache.builders.delete(builder)),
+  );
+}
+
+/** Delete only the builder still owned by this purge worker. */
+export function deleteClaimedBuilder(
+  ctx: AppBindings,
+  builder: string,
+  claimId: string,
+): E.Effect<void, DocumentNotFoundError | CollectionNotFoundError | DatabaseError> {
+  const filter = { did: builder, status: "purging", purgeClaimId: claimId } as StrictFilter<BuilderDocument>;
+  return pipe(
+    checkCollectionExists<BuilderDocument>(ctx, "primary", CollectionName.Builders),
+    E.tryMapPromise({
+      try: (collection) => collection.deleteOne(filter),
+      catch: (cause) => new DatabaseError({ cause, message: "deleteClaimedBuilder" }),
+    }),
+    E.flatMap((result) =>
+      result.deletedCount === 1
+        ? E.succeed(void 0)
+        : E.fail(new DocumentNotFoundError({ collection: CollectionName.Builders, filter })),
+    ),
+    E.tap(() => ctx.cache.builders.delete(builder)),
   );
 }
 
@@ -613,6 +744,9 @@ export function migrateToCredits(
               status: "active" as BuilderStatus,
               lastCreditTopUp: now,
               creditsDepleted: null,
+              // Without this the first billing cycle falls back to `_created`
+              // and charges for the builder's entire history in one go.
+              lastBillingCycle: now,
               _updated: now,
             },
           },

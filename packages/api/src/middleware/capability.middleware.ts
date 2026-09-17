@@ -1,13 +1,7 @@
 import * as BuilderRepository from "@nildb/builders/builders.repository";
+import type { BuilderDocument } from "@nildb/builders/builders.types";
 import * as CreditsRepository from "@nildb/credits/credits.repository";
-import {
-  FeatureFlag,
-  hasFeatureFlag,
-  parseEthereumChains,
-  type AppBindings,
-  type AppEnv,
-  type NilauthInstance,
-} from "@nildb/env";
+import { FeatureFlag, hasFeatureFlag, type AppBindings, type AppEnv, type NilauthInstance } from "@nildb/env";
 import * as UserRepository from "@nildb/users/users.repository";
 import { Effect as E, pipe } from "effect";
 import type { BlankInput, Input, MiddlewareHandler } from "hono/types";
@@ -22,23 +16,55 @@ type NilauthInstanceWithDid = NilauthInstance & { did: DidType };
 
 /**
  * Validate that any EIP-712 signed tokens in the envelope were signed on a supported chain.
- * Skips validation if supportedChainIds is empty (not configured).
+ * Native NUC signatures are chain-independent. EIP-712 signatures must match
+ * an explicitly configured chain and fail closed when none is configured.
  */
 export function validateEip712ChainId(envelope: Envelope, supportedChainIds: number[]): void {
-  if (supportedChainIds.length === 0) return;
-
   const tokens: Nuc[] = [envelope.nuc, ...envelope.proofs];
   for (const token of tokens) {
     const header = JSON.parse(Buffer.from(token.rawHeader, "base64url").toString());
     if (header.typ !== "nuc+eip712") continue;
 
+    if (supportedChainIds.length === 0) {
+      throw new Error("EIP-712 authentication is disabled because no NUC chain id is configured");
+    }
+
+    // The whole EIP-712 domain, chain id included, comes from the token header,
+    // and viem omits chainId from the domain separator when it is absent
+    // rather than defaulting it. A token that simply declares no chain id
+    // therefore still verifies, so treating "absent" as "nothing to check"
+    // let an attacker opt out of chain scoping entirely.
     const tokenChainId = header.meta?.domain?.chainId;
-    if (tokenChainId !== undefined && !supportedChainIds.includes(tokenChainId)) {
+    if (typeof tokenChainId !== "number") {
+      throw new Error("EIP-712 token does not declare a numeric chain id in its domain");
+    }
+    if (!supportedChainIds.includes(tokenChainId)) {
       throw new Error(
         `EIP-712 token signed on chain ${tokenChainId}, expected one of [${supportedChainIds.join(", ")}]`,
       );
     }
   }
+}
+
+function configuredNucChainIds(bindings: AppBindings): number[] {
+  return bindings.config.nilauthChainId > 0 ? [bindings.config.nilauthChainId] : [];
+}
+
+/**
+ * Reduce a NUC payload to the fields worth recording.
+ *
+ * The full payload carries builder-supplied `args` and `meta`, which end up in
+ * stdout and, via the log bridge, in exported telemetry. Only the identifying
+ * claims are useful for tracing a revoked token.
+ */
+function summariseToken(payload: Nuc["payload"]): Record<string, unknown> {
+  return {
+    iss: payload.iss.didString,
+    aud: payload.aud.didString,
+    sub: payload.sub.didString,
+    cmd: payload.cmd,
+    exp: payload.exp,
+  };
 }
 
 function buildNilauthInstancesWithDids(instances: NilauthInstance[]): NilauthInstanceWithDid[] {
@@ -52,6 +78,10 @@ function extractRootIssuerDid(envelope: Envelope): Did {
   const proofs = envelope.proofs;
   const rootToken = proofs.length > 0 ? proofs[proofs.length - 1] : envelope.nuc;
   return rootToken.payload.iss;
+}
+
+export function getBuilderAuthMode(builder: Pick<BuilderDocument, "creditsUsd">): "nilauth" | "self-signed" {
+  return builder.creditsUsd === undefined ? "nilauth" : "self-signed";
 }
 
 /**
@@ -115,6 +145,7 @@ export function verifySelfSignedNuc<P extends string = string, I extends Input =
           },
         },
       });
+      validateEip712ChainId(envelope, configuredNucChainIds(bindings));
 
       c.set("subjectDid", canonicalSubject);
       return next();
@@ -153,6 +184,7 @@ export function loadSubjectAndVerifyAsCreditAdmin<
           },
         },
       });
+      validateEip712ChainId(envelope, configuredNucChainIds(bindings));
 
       c.set("subjectDid", bindings.admin.did.didString);
       return next();
@@ -180,7 +212,17 @@ export function loadSubjectAndVerifyAsAdmin<
       const envelope = c.get("envelope");
       await Validator.validate(envelope, {
         rootIssuers: [nildbNodeDid.didString],
+        // Without tokenRequirements the validator checks neither the audience
+        // nor the token type, so a delegation, or an invocation addressed to a
+        // different node, would be accepted here.
+        params: {
+          tokenRequirements: {
+            type: "invocation",
+            audience: nildbNodeDid.didString,
+          },
+        },
       });
+      validateEip712ChainId(envelope, configuredNucChainIds(bindings));
       return next();
     } catch (cause) {
       if (cause && typeof cause === "object" && "message" in cause) {
@@ -199,7 +241,7 @@ export function loadSubjectAndVerifyAsBuilder<
   E extends AppEnv = AppEnv,
 >(bindings: AppBindings): MiddlewareHandler<E, P, I> {
   const { log, config } = bindings;
-  const supportedChainIds = [...parseEthereumChains(config.ethereumRpcUrls).keys()];
+  const supportedChainIds = configuredNucChainIds(bindings);
 
   // Only build nilauth instances when the feature is enabled
   const nilauthInstances = hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)
@@ -259,24 +301,29 @@ export function loadSubjectAndVerifyAsBuilder<
         context,
       };
 
-      // Auth mode: when NILAUTH flag is on, try nilauth first, fall back to self-signed.
-      // This allows migrated builders (creditsUsd set) to keep using nilauth tokens
-      // during the transition period, while new credit-only builders use self-signed.
-      let usedNilauth = false;
+      // The persisted builder mode is the trust decision. Falling back from a
+      // failed Nilauth validation to self-signed authentication would let a
+      // legacy builder bypass a revoked subscription or proof chain.
+      const usedNilauth = getBuilderAuthMode(builder) === "nilauth";
+      let matchingNilauth: NilauthInstanceWithDid | undefined;
 
-      if (hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
-        try {
-          await Validator.validate(envelope, {
-            ...validationParams,
-            rootIssuers: nilauthRootIssuers,
-          });
-          usedNilauth = true;
-        } catch {
-          // Nilauth validation failed — fall back to self-signed below
+      if (usedNilauth) {
+        if (!hasFeatureFlag(config.enabledFeatures, FeatureFlag.NILAUTH)) {
+          throw new Error("Nilauth authentication is disabled for this legacy builder");
         }
-      }
 
-      if (!usedNilauth) {
+        const rootIssuerDid = extractRootIssuerDid(envelope);
+        matchingNilauth = nilauthInstances.find((instance) => Did.areEqual(instance.did, rootIssuerDid));
+        if (!matchingNilauth) {
+          log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid.didString);
+          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
+        }
+
+        await Validator.validate(envelope, {
+          ...validationParams,
+          rootIssuers: nilauthRootIssuers,
+        });
+      } else {
         await Validator.validate(envelope, {
           ...validationParams,
           rootIssuers: [canonicalSubject],
@@ -286,15 +333,7 @@ export function loadSubjectAndVerifyAsBuilder<
       validateEip712ChainId(envelope, supportedChainIds);
 
       // Check revocations based on which auth mode succeeded
-      if (usedNilauth) {
-        const rootIssuerDid = extractRootIssuerDid(envelope);
-        const matchingNilauth = nilauthInstances.find((n) => Did.areEqual(n.did, rootIssuerDid));
-
-        if (!matchingNilauth) {
-          log.error("No matching nilauth instance found for root issuer: %s", rootIssuerDid.didString);
-          return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
-        }
-
+      if (matchingNilauth) {
         const nilauthClient = await NilauthClient.create({
           baseUrl: matchingNilauth.baseUrl,
           chainId: config.nilauthChainId,
@@ -303,13 +342,13 @@ export function loadSubjectAndVerifyAsBuilder<
 
         if (revoked.length !== 0) {
           const hashes = revoked.map((r) => r.tokenHash).join(",");
-          log.warn("Token revoked: revoked_hashes=(%s) auth_token=%O", hashes, token);
+          log.warn({ revokedHashes: hashes, token: summariseToken(token) }, "Token revoked");
           return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
         }
       } else {
         const revokedHashes = await checkLocalRevocations(bindings, envelope);
         if (revokedHashes.length > 0) {
-          log.warn("Token revoked (local): revoked_hashes=(%s) auth_token=%O", revokedHashes.join(","), token);
+          log.warn({ revokedHashes: revokedHashes.join(","), token: summariseToken(token) }, "Token revoked (local)");
           return c.text(getReasonPhrase(StatusCodes.UNAUTHORIZED), StatusCodes.UNAUTHORIZED);
         }
       }
@@ -368,7 +407,17 @@ export function loadSubjectAndVerifyAsUser<
       }
       await Validator.validate(envelope, {
         rootIssuers: [subject],
+        // Without tokenRequirements the validator checks neither the audience
+        // nor the token type, so a user token minted for a different nilDB
+        // node would be replayable here.
+        params: {
+          tokenRequirements: {
+            type: "invocation",
+            audience: bindings.node.did.didString,
+          },
+        },
       });
+      validateEip712ChainId(envelope, configuredNucChainIds(bindings));
       c.set("user", user);
       return next();
     } catch (cause) {

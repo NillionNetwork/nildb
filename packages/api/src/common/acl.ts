@@ -55,6 +55,24 @@ export function enforceBuilderOwnership(
 }
 
 /**
+ * Builds the per-document ACL predicate for an owned collection.
+ *
+ * Owned collections have no blanket owner: access is granted per document via
+ * `_acl`. Any read path into an owned collection must be constrained by this
+ * predicate, including aggregation `$lookup` sub-pipelines.
+ */
+export function buildAclFilter(granteeId: string, permission: Permission): Record<string, unknown> {
+  return {
+    _acl: {
+      $elemMatch: {
+        grantee: granteeId,
+        [permission]: true,
+      },
+    },
+  };
+}
+
+/**
  * Builds an access-controlled filter for database queries.
  * For standard collections, verifies builder owns the collection.
  * For owned collections, augments the filter with ACL checks.
@@ -88,14 +106,7 @@ export function buildAccessControlledFilter(
       }
 
       // For owned collections, augment filter with ACL check
-      const aclFilter = {
-        _acl: {
-          $elemMatch: {
-            grantee: builderId,
-            [permission]: true,
-          },
-        },
-      };
+      const aclFilter = buildAclFilter(builderId, permission);
 
       // if the original filter is empty then we only need the acl filter
       if (Object.keys(originalFilter).length === 0) {

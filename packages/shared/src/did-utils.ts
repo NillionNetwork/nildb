@@ -20,8 +20,27 @@ export function normalizeIdentifier(id: string, log: Logger): string {
   if (id.startsWith("did:")) {
     if (id.startsWith("did:nil:")) {
       const publicKeyHex = id.slice("did:nil:".length);
-      return Did.serialize(Did.fromPublicKey(publicKeyHex, "key"));
+      try {
+        return Did.serialize(Did.fromPublicKey(publicKeyHex, "key"));
+      } catch {
+        // Malformed hex. Callers use the result as a database key, so a bad
+        // identifier has to fail the lookup rather than throw out of a mapper.
+        log.warn({ did: id }, "! Failed to convert did:nil to did:key.");
+        return id;
+      }
     }
+
+    // KNOWN GAP: did:ethr identifiers are not canonicalised for case.
+    // Ethereum addresses are case-insensitive and @nillion/nuc's Did.areEqual
+    // compares them that way, but our database lookups are string equality,
+    // so did:ethr:0xAB... and did:ethr:0xab... are one identity to the token
+    // validator and two to us. Did.serialize returns the original string, so
+    // fixing this means choosing a canonical form (checksummed or lowercase)
+    // and migrating every stored identifier: builders.did, users.did,
+    // collections.owner, queries.owner, and _owner / _acl.grantee on every
+    // data document. The effect today is a failed lookup or a duplicate
+    // account, never an authorisation bypass, so it is left for a change that
+    // can carry that migration.
     return id; // Already a valid, non-legacy Did format.
   }
 

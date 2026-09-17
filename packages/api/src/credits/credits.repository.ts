@@ -7,7 +7,7 @@ import {
 import { checkCollectionExists, CollectionName, MongoErrorCode } from "@nildb/common/mongo";
 import type { AppBindings } from "@nildb/env";
 import { Effect as E, pipe } from "effect";
-import { MongoServerError, type StrictFilter } from "mongodb";
+import { MongoServerError, type ObjectId, type StrictFilter } from "mongodb";
 
 import type { AdminCreditGrantDocument, PaymentDocument, RevocationDocument } from "./credits.types";
 
@@ -56,7 +56,26 @@ export function findPaymentByTxHashAndChain(
 }
 
 /**
- * Find payments by payer DID with pagination.
+ * Mark a payment's credits as applied.
+ */
+export function markCreditsApplied(
+  ctx: AppBindings,
+  _id: ObjectId,
+): E.Effect<void, CollectionNotFoundError | DatabaseError> {
+  return pipe(
+    checkCollectionExists<PaymentDocument>(ctx, "primary", CollectionName.Payments),
+    E.tryMapPromise({
+      try: (collection) => collection.updateOne({ _id }, { $set: { creditsApplied: true, _updated: new Date() } }),
+      catch: (cause) => new DatabaseError({ cause, message: "markCreditsApplied" }),
+    }),
+    E.as(void 0),
+  );
+}
+
+/**
+ * Find payments credited to a builder, with pagination.
+ *
+ * Legacy rows predate `builderDid` and are matched on the payer instead.
  */
 export function findPaymentsByPayer(
   ctx: AppBindings,
@@ -64,7 +83,9 @@ export function findPaymentsByPayer(
   limit: number,
   offset: number,
 ): E.Effect<{ data: PaymentDocument[]; total: number }, CollectionNotFoundError | DatabaseError> {
-  const filter: StrictFilter<PaymentDocument> = { payerDid };
+  const filter = {
+    $or: [{ builderDid: payerDid }, { builderDid: { $exists: false }, payerDid }],
+  } as unknown as StrictFilter<PaymentDocument>;
 
   return pipe(
     checkCollectionExists<PaymentDocument>(ctx, "primary", CollectionName.Payments),

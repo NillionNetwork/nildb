@@ -16,6 +16,9 @@ export type ChainConfig = {
 export type PaymentPayload = {
   nodePublicKey: string;
   payerDid: string;
+  /** The builder account the burn credits. Bound into the digest so the
+   *  commitment cannot be redeemed by a different account. */
+  builderDid: string;
   amountUnils: bigint;
   nonce: string;
   timestamp: number;
@@ -29,6 +32,8 @@ export type BurnEvent = {
   payer: `0x${string}`;
   amount: bigint;
   digest: `0x${string}`;
+  /** Contract-supplied burn time, in unix seconds. */
+  timestamp: bigint;
   blockNumber: bigint;
   transactionHash: `0x${string}`;
 };
@@ -37,7 +42,7 @@ export type BurnEvent = {
  * Result of validating a payment.
  */
 export type PaymentValidationResult =
-  | { valid: true; amountUnils: bigint; payer: `0x${string}` }
+  | { valid: true; amountUnils: bigint; payer: `0x${string}`; burnTimestamp: bigint }
   | { valid: false; reason: string };
 
 /**

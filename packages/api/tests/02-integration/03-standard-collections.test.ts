@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import type { StandardDocumentBase } from "@nildb/data/data.types";
+import { StatusCodes } from "http-status-codes";
 import type { DeleteResult } from "mongodb";
 import { describe } from "vitest";
 
@@ -34,6 +35,23 @@ describe("Standard Collections and Queries", () => {
     if (!result.ok) throw new Error("Test setup failed");
 
     standardCollection.id = _id;
+  });
+
+  it("rejects collection schemas with catastrophic regular expressions", async ({ c }) => {
+    const result = await c.builder.createCollection({
+      _id: createUuidDto(),
+      type: "standard",
+      name: "unsafe-regex-schema",
+      schema: {
+        type: "object",
+        properties: {
+          value: { type: "string", pattern: "^(a|aa)+$" },
+        },
+      },
+    });
+
+    c.expect(result.ok).toBe(false);
+    if (!result.ok) c.expect(result.status).toBe(StatusCodes.BAD_REQUEST);
   });
 
   // Standard Data Tests

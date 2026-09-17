@@ -36,12 +36,13 @@ export const UserDataMapper = {
   /**
    * Converts update data request DTO to domain command.
    */
-  toUpdateDataCommand(dto: UpdateUserDataRequest): UpdateUserDataCommand {
+  toUpdateDataCommand(user: UserDocument, dto: UpdateUserDataRequest): UpdateUserDataCommand {
     return {
       document: new UUID(dto.document),
       collection: new UUID(dto.collection),
       filter: {
         _id: new UUID(dto.document),
+        _owner: user.did,
       },
       update: dto.update,
     };
@@ -57,6 +58,7 @@ export const UserDataMapper = {
       document: new UUID(params.document),
       filter: {
         _id: new UUID(params.document),
+        _owner: user.did,
       },
     };
   },
