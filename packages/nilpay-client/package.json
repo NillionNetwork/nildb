@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@nillion/nuc": "^2.0.1",
-    "viem": "^2.47.2"
+    "viem": "^2.56.5"
   },
   "devDependencies": {
     "@typescript/native-preview": "7.0.0-dev.20260312.1",
