@@ -33,6 +33,13 @@ function errorResponse(errors: string[]): ApiErrorResponse {
   return { ts: Temporal.Now.instant().toString(), errors };
 }
 
+export function mayRevokeToken(
+  revoker: Envelope["nuc"]["payload"]["iss"],
+  target: Pick<Envelope["nuc"]["payload"], "iss" | "aud">,
+): boolean {
+  return Did.areEqual(revoker, target.iss) || Did.areEqual(revoker, target.aud);
+}
+
 /**
  * Handle POST /v1/revocations/revoke
  * Revoke a token.
@@ -62,7 +69,7 @@ export function revokeToken(options: ControllerOptions): void {
     loadSubjectAndVerifyAsBuilder(bindings),
     requireNucNamespace(NucCmd.nuc.revoke),
     async (c) => {
-      const builder = c.get("builder");
+      const requestEnvelope: Envelope = c.get("envelope");
       const body = c.req.valid("json");
       const { log } = c.env;
 
@@ -81,11 +88,14 @@ export function revokeToken(options: ControllerOptions): void {
       }
 
       const target = envelope.nuc.payload;
-      const revoker = Did.parse(builder.did);
-      const mayRevoke = Did.areEqual(revoker, target.iss) || Did.areEqual(revoker, target.aud);
+      // Authorise the key that signed this invocation. The loaded builder is
+      // the root subject, so using builder.did here would let any attenuated
+      // delegate act with its root's revocation authority.
+      const revoker = requestEnvelope.nuc.payload.iss;
+      const permitted = mayRevokeToken(revoker, target);
 
-      if (!mayRevoke) {
-        log.warn({ builder: builder.did }, "Rejected revocation by a party that is neither issuer nor audience");
+      if (!permitted) {
+        log.warn({ revoker: revoker.didString }, "Rejected revocation by a party that is neither issuer nor audience");
         return c.json(
           errorResponse(["Only the issuer or the audience of a token may revoke it"]),
           StatusCodes.FORBIDDEN,
@@ -104,7 +114,7 @@ export function revokeToken(options: ControllerOptions): void {
       return pipe(
         CreditsService.addRevocation(c.env, {
           tokenHash,
-          revokedBy: builder.did,
+          revokedBy: revoker.didString,
           expiresAt,
         }),
         E.map(() => c.text<RevokeTokenResponse>("")),
