@@ -64,12 +64,12 @@ The `APP_ENABLED_FEATURES` variable accepts a comma-separated list of feature fl
 
 The following variables control the IP-based rate limiting feature.
 
-| Variable                      | Description                                 | Default |
-| ----------------------------- | ------------------------------------------- | ------- |
-| APP_RATE_LIMIT_ENABLED        | Enables the rate-limiting feature.          | `true`  |
-| APP_RATE_LIMIT_WINDOW_SECONDS | The duration of the time window in seconds. | `60`    |
-| APP_RATE_LIMIT_MAX_REQUESTS   | Max requests per IP within the time window. | `60`    |
-| APP_TRUSTED_PROXY_COUNT       | Number of reverse proxies in front of the node. | `0` |
+| Variable                      | Description                                     | Default |
+| ----------------------------- | ----------------------------------------------- | ------- |
+| APP_RATE_LIMIT_ENABLED        | Enables the rate-limiting feature.              | `true`  |
+| APP_RATE_LIMIT_WINDOW_SECONDS | The duration of the time window in seconds.     | `60`    |
+| APP_RATE_LIMIT_MAX_REQUESTS   | Max requests per IP within the time window.     | `60`    |
+| APP_TRUSTED_PROXY_COUNT       | Number of reverse proxies in front of the node. | `0`     |
 
 `x-forwarded-for` is only honoured when `APP_TRUSTED_PROXY_COUNT` is greater
 than zero. Any client can set that header, so with the default of `0` the node
