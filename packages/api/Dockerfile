@@ -1,5 +1,5 @@
 # 1. Install all dependencies
-FROM node:24-alpine@sha256:50c8e8ca1d27439048670df5883f32d57cf81cff6233222c893fd0d9884cbd81 AS builder
+FROM node:26-alpine@sha256:2c45bdcbf63561a54da9549612084b43ca309854a4110c87857d609ddeb61c9e AS builder
 RUN corepack enable pnpm
 WORKDIR /build
 COPY . .
@@ -15,7 +15,7 @@ RUN pnpm deploy --prod --filter @nillion/nildb /app
 COPY buildinfo.json /app/buildinfo.json
 
 # 2. Final image
-FROM node:24-alpine@sha256:50c8e8ca1d27439048670df5883f32d57cf81cff6233222c893fd0d9884cbd81
+FROM node:26-alpine@sha256:2c45bdcbf63561a54da9549612084b43ca309854a4110c87857d609ddeb61c9e
 # No corepack here: the runtime only runs `node dist/main.mjs`, and enabling it
 # leaves a package manager that will fetch and execute code on first use.
 WORKDIR /app
