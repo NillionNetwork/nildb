@@ -92,7 +92,7 @@ importers:
         version: file:packages/types
       '@nillion/nilpay-client':
         specifier: workspace:*
-        version: file:packages/nilpay-client(pino@10.3.1)(typescript@5.9.3)(zod@4.3.6)
+        version: link:../nilpay-client
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
@@ -156,7 +156,7 @@ importers:
         version: 0.2.2(@standard-schema/spec@1.1.0)(hono@4.13.7)
       '@hono/zod-validator':
         specifier: ^0.7.6
-        version: 0.7.6(hono@4.13.7)(zod@4.3.6)
+        version: 0.7.6(hono@4.13.7)(zod@4.6.5)
       '@nillion/nilauth-client':
         specifier: 2.0.0
         version: 2.0.0(@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3))(pino@10.3.1)
@@ -174,10 +174,10 @@ importers:
         version: 2.0.1
       '@standard-community/standard-json':
         specifier: ^0.3.5
-        version: 0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6)
+        version: 0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5)
       '@standard-community/standard-openapi':
         specifier: ^0.2.9
-        version: 0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.3.6))(zod@4.3.6)
+        version: 0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.6.5))(zod@4.6.5)
       '@types/migrate-mongo':
         specifier: ^10.0.6
         version: 10.0.6
@@ -219,7 +219,7 @@ importers:
         version: 4.13.7
       hono-openapi:
         specifier: ^1.3.0
-        version: 1.3.0(@hono/standard-validator@0.2.2(@standard-schema/spec@1.1.0)(hono@4.13.7))(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.3.6))(zod@4.3.6))(@types/json-schema@7.0.15)(hono@4.13.7)(openapi-types@12.1.3)
+        version: 1.3.0(@hono/standard-validator@0.2.2(@standard-schema/spec@1.1.0)(hono@4.13.7))(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.6.5))(zod@4.6.5))(@types/json-schema@7.0.15)(hono@4.13.7)(openapi-types@12.1.3)
       hono-rate-limiter:
         specifier: ^0.5.3
         version: 0.5.3(hono@4.13.7)
@@ -243,16 +243,16 @@ importers:
         version: 0.3.2
       viem:
         specifier: ^2.47.2
-        version: 2.47.2(typescript@5.9.3)(zod@4.3.6)
+        version: 2.47.2(typescript@5.9.3)(zod@4.6.5)
       zod:
-        specifier: ^4.3.6
-        version: 4.3.6
+        specifier: ^4.6.5
+        version: 4.6.5
       zod-openapi:
         specifier: ^5.4.6
-        version: 5.4.6(zod@4.3.6)
+        version: 5.4.6(zod@4.6.5)
       zod-validation-error:
         specifier: ^5.0.0
-        version: 5.0.0(zod@4.3.6)
+        version: 5.0.0(zod@4.6.5)
 
   packages/client:
     dependencies:
@@ -280,7 +280,7 @@ importers:
         version: 2.0.1(pino@10.3.1)(typescript@5.9.3)
       viem:
         specifier: ^2.47.2
-        version: 2.47.2(typescript@5.9.3)(zod@4.6.1)
+        version: 2.47.2(typescript@5.9.3)(zod@4.6.5)
     devDependencies:
       '@typescript/native-preview':
         specifier: 7.0.0-dev.20260312.1
@@ -326,8 +326,8 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0
       zod:
-        specifier: ^4.3.6
-        version: 4.3.6
+        specifier: ^4.6.5
+        version: 4.6.5
     devDependencies:
       '@typescript/native-preview':
         specifier: 7.0.0-dev.20260312.1
@@ -729,9 +729,6 @@ packages:
 
   '@nillion/nildb-types@file:packages/types':
     resolution: {directory: packages/types, type: directory}
-
-  '@nillion/nilpay-client@file:packages/nilpay-client':
-    resolution: {directory: packages/nilpay-client, type: directory}
 
   '@nillion/nuc@2.0.1':
     resolution: {integrity: sha512-iP+GbnIh0v/GKmyk9yEZWiB7GvyBOd1EqcmJtCtRlOJvGf6yARw3I5hMbNLMW74zYWJwLUS/EYK8Igb15lxSOg==}
@@ -2610,6 +2607,7 @@ packages:
   prom-client@15.1.3:
     resolution: {integrity: sha512-6ZiOBfCywsD4k1BN9IX0uZhF+tJkV8q8llP64G5Hajs4JOeVLPCwpPVcpXy3BwYiUGgyJzsJJQeOIv7+hDSq8g==}
     engines: {node: ^16 || ^18 || >=20}
+    deprecated: prom-client has been replaced by @prometheus-io/client
 
   proper-lockfile@4.1.2:
     resolution: {integrity: sha512-TjNPblN4BwAWMXU8s9AEz4JmQxnD1NNL7bNOY/AKUzyamc379FWASUhc/K1pL2noVb+XmZKLL68cjzLsiOAMaA==}
@@ -3148,11 +3146,8 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  zod@4.3.6:
-    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
-
-  zod@4.6.1:
-    resolution: {integrity: sha512-341aRWQsve0rvronKNTqZpjmzdbUDlFuzHaI/XLg/Ej82qffDJRRfBTCuv7+9q/rMjB6LSLyEBnW4InJeMtt/Q==}
+  zod@4.6.5:
+    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
 
 snapshots:
 
@@ -3461,10 +3456,10 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       hono: 4.13.7
 
-  '@hono/zod-validator@0.7.6(hono@4.13.7)(zod@4.3.6)':
+  '@hono/zod-validator@0.7.6(hono@4.13.7)(zod@4.6.5)':
     dependencies:
       hono: 4.13.7
-      zod: 4.3.6
+      zod: 4.6.5
 
   '@isaacs/cliui@8.0.2':
     dependencies:
@@ -3519,13 +3514,13 @@ snapshots:
       canonicalize: 2.1.0
       ky: 1.14.3
       pino: 10.3.1
-      zod: 4.3.6
+      zod: 4.6.5
 
   '@nillion/nildb-types@file:packages/types':
     dependencies:
       http-status-codes: 2.3.0
       mongodb: 7.6.0
-      zod: 4.6.1
+      zod: 4.6.5
     transitivePeerDependencies:
       - '@aws-sdk/credential-providers'
       - '@mongodb-js/zstd'
@@ -3535,17 +3530,6 @@ snapshots:
       - snappy
       - socks
 
-  '@nillion/nilpay-client@file:packages/nilpay-client(pino@10.3.1)(typescript@5.9.3)(zod@4.3.6)':
-    dependencies:
-      '@nillion/nuc': 2.0.1(pino@10.3.1)(typescript@5.9.3)
-      viem: 2.47.2(typescript@5.9.3)(zod@4.3.6)
-    transitivePeerDependencies:
-      - bufferutil
-      - pino
-      - typescript
-      - utf-8-validate
-      - zod
-
   '@nillion/nuc@2.0.1(pino@10.3.1)(typescript@5.9.3)':
     dependencies:
       '@noble/curves': 2.0.1
@@ -3554,8 +3538,8 @@ snapshots:
       es-toolkit: 1.45.1
       multiformats: 13.4.2
       pino: 10.3.1
-      viem: 2.47.2(typescript@5.9.3)(zod@4.3.6)
-      zod: 4.3.6
+      viem: 2.47.2(typescript@5.9.3)(zod@4.6.5)
+      zod: 4.6.5
     transitivePeerDependencies:
       - bufferutil
       - typescript
@@ -4050,24 +4034,24 @@ snapshots:
 
   '@simple-libs/stream-utils@1.2.0': {}
 
-  '@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6)':
+  '@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@types/json-schema': 7.0.15
       quansync: 1.0.0
     optionalDependencies:
       effect: 3.22.2
-      zod: 4.3.6
+      zod: 4.6.5
 
-  '@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.3.6))(zod@4.3.6)':
+  '@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.6.5))(zod@4.6.5)':
     dependencies:
-      '@standard-community/standard-json': 0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6)
+      '@standard-community/standard-json': 0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5)
       '@standard-schema/spec': 1.1.0
       openapi-types: 12.1.3
     optionalDependencies:
       effect: 3.22.2
-      zod: 4.3.6
-      zod-openapi: 5.4.6(zod@4.3.6)
+      zod: 4.6.5
+      zod-openapi: 5.4.6(zod@4.6.5)
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -4240,15 +4224,10 @@ snapshots:
       '@vitest/pretty-format': 4.0.18
       tinyrainbow: 3.1.0
 
-  abitype@1.2.3(typescript@5.9.3)(zod@4.3.6):
+  abitype@1.2.3(typescript@5.9.3)(zod@4.6.5):
     optionalDependencies:
       typescript: 5.9.3
-      zod: 4.3.6
-
-  abitype@1.2.3(typescript@5.9.3)(zod@4.6.1):
-    optionalDependencies:
-      typescript: 5.9.3
-      zod: 4.6.1
+      zod: 4.6.5
 
   abort-controller@3.0.0:
     dependencies:
@@ -4730,10 +4709,10 @@ snapshots:
 
   help-me@5.0.0: {}
 
-  hono-openapi@1.3.0(@hono/standard-validator@0.2.2(@standard-schema/spec@1.1.0)(hono@4.13.7))(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.3.6))(zod@4.3.6))(@types/json-schema@7.0.15)(hono@4.13.7)(openapi-types@12.1.3):
+  hono-openapi@1.3.0(@hono/standard-validator@0.2.2(@standard-schema/spec@1.1.0)(hono@4.13.7))(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5))(@standard-community/standard-openapi@0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.6.5))(zod@4.6.5))(@types/json-schema@7.0.15)(hono@4.13.7)(openapi-types@12.1.3):
     dependencies:
-      '@standard-community/standard-json': 0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6)
-      '@standard-community/standard-openapi': 0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.3.6))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.3.6))(zod@4.3.6)
+      '@standard-community/standard-json': 0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5)
+      '@standard-community/standard-openapi': 0.2.9(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(effect@3.22.2)(quansync@1.0.0)(zod@4.6.5))(@standard-schema/spec@1.1.0)(effect@3.22.2)(openapi-types@12.1.3)(zod-openapi@5.4.6(zod@4.6.5))(zod@4.6.5)
       '@types/json-schema': 7.0.15
       openapi-types: 12.1.3
     optionalDependencies:
@@ -4950,7 +4929,7 @@ snapshots:
 
   openapi-types@12.1.3: {}
 
-  ox@0.14.0(typescript@5.9.3)(zod@4.3.6):
+  ox@0.14.0(typescript@5.9.3)(zod@4.6.5):
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
       '@noble/ciphers': 1.3.0
@@ -4958,22 +4937,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.3.6)
-      eventemitter3: 5.0.1
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - zod
-
-  ox@0.14.0(typescript@5.9.3)(zod@4.6.1):
-    dependencies:
-      '@adraffy/ens-normalize': 1.11.1
-      '@noble/ciphers': 1.3.0
-      '@noble/curves': 1.9.1
-      '@noble/hashes': 1.8.0
-      '@scure/bip32': 1.7.0
-      '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.6.1)
+      abitype: 1.2.3(typescript@5.9.3)(zod@4.6.5)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.9.3
@@ -5556,32 +5520,15 @@ snapshots:
 
   vary@1.1.2: {}
 
-  viem@2.47.2(typescript@5.9.3)(zod@4.3.6):
+  viem@2.47.2(typescript@5.9.3)(zod@4.6.5):
     dependencies:
       '@noble/curves': 1.9.1
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.3.6)
+      abitype: 1.2.3(typescript@5.9.3)(zod@4.6.5)
       isows: 1.0.7(ws@8.18.3)
-      ox: 0.14.0(typescript@5.9.3)(zod@4.3.6)
-      ws: 8.18.3
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-      - zod
-
-  viem@2.47.2(typescript@5.9.3)(zod@4.6.1):
-    dependencies:
-      '@noble/curves': 1.9.1
-      '@noble/hashes': 1.8.0
-      '@scure/bip32': 1.7.0
-      '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.6.1)
-      isows: 1.0.7(ws@8.18.3)
-      ox: 0.14.0(typescript@5.9.3)(zod@4.6.1)
+      ox: 0.14.0(typescript@5.9.3)(zod@4.6.5)
       ws: 8.18.3
     optionalDependencies:
       typescript: 5.9.3
@@ -5710,14 +5657,12 @@ snapshots:
       compress-commons: 6.0.2
       readable-stream: 4.7.0
 
-  zod-openapi@5.4.6(zod@4.3.6):
+  zod-openapi@5.4.6(zod@4.6.5):
     dependencies:
-      zod: 4.3.6
+      zod: 4.6.5
 
-  zod-validation-error@5.0.0(zod@4.3.6):
+  zod-validation-error@5.0.0(zod@4.6.5):
     dependencies:
-      zod: 4.3.6
+      zod: 4.6.5
 
-  zod@4.3.6: {}
-
-  zod@4.6.1: {}
+  zod@4.6.5: {}
